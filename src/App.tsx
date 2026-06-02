@@ -15,6 +15,7 @@ function App() {
   const setRenderDistance = useGameStore((state) => state.setRenderDistance);
   const fov = useGameStore((state) => state.fov);
   const setFov = useGameStore((state) => state.setFov);
+  const gameMode = useGameStore((state) => state.gameMode);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
@@ -101,6 +102,16 @@ function App() {
       activeParamsRef.current.fov = fov;
     }
   }, [fov]);
+
+  // Synchronize game mode and disable flying if not creative
+  useEffect(() => {
+    const gm = gameManagerRef.current;
+    if (gm) {
+      if (gameMode !== 'creative') {
+        gm.player.isFlying = false;
+      }
+    }
+  }, [gameMode]);
 
   // Start game handler
   const handleStartGame = (

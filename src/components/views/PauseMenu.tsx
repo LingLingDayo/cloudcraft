@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { PauseMenuProps } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
+import { Switch } from '@components/common/Switch';
 import { useGameStore } from '@store/useGameStore';
 import styles from './PauseMenu.module.scss';
 
@@ -20,6 +21,9 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
   const setRenderDistance = useGameStore((state) => state.setRenderDistance);
   const fov = useGameStore((state) => state.fov);
   const setFov = useGameStore((state) => state.setFov);
+  const gameMode = useGameStore((state) => state.gameMode);
+  const setGameMode = useGameStore((state) => state.setGameMode);
+
 
   const handleSave = () => {
     onSave();
@@ -60,6 +64,14 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
 
         {/* Quick Settings */}
         <div className={styles.settingsList}>
+          <Switch
+            label="创造模式 (Creative Mode)"
+            checked={gameMode === 'creative'}
+            onChange={(checked) => setGameMode(checked ? 'creative' : 'adventure')}
+            labelStyle={SLIDER_LABEL_STYLE}
+            containerStyle={SLIDER_CONTAINER_STYLE}
+          />
+
           <Slider
             label={`视距: ${renderDistance} 区块`}
             min={2}
@@ -85,4 +97,5 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
     </div>
   );
 };
+
 

@@ -5,6 +5,7 @@ import { Controls } from '@game/systems/Controls';
 import { sound } from '@game/systems/Sound';
 import { BLOCK_TYPES } from '@game/world/BlockConfig';
 import { GameAction } from '@game/systems/HotkeyManager';
+import { useGameStore } from '@store/useGameStore';
 
 export class Player {
   public position = new THREE.Vector3(8.5, 40, 8.5);
@@ -65,7 +66,14 @@ export class Player {
     }
 
     // Apply fall damage
-    if (this.state.onGround && wasYVelocity < -14.0 && !this.isFlying && !this.state.inWater) {
+    const isCreative = useGameStore.getState().gameMode === 'creative';
+    if (
+      this.state.onGround &&
+      wasYVelocity < -14.0 &&
+      !this.isFlying &&
+      !this.state.inWater &&
+      !isCreative
+    ) {
       const damage = Math.max(1, Math.floor((-wasYVelocity - 12.0) * 0.7));
       this.takeDamage(damage, world, physics);
     }
@@ -75,6 +83,9 @@ export class Player {
   }
 
   public takeDamage(amount: number, world: World, physics: Physics) {
+    const isCreative = useGameStore.getState().gameMode === 'creative';
+    if (isCreative) return;
+
     this.life = Math.max(0, this.life - amount);
     sound.playDamage();
     if (this.onTakeDamage) this.onTakeDamage();

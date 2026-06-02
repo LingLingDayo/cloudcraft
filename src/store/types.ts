@@ -1,13 +1,16 @@
-import type { GameState, DebugMetrics } from '@type';
+import type { GameState, DebugMetrics, GameMode } from '@type';
 
 export interface GameSlice {
   gameState: GameState;
   renderDistance: number;
   fov: number;
+  gameMode: GameMode;
   setGameState: (state: GameState) => void;
   setRenderDistance: (dist: number) => void;
   setFov: (fov: number) => void;
+  setGameMode: (mode: GameMode) => void;
 }
+
 
 export interface PlayerSlice {
   selectedBlock: number;

@@ -159,8 +159,10 @@ export class GameManager {
     };
 
     this.controls.onF4Pressed = () => {
-      this.player.isFlying = !this.player.isFlying;
-      sound.playClick();
+      if (useGameStore.getState().gameMode === 'creative') {
+        this.player.isFlying = !this.player.isFlying;
+        sound.playClick();
+      }
     };
 
     this.particles = new ParticleSystem(this.scene);
