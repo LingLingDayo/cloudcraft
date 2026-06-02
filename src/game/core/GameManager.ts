@@ -53,6 +53,8 @@ export class GameManager {
   // Mining state properties
   private isMining = false;
   private isLeftMouseDown = false;
+  private mouseDownTime = 0;
+  private hasTriggeredLongPress = false;
   private miningBlockPos = new THREE.Vector3();
   private miningTime = 0;
   private miningBreakTime = 0;
@@ -154,6 +156,7 @@ export class GameManager {
       useGameStore.getState().setGameState(locked ? 'PLAYING' : 'PAUSED');
       if (!locked) {
         this.isLeftMouseDown = false;
+        this.hasTriggeredLongPress = false;
         this.cancelMining();
       }
     });
@@ -219,32 +222,8 @@ export class GameManager {
 
     if (e.button === 0) {
       this.isLeftMouseDown = true;
-      // Left Click: Break Block
-      const { target } = this.targetedBlockInfo;
-      const blockId = this.world.getBlock(target.x, target.y, target.z);
-      const props = getBlockProperties(blockId);
-      if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
-        const isCreative = useGameStore.getState().gameMode === 'creative';
-        if (isCreative) {
-          this.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
-          sound.playBreak();
-          
-          // Spawn particle blast
-          const color = BLOCK_COLORS[blockId] ?? 0x787878;
-          this.particles.spawn(
-            new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
-            color,
-            15
-          );
-        } else {
-          this.isMining = true;
-          this.miningBlockPos.copy(target);
-          this.miningTime = 0;
-          this.miningBreakTime = props.hardness * 1.0;
-          this.lastDigSoundTime = 0;
-          this.lastDigParticleTime = 0;
-        }
-      }
+      this.mouseDownTime = performance.now();
+      this.hasTriggeredLongPress = false;
     } else if (e.button === 2) {
       // Right Click: Place Block
       const { place } = this.targetedBlockInfo;
@@ -274,6 +253,7 @@ export class GameManager {
   private onMouseUp = (e: MouseEvent) => {
     if (e.button === 0) {
       this.isLeftMouseDown = false;
+      this.hasTriggeredLongPress = false;
       this.cancelMining();
     }
   };
@@ -347,15 +327,49 @@ export class GameManager {
   }
 
   private updateMining(dt: number) {
-    const isCreative = useGameStore.getState().gameMode === 'creative';
-    
-    if (isCreative) {
+    if (!this.isLeftMouseDown) {
       this.cancelMining();
       return;
     }
 
+    const now = performance.now();
+    const pressDuration = now - this.mouseDownTime;
+
+    // 只有长按 200ms 之后才能触发挖掘和破坏
+    if (pressDuration < 200) {
+      this.cancelMining();
+      return;
+    }
+
+    const isCreative = useGameStore.getState().gameMode === 'creative';
+
+    if (isCreative) {
+      // 创造模式：长按达到 200ms 时单次瞬间破坏
+      if (!this.hasTriggeredLongPress && this.targetedBlockInfo) {
+        const { target } = this.targetedBlockInfo;
+        const blockId = this.world.getBlock(target.x, target.y, target.z);
+        const props = getBlockProperties(blockId);
+        if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
+          this.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
+          sound.playBreak();
+          
+          // Spawn particle blast
+          const color = BLOCK_COLORS[blockId] ?? 0x787878;
+          this.particles.spawn(
+            new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
+            color,
+            15
+          );
+        }
+        this.hasTriggeredLongPress = true;
+      }
+      this.cancelMining();
+      return;
+    }
+
+    // 冒险模式下的挖掘逻辑
     if (!this.isMining) {
-      if (this.isLeftMouseDown && this.targetedBlockInfo) {
+      if (this.targetedBlockInfo) {
         const { target } = this.targetedBlockInfo;
         const blockId = this.world.getBlock(target.x, target.y, target.z);
         const props = getBlockProperties(blockId);
@@ -366,6 +380,7 @@ export class GameManager {
           this.miningBreakTime = props.hardness * 1.0;
           this.lastDigSoundTime = 0;
           this.lastDigParticleTime = 0;
+          this.hasTriggeredLongPress = true;
         }
       } else {
         this.cancelMining();
@@ -373,7 +388,7 @@ export class GameManager {
       }
     }
 
-    // Check if target is still the same block and still locked
+    // 检查挖掘目标是否发生改变
     if (!this.targetedBlockInfo || !this.targetedBlockInfo.target.equals(this.miningBlockPos)) {
       this.cancelMining();
       return;
@@ -390,17 +405,17 @@ export class GameManager {
 
     this.miningTime += dt;
     const progress = Math.min(1.0, this.miningTime / this.miningBreakTime);
-    const now = performance.now();
+    const currentTime = performance.now();
 
     // 1. play dig sound (throttle: 250ms)
-    if (now - this.lastDigSoundTime > 250) {
-      this.lastDigSoundTime = now;
+    if (currentTime - this.lastDigSoundTime > 250) {
+      this.lastDigSoundTime = currentTime;
       sound.playClick();
     }
 
     // 2. spawn minor particles (throttle: 120ms)
-    if (now - this.lastDigParticleTime > 120) {
-      this.lastDigParticleTime = now;
+    if (currentTime - this.lastDigParticleTime > 120) {
+      this.lastDigParticleTime = currentTime;
       const color = BLOCK_COLORS[blockId] ?? 0x787878;
       this.particles.spawn(
         new THREE.Vector3(
@@ -419,7 +434,7 @@ export class GameManager {
       const stage = Math.min(9, Math.floor(progress * 10));
       const mat = this.crackMesh.material as THREE.MeshBasicMaterial;
       mat.map = this.crackTextures[stage];
-      this.crackMesh.visible = true; // 正确设置网格本身为显示状态
+      this.crackMesh.visible = true;
     } else {
       this.crackMesh.visible = false;
     }
@@ -427,7 +442,9 @@ export class GameManager {
     // 4. update HUD progress circle directly via DOM
     const circle = document.getElementById('mining-progress-circle');
     const svg = circle?.parentElement as HTMLElement | null;
-    if (svg) svg.style.display = 'block';
+    if (svg && svg.style.display !== 'block') {
+      svg.style.display = 'block';
+    }
     if (circle) {
       const offset = 100 - (progress * 100);
       circle.setAttribute('stroke-dashoffset', offset.toString());
