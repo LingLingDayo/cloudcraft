@@ -2,11 +2,16 @@ class SoundManager {
   private ctx: AudioContext | null = null;
 
   private initCtx() {
-    if (!this.ctx) {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    try {
+      if (!this.ctx) {
+        this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch((err) => console.warn('AudioContext resume failed:', err));
+      }
+    } catch (e) {
+      console.warn('Failed to initialize AudioContext:', e);
+      this.ctx = null;
     }
   }
 

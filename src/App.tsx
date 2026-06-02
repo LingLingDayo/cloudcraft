@@ -77,7 +77,15 @@ function App() {
       gameManagerRef.current.dispose();
       gameManagerRef.current = null;
     }
-  }, [gameState, selectedBlock]);
+  }, [gameState]);
+
+  // Synchronize selected block to GameManager
+  useEffect(() => {
+    const gm = gameManagerRef.current;
+    if (gm) {
+      gm.selectedBlockType = selectedBlock;
+    }
+  }, [selectedBlock]);
 
   // Synchronize player coordinates and states to React at low-frequency (100ms)
   // to maximize game thread FPS performance
