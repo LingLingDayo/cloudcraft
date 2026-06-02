@@ -3,6 +3,7 @@ import { World, BLOCK_TYPES, CHUNK_SIZE_Y } from './World';
 import { Physics } from './Physics';
 import { Controls } from './Controls';
 import { sound } from './Sound';
+import { FPSCounter } from './FPSCounter';
 
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
@@ -25,6 +26,7 @@ export class GameManager {
   
   // Game state UI callbacks
   private onPauseStateChange: (paused: boolean) => void;
+  private onDebugOverlayToggle?: (visible: boolean) => void;
 
   // Day-Night cycle properties
   private gameTime = 60; // Start at 60s (noon)
@@ -39,13 +41,20 @@ export class GameManager {
   // Settings
   public renderDistance = 3; // radius in chunks
 
+  // Debug metrics & Flight mode
+  public isFlying = false;
+  public debugOverlayVisible = false;
+  public fpsCounter = new FPSCounter();
+
   constructor(
     canvas: HTMLCanvasElement,
     onPauseStateChange: (paused: boolean) => void,
+    onDebugOverlayToggle: (visible: boolean) => void,
     seed: string = 'minicraft'
   ) {
     this.canvas = canvas;
     this.onPauseStateChange = onPauseStateChange;
+    this.onDebugOverlayToggle = onDebugOverlayToggle;
 
     this.initThree();
     this.initGame(seed);
@@ -123,6 +132,20 @@ export class GameManager {
     this.controls.addLockChangeListener((locked) => {
       this.onPauseStateChange(!locked);
     });
+
+    // Setup F3 & F4 triggers
+    this.controls.onF3Pressed = () => {
+      this.debugOverlayVisible = !this.debugOverlayVisible;
+      sound.playClick();
+      if (this.onDebugOverlayToggle) {
+        this.onDebugOverlayToggle(this.debugOverlayVisible);
+      }
+    };
+
+    this.controls.onF4Pressed = () => {
+      this.isFlying = !this.isFlying;
+      sound.playClick();
+    };
 
     // Spawn player on safe dry ground
     this.spawnPlayer();
@@ -316,6 +339,9 @@ export class GameManager {
     // Avoid massive jumps if page is out of focus
     if (dt > 0.15) dt = 0.15;
 
+    // Update FPS Counter
+    this.fpsCounter.update();
+
     // Skip update if not locked/paused
     if (this.controls.isLocked) {
       // Day-Night calculation
@@ -326,7 +352,7 @@ export class GameManager {
       const isJumping = this.controls.keys.Space;
 
       // Play jump sound
-      if (isJumping && this.playerState.onGround && !this.playerState.inWater) {
+      if (isJumping && this.playerState.onGround && !this.playerState.inWater && !this.isFlying) {
         sound.playJump();
       }
 
@@ -337,6 +363,8 @@ export class GameManager {
         dt,
         inputDirection,
         isJumping,
+        this.controls.keys.ShiftLeft,
+        this.isFlying,
         this.playerState
       );
 
@@ -366,6 +394,47 @@ export class GameManager {
   public setFov(fov: number) {
     this.camera.fov = fov;
     this.camera.updateProjectionMatrix();
+  }
+
+  private getBlockName(id: number): string {
+    const names: Record<number, string> = {
+      0: '空气 (Air)',
+      1: '草方块 (Grass Block)',
+      2: '泥土 (Dirt)',
+      3: '石头 (Stone)',
+      4: '木头 (Wood)',
+      5: '树叶 (Leaves)',
+      6: '红砖 (Brick)',
+      7: '玻璃 (Glass)',
+      8: '水 (Water)',
+      9: '沙子 (Sand)',
+      10: '煤矿 (Coal Ore)',
+      11: '铁矿 (Iron Ore)',
+      12: '钻石矿 (Diamond Ore)',
+    };
+    return names[id] || '未知方块';
+  }
+
+  public getDebugMetrics() {
+    return {
+      fps: this.fpsCounter.getFPS(),
+      chunksLoaded: this.world.group.children.length / 2, // 2 meshes per chunk
+      isFlying: this.isFlying,
+      targetBlock: this.targetedBlockInfo
+        ? {
+            type: this.getBlockName(
+              this.world.getBlock(
+                this.targetedBlockInfo.target.x,
+                this.targetedBlockInfo.target.y,
+                this.targetedBlockInfo.target.z
+              )
+            ),
+            x: this.targetedBlockInfo.target.x,
+            y: this.targetedBlockInfo.target.y,
+            z: this.targetedBlockInfo.target.z,
+          }
+        : null,
+    };
   }
 
   public dispose() {

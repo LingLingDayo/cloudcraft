@@ -45,8 +45,22 @@ export class Controls {
     document.removeEventListener('mousemove', this.onMouseMove);
   }
 
+  public onF3Pressed?: () => void;
+  public onF4Pressed?: () => void;
+
   private onKeyDown = (e: KeyboardEvent) => {
     if (!this.isLocked) return;
+
+    if (e.key === 'F3') {
+      e.preventDefault();
+      if (this.onF3Pressed) this.onF3Pressed();
+      return;
+    }
+    if (e.key === 'F4') {
+      e.preventDefault();
+      if (this.onF4Pressed) this.onF4Pressed();
+      return;
+    }
 
     if (e.code === 'KeyW' || e.code === 'ArrowUp') this.keys.KeyW = true;
     if (e.code === 'KeyS' || e.code === 'ArrowDown') this.keys.KeyS = true;

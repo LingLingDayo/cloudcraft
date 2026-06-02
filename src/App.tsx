@@ -17,6 +17,10 @@ function App() {
   const [onGround, setOnGround] = useState<boolean>(false);
   const [inWater, setInWater] = useState<boolean>(false);
 
+  // Debug panel
+  const [debugOverlay, setDebugOverlay] = useState<boolean>(false);
+  const [debugMetrics, setDebugMetrics] = useState<any>(null);
+
   // Settings
   const [renderDistance, setRenderDistance] = useState<number>(3);
   const [fov, setFov] = useState<number>(75);
@@ -38,6 +42,9 @@ function App() {
         canvasRef.current,
         (paused) => {
           setGameState(paused ? 'PAUSED' : 'PLAYING');
+        },
+        (debugVisible) => {
+          setDebugOverlay(debugVisible);
         },
         seed
       );
@@ -103,6 +110,10 @@ function App() {
           setOnGround(gm.playerState.onGround);
           setInWater(gm.playerState.inWater);
           setLife(gm.life);
+
+          if (gm.debugOverlayVisible) {
+            setDebugMetrics(gm.getDebugMetrics());
+          }
         }
       }, 100);
     }
@@ -206,6 +217,8 @@ function App() {
             position={position}
             onGround={onGround}
             inWater={inWater}
+            debugOverlay={debugOverlay}
+            debugMetrics={debugMetrics}
           />
         </div>
       )}

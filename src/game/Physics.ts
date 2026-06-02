@@ -65,6 +65,8 @@ export class Physics {
     dt: number,
     inputDirection: THREE.Vector3,
     isJumping: boolean,
+    isShiftLeft: boolean,
+    isFlying: boolean,
     state: { onGround: boolean; inWater: boolean }
   ) {
     // Limit dt to prevent huge physics steps (e.g. during lag spikes)
@@ -74,31 +76,42 @@ export class Physics {
     state.inWater = this.checkInWater(position);
 
     // 2. Apply movement forces
-    const speed = state.inWater ? this.swimSpeed : this.walkSpeed;
-    velocity.x = inputDirection.x * speed;
-    velocity.z = inputDirection.z * speed;
+    if (isFlying) {
+      const flySpeed = this.walkSpeed * 2.0;
+      velocity.x = inputDirection.x * flySpeed;
+      velocity.z = inputDirection.z * flySpeed;
 
-    // 3. Apply gravity & swimming buoyancy
-    if (state.inWater) {
-      if (isJumping) {
-        velocity.y = 3.0; // Swim upwards
-      } else {
-        // Slow sink in water
-        velocity.y = Math.max(-2, velocity.y + this.gravity * 0.15 * dt);
-      }
+      const verticalMove = (isJumping ? 1 : 0) + (isShiftLeft ? -1 : 0);
+      velocity.y = verticalMove * this.walkSpeed * 1.5;
+
+      state.onGround = false;
     } else {
-      // Normal gravity
-      if (!state.onGround) {
-        velocity.y += this.gravity * dt;
-        velocity.y = Math.max(this.terminalVelocity, velocity.y);
-      } else {
-        velocity.y = 0;
-      }
+      const speed = state.inWater ? this.swimSpeed : this.walkSpeed;
+      velocity.x = inputDirection.x * speed;
+      velocity.z = inputDirection.z * speed;
 
-      // Jump
-      if (isJumping && state.onGround) {
-        velocity.y = this.jumpSpeed;
-        state.onGround = false;
+      // 3. Apply gravity & swimming buoyancy
+      if (state.inWater) {
+        if (isJumping) {
+          velocity.y = 3.0; // Swim upwards
+        } else {
+          // Slow sink in water
+          velocity.y = Math.max(-2, velocity.y + this.gravity * 0.15 * dt);
+        }
+      } else {
+        // Normal gravity
+        if (!state.onGround) {
+          velocity.y += this.gravity * dt;
+          velocity.y = Math.max(this.terminalVelocity, velocity.y);
+        } else {
+          velocity.y = 0;
+        }
+
+        // Jump
+        if (isJumping && state.onGround) {
+          velocity.y = this.jumpSpeed;
+          state.onGround = false;
+        }
       }
     }
 
