@@ -4,6 +4,22 @@ import { Physics } from './Physics';
 import { Controls } from './Controls';
 import { sound } from './Sound';
 import { FPSCounter } from './FPSCounter';
+import { ParticleSystem } from './Particles';
+
+const BLOCK_COLORS: Record<number, number> = {
+  [BLOCK_TYPES.GRASS]: 0x56a032,
+  [BLOCK_TYPES.DIRT]: 0x825a3c,
+  [BLOCK_TYPES.STONE]: 0x787878,
+  [BLOCK_TYPES.WOOD]: 0x78552d,
+  [BLOCK_TYPES.LEAF]: 0x2d7823,
+  [BLOCK_TYPES.BRICK]: 0xa03c2d,
+  [BLOCK_TYPES.GLASS]: 0xe0f7fa,
+  [BLOCK_TYPES.WATER]: 0x286edc,
+  [BLOCK_TYPES.SAND]: 0xdccd8c,
+  [BLOCK_TYPES.COAL]: 0x282828,
+  [BLOCK_TYPES.IRON]: 0xbe825a,
+  [BLOCK_TYPES.DIAMOND]: 0x5cdcfa,
+};
 
 export interface DebugMetrics {
   fps: number;
@@ -58,15 +74,21 @@ export class GameManager {
   public debugOverlayVisible = false;
   public fpsCounter = new FPSCounter();
 
+  // Particles & Damage Hook
+  public particles!: ParticleSystem;
+  private onTakeDamage?: () => void;
+
   constructor(
     canvas: HTMLCanvasElement,
     onPauseStateChange: (paused: boolean) => void,
     onDebugOverlayToggle: (visible: boolean) => void,
+    onTakeDamage: () => void,
     seed: string = 'minicraft'
   ) {
     this.canvas = canvas;
     this.onPauseStateChange = onPauseStateChange;
     this.onDebugOverlayToggle = onDebugOverlayToggle;
+    this.onTakeDamage = onTakeDamage;
 
     this.initThree();
     this.initGame(seed);
@@ -159,6 +181,8 @@ export class GameManager {
       sound.playClick();
     };
 
+    this.particles = new ParticleSystem(this.scene);
+
     // Spawn player on safe dry ground
     this.spawnPlayer();
   }
@@ -213,6 +237,14 @@ export class GameManager {
       if (blockId !== BLOCK_TYPES.AIR && blockId !== BLOCK_TYPES.WATER) {
         this.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
         sound.playBreak();
+        
+        // Spawn particle blast
+        const color = BLOCK_COLORS[blockId] ?? 0x787878;
+        this.particles.spawn(
+          new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
+          color,
+          15
+        );
       }
     } else if (e.button === 2) {
       // Right Click: Place Block
@@ -228,6 +260,14 @@ export class GameManager {
       if (!playerBox.intersectsBox(blockBox)) {
         this.world.setBlock(place.x, place.y, place.z, this.selectedBlockType);
         sound.playPlace();
+
+        // Spawn placement dust particles
+        const color = BLOCK_COLORS[this.selectedBlockType] ?? 0xffffff;
+        this.particles.spawn(
+          new THREE.Vector3(place.x + 0.5, place.y + 0.5, place.z + 0.5),
+          color,
+          8
+        );
       }
     }
   };
@@ -354,6 +394,11 @@ export class GameManager {
     // Update FPS Counter
     this.fpsCounter.update();
 
+    // Update particle pool
+    if (this.particles) {
+      this.particles.update(dt);
+    }
+
     // Skip update if not locked/paused
     if (this.controls.isLocked) {
       // Day-Night calculation
@@ -368,6 +413,8 @@ export class GameManager {
         sound.playJump();
       }
 
+      const wasYVelocity = this.playerVelocity.y;
+
       // Update player positions, resolve collisions
       this.physics.update(
         this.playerPosition,
@@ -379,6 +426,21 @@ export class GameManager {
         this.isFlying,
         this.playerState
       );
+
+      // Apply fall damage
+      if (this.playerState.onGround && wasYVelocity < -14.0 && !this.isFlying && !this.playerState.inWater) {
+        const damage = Math.max(1, Math.floor((-wasYVelocity - 12.0) * 0.7));
+        this.life = Math.max(0, this.life - damage);
+        sound.playDamage();
+        if (this.onTakeDamage) this.onTakeDamage();
+
+        // Respawn check
+        if (this.life <= 0) {
+          sound.playBreak();
+          this.life = 10;
+          this.spawnPlayer();
+        }
+      }
 
       // Keep camera aligned at player eye height
       this.camera.position.copy(this.playerPosition);

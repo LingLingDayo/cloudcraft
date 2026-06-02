@@ -1,0 +1,7 @@
+Phase 5 User-Facing Enhancements Completed.
+Implemented voxel-colored physics particle bursts on block break and placement events.
+Added landing impact velocity calculation for falling heights, applying fall damage.
+Created synthetic grunt-like sawtooth wave damage sounds.
+Wired take-damage callback to trigger screen-wide red vignette border flash overlay.
+Supports player death and immediate top-of-world respawn.
+Project successfully compiles and builds.
