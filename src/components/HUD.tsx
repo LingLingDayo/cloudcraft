@@ -8,6 +8,8 @@ interface HUDProps {
   position: { x: number; y: number; z: number };
   onGround: boolean;
   inWater: boolean;
+  debugOverlay?: boolean;
+  debugMetrics?: any;
 }
 
 export const HOTBAR_ITEMS = [
@@ -29,6 +31,8 @@ export const HUD: React.FC<HUDProps> = ({
   position,
   onGround,
   inWater,
+  debugOverlay = false,
+  debugMetrics = null,
 }) => {
   const [activeLabel, setActiveLabel] = useState<string>('');
   const [labelTimeout, setLabelTimeout] = useState<number | null>(null);
@@ -134,6 +138,63 @@ export const HUD: React.FC<HUDProps> = ({
           );
         })}
       </div>
+      {/* Top Right Debug Dashboard (F3) */}
+      {debugOverlay && debugMetrics && (
+        <div
+          className="glass-panel"
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            padding: '16px 20px',
+            width: '280px',
+            fontSize: '12px',
+            color: '#e2e8f0',
+            fontFamily: 'monospace',
+            textAlign: 'left',
+            pointerEvents: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <div
+            style={{
+              fontWeight: 'bold',
+              color: '#a5b4fc',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              paddingBottom: '4px',
+              marginBottom: '4px',
+            }}
+            className="pixel-text-sm"
+          >
+            调试控制台 (F3)
+          </div>
+          <div>
+            FPS: <span style={{ color: debugMetrics.fps >= 50 ? '#4ade80' : '#fb7185', fontWeight: 'bold' }}>{debugMetrics.fps}</span>
+          </div>
+          <div>
+            已载入区块: <span style={{ color: '#fca5a5' }}>{debugMetrics.chunksLoaded}</span>
+          </div>
+          <div>
+            创造飞行模式 (F4):{' '}
+            <span style={{ color: debugMetrics.isFlying ? '#38bdf8' : '#94a3b8', fontWeight: 'bold' }}>
+              {debugMetrics.isFlying ? '开启 (飞行中)' : '关闭'}
+            </span>
+          </div>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', marginTop: '2px' }}>
+            <span style={{ color: '#94a3b8' }}>指向方块:</span>
+            {debugMetrics.targetBlock ? (
+              <div style={{ paddingLeft: '8px', marginTop: '2px' }}>
+                <div>名称: <span style={{ color: '#fcd34d' }}>{debugMetrics.targetBlock.type}</span></div>
+                <div>坐标: <span style={{ color: '#cbd5e1' }}>({debugMetrics.targetBlock.x}, {debugMetrics.targetBlock.y}, {debugMetrics.targetBlock.z})</span></div>
+              </div>
+            ) : (
+              <span style={{ color: '#475569', marginLeft: '6px' }}>无</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
