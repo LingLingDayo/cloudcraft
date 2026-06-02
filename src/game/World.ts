@@ -273,8 +273,8 @@ export class World {
       { dir: [-1, 0, 0], corners: [[0,0,1], [0,1,1], [0,1,0], [0,0,0]], uvFace: 'side' },  // nx
       { dir: [0, 1, 0],  corners: [[0,1,0], [0,1,1], [1,1,1], [1,1,0]], uvFace: 'top' },   // py
       { dir: [0, -1, 0], corners: [[0,0,1], [0,0,0], [1,0,0], [1,0,1]], uvFace: 'bottom' },// ny
-      { dir: [0, 0, 1],  corners: [[0,0,1], [1,0,1], [1,1,1], [0,1,1]], uvFace: 'side' },  // pz
-      { dir: [0, 0, -1], corners: [[1,0,0], [0,0,0], [0,1,0], [1,1,0]], uvFace: 'side' },  // nz
+      { dir: [0, 0, 1],  corners: [[1,0,1], [1,1,1], [0,1,1], [0,0,1]], uvFace: 'side' },  // pz
+      { dir: [0, 0, -1], corners: [[0,0,0], [0,1,0], [1,1,0], [1,0,0]], uvFace: 'side' },  // nz
     ];
 
     for (let x = 0; x < CHUNK_SIZE_X; x++) {
