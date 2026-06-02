@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { ImprovedNoise } from './Noise';
-import { BLOCK_TYPES, BLOCK_FACES } from './BlockConfig';
+import { BLOCK_TYPES, BLOCK_FACES, getBlockProperties } from './BlockConfig';
 import { generateTextureAtlas } from './TextureAtlas';
 
-export { BLOCK_TYPES };
+export { BLOCK_TYPES, getBlockProperties };
 
 export const CHUNK_SIZE_X = 16;
 export const CHUNK_SIZE_Z = 16;
@@ -235,11 +235,7 @@ export class World {
 
   // Check if a block is transparent (allows face rendering behind it)
   public isTransparent(blockType: number): boolean {
-    return (
-      blockType === BLOCK_TYPES.AIR ||
-      blockType === BLOCK_TYPES.WATER ||
-      blockType === BLOCK_TYPES.GLASS
-    );
+    return getBlockProperties(blockType).isTransparent;
   }
 
   // Update or create chunk meshes
@@ -285,7 +281,7 @@ export class World {
 
           if (blockType === BLOCK_TYPES.AIR) continue;
 
-          const isTrans = blockType === BLOCK_TYPES.WATER || blockType === BLOCK_TYPES.GLASS;
+          const isTrans = getBlockProperties(blockType).opacity < 1.0;
           const data = isTrans ? transData : solidData;
 
           const wx = worldStartX + x;
@@ -300,13 +296,10 @@ export class World {
             
             // Draw face if:
             // 1. Neighbor is air/transparent
-            // 2. OR neighbor is Water and this is not Water (stops water rendering internal water faces)
-            // 3. OR neighbor is Glass and this is not Glass (stops glass internal rendering)
+            // 2. OR neighbor is the same transparent block (stops internal rendering of the same transparent type)
             let drawFace = false;
             if (this.isTransparent(neighbor)) {
-              if (blockType === BLOCK_TYPES.WATER && neighbor === BLOCK_TYPES.WATER) {
-                drawFace = false;
-              } else if (blockType === BLOCK_TYPES.GLASS && neighbor === BLOCK_TYPES.GLASS) {
+              if (blockType === neighbor) {
                 drawFace = false;
               } else {
                 drawFace = true;

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, BLOCK_TYPES } from '../world/World';
+import { World, BLOCK_TYPES, getBlockProperties } from '../world/World';
 import { Physics } from '../physics/Physics';
 import { Controls } from '../systems/Controls';
 import { sound } from '../systems/Sound';
@@ -200,7 +200,8 @@ export class GameManager {
       // Left Click: Break Block
       const { target } = this.targetedBlockInfo;
       const blockId = this.world.getBlock(target.x, target.y, target.z);
-      if (blockId !== BLOCK_TYPES.AIR && blockId !== BLOCK_TYPES.WATER) {
+      const props = getBlockProperties(blockId);
+      if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
         this.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
         sound.playBreak();
         
@@ -263,8 +264,9 @@ export class GameManager {
       const bz = Math.floor(current.z);
 
       const blockType = this.world.getBlock(bx, by, bz);
-      // We can only target solid blocks or transparent glass (not air or water)
-      if (blockType !== BLOCK_TYPES.AIR && blockType !== BLOCK_TYPES.WATER) {
+      const props = getBlockProperties(blockType);
+      // We can only target non-air, non-liquid blocks (solid blocks and transparent glass)
+      if (blockType !== BLOCK_TYPES.AIR && !props.isLiquid) {
         // Calculate block coordinate to place (previous step position)
         const prev = current.clone().addScaledVector(dir, -step);
         const px = Math.floor(prev.x);
@@ -432,22 +434,7 @@ export class GameManager {
   }
 
   private getBlockName(id: number): string {
-    const names: Record<number, string> = {
-      0: '空气 (Air)',
-      1: '草方块 (Grass Block)',
-      2: '泥土 (Dirt)',
-      3: '石头 (Stone)',
-      4: '木头 (Wood)',
-      5: '树叶 (Leaves)',
-      6: '红砖 (Brick)',
-      7: '玻璃 (Glass)',
-      8: '水 (Water)',
-      9: '沙子 (Sand)',
-      10: '煤矿 (Coal Ore)',
-      11: '铁矿 (Iron Ore)',
-      12: '钻石矿 (Diamond Ore)',
-    };
-    return names[id] || '未知方块';
+    return getBlockProperties(id).name;
   }
 
   public getDebugMetrics(): DebugMetrics {

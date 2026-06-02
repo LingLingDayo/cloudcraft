@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, BLOCK_TYPES } from '../world/World';
+import { World, getBlockProperties } from '../world/World';
 
 export class Physics {
   private world: World;
@@ -14,9 +14,9 @@ export class Physics {
     this.world = world;
   }
 
-  // A block is solid if it is not AIR and not WATER
+  // A block is solid based on its configured block properties
   public isSolid(blockId: number): boolean {
-    return blockId !== BLOCK_TYPES.AIR && blockId !== BLOCK_TYPES.WATER;
+    return getBlockProperties(blockId).isSolid;
   }
 
   // Get bounding box of the player
@@ -64,11 +64,11 @@ export class Physics {
     return colliders;
   }
 
-  // Check if player is in water
+  // Check if player is in a liquid block (like water)
   public checkInWater(position: THREE.Vector3): boolean {
     const blockBottom = this.world.getBlock(Math.floor(position.x), Math.floor(position.y), Math.floor(position.z));
     const blockEye = this.world.getBlock(Math.floor(position.x), Math.floor(position.y + 1.5), Math.floor(position.z));
-    return blockBottom === BLOCK_TYPES.WATER || blockEye === BLOCK_TYPES.WATER;
+    return getBlockProperties(blockBottom).isLiquid || getBlockProperties(blockEye).isLiquid;
   }
 
   public update(
