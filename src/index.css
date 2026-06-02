@@ -38,6 +38,19 @@ body, html {
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   border-radius: 16px;
+  animation: glassGlow 6s ease-in-out infinite;
+}
+
+@keyframes glassGlow {
+  0% {
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45), 0 0 16px 3px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(129, 140, 248, 0.3);
+  }
+  100% {
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
 }
 
 .glass-card {
@@ -116,21 +129,43 @@ body, html {
   padding: 12px 24px;
   cursor: pointer;
   box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.3);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.btn-primary:hover::before {
+  left: 100%;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.6), 0 0 0 2px rgba(129, 140, 248, 0.4);
   filter: brightness(1.1);
 }
 
 .btn-primary:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.98);
 }
 
 .btn-secondary {
@@ -142,14 +177,37 @@ body, html {
   border-radius: 8px;
   padding: 12px 24px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.btn-secondary:hover::before {
+  left: 100%;
 }
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
   color: white;
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 12px 0 rgba(255, 255, 255, 0.15);
 }
 
 .btn-danger {
@@ -162,13 +220,39 @@ body, html {
   padding: 12px 24px;
   cursor: pointer;
   box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.3);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-danger::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.btn-danger:hover::before {
+  left: 100%;
 }
 
 .btn-danger:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px 0 rgba(239, 68, 68, 0.5);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 20px 0 rgba(239, 68, 68, 0.6), 0 0 0 2px rgba(248, 113, 113, 0.4);
   filter: brightness(1.1);
+}
+
+.btn-danger:active {
+  transform: translateY(1px) scale(0.98);
 }
 
 /* Game Canvas container */

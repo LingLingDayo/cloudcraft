@@ -404,6 +404,21 @@ export class GameManager {
       // Day-Night calculation
       this.updateDayNight(dt);
 
+      // Apply underwater fog overlay if player is in water
+      if (this.playerState.inWater) {
+        const waterColor = new THREE.Color(0x1030a0);
+        this.renderer.setClearColor(waterColor);
+        this.scene.background = waterColor;
+        if (this.scene.fog && this.scene.fog instanceof THREE.FogExp2) {
+          this.scene.fog.color.copy(waterColor);
+          this.scene.fog.density = 0.08;
+        }
+      } else {
+        if (this.scene.fog && this.scene.fog instanceof THREE.FogExp2) {
+          this.scene.fog.density = 0.015;
+        }
+      }
+
       // Read movement keyboard inputs
       const inputDirection = this.controls.getMovementDirection();
       const isJumping = this.controls.keys.Space;
