@@ -50,6 +50,17 @@ export class GameManager {
   private selectionBox!: THREE.Mesh;
   private targetedBlockInfo: { target: THREE.Vector3; place: THREE.Vector3 } | null = null;
 
+  // Mining state properties
+  private isMining = false;
+  private isLeftMouseDown = false;
+  private miningBlockPos = new THREE.Vector3();
+  private miningTime = 0;
+  private miningBreakTime = 0;
+  private lastDigSoundTime = 0;
+  private lastDigParticleTime = 0;
+  private crackTextures: THREE.Texture[] = [];
+  private crackMesh!: THREE.Mesh;
+
   // Settings
   public renderDistance = 3; // radius in chunks
 
@@ -141,6 +152,10 @@ export class GameManager {
     // Bind pause trigger when pointer lock changes
     this.controls.addLockChangeListener((locked) => {
       useGameStore.getState().setGameState(locked ? 'PLAYING' : 'PAUSED');
+      if (!locked) {
+        this.isLeftMouseDown = false;
+        this.cancelMining();
+      }
     });
 
     // Initialize Player
@@ -169,6 +184,9 @@ export class GameManager {
 
     // Spawn player on safe dry ground
     this.player.spawn(this.world, this.physics);
+
+    this.initCrackTextures();
+    this.initCrackMesh();
   }
 
   public spawnPlayer() {
@@ -178,6 +196,7 @@ export class GameManager {
   private initListeners() {
     window.addEventListener('resize', this.onResize);
     this.canvas.addEventListener('mousedown', this.onMouseDown);
+    window.addEventListener('mouseup', this.onMouseUp);
     // Prevent right click menu in game
     this.canvas.addEventListener('contextmenu', this.onContextMenu);
   }
@@ -199,21 +218,32 @@ export class GameManager {
     if (!this.targetedBlockInfo) return;
 
     if (e.button === 0) {
+      this.isLeftMouseDown = true;
       // Left Click: Break Block
       const { target } = this.targetedBlockInfo;
       const blockId = this.world.getBlock(target.x, target.y, target.z);
       const props = getBlockProperties(blockId);
       if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
-        this.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
-        sound.playBreak();
-        
-        // Spawn particle blast
-        const color = BLOCK_COLORS[blockId] ?? 0x787878;
-        this.particles.spawn(
-          new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
-          color,
-          15
-        );
+        const isCreative = useGameStore.getState().gameMode === 'creative';
+        if (isCreative) {
+          this.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
+          sound.playBreak();
+          
+          // Spawn particle blast
+          const color = BLOCK_COLORS[blockId] ?? 0x787878;
+          this.particles.spawn(
+            new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
+            color,
+            15
+          );
+        } else {
+          this.isMining = true;
+          this.miningBlockPos.copy(target);
+          this.miningTime = 0;
+          this.miningBreakTime = props.hardness * 1.0;
+          this.lastDigSoundTime = 0;
+          this.lastDigParticleTime = 0;
+        }
       }
     } else if (e.button === 2) {
       // Right Click: Place Block
@@ -240,6 +270,185 @@ export class GameManager {
       }
     }
   };
+
+  private onMouseUp = (e: MouseEvent) => {
+    if (e.button === 0) {
+      this.isLeftMouseDown = false;
+      this.cancelMining();
+    }
+  };
+
+  private cancelMining() {
+    this.isMining = false;
+    if (this.crackMesh) {
+      this.crackMesh.visible = false;
+    }
+    const circle = document.getElementById('mining-progress-circle');
+    const svg = circle?.parentElement as HTMLElement | null;
+    if (svg) svg.style.display = 'none';
+  }
+
+  private initCrackTextures() {
+    this.crackTextures = [];
+    const segments = [
+      [2, 3, 6, 8],
+      [6, 8, 11, 4],
+      [11, 4, 14, 11],
+      [6, 8, 5, 13],
+      [5, 13, 2, 12],
+      [11, 4, 9, 2],
+      [2, 3, 4, 1],
+      [14, 11, 15, 14],
+      [5, 13, 9, 13],
+      [9, 13, 13, 9]
+    ];
+
+    for (let stage = 1; stage <= 10; stage++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      const ctx = canvas.getContext('2d')!;
+      ctx.clearRect(0, 0, 16, 16);
+
+      // Draw pixelated cracks
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'square';
+
+      ctx.beginPath();
+      for (let i = 0; i < Math.min(stage, segments.length); i++) {
+        const seg = segments[i];
+        ctx.moveTo(seg[0], seg[1]);
+        ctx.lineTo(seg[2], seg[3]);
+      }
+      ctx.stroke();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      texture.needsUpdate = true;
+      this.crackTextures.push(texture);
+    }
+  }
+
+  private initCrackMesh() {
+    const geo = new THREE.BoxGeometry(1.002, 1.002, 1.002);
+    const mat = new THREE.MeshBasicMaterial({
+      map: this.crackTextures[0], // 预先指定占位图以确保着色器编译纹理采样逻辑
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1
+    });
+    this.crackMesh = new THREE.Mesh(geo, mat);
+    this.crackMesh.visible = false; // 初始为隐藏状态
+    this.scene.add(this.crackMesh);
+  }
+
+  private updateMining(dt: number) {
+    const isCreative = useGameStore.getState().gameMode === 'creative';
+    
+    if (isCreative) {
+      this.cancelMining();
+      return;
+    }
+
+    if (!this.isMining) {
+      if (this.isLeftMouseDown && this.targetedBlockInfo) {
+        const { target } = this.targetedBlockInfo;
+        const blockId = this.world.getBlock(target.x, target.y, target.z);
+        const props = getBlockProperties(blockId);
+        if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
+          this.isMining = true;
+          this.miningBlockPos.copy(target);
+          this.miningTime = 0;
+          this.miningBreakTime = props.hardness * 1.0;
+          this.lastDigSoundTime = 0;
+          this.lastDigParticleTime = 0;
+        }
+      } else {
+        this.cancelMining();
+        return;
+      }
+    }
+
+    // Check if target is still the same block and still locked
+    if (!this.targetedBlockInfo || !this.targetedBlockInfo.target.equals(this.miningBlockPos)) {
+      this.cancelMining();
+      return;
+    }
+
+    const target = this.miningBlockPos;
+    const blockId = this.world.getBlock(target.x, target.y, target.z);
+    const props = getBlockProperties(blockId);
+
+    if (blockId === BLOCK_TYPES.AIR || props.isLiquid || props.hardness < 0) {
+      this.cancelMining();
+      return;
+    }
+
+    this.miningTime += dt;
+    const progress = Math.min(1.0, this.miningTime / this.miningBreakTime);
+    const now = performance.now();
+
+    // 1. play dig sound (throttle: 250ms)
+    if (now - this.lastDigSoundTime > 250) {
+      this.lastDigSoundTime = now;
+      sound.playClick();
+    }
+
+    // 2. spawn minor particles (throttle: 120ms)
+    if (now - this.lastDigParticleTime > 120) {
+      this.lastDigParticleTime = now;
+      const color = BLOCK_COLORS[blockId] ?? 0x787878;
+      this.particles.spawn(
+        new THREE.Vector3(
+          target.x + 0.2 + Math.random() * 0.6,
+          target.y + 0.2 + Math.random() * 0.6,
+          target.z + 0.2 + Math.random() * 0.6
+        ),
+        color,
+        2
+      );
+    }
+
+    // 3. update 3D crack mesh overlay
+    if (props.showBreakCracks !== false) {
+      this.crackMesh.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
+      const stage = Math.min(9, Math.floor(progress * 10));
+      const mat = this.crackMesh.material as THREE.MeshBasicMaterial;
+      mat.map = this.crackTextures[stage];
+      this.crackMesh.visible = true; // 正确设置网格本身为显示状态
+    } else {
+      this.crackMesh.visible = false;
+    }
+
+    // 4. update HUD progress circle directly via DOM
+    const circle = document.getElementById('mining-progress-circle');
+    const svg = circle?.parentElement as HTMLElement | null;
+    if (svg) svg.style.display = 'block';
+    if (circle) {
+      const offset = 100 - (progress * 100);
+      circle.setAttribute('stroke-dashoffset', offset.toString());
+    }
+
+    // 5. break target block if progress is finished
+    if (this.miningTime >= this.miningBreakTime) {
+      this.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
+      sound.playBreak();
+
+      // spawn major particles
+      const color = BLOCK_COLORS[blockId] ?? 0x787878;
+      this.particles.spawn(
+        new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
+        color,
+        15
+      );
+
+      this.cancelMining();
+    }
+  }
 
   private onContextMenu = (e: MouseEvent) => {
     e.preventDefault();
@@ -398,6 +607,9 @@ export class GameManager {
       // Trace targeting selection outline
       this.updateTargetedBlock();
 
+      // Update Mining progress
+      this.updateMining(dt);
+
       // UI update throttling (100ms)
       const now = performance.now();
       if (now - this.lastUiUpdateTime > 100) {
@@ -467,10 +679,25 @@ export class GameManager {
     }
     window.removeEventListener('resize', this.onResize);
     this.canvas.removeEventListener('mousedown', this.onMouseDown);
+    window.removeEventListener('mouseup', this.onMouseUp);
     this.canvas.removeEventListener('contextmenu', this.onContextMenu);
 
     if (this.controls) this.controls.dispose();
     if (this.world) this.world.dispose();
     if (this.renderer) this.renderer.dispose();
+
+    // Clean up textures and mesh
+    if (this.crackTextures) {
+      this.crackTextures.forEach((tex) => tex.dispose());
+    }
+    if (this.crackMesh) {
+      this.scene.remove(this.crackMesh);
+      if (this.crackMesh.geometry) this.crackMesh.geometry.dispose();
+      if (Array.isArray(this.crackMesh.material)) {
+        this.crackMesh.material.forEach((mat: THREE.Material) => mat.dispose());
+      } else if (this.crackMesh.material) {
+        (this.crackMesh.material as THREE.Material).dispose();
+      }
+    }
   }
 }

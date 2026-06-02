@@ -42,6 +42,7 @@ export interface BlockProperties {
   isInteractable: boolean;    // 是否可交互 (如箱子、门、熔炉、拉杆等)
   opacity: number;            // 渲染不透明度：0.0到1.0 (如水 0.8，空气 0.0，玻璃 0.3，普通方块 1.0)
   soundType: 'stone' | 'grass' | 'wood' | 'sand' | 'glass' | 'water' | 'none'; // 破坏/放置/行走音效类型
+  showBreakCracks?: boolean;  // 破坏过程中是否显示裂纹，默认 true
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
@@ -57,6 +58,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 0.0,
     soundType: 'none',
+    showBreakCracks: false,
   },
   [BLOCK_TYPES.GRASS]: {
     id: BLOCK_TYPES.GRASS,
@@ -116,7 +118,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
-    hardness: 0.2,
+    hardness: 0,
     affectedByGravity: false,
     lightLevel: 0,
     isInteractable: false,
@@ -148,6 +150,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 0.3,
     soundType: 'glass',
+    showBreakCracks: false,
   },
   [BLOCK_TYPES.WATER]: {
     id: BLOCK_TYPES.WATER,
@@ -161,6 +164,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 0.8,
     soundType: 'water',
+    showBreakCracks: false,
   },
   [BLOCK_TYPES.SAND]: {
     id: BLOCK_TYPES.SAND,

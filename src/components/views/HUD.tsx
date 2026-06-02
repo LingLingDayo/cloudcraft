@@ -74,7 +74,22 @@ export const HUD: React.FC = () => {
   return (
     <div className="hud-overlay">
       {/* Target Crosshair */}
-      <div className="crosshair"></div>
+      <div className="crosshair">
+        <svg className="mining-progress-svg" viewBox="0 0 36 36">
+          <circle
+            id="mining-progress-circle"
+            className="mining-progress-circle"
+            cx="18"
+            cy="18"
+            r="16"
+            fill="none"
+            stroke="#818cf8"
+            strokeWidth="3.5"
+            strokeDasharray="100"
+            strokeDashoffset="100"
+          />
+        </svg>
+      </div>
 
       {/* Top Left Status Info */}
       {import.meta.env.DEV && (
