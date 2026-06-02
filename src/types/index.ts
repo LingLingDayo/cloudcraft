@@ -12,9 +12,7 @@ export interface DebugMetrics {
   } | null;
 }
 
-export interface HUDProps {
-  // Managed by Zustand store
-}
+export type HUDProps = Record<string, never>;
 
 export interface StartMenuProps {
   onStartGame: (seed: string, renderDistance: number, fov: number, loadSave: boolean) => void;
