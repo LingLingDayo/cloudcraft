@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BLOCK_TYPES } from '../game/World';
+import type { DebugMetrics } from '../game/GameManager';
 
 interface HUDProps {
   selectedBlock: number;
@@ -9,7 +10,7 @@ interface HUDProps {
   onGround: boolean;
   inWater: boolean;
   debugOverlay?: boolean;
-  debugMetrics?: any;
+  debugMetrics?: DebugMetrics | null;
 }
 
 export const HOTBAR_ITEMS = [
