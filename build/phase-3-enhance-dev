@@ -1,6 +1,0 @@
-Phase 3 Developer Enhancements Completed.
-Added custom FPS calculations in FPSCounter.ts.
-Intercepted F3 and F4 controls handlers inside Controls.ts.
-Implemented Creative Flight mode in Physics.ts (canceling gravity, fly movement using Space/Shift).
-Created glassmorphic developer debug overlay on HUD.tsx triggered by pressing F3, displaying loaded chunks, active flight status, FPS, and targeted block coordinate/type.
-Project builds and compiles successfully.
