@@ -88,56 +88,65 @@ export const HUD: React.FC<HUDProps> = ({
       <div className="crosshair"></div>
 
       {/* Top Left Status Info */}
-      <div className="hud-stats glass-panel">
-        <div style={{ fontWeight: 'bold', color: '#f8fafc', marginBottom: '6px' }} className="pixel-text-sm">
-          MINICRAFT
+      {import.meta.env.DEV && (
+        <div className="hud-stats glass-panel">
+          <div style={{ fontWeight: 'bold', color: '#f8fafc', marginBottom: '6px' }} className="pixel-text-sm">
+            MINICRAFT (DEV)
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+            XYZ: {fx} / {fy} / {fz}
+          </div>
+          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+            Ground: {onGround ? 'YES' : 'NO'} | Water: {inWater ? 'YES' : 'NO'}
+          </div>
         </div>
-        <div style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-          XYZ: {fx} / {fy} / {fz}
-        </div>
-        <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
-          Ground: {onGround ? 'YES' : 'NO'} | Water: {inWater ? 'YES' : 'NO'}
-        </div>
-        <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <span
-              key={i}
-              className="heart"
-              style={{
-                color: i < life ? '#ef4444' : '#475569',
-                opacity: i < life ? 1 : 0.4,
-              }}
-            >
-              ❤
-            </span>
-          ))}
-        </div>
-      </div>
+      )}
 
-      {/* Selected Block Label */}
-      {activeLabel && <div className="hotbar-label pixel-text-sm">{activeLabel}</div>}
+      {/* Hotbar & Status Bar Wrapper */}
+      <div className="hotbar-wrapper">
+        {/* Selected Block Label */}
+        {activeLabel && <div className="hotbar-label pixel-text-sm">{activeLabel}</div>}
 
-      {/* Hotbar slots */}
-      <div className="hotbar-container">
-        {HOTBAR_ITEMS.map((item, index) => {
-          const isActive = item.id === selectedBlock;
-          return (
-            <div
-              key={item.id}
-              className={`hotbar-slot ${isActive ? 'active' : ''}`}
-              onClick={() => onSelectBlock(item.id)}
-            >
-              <span className="hotbar-slot-key">{index + 1}</span>
-              <div
-                className="block-preview"
+        {/* Hotbar Stats (Hearts) */}
+        <div className="hud-hotbar-stats">
+          <div className="hud-hearts">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <span
+                key={i}
+                className="heart"
                 style={{
-                  backgroundColor: item.color,
-                  border: item.border,
+                  color: i < life ? '#ef4444' : '#475569',
+                  opacity: i < life ? 1 : 0.4,
                 }}
-              ></div>
-            </div>
-          );
-        })}
+              >
+                ❤
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Hotbar slots */}
+        <div className="hotbar-container">
+          {HOTBAR_ITEMS.map((item, index) => {
+            const isActive = item.id === selectedBlock;
+            return (
+              <div
+                key={item.id}
+                className={`hotbar-slot ${isActive ? 'active' : ''}`}
+                onClick={() => onSelectBlock(item.id)}
+              >
+                <span className="hotbar-slot-key">{index + 1}</span>
+                <div
+                  className="block-preview"
+                  style={{
+                    backgroundColor: item.color,
+                    border: item.border,
+                  }}
+                ></div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       {/* Top Right Debug Dashboard (F3) */}
       {debugOverlay && debugMetrics && (
