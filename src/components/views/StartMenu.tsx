@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { StartMenuProps } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
+import { Switch } from '@components/common/Switch';
 import { useGameStore } from '@store/useGameStore';
 import styles from './StartMenu.module.scss';
 
@@ -12,6 +13,9 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [renderDistance, setRenderDistance] = useState<number>(() => useGameStore.getState().renderDistance);
   const [fov, setFov] = useState<number>(() => useGameStore.getState().fov);
   const [hasSave] = useState<boolean>(() => !!localStorage.getItem('minicraft_save'));
+
+  const gameMode = useGameStore((state) => state.gameMode);
+  const setGameMode = useGameStore((state) => state.setGameMode);
 
   const handleStart = (loadSave: boolean) => {
     onStartGame(seed, renderDistance, fov, loadSave);
@@ -63,6 +67,15 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
               value={fov}
               onChange={setFov}
               containerStyle={SLIDER_CONTAINER_STYLE}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <Switch
+              label="创造模式 (Creative Mode)"
+              checked={gameMode === 'creative'}
+              onChange={(checked) => setGameMode(checked ? 'creative' : 'adventure')}
+              containerStyle={{ flex: 1 }}
             />
           </div>
         </div>

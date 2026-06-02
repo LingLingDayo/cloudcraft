@@ -1,4 +1,5 @@
 export type GameState = 'MENU' | 'PLAYING' | 'PAUSED';
+export type GameMode = 'adventure' | 'creative';
 
 export interface DebugMetrics {
   fps: number;

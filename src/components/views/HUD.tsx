@@ -27,6 +27,7 @@ export const HUD: React.FC = () => {
   const inWater = useGameStore((state) => state.inWater);
   const debugOverlay = useGameStore((state) => state.debugOverlay);
   const debugMetrics = useGameStore((state) => state.debugMetrics);
+  const gameMode = useGameStore((state) => state.gameMode);
 
   // Keyboard 1-9 number row selection using HotkeyManager
   useEffect(() => {
@@ -96,22 +97,25 @@ export const HUD: React.FC = () => {
         {activeLabel && <div className="hotbar-label pixel-text-sm">{activeLabel}</div>}
 
         {/* Hotbar Stats (Hearts) */}
-        <div className="hud-hotbar-stats">
-          <div className="hud-hearts">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <span
-                key={i}
-                className="heart"
-                style={{
-                  color: i < life ? '#ef4444' : '#475569',
-                  opacity: i < life ? 1 : 0.4,
-                }}
-              >
-                ❤
-              </span>
-            ))}
+        {gameMode !== 'creative' && (
+          <div className="hud-hotbar-stats">
+            <div className="hud-hearts">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="heart"
+                  style={{
+                    color: i < life ? '#ef4444' : '#475569',
+                    opacity: i < life ? 1 : 0.4,
+                  }}
+                >
+                  ❤
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
 
         {/* Hotbar slots */}
         <div className="hotbar-container">

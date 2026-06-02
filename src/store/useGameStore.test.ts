@@ -18,6 +18,7 @@ describe('useGameStore', () => {
       isDamaged: false,
       renderDistance: 3,
       fov: 75,
+      gameMode: 'adventure',
     });
   });
 
@@ -34,6 +35,7 @@ describe('useGameStore', () => {
     expect(state.isDamaged).toBe(false);
     expect(state.renderDistance).toBe(3);
     expect(state.fov).toBe(75);
+    expect(state.gameMode).toBe('adventure');
   });
 
   test('should set game state via setGameState', () => {
@@ -43,6 +45,12 @@ describe('useGameStore', () => {
     useGameStore.getState().setGameState('PAUSED');
     expect(useGameStore.getState().gameState).toBe('PAUSED');
   });
+
+  test('should set game mode via setGameMode', () => {
+    useGameStore.getState().setGameMode('creative');
+    expect(useGameStore.getState().gameMode).toBe('creative');
+  });
+
 
   test('should set selected block via setSelectedBlock', () => {
     useGameStore.getState().setSelectedBlock(BLOCK_TYPES.DIRT);

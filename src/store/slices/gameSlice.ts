@@ -10,8 +10,11 @@ export const createGameSlice: StateCreator<
   gameState: 'MENU',
   renderDistance: 3,
   fov: 75,
+  gameMode: 'adventure',
 
   setGameState: (gameState) => set({ gameState }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
   setFov: (fov) => set({ fov }),
+  setGameMode: (gameMode) => set({ gameMode }),
 });
+
