@@ -39,12 +39,24 @@ export class Physics {
     const minZ = Math.floor(box.min.z);
     const maxZ = Math.floor(box.max.z);
 
+    const eps = 1e-5;
+
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
         for (let z = minZ; z <= maxZ; z++) {
           const id = this.world.getBlock(x, y, z);
           if (this.isSolid(id)) {
-            colliders.push({ x, y, z, id });
+            const isIntersect = (
+              box.min.x + eps < x + 1 &&
+              box.max.x - eps > x &&
+              box.min.y + eps < y + 1 &&
+              box.max.y - eps > y &&
+              box.min.z + eps < z + 1 &&
+              box.max.z - eps > z
+            );
+            if (isIntersect) {
+              colliders.push({ x, y, z, id });
+            }
           }
         }
       }

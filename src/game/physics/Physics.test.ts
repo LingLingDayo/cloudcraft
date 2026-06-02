@@ -118,4 +118,22 @@ describe('Physics System', () => {
     expect(pos.x).toBeLessThan(11.0); // Should be pushed back, pos.x should be 10.7
     expect(vel.x).toBe(0); // Collision should reset velocity
   });
+
+  test('jump and move forward against a block does not get stuck in ground', () => {
+    for (let x = 8; x <= 22; x++) {
+      mockBlockMap.set(`${x},39,8`, BLOCK_TYPES.STONE);
+    }
+    mockBlockMap.set('9,40,8', BLOCK_TYPES.STONE);
+
+    const pos = new THREE.Vector3(8.5, 40.0, 8.5);
+    const vel = new THREE.Vector3(0, 0, 0);
+    const state = { onGround: true, inWater: false };
+    const inputDir = new THREE.Vector3(1, 0, 0);
+
+    for (let i = 0; i < 40; i++) {
+      physics.update(pos, vel, 0.05, inputDir, true, false, false, state);
+    }
+
+    expect(pos.y).toBeGreaterThanOrEqual(40.0);
+  });
 });
