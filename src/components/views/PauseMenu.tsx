@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { PauseMenuProps } from '../../types';
-import { Button } from '../common/Button';
-import { Slider } from '../common/Slider';
-import { useGameStore } from '../../store/useGameStore';
+import type { PauseMenuProps } from '@type';
+import { Button } from '@components/common/Button';
+import { Slider } from '@components/common/Slider';
+import { useGameStore } from '@store/useGameStore';
 import styles from './PauseMenu.module.scss';
 
 // Styles for sliders to avoid inline styling in JSX

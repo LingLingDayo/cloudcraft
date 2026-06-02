@@ -1,9 +1,9 @@
 import { useRef, useEffect } from 'react';
-import { GameManager } from './game/core/GameManager';
-import { StartMenu } from './components/views/StartMenu';
-import { HUD } from './components/views/HUD';
-import { PauseMenu } from './components/views/PauseMenu';
-import { useGameStore } from './store/useGameStore';
+import { GameManager } from '@game/core/GameManager';
+import { StartMenu } from '@components/views/StartMenu';
+import { HUD } from '@components/views/HUD';
+import { PauseMenu } from '@components/views/PauseMenu';
+import { useGameStore } from '@store/useGameStore';
 import styles from './App.module.scss';
 
 function App() {
