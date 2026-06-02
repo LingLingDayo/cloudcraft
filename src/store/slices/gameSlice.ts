@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, GameSlice } from '../types';
+import { BLOCK_TYPES } from '@game/world/BlockConfig';
 
 export const createGameSlice: StateCreator<
   GameStoreState,
@@ -15,6 +16,32 @@ export const createGameSlice: StateCreator<
   setGameState: (gameState) => set({ gameState }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
   setFov: (fov) => set({ fov }),
-  setGameMode: (gameMode) => set({ gameMode }),
+  setGameMode: (gameMode) => set(() => {
+    if (gameMode === 'creative') {
+      return {
+        gameMode,
+        hotbar: [
+          { type: BLOCK_TYPES.GRASS, count: 1 },
+          { type: BLOCK_TYPES.DIRT, count: 1 },
+          { type: BLOCK_TYPES.STONE, count: 1 },
+          { type: BLOCK_TYPES.WOOD, count: 1 },
+          { type: BLOCK_TYPES.LEAF, count: 1 },
+          { type: BLOCK_TYPES.GLASS, count: 1 },
+          { type: BLOCK_TYPES.WATER, count: 1 },
+          { type: BLOCK_TYPES.SAND, count: 1 },
+          { type: BLOCK_TYPES.DIAMOND, count: 1 },
+        ],
+        activeSlot: 0,
+        selectedBlock: BLOCK_TYPES.GRASS,
+      };
+    } else {
+      return {
+        gameMode,
+        hotbar: Array(9).fill(null),
+        activeSlot: 0,
+        selectedBlock: BLOCK_TYPES.AIR,
+      };
+    }
+  }),
 });
 

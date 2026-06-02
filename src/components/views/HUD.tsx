@@ -20,7 +20,9 @@ export const HUD: React.FC = () => {
   const [activeLabel, setActiveLabel] = useState<string>('');
 
   const selectedBlock = useGameStore((state) => state.selectedBlock);
-  const setSelectedBlock = useGameStore((state) => state.setSelectedBlock);
+  const hotbar = useGameStore((state) => state.hotbar);
+  const activeSlot = useGameStore((state) => state.activeSlot);
+  const setActiveSlot = useGameStore((state) => state.setActiveSlot);
   const life = useGameStore((state) => state.life);
   const position = useGameStore((state) => state.position);
   const onGround = useGameStore((state) => state.onGround);
@@ -35,17 +37,14 @@ export const HUD: React.FC = () => {
       const slotNum = index + 1;
       const action = `HOTBAR_${slotNum}` as GameAction;
       return hotkeyManager.onActionDown(action, () => {
-        const item = HOTBAR_ITEMS[index];
-        if (item) {
-          setSelectedBlock(item.id);
-        }
+        setActiveSlot(index);
       });
     });
 
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [setSelectedBlock]);
+  }, [setActiveSlot]);
 
   // Show item label briefly when selected block changes
   useEffect(() => {
@@ -134,22 +133,36 @@ export const HUD: React.FC = () => {
 
         {/* Hotbar slots */}
         <div className="hotbar-container">
-          {HOTBAR_ITEMS.map((item, index) => {
-            const isActive = item.id === selectedBlock;
+          {Array.from({ length: 9 }).map((_, index) => {
+            const isActive = index === activeSlot;
+            const item = hotbar[index];
+            
+            // Helper to get display info for a block type
+            const displayInfo = item ? HOTBAR_ITEMS.find((h) => h.id === item.type) : null;
+            
             return (
               <div
-                key={item.id}
+                key={index}
                 className={`hotbar-slot ${isActive ? 'active' : ''}`}
-                onClick={() => setSelectedBlock(item.id)}
+                onClick={() => setActiveSlot(index)}
               >
                 <span className="hotbar-slot-key">{index + 1}</span>
-                <div
-                  className="block-preview"
-                  style={{
-                    backgroundColor: item.color,
-                    border: item.border,
-                  }}
-                ></div>
+                {item && displayInfo ? (
+                  <>
+                    <div
+                      className="block-preview"
+                      style={{
+                        backgroundColor: displayInfo.color,
+                        border: displayInfo.border,
+                      }}
+                    ></div>
+                    {item.count > 0 && gameMode !== 'creative' && (
+                      <span className="hotbar-slot-count pixel-text-sm">{item.count}</span>
+                    )}
+                  </>
+                ) : (
+                  <div className="block-preview empty"></div>
+                )}
               </div>
             );
           })}

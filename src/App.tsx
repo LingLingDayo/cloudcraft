@@ -57,6 +57,16 @@ function App() {
               gm.player.position.set(saved.player.x, saved.player.y, saved.player.z);
               gm.player.syncCamera();
             }
+            if (saved.gameMode) {
+              useGameStore.getState().setGameMode(saved.gameMode);
+            }
+            if (saved.hotbar !== undefined) {
+              useGameStore.setState({
+                hotbar: saved.hotbar,
+                activeSlot: saved.activeSlot ?? 0,
+                selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0 // 0 is BLOCK_TYPES.AIR
+              });
+            }
             // Trigger immediate render distance load
             gm.setRenderDistance(initialDistance);
           } catch (e) {
@@ -152,6 +162,9 @@ function App() {
           y: gm.player.position.y,
           z: gm.player.position.z,
         },
+        hotbar: useGameStore.getState().hotbar,
+        activeSlot: useGameStore.getState().activeSlot,
+        gameMode: useGameStore.getState().gameMode,
       };
       localStorage.setItem('minicraft_save', JSON.stringify(saveData));
     }
