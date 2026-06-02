@@ -105,6 +105,29 @@ class SoundManager {
       console.warn('Audio play failed', e);
     }
   }
+
+  public playDamage() {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(45, this.ctx.currentTime + 0.15);
+
+      gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.15);
+    } catch (e) {
+      console.warn('Audio play failed', e);
+    }
+  }
 }
 
 export const sound = new SoundManager();

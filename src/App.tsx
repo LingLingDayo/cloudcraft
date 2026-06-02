@@ -22,6 +22,9 @@ function App() {
   const [debugOverlay, setDebugOverlay] = useState<boolean>(false);
   const [debugMetrics, setDebugMetrics] = useState<DebugMetrics | null>(null);
 
+  // Survival features
+  const [isDamaged, setIsDamaged] = useState<boolean>(false);
+
   // Settings
   const [renderDistance, setRenderDistance] = useState<number>(3);
   const [fov, setFov] = useState<number>(75);
@@ -46,6 +49,12 @@ function App() {
         },
         (debugVisible) => {
           setDebugOverlay(debugVisible);
+        },
+        () => {
+          setIsDamaged(true);
+          setTimeout(() => {
+            setIsDamaged(false);
+          }, 250);
         },
         seed
       );
@@ -210,6 +219,23 @@ function App() {
       {gameState !== 'MENU' && (
         <div className="game-container">
           <canvas ref={canvasRef} className="game-canvas" />
+
+          {/* Red vignette damage overlay flash */}
+          {isDamaged && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                boxShadow: 'inset 0 0 80px rgba(239, 68, 68, 0.8)',
+                pointerEvents: 'none',
+                zIndex: 6,
+              }}
+            />
+          )}
 
           <HUD
             selectedBlock={selectedBlock}
