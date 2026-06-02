@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sound } from '../game/Sound';
-
-interface StartMenuProps {
-  onStartGame: (seed: string, renderDistance: number, fov: number, loadSave: boolean) => void;
-}
+import type { StartMenuProps } from '../types';
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [seed, setSeed] = useState<string>('');

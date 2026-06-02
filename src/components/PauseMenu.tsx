@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { sound } from '../game/Sound';
-
-interface PauseMenuProps {
-  onResume: () => void;
-  onSave: () => void;
-  onQuit: () => void;
-  renderDistance: number;
-  onRenderDistanceChange: (dist: number) => void;
-  fov: number;
-  onFovChange: (fov: number) => void;
-}
+import type { PauseMenuProps } from '../types';
 
 export const PauseMenu: React.FC<PauseMenuProps> = ({
   onResume,

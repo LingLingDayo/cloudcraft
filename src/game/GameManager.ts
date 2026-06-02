@@ -5,6 +5,7 @@ import { Controls } from './Controls';
 import { sound } from './Sound';
 import { FPSCounter } from './FPSCounter';
 import { ParticleSystem } from './Particles';
+import type { DebugMetrics } from '../types';
 
 const BLOCK_COLORS: Record<number, number> = {
   [BLOCK_TYPES.GRASS]: 0x56a032,
@@ -20,18 +21,6 @@ const BLOCK_COLORS: Record<number, number> = {
   [BLOCK_TYPES.IRON]: 0xbe825a,
   [BLOCK_TYPES.DIAMOND]: 0x5cdcfa,
 };
-
-export interface DebugMetrics {
-  fps: number;
-  chunksLoaded: number;
-  isFlying: boolean;
-  targetBlock: {
-    type: string;
-    x: number;
-    y: number;
-    z: number;
-  } | null;
-}
 
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
@@ -507,7 +496,7 @@ export class GameManager {
     return names[id] || '未知方块';
   }
 
-  public getDebugMetrics() {
+  public getDebugMetrics(): DebugMetrics {
     return {
       fps: this.fpsCounter.getFPS(),
       chunksLoaded: this.world.group.children.length / 2, // 2 meshes per chunk
