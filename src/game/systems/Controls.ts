@@ -1,17 +1,21 @@
 import * as THREE from 'three';
+import { hotkeyManager, GameAction } from './HotkeyManager';
 
 export class Controls {
   public domElement: HTMLElement;
   private camera: THREE.Camera;
 
-  public keys: Record<string, boolean> = {
-    KeyW: false,
-    KeyS: false,
-    KeyA: false,
-    KeyD: false,
-    Space: false,
-    ShiftLeft: false,
-  };
+  // Keep keys property for backwards compatibility, using getters
+  public get keys() {
+    return {
+      KeyW: hotkeyManager.isActionPressed(GameAction.MOVE_FORWARD),
+      KeyS: hotkeyManager.isActionPressed(GameAction.MOVE_BACKWARD),
+      KeyA: hotkeyManager.isActionPressed(GameAction.MOVE_LEFT),
+      KeyD: hotkeyManager.isActionPressed(GameAction.MOVE_RIGHT),
+      Space: hotkeyManager.isActionPressed(GameAction.JUMP),
+      ShiftLeft: hotkeyManager.isActionPressed(GameAction.SNEAK),
+    };
+  }
 
   public mouseSensitivity = 0.0022;
   public pitch = 0; // vertical rotation
@@ -20,64 +24,44 @@ export class Controls {
   public isLocked = false;
 
   private onLockChangeCallbacks: ((locked: boolean) => void)[] = [];
+  private unsubscribers: (() => void)[] = [];
 
   constructor(camera: THREE.Camera, domElement: HTMLElement) {
     this.camera = camera;
     this.domElement = domElement;
 
     this.initListeners();
+    this.initHotkeys();
   }
 
   private initListeners() {
-    window.addEventListener('keydown', this.onKeyDown);
-    window.addEventListener('keyup', this.onKeyUp);
-
     this.domElement.addEventListener('click', this.requestLock);
     document.addEventListener('pointerlockchange', this.onPointerLockChange);
     document.addEventListener('mousemove', this.onMouseMove);
   }
 
+  private initHotkeys() {
+    this.unsubscribers.push(
+      hotkeyManager.onActionDown(GameAction.TOGGLE_DEBUG, () => {
+        if (this.isLocked && this.onF3Pressed) this.onF3Pressed();
+      }),
+      hotkeyManager.onActionDown(GameAction.TOGGLE_FLY, () => {
+        if (this.isLocked && this.onF4Pressed) this.onF4Pressed();
+      })
+    );
+  }
+
   public dispose() {
-    window.removeEventListener('keydown', this.onKeyDown);
-    window.removeEventListener('keyup', this.onKeyUp);
     this.domElement.removeEventListener('click', this.requestLock);
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
     document.removeEventListener('mousemove', this.onMouseMove);
+    
+    // Unsubscribe hotkey listeners
+    this.unsubscribers.forEach((unsub) => unsub());
   }
 
   public onF3Pressed?: () => void;
   public onF4Pressed?: () => void;
-
-  private onKeyDown = (e: KeyboardEvent) => {
-    if (!this.isLocked) return;
-
-    if (e.key === 'F3') {
-      e.preventDefault();
-      if (this.onF3Pressed) this.onF3Pressed();
-      return;
-    }
-    if (e.key === 'F4') {
-      e.preventDefault();
-      if (this.onF4Pressed) this.onF4Pressed();
-      return;
-    }
-
-    if (e.code === 'KeyW' || e.code === 'ArrowUp') this.keys.KeyW = true;
-    if (e.code === 'KeyS' || e.code === 'ArrowDown') this.keys.KeyS = true;
-    if (e.code === 'KeyA' || e.code === 'ArrowLeft') this.keys.KeyA = true;
-    if (e.code === 'KeyD' || e.code === 'ArrowRight') this.keys.KeyD = true;
-    if (e.code === 'Space') this.keys.Space = true;
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.keys.ShiftLeft = true;
-  };
-
-  private onKeyUp = (e: KeyboardEvent) => {
-    if (e.code === 'KeyW' || e.code === 'ArrowUp') this.keys.KeyW = false;
-    if (e.code === 'KeyS' || e.code === 'ArrowDown') this.keys.KeyS = false;
-    if (e.code === 'KeyA' || e.code === 'ArrowLeft') this.keys.KeyA = false;
-    if (e.code === 'KeyD' || e.code === 'ArrowRight') this.keys.KeyD = false;
-    if (e.code === 'Space') this.keys.Space = false;
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') this.keys.ShiftLeft = false;
-  };
 
   private requestLock = () => {
     if (!this.isLocked) {
@@ -113,13 +97,19 @@ export class Controls {
     this.onLockChangeCallbacks.push(cb);
   }
 
+  public isActionPressed(action: GameAction): boolean {
+    return hotkeyManager.isActionPressed(action);
+  }
+
   public getMovementDirection(): THREE.Vector3 {
     const direction = new THREE.Vector3();
 
     if (!this.isLocked) return direction;
 
-    const zMove = (this.keys.KeyW ? -1 : 0) + (this.keys.KeyS ? 1 : 0);
-    const xMove = (this.keys.KeyA ? -1 : 0) + (this.keys.KeyD ? 1 : 0);
+    const zMove = (hotkeyManager.isActionPressed(GameAction.MOVE_FORWARD) ? -1 : 0) + 
+                  (hotkeyManager.isActionPressed(GameAction.MOVE_BACKWARD) ? 1 : 0);
+    const xMove = (hotkeyManager.isActionPressed(GameAction.MOVE_LEFT) ? -1 : 0) + 
+                  (hotkeyManager.isActionPressed(GameAction.MOVE_RIGHT) ? 1 : 0);
 
     if (xMove === 0 && zMove === 0) return direction;
 
