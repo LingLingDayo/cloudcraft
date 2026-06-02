@@ -1,0 +1,72 @@
+.devStats {
+  font-family: monospace;
+  font-size: 12px;
+
+  .devTitle {
+    font-weight: bold;
+    color: #f8fafc;
+    margin-bottom: 6px;
+  }
+
+  .devDetails {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+}
+
+.debugPanel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 16px 20px;
+  width: 280px;
+  font-size: 12px;
+  color: #e2e8f0;
+  font-family: monospace;
+  text-align: left;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .debugTitle {
+    font-weight: bold;
+    color: #a5b4fc;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+  }
+
+  .chunkCount {
+    color: #fca5a5;
+  }
+
+  .targetBlockSection {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 6px;
+    margin-top: 2px;
+
+    .label {
+      color: #94a3b8;
+    }
+
+    .detail {
+      padding-left: 8px;
+      margin-top: 2px;
+    }
+
+    .blockName {
+      color: #fcd34d;
+    }
+
+    .blockCoords {
+      color: #cbd5e1;
+    }
+
+    .noBlock {
+      color: #475569;
+      margin-left: 6px;
+    }
+  }
+}

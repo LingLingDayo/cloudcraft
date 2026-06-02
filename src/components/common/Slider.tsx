@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './Slider.module.scss';
 
 interface SliderProps {
   label: string;
@@ -22,15 +23,8 @@ export const Slider: React.FC<SliderProps> = ({
   containerStyle = {},
 }) => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', ...containerStyle }}>
-      <label
-        style={{
-          fontSize: '12px',
-          color: '#94a3b8',
-          fontWeight: 'bold',
-          ...labelStyle,
-        }}
-      >
+    <div className={styles.container} style={containerStyle}>
+      <label className={styles.label} style={labelStyle}>
         {label}
       </label>
       <input
@@ -38,10 +32,11 @@ export const Slider: React.FC<SliderProps> = ({
         min={min}
         max={max}
         step={step}
-        style={{ accentColor: '#818cf8', cursor: 'pointer' }}
+        className={styles.input}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
       />
     </div>
   );
 };
+

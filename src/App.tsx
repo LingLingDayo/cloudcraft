@@ -4,6 +4,7 @@ import { StartMenu } from './components/views/StartMenu';
 import { HUD } from './components/views/HUD';
 import { PauseMenu } from './components/views/PauseMenu';
 import { useGameStore } from './store/useGameStore';
+import styles from './App.module.scss';
 
 function App() {
   const gameState = useGameStore((state) => state.gameState);
@@ -152,7 +153,7 @@ function App() {
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <div className={styles.appContainer}>
       {gameState === 'MENU' && <StartMenu onStartGame={handleStartGame} />}
 
       {gameState !== 'MENU' && (
@@ -161,19 +162,7 @@ function App() {
 
           {/* Red vignette damage overlay flash */}
           {isDamaged && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
-                backgroundColor: 'rgba(239, 68, 68, 0.25)',
-                boxShadow: 'inset 0 0 80px rgba(239, 68, 68, 0.8)',
-                pointerEvents: 'none',
-                zIndex: 6,
-              }}
-            />
+            <div className={styles.damageOverlay} />
           )}
 
           <HUD />
@@ -192,3 +181,4 @@ function App() {
 }
 
 export default App;
+
