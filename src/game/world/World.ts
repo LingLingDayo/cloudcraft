@@ -448,15 +448,57 @@ export class World {
     this.textureAtlas.dispose();
   }
 
-  // Serialize world to JSON (only saving modified blocks to keep save size small)
+  // Compress Uint8Array block data using Run-Length Encoding (RLE) to keep save size minimal
+  private compressRLE(data: Uint8Array): string {
+    const parts: string[] = [];
+    if (data.length === 0) return '';
+    let count = 1;
+    let current = data[0];
+    for (let i = 1; i < data.length; i++) {
+      if (data[i] === current) {
+        count++;
+      } else {
+        parts.push(`${current}_${count}`);
+        current = data[i];
+        count = 1;
+      }
+    }
+    parts.push(`${current}_${count}`);
+    return parts.join(',');
+  }
+
+  // Decompress RLE compressed string back to Uint8Array of fixed length
+  private decompressRLE(rleStr: string, length: number): Uint8Array {
+    const result = new Uint8Array(length);
+    const parts = rleStr.split(',');
+    let idx = 0;
+    for (const part of parts) {
+      if (!part) continue;
+      const separatorIdx = part.indexOf('_');
+      if (separatorIdx === -1) {
+        // Fallback for single numbers in case of corruption
+        const val = Number(part);
+        if (idx < length) {
+          result[idx++] = val;
+        }
+        continue;
+      }
+      const val = Number(part.substring(0, separatorIdx));
+      const count = Number(part.substring(separatorIdx + 1));
+      for (let i = 0; i < count; i++) {
+        if (idx < length) {
+          result[idx++] = val;
+        }
+      }
+    }
+    return result;
+  }
+
+  // Serialize world to JSON (using RLE compression to fit within browser storage quota)
   public saveWorld(): string {
-    // We can compare against procedurally generated blocks to only save modifications
-    // For simplicity, let's just save the loaded chunks list or a diff map
-    // Let's implement a simple chunk save
     const serializedChunks: Record<string, string> = {};
     for (const [key, bytes] of this.chunks.entries()) {
-      // Compress Uint8Array to string representation
-      serializedChunks[key] = Array.from(bytes).join(',');
+      serializedChunks[key] = this.compressRLE(bytes);
     }
     return JSON.stringify({
       seed: this.seed,
@@ -464,7 +506,7 @@ export class World {
     });
   }
 
-  // Load world from JSON
+  // Load world from JSON (supports both modern RLE compressed and legacy flat CSV formatted saves)
   public loadWorld(saveStr: string) {
     try {
       const saved = JSON.parse(saveStr);
@@ -484,9 +526,17 @@ export class World {
         this.chunks.clear();
 
         // Restore chunk data
+        const expectedLength = CHUNK_SIZE_X * CHUNK_SIZE_Z * CHUNK_SIZE_Y;
         for (const [key, csv] of Object.entries(saved.chunks)) {
-          const numbers = (csv as string).split(',').map(Number);
-          this.chunks.set(key, new Uint8Array(numbers));
+          const csvStr = csv as string;
+          if (csvStr.includes('_')) {
+            // Modern compressed format
+            this.chunks.set(key, this.decompressRLE(csvStr, expectedLength));
+          } else {
+            // Legacy flat CSV format
+            const numbers = csvStr.split(',').map(Number);
+            this.chunks.set(key, new Uint8Array(numbers));
+          }
         }
       }
     } catch (e) {
