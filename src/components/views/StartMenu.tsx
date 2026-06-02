@@ -3,6 +3,9 @@ import type { StartMenuProps } from '../../types';
 import { Button } from '../common/Button';
 import { Slider } from '../common/Slider';
 import { useGameStore } from '../../store/useGameStore';
+import styles from './StartMenu.module.scss';
+
+const SLIDER_CONTAINER_STYLE = { flex: 1 };
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 999999).toString());
@@ -16,40 +19,21 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
 
   return (
     <div className="menu-bg">
-      <div
-        className="glass-panel"
-        style={{
-          width: '460px',
-          padding: '40px',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-        }}
-      >
+      <div className={`glass-panel ${styles.panel}`}>
         <div>
           {/* Pulsing Pixel Title */}
-          <h1
-            className="pixel-text"
-            style={{
-              fontSize: '36px',
-              color: '#818cf8',
-              margin: '0 0 10px 0',
-              letterSpacing: '2px',
-              animation: 'pulse 2s infinite alternate',
-            }}
-          >
+          <h1 className={`pixel-text ${styles.title}`}>
             MINICRAFT
           </h1>
-          <p style={{ color: '#94a3b8', fontSize: '14px', margin: 0 }}>
+          <p className={styles.subtitle}>
             轻量版 3D 浏览器“我的世界”
           </p>
         </div>
 
         {/* Form Inputs Container */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold' }}>
+        <div className={styles.formContainer}>
+          <div className={styles.inputGroup}>
+            <label className={styles.inputLabel}>
               世界种子 (Seed)
             </label>
             <input
@@ -61,14 +45,14 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div className={styles.slidersRow}>
             <Slider
               label={`视距: ${renderDistance} 区块`}
               min={2}
               max={5}
               value={renderDistance}
               onChange={setRenderDistance}
-              containerStyle={{ flex: 1 }}
+              containerStyle={SLIDER_CONTAINER_STYLE}
             />
 
             <Slider
@@ -78,13 +62,13 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
               step={5}
               value={fov}
               onChange={setFov}
-              containerStyle={{ flex: 1 }}
+              containerStyle={SLIDER_CONTAINER_STYLE}
             />
           </div>
         </div>
 
         {/* Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+        <div className={styles.buttonContainer}>
           <Button variant="primary" onClick={() => handleStart(false)}>
             <span>创建新世界</span>
           </Button>
@@ -93,20 +77,18 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             variant="secondary"
             disabled={!hasSave}
             onClick={() => handleStart(true)}
-            style={{
-              opacity: hasSave ? 1 : 0.4,
-              cursor: hasSave ? 'pointer' : 'not-allowed',
-            }}
+            className={styles.loadSaveButton}
           >
             载入上次存档
           </Button>
         </div>
 
         {/* Footer */}
-        <div style={{ fontSize: '11px', color: '#475569', marginTop: '10px' }} className="pixel-text-sm">
+        <div className={`pixel-text-sm ${styles.footer}`}>
           WASD 移动 | 鼠标视口旋转 | 左键破坏 | 右键放置 | 1-9 选择方块
         </div>
       </div>
     </div>
   );
 };
+

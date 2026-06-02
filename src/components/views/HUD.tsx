@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BLOCK_TYPES } from '../../game/world/World';
 import { useGameStore } from '../../store/useGameStore';
+import styles from './HUD.module.scss';
 
 const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
@@ -78,14 +79,14 @@ export const HUD: React.FC = () => {
 
       {/* Top Left Status Info */}
       {import.meta.env.DEV && (
-        <div className="hud-stats glass-panel">
-          <div style={{ fontWeight: 'bold', color: '#f8fafc', marginBottom: '6px' }} className="pixel-text-sm">
+        <div className={`hud-stats glass-panel ${styles.devStats}`}>
+          <div className={`pixel-text-sm ${styles.devTitle}`}>
             MINICRAFT (DEV)
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+          <div>
             XYZ: {fx} / {fy} / {fz}
           </div>
-          <div style={{ fontFamily: 'monospace', fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+          <div className={styles.devDetails}>
             Ground: {onGround ? 'YES' : 'NO'} | Water: {inWater ? 'YES' : 'NO'}
           </div>
         </div>
@@ -139,41 +140,15 @@ export const HUD: React.FC = () => {
       </div>
       {/* Top Right Debug Dashboard (F3) */}
       {debugOverlay && debugMetrics && (
-        <div
-          className="glass-panel"
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            padding: '16px 20px',
-            width: '280px',
-            fontSize: '12px',
-            color: '#e2e8f0',
-            fontFamily: 'monospace',
-            textAlign: 'left',
-            pointerEvents: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 'bold',
-              color: '#a5b4fc',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              paddingBottom: '4px',
-              marginBottom: '4px',
-            }}
-            className="pixel-text-sm"
-          >
+        <div className={`glass-panel ${styles.debugPanel}`}>
+          <div className={`pixel-text-sm ${styles.debugTitle}`}>
             调试控制台 (F3)
           </div>
           <div>
             FPS: <span style={{ color: debugMetrics.fps >= 50 ? '#4ade80' : '#fb7185', fontWeight: 'bold' }}>{debugMetrics.fps}</span>
           </div>
           <div>
-            已载入区块: <span style={{ color: '#fca5a5' }}>{debugMetrics.chunksLoaded}</span>
+            已载入区块: <span className={styles.chunkCount}>{debugMetrics.chunksLoaded}</span>
           </div>
           <div>
             创造飞行模式 (F4):{' '}
@@ -181,15 +156,15 @@ export const HUD: React.FC = () => {
               {debugMetrics.isFlying ? '开启 (飞行中)' : '关闭'}
             </span>
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', marginTop: '2px' }}>
-            <span style={{ color: '#94a3b8' }}>指向方块:</span>
+          <div className={styles.targetBlockSection}>
+            <span className={styles.label}>指向方块:</span>
             {debugMetrics.targetBlock ? (
-              <div style={{ paddingLeft: '8px', marginTop: '2px' }}>
-                <div>名称: <span style={{ color: '#fcd34d' }}>{debugMetrics.targetBlock.type}</span></div>
-                <div>坐标: <span style={{ color: '#cbd5e1' }}>({debugMetrics.targetBlock.x}, {debugMetrics.targetBlock.y}, {debugMetrics.targetBlock.z})</span></div>
+              <div className={styles.detail}>
+                <div>名称: <span className={styles.blockName}>{debugMetrics.targetBlock.type}</span></div>
+                <div>坐标: <span className={styles.blockCoords}>({debugMetrics.targetBlock.x}, {debugMetrics.targetBlock.y}, {debugMetrics.targetBlock.z})</span></div>
               </div>
             ) : (
-              <span style={{ color: '#475569', marginLeft: '6px' }}>无</span>
+              <span className={styles.noBlock}>无</span>
             )}
           </div>
         </div>
@@ -197,3 +172,4 @@ export const HUD: React.FC = () => {
     </div>
   );
 };
+
