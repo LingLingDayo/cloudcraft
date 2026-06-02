@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, BLOCK_TYPES } from './World';
+import { World, BLOCK_TYPES } from '../world/World';
 
 export class Physics {
   private world: World;

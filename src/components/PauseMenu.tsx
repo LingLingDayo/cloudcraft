@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { sound } from '../game/Sound';
+import { sound } from '../game/systems/Sound';
 import type { PauseMenuProps } from '../types';
 
 export const PauseMenu: React.FC<PauseMenuProps> = ({

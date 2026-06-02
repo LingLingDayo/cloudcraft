@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { BLOCK_TYPES } from '../game/World';
+import { BLOCK_TYPES } from '../game/world/World';
 import type { HUDProps } from '../types';
 
-export const HOTBAR_ITEMS = [
+const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
   { id: BLOCK_TYPES.DIRT, name: '泥土', color: '#825a3c', border: 'none' },
   { id: BLOCK_TYPES.STONE, name: '石头', color: '#787878', border: 'none' },
@@ -25,7 +25,6 @@ export const HUD: React.FC<HUDProps> = ({
   debugMetrics = null,
 }) => {
   const [activeLabel, setActiveLabel] = useState<string>('');
-  const [labelTimeout, setLabelTimeout] = useState<number | null>(null);
 
   // Keyboard 1-9 number row selection
   useEffect(() => {
@@ -52,17 +51,18 @@ export const HUD: React.FC<HUDProps> = ({
   useEffect(() => {
     const activeItem = HOTBAR_ITEMS.find((item) => item.id === selectedBlock);
     if (activeItem) {
-      setActiveLabel(activeItem.name);
-
-      if (labelTimeout) {
-        window.clearTimeout(labelTimeout);
-      }
+      const frameId = requestAnimationFrame(() => {
+        setActiveLabel(activeItem.name);
+      });
 
       const timeout = window.setTimeout(() => {
         setActiveLabel('');
       }, 2000);
 
-      setLabelTimeout(timeout);
+      return () => {
+        cancelAnimationFrame(frameId);
+        window.clearTimeout(timeout);
+      };
     }
   }, [selectedBlock]);
 

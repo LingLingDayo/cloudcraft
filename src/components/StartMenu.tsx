@@ -1,21 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { sound } from '../game/Sound';
+import React, { useState } from 'react';
+import { sound } from '../game/systems/Sound';
 import type { StartMenuProps } from '../types';
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
-  const [seed, setSeed] = useState<string>('');
+  const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 999999).toString());
   const [renderDistance, setRenderDistance] = useState<number>(3);
   const [fov, setFov] = useState<number>(75);
-  const [hasSave, setHasSave] = useState<boolean>(false);
-
-  useEffect(() => {
-    // Check if there is an existing world save
-    const save = localStorage.getItem('minicraft_save');
-    setHasSave(!!save);
-    
-    // Seed with a random value on mount
-    setSeed(Math.floor(Math.random() * 999999).toString());
-  }, []);
+  const [hasSave] = useState<boolean>(() => !!localStorage.getItem('minicraft_save'));
 
   const handleStart = (loadSave: boolean) => {
     sound.playClick();
