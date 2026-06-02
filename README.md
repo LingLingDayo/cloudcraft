@@ -1,73 +1,64 @@
-# React + TypeScript + Vite
+# Minicraft 3D
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Minicraft 是一个运行在浏览器中的轻量级 3D 像素沙盒游戏项目，基于 React 19、Three.js、TypeScript、Zustand 和 Sass 模块化构建。
 
-Currently, two official plugins are available:
+本项目实现了类似《我的世界 (Minecraft)》的核心基础玩法，并结合了前端的现代工程化实践与渲染性能优化。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🎮 核心特性
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **3D 噪波地形生成**：基于自定义的 3D 噪波（Simplex Noise）算法，支持随机种子生成起伏山峦与平原地形。
+*   **渲染性能优化**：
+    *   **纹理图册（Texture Atlas）合批**：将所有方块材质拼合在一张纹理图上，减少 GPU 渲染开销。
+    *   **区块网格合并（Chunk Mesh Merge）**：按区块（Chunk）合并网格面，将成千上万的方块渲染压缩至极少的 Draw Calls，支持方块破坏与放置时动态重建 Chunk 网格。
+*   **物理引擎与碰撞检测**：自研轻量级物理系统，支持重力感应及基于 AABB（轴对齐包围盒）的实体碰撞检测，实现顺畅的墙体阻挡和站立效果。
+*   **交互反馈与合成音效**：
+    *   **动态粒子效果**：破坏方块时产生对应方块材质的散落粒子。
+    *   **Web Audio 音效系统**：内置轻量音效合成器，实时合成行走、放置、破坏音效，无需依赖外部大体积音频文件。
+*   **现代 React UI 交互**：采用毛玻璃质感与像素风相融合的现代化 UI，包含开始菜单、配置面板（视场角 FOV、渲染距离等）、HUD 快捷栏、红幕伤害反馈以及游戏暂停菜单。
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🛠️ 技术栈
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+*   **核心引擎**：Three.js (WebGL)
+*   **界面与视图**：React 19 & Sass / Scss Modules
+*   **全局状态管理**：Zustand
+*   **工程构建**：Vite & TypeScript
+*   **单元测试**：Vitest & Testing Library
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🚀 快速开始
+
+### 1. 安装依赖
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. 启动开发服务器
+```bash
+npm run dev
 ```
+启动后在浏览器中打开命令行输出的本地服务地址（默认 `http://localhost:5173`）即可开始游戏。
+
+### 3. 项目构建
+编译 TypeScript 并打包生产环境静态资源：
+```bash
+npm run build
+```
+
+### 4. 运行单元测试
+运行物理、噪波算法等核心计算逻辑的单元测试：
+```bash
+npm run test      # 交互式测试
+npm run test:run  # 单次运行测试
+```
+
+---
+
+## 📝 开发者与 AI 协作说明
+
+本项目的架构设计遵循 **数据/物理计算与 UI 视图严格解耦** 的原则。
+如果您是参与项目开发的 AI 助手（Agent），在编写代码或调整逻辑前，**请务必先查阅 [AGENTS.md](file:///h:/Game/AI/minicraft/AGENTS.md)**，遵循其中关于状态同步原则、样式命名规约、类型定义及单元测试的开发指导。
