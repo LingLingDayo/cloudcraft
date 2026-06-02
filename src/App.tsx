@@ -1,12 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { GameManager } from './game/GameManager';
-import type { DebugMetrics } from './game/GameManager';
 import { StartMenu } from './components/StartMenu';
 import { HUD } from './components/HUD';
 import { PauseMenu } from './components/PauseMenu';
 import { BLOCK_TYPES } from './game/World';
-
-type GameState = 'MENU' | 'PLAYING' | 'PAUSED';
+import type { GameState, DebugMetrics } from './types';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>('MENU');

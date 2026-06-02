@@ -1,17 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BLOCK_TYPES } from '../game/World';
-import type { DebugMetrics } from '../game/GameManager';
-
-interface HUDProps {
-  selectedBlock: number;
-  onSelectBlock: (blockType: number) => void;
-  life: number;
-  position: { x: number; y: number; z: number };
-  onGround: boolean;
-  inWater: boolean;
-  debugOverlay?: boolean;
-  debugMetrics?: DebugMetrics | null;
-}
+import type { HUDProps } from '../types';
 
 export const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
