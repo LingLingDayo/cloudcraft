@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { BLOCK_TYPES } from '../game/world/World';
-import type { HUDProps } from '../types';
+import { BLOCK_TYPES } from '../../game/world/World';
+import type { HUDProps } from '../../types';
 
 const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },

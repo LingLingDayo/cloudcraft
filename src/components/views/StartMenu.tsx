@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { sound } from '../game/systems/Sound';
-import type { StartMenuProps } from '../types';
+import type { StartMenuProps } from '../../types';
+import { Button } from '../common/Button';
+import { Slider } from '../common/Slider';
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 999999).toString());
@@ -9,7 +10,6 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [hasSave] = useState<boolean>(() => !!localStorage.getItem('minicraft_save'));
 
   const handleStart = (loadSave: boolean) => {
-    sound.playClick();
     onStartGame(seed, renderDistance, fov, loadSave);
   };
 
@@ -61,46 +61,35 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
           </div>
 
           <div style={{ display: 'flex', gap: '16px' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold' }}>
-                视距: {renderDistance} 区块
-              </label>
-              <input
-                type="range"
-                min="2"
-                max="5"
-                step="1"
-                style={{ accentColor: '#818cf8', cursor: 'pointer' }}
-                value={renderDistance}
-                onChange={(e) => setRenderDistance(parseInt(e.target.value, 10))}
-              />
-            </div>
+            <Slider
+              label={`视距: ${renderDistance} 区块`}
+              min={2}
+              max={5}
+              value={renderDistance}
+              onChange={setRenderDistance}
+              containerStyle={{ flex: 1 }}
+            />
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 'bold' }}>
-                视野范围 (FOV): {fov}°
-              </label>
-              <input
-                type="range"
-                min="60"
-                max="90"
-                step="5"
-                style={{ accentColor: '#818cf8', cursor: 'pointer' }}
-                value={fov}
-                onChange={(e) => setFov(parseInt(e.target.value, 10))}
-              />
-            </div>
+            <Slider
+              label={`视野范围 (FOV): ${fov}°`}
+              min={60}
+              max={90}
+              step={5}
+              value={fov}
+              onChange={setFov}
+              containerStyle={{ flex: 1 }}
+            />
           </div>
         </div>
 
         {/* Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-          <button className="btn-primary" onClick={() => handleStart(false)}>
+          <Button variant="primary" onClick={() => handleStart(false)}>
             <span>创建新世界</span>
-          </button>
+          </Button>
           
-          <button
-            className="btn-secondary"
+          <Button
+            variant="secondary"
             disabled={!hasSave}
             onClick={() => handleStart(true)}
             style={{
@@ -109,7 +98,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             }}
           >
             载入上次存档
-          </button>
+          </Button>
         </div>
 
         {/* Footer */}
