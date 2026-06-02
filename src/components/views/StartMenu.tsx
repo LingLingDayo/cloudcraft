@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import type { StartMenuProps } from '../../types';
 import { Button } from '../common/Button';
 import { Slider } from '../common/Slider';
+import { useGameStore } from '../../store/useGameStore';
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 999999).toString());
-  const [renderDistance, setRenderDistance] = useState<number>(3);
-  const [fov, setFov] = useState<number>(75);
+  const [renderDistance, setRenderDistance] = useState<number>(() => useGameStore.getState().renderDistance);
+  const [fov, setFov] = useState<number>(() => useGameStore.getState().fov);
   const [hasSave] = useState<boolean>(() => !!localStorage.getItem('minicraft_save'));
 
   const handleStart = (loadSave: boolean) => {

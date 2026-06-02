@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BLOCK_TYPES } from '../../game/world/World';
-import type { HUDProps } from '../../types';
+import { useGameStore } from '../../store/useGameStore';
 
 const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
@@ -14,17 +14,17 @@ const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.DIAMOND, name: '钻石矿', color: '#5cdcfa', border: '1.5px solid #2db4d2' },
 ];
 
-export const HUD: React.FC<HUDProps> = ({
-  selectedBlock,
-  onSelectBlock,
-  life,
-  position,
-  onGround,
-  inWater,
-  debugOverlay = false,
-  debugMetrics = null,
-}) => {
+export const HUD: React.FC = () => {
   const [activeLabel, setActiveLabel] = useState<string>('');
+
+  const selectedBlock = useGameStore((state) => state.selectedBlock);
+  const setSelectedBlock = useGameStore((state) => state.setSelectedBlock);
+  const life = useGameStore((state) => state.life);
+  const position = useGameStore((state) => state.position);
+  const onGround = useGameStore((state) => state.onGround);
+  const inWater = useGameStore((state) => state.inWater);
+  const debugOverlay = useGameStore((state) => state.debugOverlay);
+  const debugMetrics = useGameStore((state) => state.debugMetrics);
 
   // Keyboard 1-9 number row selection
   useEffect(() => {
@@ -35,7 +35,7 @@ export const HUD: React.FC<HUDProps> = ({
         if (num >= 1 && num <= 9) {
           const item = HOTBAR_ITEMS[num - 1];
           if (item) {
-            onSelectBlock(item.id);
+            setSelectedBlock(item.id);
           }
         }
       }
@@ -45,7 +45,7 @@ export const HUD: React.FC<HUDProps> = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onSelectBlock]);
+  }, [setSelectedBlock]);
 
   // Show item label briefly when selected block changes
   useEffect(() => {
@@ -122,7 +122,7 @@ export const HUD: React.FC<HUDProps> = ({
               <div
                 key={item.id}
                 className={`hotbar-slot ${isActive ? 'active' : ''}`}
-                onClick={() => onSelectBlock(item.id)}
+                onClick={() => setSelectedBlock(item.id)}
               >
                 <span className="hotbar-slot-key">{index + 1}</span>
                 <div

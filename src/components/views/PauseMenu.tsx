@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import type { PauseMenuProps } from '../../types';
 import { Button } from '../common/Button';
 import { Slider } from '../common/Slider';
+import { useGameStore } from '../../store/useGameStore';
 
 export const PauseMenu: React.FC<PauseMenuProps> = ({
   onResume,
   onSave,
   onQuit,
-  renderDistance,
-  onRenderDistanceChange,
-  fov,
-  onFovChange,
 }) => {
   const [saveStatus, setSaveStatus] = useState<string>('保存世界');
+  
+  const renderDistance = useGameStore((state) => state.renderDistance);
+  const setRenderDistance = useGameStore((state) => state.setRenderDistance);
+  const fov = useGameStore((state) => state.fov);
+  const setFov = useGameStore((state) => state.setFov);
 
   const handleSave = () => {
     onSave();
@@ -75,7 +77,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
             min={2}
             max={5}
             value={renderDistance}
-            onChange={onRenderDistanceChange}
+            onChange={setRenderDistance}
             labelStyle={{ fontSize: '11px' }}
             containerStyle={{ gap: '4px' }}
           />
@@ -86,7 +88,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
             max={90}
             step={5}
             value={fov}
-            onChange={onFovChange}
+            onChange={setFov}
             labelStyle={{ fontSize: '11px' }}
             containerStyle={{ gap: '4px' }}
           />

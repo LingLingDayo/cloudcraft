@@ -1,31 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { GameManager } from './game/core/GameManager';
 import { StartMenu } from './components/views/StartMenu';
 import { HUD } from './components/views/HUD';
 import { PauseMenu } from './components/views/PauseMenu';
-import { BLOCK_TYPES } from './game/world/World';
-import type { GameState, DebugMetrics } from './types';
+import { useGameStore } from './store/useGameStore';
 
 function App() {
-  const [gameState, setGameState] = useState<GameState>('MENU');
-  
-  // Game metrics synced to React for HUD
-  const [selectedBlock, setSelectedBlock] = useState<number>(BLOCK_TYPES.GRASS);
-  const [life, setLife] = useState<number>(10);
-  const [position, setPosition] = useState<{ x: number; y: number; z: number }>({ x: 8.5, y: 40, z: 8.5 });
-  const [onGround, setOnGround] = useState<boolean>(false);
-  const [inWater, setInWater] = useState<boolean>(false);
-
-  // Debug panel
-  const [debugOverlay, setDebugOverlay] = useState<boolean>(false);
-  const [debugMetrics, setDebugMetrics] = useState<DebugMetrics | null>(null);
-
-  // Survival features
-  const [isDamaged, setIsDamaged] = useState<boolean>(false);
-
-  // Settings
-  const [renderDistance, setRenderDistance] = useState<number>(3);
-  const [fov, setFov] = useState<number>(75);
+  const gameState = useGameStore((state) => state.gameState);
+  const setGameState = useGameStore((state) => state.setGameState);
+  const selectedBlock = useGameStore((state) => state.selectedBlock);
+  const isDamaged = useGameStore((state) => state.isDamaged);
+  const renderDistance = useGameStore((state) => state.renderDistance);
+  const setRenderDistance = useGameStore((state) => state.setRenderDistance);
+  const fov = useGameStore((state) => state.fov);
+  const setFov = useGameStore((state) => state.setFov);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
@@ -44,23 +32,8 @@ function App() {
       const initialDistance = params?.renderDistance || 3;
       const initialFov = params?.fov || 75;
 
-      // Create new GameManager
-      const gm = new GameManager(
-        canvasRef.current,
-        (paused) => {
-          setGameState(paused ? 'PAUSED' : 'PLAYING');
-        },
-        (debugVisible) => {
-          setDebugOverlay(debugVisible);
-        },
-        () => {
-          setIsDamaged(true);
-          setTimeout(() => {
-            setIsDamaged(false);
-          }, 250);
-        },
-        seed
-      );
+      // Create new GameManager without UI callbacks (handled via Zustand directly)
+      const gm = new GameManager(canvasRef.current, seed);
 
       // Apply initial settings
       gm.setRenderDistance(initialDistance);
@@ -106,33 +79,27 @@ function App() {
     }
   }, [selectedBlock]);
 
-  // Synchronize player coordinates and states to React at low-frequency (100ms)
-  // to maximize game thread FPS performance
+  // Synchronize render distance to GameManager and activeParamsRef
   useEffect(() => {
-    let interval: number | null = null;
-    if (gameState === 'PLAYING') {
-      interval = window.setInterval(() => {
-        const gm = gameManagerRef.current;
-        if (gm) {
-          setPosition({
-            x: gm.player.position.x,
-            y: gm.player.position.y,
-            z: gm.player.position.z,
-          });
-          setOnGround(gm.player.state.onGround);
-          setInWater(gm.player.state.inWater);
-          setLife(gm.player.life);
-
-          if (gm.debugOverlayVisible) {
-            setDebugMetrics(gm.getDebugMetrics());
-          }
-        }
-      }, 100);
+    const gm = gameManagerRef.current;
+    if (gm) {
+      gm.setRenderDistance(renderDistance);
     }
-    return () => {
-      if (interval) window.clearInterval(interval);
-    };
-  }, [gameState]);
+    if (activeParamsRef.current) {
+      activeParamsRef.current.renderDistance = renderDistance;
+    }
+  }, [renderDistance]);
+
+  // Synchronize fov to GameManager and activeParamsRef
+  useEffect(() => {
+    const gm = gameManagerRef.current;
+    if (gm) {
+      gm.setFov(fov);
+    }
+    if (activeParamsRef.current) {
+      activeParamsRef.current.fov = fov;
+    }
+  }, [fov]);
 
   // Start game handler
   const handleStartGame = (
@@ -184,36 +151,6 @@ function App() {
     setGameState('MENU');
   };
 
-  const handleSelectBlock = (blockType: number) => {
-    setSelectedBlock(blockType);
-    const gm = gameManagerRef.current;
-    if (gm) {
-      gm.player.selectedBlockType = blockType;
-    }
-  };
-
-  const handleRenderDistanceChange = (dist: number) => {
-    setRenderDistance(dist);
-    if (activeParamsRef.current) {
-      activeParamsRef.current.renderDistance = dist;
-    }
-    const gm = gameManagerRef.current;
-    if (gm) {
-      gm.setRenderDistance(dist);
-    }
-  };
-
-  const handleFovChange = (newFov: number) => {
-    setFov(newFov);
-    if (activeParamsRef.current) {
-      activeParamsRef.current.fov = newFov;
-    }
-    const gm = gameManagerRef.current;
-    if (gm) {
-      gm.setFov(newFov);
-    }
-  };
-
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       {gameState === 'MENU' && <StartMenu onStartGame={handleStartGame} />}
@@ -239,16 +176,7 @@ function App() {
             />
           )}
 
-          <HUD
-            selectedBlock={selectedBlock}
-            onSelectBlock={handleSelectBlock}
-            life={life}
-            position={position}
-            onGround={onGround}
-            inWater={inWater}
-            debugOverlay={debugOverlay}
-            debugMetrics={debugMetrics}
-          />
+          <HUD />
         </div>
       )}
 
@@ -257,10 +185,6 @@ function App() {
           onResume={handleResume}
           onSave={handleSave}
           onQuit={handleQuit}
-          renderDistance={renderDistance}
-          onRenderDistanceChange={handleRenderDistanceChange}
-          fov={fov}
-          onFovChange={handleFovChange}
         />
       )}
     </div>

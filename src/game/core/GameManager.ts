@@ -7,6 +7,7 @@ import { FPSCounter } from './FPSCounter';
 import { ParticleSystem } from '../systems/Particles';
 import { Player } from '../entities/Player';
 import type { DebugMetrics } from '../../types';
+import { useGameStore } from '../../store/useGameStore';
 
 const BLOCK_COLORS: Record<number, number> = {
   [BLOCK_TYPES.GRASS]: 0x56a032,
@@ -36,9 +37,8 @@ export class GameManager {
   private animationId: number | null = null;
   private lastTime = 0;
 
-  // Game state UI callbacks
-  private onPauseStateChange: (paused: boolean) => void;
-  private onDebugOverlayToggle?: (visible: boolean) => void;
+  // UI update throttling
+  private lastUiUpdateTime = 0;
 
   // Day-Night cycle properties
   private gameTime = 60; // Start at 60s (noon)
@@ -59,19 +59,12 @@ export class GameManager {
 
   // Particles & Damage Hook
   public particles!: ParticleSystem;
-  private onTakeDamage?: () => void;
 
   constructor(
     canvas: HTMLCanvasElement,
-    onPauseStateChange: (paused: boolean) => void,
-    onDebugOverlayToggle: (visible: boolean) => void,
-    onTakeDamage: () => void,
     seed: string = 'minicraft'
   ) {
     this.canvas = canvas;
-    this.onPauseStateChange = onPauseStateChange;
-    this.onDebugOverlayToggle = onDebugOverlayToggle;
-    this.onTakeDamage = onTakeDamage;
 
     this.initThree();
     this.initGame(seed);
@@ -147,19 +140,22 @@ export class GameManager {
 
     // Bind pause trigger when pointer lock changes
     this.controls.addLockChangeListener((locked) => {
-      this.onPauseStateChange(!locked);
+      useGameStore.getState().setGameState(locked ? 'PLAYING' : 'PAUSED');
     });
 
     // Initialize Player
-    this.player = new Player(this.camera, this.onTakeDamage);
+    this.player = new Player(this.camera, () => {
+      useGameStore.getState().setIsDamaged(true);
+      setTimeout(() => {
+        useGameStore.getState().setIsDamaged(false);
+      }, 250);
+    });
 
     // Setup F3 & F4 triggers
     this.controls.onF3Pressed = () => {
       this.debugOverlayVisible = !this.debugOverlayVisible;
       sound.playClick();
-      if (this.onDebugOverlayToggle) {
-        this.onDebugOverlayToggle(this.debugOverlayVisible);
-      }
+      useGameStore.getState().setDebugOverlay(this.debugOverlayVisible);
     };
 
     this.controls.onF4Pressed = () => {
@@ -397,6 +393,25 @@ export class GameManager {
 
       // Trace targeting selection outline
       this.updateTargetedBlock();
+
+      // UI update throttling (100ms)
+      const now = performance.now();
+      if (now - this.lastUiUpdateTime > 100) {
+        this.lastUiUpdateTime = now;
+        useGameStore.getState().setPlayerState(
+          {
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z,
+          },
+          this.player.state.onGround,
+          this.player.state.inWater,
+          this.player.life
+        );
+        if (this.debugOverlayVisible) {
+          useGameStore.getState().setDebugMetrics(this.getDebugMetrics());
+        }
+      }
     }
 
     // Render 3D world
