@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { GameManager } from './game/core/GameManager';
-import { StartMenu } from './components/StartMenu';
-import { HUD } from './components/HUD';
-import { PauseMenu } from './components/PauseMenu';
+import { StartMenu } from './components/views/StartMenu';
+import { HUD } from './components/views/HUD';
+import { PauseMenu } from './components/views/PauseMenu';
 import { BLOCK_TYPES } from './game/world/World';
 import type { GameState, DebugMetrics } from './types';
 
