@@ -5,6 +5,18 @@ import { Controls } from './Controls';
 import { sound } from './Sound';
 import { FPSCounter } from './FPSCounter';
 
+export interface DebugMetrics {
+  fps: number;
+  chunksLoaded: number;
+  isFlying: boolean;
+  targetBlock: {
+    type: string;
+    x: number;
+    y: number;
+    z: number;
+  } | null;
+}
+
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
   public scene!: THREE.Scene;

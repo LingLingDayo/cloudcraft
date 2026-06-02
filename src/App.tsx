@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { GameManager } from './game/GameManager';
+import type { DebugMetrics } from './game/GameManager';
 import { StartMenu } from './components/StartMenu';
 import { HUD } from './components/HUD';
 import { PauseMenu } from './components/PauseMenu';
@@ -19,7 +20,7 @@ function App() {
 
   // Debug panel
   const [debugOverlay, setDebugOverlay] = useState<boolean>(false);
-  const [debugMetrics, setDebugMetrics] = useState<any>(null);
+  const [debugMetrics, setDebugMetrics] = useState<DebugMetrics | null>(null);
 
   // Settings
   const [renderDistance, setRenderDistance] = useState<number>(3);
