@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { Physics } from './Physics';
-import { World, BLOCK_TYPES } from '../world/World';
+import { World, BLOCK_TYPES } from '@game/world/World';
 
 describe('Physics System', () => {
   let mockBlockMap: Map<string, number>;

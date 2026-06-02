@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { StartMenuProps } from '../../types';
-import { Button } from '../common/Button';
-import { Slider } from '../common/Slider';
-import { useGameStore } from '../../store/useGameStore';
+import type { StartMenuProps } from '@type';
+import { Button } from '@components/common/Button';
+import { Slider } from '@components/common/Slider';
+import { useGameStore } from '@store/useGameStore';
 import styles from './StartMenu.module.scss';
 
 const SLIDER_CONTAINER_STYLE = { flex: 1 };

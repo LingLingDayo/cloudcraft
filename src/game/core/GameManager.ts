@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { World, BLOCK_TYPES, getBlockProperties } from '../world/World';
-import { Physics } from '../physics/Physics';
-import { Controls } from '../systems/Controls';
-import { sound } from '../systems/Sound';
+import { World, BLOCK_TYPES, getBlockProperties } from '@game/world/World';
+import { Physics } from '@game/physics/Physics';
+import { Controls } from '@game/systems/Controls';
+import { sound } from '@game/systems/Sound';
 import { FPSCounter } from './FPSCounter';
-import { ParticleSystem } from '../systems/Particles';
-import { Player } from '../entities/Player';
-import type { DebugMetrics } from '../../types';
-import { useGameStore } from '../../store/useGameStore';
+import { ParticleSystem } from '@game/systems/Particles';
+import { Player } from '@game/entities/Player';
+import type { DebugMetrics } from '@type';
+import { useGameStore } from '@store/useGameStore';
 
 const BLOCK_COLORS: Record<number, number> = {
   [BLOCK_TYPES.GRASS]: 0x56a032,

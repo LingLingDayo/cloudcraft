@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, getBlockProperties } from '../world/World';
+import { World, getBlockProperties } from '@game/world/World';
 
 export class Physics {
   private world: World;

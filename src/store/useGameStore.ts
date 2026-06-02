@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import type { GameState, DebugMetrics } from '../types';
-import { BLOCK_TYPES } from '../game/world/World';
+import type { GameState, DebugMetrics } from '@type';
+import { BLOCK_TYPES } from '@game/world/World';
 
 interface GameStoreState {
   gameState: GameState;

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { World } from '../world/World';
-import { Physics } from '../physics/Physics';
-import { Controls } from '../systems/Controls';
-import { sound } from '../systems/Sound';
-import { BLOCK_TYPES } from '../world/BlockConfig';
-import { GameAction } from '../systems/HotkeyManager';
+import { World } from '@game/world/World';
+import { Physics } from '@game/physics/Physics';
+import { Controls } from '@game/systems/Controls';
+import { sound } from '@game/systems/Sound';
+import { BLOCK_TYPES } from '@game/world/BlockConfig';
+import { GameAction } from '@game/systems/HotkeyManager';
 
 export class Player {
   public position = new THREE.Vector3(8.5, 40, 8.5);

@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useGameStore } from './useGameStore';
-import { BLOCK_TYPES } from '../game/world/World';
-import type { DebugMetrics } from '../types';
+import { BLOCK_TYPES } from '@game/world/World';
+import type { DebugMetrics } from '@type';
 
 describe('useGameStore', () => {
   beforeEach(() => {

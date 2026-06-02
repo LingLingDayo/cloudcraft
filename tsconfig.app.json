@@ -19,7 +19,23 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path Aliases */
+    "paths": {
+      "@assets": ["./src/assets"],
+      "@assets/*": ["./src/assets/*"],
+      "@components": ["./src/components"],
+      "@components/*": ["./src/components/*"],
+      "@game": ["./src/game"],
+      "@game/*": ["./src/game/*"],
+      "@store": ["./src/store"],
+      "@store/*": ["./src/store/*"],
+      "@styles": ["./src/styles"],
+      "@styles/*": ["./src/styles/*"],
+      "@type": ["./src/types"],
+      "@type/*": ["./src/types/*"]
+    }
   },
   "include": ["src"]
 }

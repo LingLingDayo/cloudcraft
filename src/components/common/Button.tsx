@@ -1,5 +1,5 @@
 import React from 'react';
-import { sound } from '../../game/systems/Sound';
+import { sound } from '@game/systems/Sound';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';

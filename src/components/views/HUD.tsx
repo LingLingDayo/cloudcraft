@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { BLOCK_TYPES } from '../../game/world/World';
-import { useGameStore } from '../../store/useGameStore';
+import { BLOCK_TYPES } from '@game/world/World';
+import { useGameStore } from '@store/useGameStore';
 import styles from './HUD.module.scss';
-import { hotkeyManager, GameAction } from '../../game/systems/HotkeyManager';
+import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 
 const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
