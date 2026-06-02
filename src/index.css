@@ -331,10 +331,26 @@ body, html {
   pointer-events: none;
 }
 
+.hotbar-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.hud-hotbar-stats {
+  display: flex;
+  justify-content: flex-start;
+  width: 500px;
+  padding-left: 9px;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+}
+
 .hud-hearts {
   display: flex;
   gap: 4px;
-  margin-bottom: 8px;
 }
 
 .heart {
@@ -408,7 +424,9 @@ body, html {
 
 .hotbar-label {
   position: absolute;
-  bottom: 60px;
+  bottom: 95px;
+  left: 50%;
+  transform: translateX(-50%);
   background: rgba(10, 10, 15, 0.85);
   padding: 6px 12px;
   border-radius: 6px;
@@ -417,6 +435,7 @@ body, html {
   border: 1px solid rgba(255, 255, 255, 0.08);
   pointer-events: none;
   animation: fadeIn 0.15s ease-out;
+  white-space: nowrap;
 }
 
 @keyframes fadeIn {
