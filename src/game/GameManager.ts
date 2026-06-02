@@ -423,10 +423,8 @@ export class GameManager {
       const inputDirection = this.controls.getMovementDirection();
       const isJumping = this.controls.keys.Space;
 
-      // Play jump sound
-      if (isJumping && this.playerState.onGround && !this.playerState.inWater && !this.isFlying) {
-        sound.playJump();
-      }
+      // Check if player is able to jump before physics update
+      const canJump = this.playerState.onGround && !this.playerState.inWater && !this.isFlying;
 
       const wasYVelocity = this.playerVelocity.y;
 
@@ -441,6 +439,11 @@ export class GameManager {
         this.isFlying,
         this.playerState
       );
+
+      // Play jump sound only when a jump is actually triggered
+      if (isJumping && canJump && this.playerVelocity.y === this.physics.jumpSpeed) {
+        sound.playJump();
+      }
 
       // Apply fall damage
       if (this.playerState.onGround && wasYVelocity < -14.0 && !this.isFlying && !this.playerState.inWater) {
