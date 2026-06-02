@@ -12,14 +12,25 @@ export interface GameSlice {
 }
 
 
+export interface HotbarItem {
+  type: number;
+  count: number;
+}
+
 export interface PlayerSlice {
   selectedBlock: number;
+  activeSlot: number;
+  hotbar: (HotbarItem | null)[];
   life: number;
   position: { x: number; y: number; z: number };
   onGround: boolean;
   inWater: boolean;
   isDamaged: boolean;
   setSelectedBlock: (block: number) => void;
+  setActiveSlot: (slot: number) => void;
+  addToHotbar: (blockType: number, count?: number) => boolean;
+  decrementHotbarItem: (slotIndex: number) => void;
+  resetHotbar: (mode: 'adventure' | 'creative') => void;
   setLife: (life: number) => void;
   setPlayerState: (
     position: { x: number; y: number; z: number },

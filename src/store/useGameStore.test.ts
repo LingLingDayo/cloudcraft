@@ -8,7 +8,9 @@ describe('useGameStore', () => {
     // 重置状态
     useGameStore.setState({
       gameState: 'MENU',
-      selectedBlock: BLOCK_TYPES.GRASS,
+      selectedBlock: BLOCK_TYPES.AIR,
+      activeSlot: 0,
+      hotbar: Array(9).fill(null),
       life: 10,
       position: { x: 8.5, y: 40, z: 8.5 },
       onGround: false,
@@ -25,7 +27,9 @@ describe('useGameStore', () => {
   test('should have initial state', () => {
     const state = useGameStore.getState();
     expect(state.gameState).toBe('MENU');
-    expect(state.selectedBlock).toBe(BLOCK_TYPES.GRASS);
+    expect(state.selectedBlock).toBe(BLOCK_TYPES.AIR);
+    expect(state.activeSlot).toBe(0);
+    expect(state.hotbar).toEqual(Array(9).fill(null));
     expect(state.life).toBe(10);
     expect(state.position).toEqual({ x: 8.5, y: 40, z: 8.5 });
     expect(state.onGround).toBe(false);
@@ -46,11 +50,65 @@ describe('useGameStore', () => {
     expect(useGameStore.getState().gameState).toBe('PAUSED');
   });
 
-  test('should set game mode via setGameMode', () => {
+  test('should set game mode via setGameMode and auto reset hotbar', () => {
     useGameStore.getState().setGameMode('creative');
     expect(useGameStore.getState().gameMode).toBe('creative');
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.GRASS, count: 1 });
+    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.GRASS);
+
+    useGameStore.getState().setGameMode('adventure');
+    expect(useGameStore.getState().gameMode).toBe('adventure');
+    expect(useGameStore.getState().hotbar[0]).toBeNull();
+    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
   });
 
+  test('should set active slot and update selected block', () => {
+    useGameStore.setState({
+      hotbar: [
+        null,
+        { type: BLOCK_TYPES.DIRT, count: 5 },
+        null, null, null, null, null, null, null
+      ]
+    });
+    
+    useGameStore.getState().setActiveSlot(1);
+    expect(useGameStore.getState().activeSlot).toBe(1);
+    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.DIRT);
+
+    useGameStore.getState().setActiveSlot(0);
+    expect(useGameStore.getState().activeSlot).toBe(0);
+    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
+  });
+
+  test('should add items to hotbar in adventure mode', () => {
+    const success = useGameStore.getState().addToHotbar(BLOCK_TYPES.STONE, 3);
+    expect(success).toBe(true);
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 3 });
+
+    const success2 = useGameStore.getState().addToHotbar(BLOCK_TYPES.STONE, 2);
+    expect(success2).toBe(true);
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 5 });
+
+    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.STONE);
+  });
+
+  test('should decrement hotbar item and clear slot', () => {
+    useGameStore.setState({
+      hotbar: [
+        { type: BLOCK_TYPES.WOOD, count: 2 },
+        null, null, null, null, null, null, null, null
+      ],
+      selectedBlock: BLOCK_TYPES.WOOD
+    });
+
+    useGameStore.getState().decrementHotbarItem(0);
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.WOOD, count: 1 });
+    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.WOOD);
+
+    useGameStore.getState().decrementHotbarItem(0);
+    expect(useGameStore.getState().hotbar[0]).toBeNull();
+    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
+  });
 
   test('should set selected block via setSelectedBlock', () => {
     useGameStore.getState().setSelectedBlock(BLOCK_TYPES.DIRT);
