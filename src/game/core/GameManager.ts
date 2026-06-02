@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import { World, BLOCK_TYPES, CHUNK_SIZE_Y } from './World';
-import { Physics } from './Physics';
-import { Controls } from './Controls';
-import { sound } from './Sound';
+import { World, BLOCK_TYPES } from '../world/World';
+import { Physics } from '../physics/Physics';
+import { Controls } from '../systems/Controls';
+import { sound } from '../systems/Sound';
 import { FPSCounter } from './FPSCounter';
-import { ParticleSystem } from './Particles';
-import type { DebugMetrics } from '../types';
+import { ParticleSystem } from '../systems/Particles';
+import { Player } from '../entities/Player';
+import type { DebugMetrics } from '../../types';
 
 const BLOCK_COLORS: Record<number, number> = {
   [BLOCK_TYPES.GRASS]: 0x56a032,
@@ -29,18 +30,12 @@ export class GameManager {
   public world!: World;
   public physics!: Physics;
   public controls!: Controls;
+  public player!: Player;
 
   private canvas: HTMLCanvasElement;
   private animationId: number | null = null;
   private lastTime = 0;
 
-  // Player properties
-  public playerPosition = new THREE.Vector3(8.5, 40, 8.5);
-  public playerVelocity = new THREE.Vector3();
-  public playerState = { onGround: false, inWater: false };
-  public selectedBlockType = BLOCK_TYPES.GRASS;
-  public life = 10;
-  
   // Game state UI callbacks
   private onPauseStateChange: (paused: boolean) => void;
   private onDebugOverlayToggle?: (visible: boolean) => void;
@@ -58,8 +53,7 @@ export class GameManager {
   // Settings
   public renderDistance = 3; // radius in chunks
 
-  // Debug metrics & Flight mode
-  public isFlying = false;
+  // Debug metrics
   public debugOverlayVisible = false;
   public fpsCounter = new FPSCounter();
 
@@ -156,6 +150,9 @@ export class GameManager {
       this.onPauseStateChange(!locked);
     });
 
+    // Initialize Player
+    this.player = new Player(this.camera, this.onTakeDamage);
+
     // Setup F3 & F4 triggers
     this.controls.onF3Pressed = () => {
       this.debugOverlayVisible = !this.debugOverlayVisible;
@@ -166,34 +163,18 @@ export class GameManager {
     };
 
     this.controls.onF4Pressed = () => {
-      this.isFlying = !this.isFlying;
+      this.player.isFlying = !this.player.isFlying;
       sound.playClick();
     };
 
     this.particles = new ParticleSystem(this.scene);
 
     // Spawn player on safe dry ground
-    this.spawnPlayer();
+    this.player.spawn(this.world, this.physics);
   }
 
   public spawnPlayer() {
-    const startX = 8.5;
-    const startZ = 8.5;
-    let startY = CHUNK_SIZE_Y - 2;
-
-    // Trace down to find first solid block
-    while (
-      startY > 0 &&
-      !this.physics.isSolid(this.world.getBlock(Math.floor(startX), startY, Math.floor(startZ)))
-    ) {
-      startY--;
-    }
-
-    this.playerPosition.set(startX, startY + 1.2, startZ);
-    this.playerVelocity.set(0, 0, 0);
-    this.playerState.onGround = false;
-    this.camera.position.copy(this.playerPosition);
-    this.camera.position.y += 1.6; // Eyes height
+    this.player.spawn(this.world, this.physics);
   }
 
   private initListeners() {
@@ -244,14 +225,14 @@ export class GameManager {
         place,
         new THREE.Vector3(place.x + 1, place.y + 1, place.z + 1)
       );
-      const playerBox = this.physics.getPlayerBox(this.playerPosition);
+      const playerBox = this.physics.getPlayerBox(this.player.position);
 
       if (!playerBox.intersectsBox(blockBox)) {
-        this.world.setBlock(place.x, place.y, place.z, this.selectedBlockType);
+        this.world.setBlock(place.x, place.y, place.z, this.player.selectedBlockType);
         sound.playPlace();
 
         // Spawn placement dust particles
-        const color = BLOCK_COLORS[this.selectedBlockType] ?? 0xffffff;
+        const color = BLOCK_COLORS[this.player.selectedBlockType] ?? 0xffffff;
         this.particles.spawn(
           new THREE.Vector3(place.x + 0.5, place.y + 0.5, place.z + 0.5),
           color,
@@ -394,7 +375,7 @@ export class GameManager {
       this.updateDayNight(dt);
 
       // Apply underwater fog overlay if player is in water
-      if (this.playerState.inWater) {
+      if (this.player.state.inWater) {
         const waterColor = new THREE.Color(0x1030a0);
         this.renderer.setClearColor(waterColor);
         this.scene.background = waterColor;
@@ -408,53 +389,11 @@ export class GameManager {
         }
       }
 
-      // Read movement keyboard inputs
-      const inputDirection = this.controls.getMovementDirection();
-      const isJumping = this.controls.keys.Space;
-
-      // Check if player is able to jump before physics update
-      const canJump = this.playerState.onGround && !this.playerState.inWater && !this.isFlying;
-
-      const wasYVelocity = this.playerVelocity.y;
-
-      // Update player positions, resolve collisions
-      this.physics.update(
-        this.playerPosition,
-        this.playerVelocity,
-        dt,
-        inputDirection,
-        isJumping,
-        this.controls.keys.ShiftLeft,
-        this.isFlying,
-        this.playerState
-      );
-
-      // Play jump sound only when a jump is actually triggered
-      if (isJumping && canJump && this.playerVelocity.y === this.physics.jumpSpeed) {
-        sound.playJump();
-      }
-
-      // Apply fall damage
-      if (this.playerState.onGround && wasYVelocity < -14.0 && !this.isFlying && !this.playerState.inWater) {
-        const damage = Math.max(1, Math.floor((-wasYVelocity - 12.0) * 0.7));
-        this.life = Math.max(0, this.life - damage);
-        sound.playDamage();
-        if (this.onTakeDamage) this.onTakeDamage();
-
-        // Respawn check
-        if (this.life <= 0) {
-          sound.playBreak();
-          this.life = 10;
-          this.spawnPlayer();
-        }
-      }
-
-      // Keep camera aligned at player eye height
-      this.camera.position.copy(this.playerPosition);
-      this.camera.position.y += 1.6;
+      // Update player positions, resolve collisions, update camera
+      this.player.update(dt, this.physics, this.controls, this.world);
 
       // Dynamically load terrain chunks around player
-      this.world.loadArea(this.playerPosition.x, this.playerPosition.z, this.renderDistance);
+      this.world.loadArea(this.player.position.x, this.player.position.z, this.renderDistance);
 
       // Trace targeting selection outline
       this.updateTargetedBlock();
@@ -467,8 +406,8 @@ export class GameManager {
   public setRenderDistance(dist: number) {
     this.renderDistance = dist;
     // Force immediate reload of area
-    if (this.world) {
-      this.world.loadArea(this.playerPosition.x, this.playerPosition.z, this.renderDistance);
+    if (this.world && this.player) {
+      this.world.loadArea(this.player.position.x, this.player.position.z, this.renderDistance);
     }
   }
 
@@ -500,7 +439,7 @@ export class GameManager {
     return {
       fps: this.fpsCounter.getFPS(),
       chunksLoaded: this.world.group.children.length / 2, // 2 meshes per chunk
-      isFlying: this.isFlying,
+      isFlying: this.player.isFlying,
       targetBlock: this.targetedBlockInfo
         ? {
             type: this.getBlockName(

@@ -4,7 +4,7 @@ class SoundManager {
   private initCtx() {
     try {
       if (!this.ctx) {
-        this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        this.ctx = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
       }
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume().catch((err) => console.warn('AudioContext resume failed:', err));

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { GameManager } from './game/GameManager';
+import { GameManager } from './game/core/GameManager';
 import { StartMenu } from './components/StartMenu';
 import { HUD } from './components/HUD';
 import { PauseMenu } from './components/PauseMenu';
-import { BLOCK_TYPES } from './game/World';
+import { BLOCK_TYPES } from './game/world/World';
 import type { GameState, DebugMetrics } from './types';
 
 function App() {
@@ -30,6 +30,11 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
   const activeParamsRef = useRef<{ seed: string; renderDistance: number; fov: number; loadSave: boolean } | null>(null);
+  const selectedBlockRef = useRef<number>(selectedBlock);
+
+  useEffect(() => {
+    selectedBlockRef.current = selectedBlock;
+  }, [selectedBlock]);
 
   // Initialize GameManager once the canvas is mounted and state is PLAYING
   useEffect(() => {
@@ -60,7 +65,7 @@ function App() {
       // Apply initial settings
       gm.setRenderDistance(initialDistance);
       gm.setFov(initialFov);
-      gm.selectedBlockType = selectedBlock;
+      gm.player.selectedBlockType = selectedBlockRef.current;
 
       gameManagerRef.current = gm;
 
@@ -74,9 +79,8 @@ function App() {
               gm.world.loadWorld(saved.world);
             }
             if (saved.player) {
-              gm.playerPosition.set(saved.player.x, saved.player.y, saved.player.z);
-              gm.camera.position.copy(gm.playerPosition);
-              gm.camera.position.y += 1.6;
+              gm.player.position.set(saved.player.x, saved.player.y, saved.player.z);
+              gm.player.syncCamera();
             }
             // Trigger immediate render distance load
             gm.setRenderDistance(initialDistance);
@@ -98,7 +102,7 @@ function App() {
   useEffect(() => {
     const gm = gameManagerRef.current;
     if (gm) {
-      gm.selectedBlockType = selectedBlock;
+      gm.player.selectedBlockType = selectedBlock;
     }
   }, [selectedBlock]);
 
@@ -111,13 +115,13 @@ function App() {
         const gm = gameManagerRef.current;
         if (gm) {
           setPosition({
-            x: gm.playerPosition.x,
-            y: gm.playerPosition.y,
-            z: gm.playerPosition.z,
+            x: gm.player.position.x,
+            y: gm.player.position.y,
+            z: gm.player.position.z,
           });
-          setOnGround(gm.playerState.onGround);
-          setInWater(gm.playerState.inWater);
-          setLife(gm.life);
+          setOnGround(gm.player.state.onGround);
+          setInWater(gm.player.state.inWater);
+          setLife(gm.player.life);
 
           if (gm.debugOverlayVisible) {
             setDebugMetrics(gm.getDebugMetrics());
@@ -165,9 +169,9 @@ function App() {
       const saveData = {
         world: gm.world.saveWorld(),
         player: {
-          x: gm.playerPosition.x,
-          y: gm.playerPosition.y,
-          z: gm.playerPosition.z,
+          x: gm.player.position.x,
+          y: gm.player.position.y,
+          z: gm.player.position.z,
         },
       };
       localStorage.setItem('minicraft_save', JSON.stringify(saveData));
@@ -184,7 +188,7 @@ function App() {
     setSelectedBlock(blockType);
     const gm = gameManagerRef.current;
     if (gm) {
-      gm.selectedBlockType = blockType;
+      gm.player.selectedBlockType = blockType;
     }
   };
 
