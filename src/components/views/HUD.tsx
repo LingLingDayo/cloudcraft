@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BLOCK_TYPES } from '../../game/world/World';
 import { useGameStore } from '../../store/useGameStore';
 import styles from './HUD.module.scss';
+import { hotkeyManager, GameAction } from '../../game/systems/HotkeyManager';
 
 const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
@@ -27,24 +28,21 @@ export const HUD: React.FC = () => {
   const debugOverlay = useGameStore((state) => state.debugOverlay);
   const debugMetrics = useGameStore((state) => state.debugMetrics);
 
-  // Keyboard 1-9 number row selection
+  // Keyboard 1-9 number row selection using HotkeyManager
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // e.code ranges from Digit1 to Digit9
-      if (e.code.startsWith('Digit')) {
-        const num = parseInt(e.code.replace('Digit', ''), 10);
-        if (num >= 1 && num <= 9) {
-          const item = HOTBAR_ITEMS[num - 1];
-          if (item) {
-            setSelectedBlock(item.id);
-          }
+    const unsubscribers = Array.from({ length: 9 }).map((_, index) => {
+      const slotNum = index + 1;
+      const action = `HOTBAR_${slotNum}` as GameAction;
+      return hotkeyManager.onActionDown(action, () => {
+        const item = HOTBAR_ITEMS[index];
+        if (item) {
+          setSelectedBlock(item.id);
         }
-      }
-    };
+      });
+    });
 
-    window.addEventListener('keydown', handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      unsubscribers.forEach((unsub) => unsub());
     };
   }, [setSelectedBlock]);
 

@@ -4,6 +4,7 @@ import { Physics } from '../physics/Physics';
 import { Controls } from '../systems/Controls';
 import { sound } from '../systems/Sound';
 import { BLOCK_TYPES } from '../world/BlockConfig';
+import { GameAction } from '../systems/HotkeyManager';
 
 export class Player {
   public position = new THREE.Vector3(8.5, 40, 8.5);
@@ -42,7 +43,7 @@ export class Player {
 
   public update(dt: number, physics: Physics, controls: Controls, world: World) {
     const inputDirection = controls.getMovementDirection();
-    const isJumping = controls.keys.Space;
+    const isJumping = controls.isActionPressed(GameAction.JUMP);
     const canJump = this.state.onGround && !this.state.inWater && !this.isFlying;
     const wasYVelocity = this.velocity.y;
 
@@ -53,7 +54,7 @@ export class Player {
       dt,
       inputDirection,
       isJumping,
-      controls.keys.ShiftLeft,
+      controls.isActionPressed(GameAction.SNEAK),
       this.isFlying,
       this.state
     );
