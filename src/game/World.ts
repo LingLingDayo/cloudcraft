@@ -179,7 +179,7 @@ export class World {
 
     // Procedural decoration: grow trees in this chunk (only if surface is grass)
     // Seeded random for trees based on chunk coordinates
-    let r = Math.abs((cx * 12345 + cz * 678910) % 100) / 100;
+    const r = Math.abs((cx * 12345 + cz * 678910) % 100) / 100;
     if (r < 0.35) { // 35% chance to have trees in a chunk
       const numTrees = Math.floor(r * 4) + 1; // 1 to 4 trees
       for (let t = 0; t < numTrees; t++) {
@@ -245,7 +245,7 @@ export class World {
   // Update or create chunk meshes
   public updateChunkMesh(cx: number, cz: number) {
     const key = `${cx},${cz}`;
-    let chunk = this.chunks.get(key);
+    const chunk = this.chunks.get(key);
     if (!chunk) return; // Don't build empty/unloaded chunks
 
     // Remove old meshes if they exist
@@ -271,8 +271,8 @@ export class World {
     const faces = [
       { dir: [1, 0, 0],  corners: [[1,0,0], [1,1,0], [1,1,1], [1,0,1]], uvFace: 'side' },  // px
       { dir: [-1, 0, 0], corners: [[0,0,1], [0,1,1], [0,1,0], [0,0,0]], uvFace: 'side' },  // nx
-      { dir: [0, 1, 0],  corners: [[0,1,1], [0,1,0], [1,1,0], [1,1,1]], uvFace: 'top' },   // py
-      { dir: [0, -1, 0], corners: [[0,0,0], [0,0,1], [1,0,1], [1,0,0]], uvFace: 'bottom' },// ny
+      { dir: [0, 1, 0],  corners: [[0,1,0], [0,1,1], [1,1,1], [1,1,0]], uvFace: 'top' },   // py
+      { dir: [0, -1, 0], corners: [[0,0,1], [0,0,0], [1,0,0], [1,0,1]], uvFace: 'bottom' },// ny
       { dir: [0, 0, 1],  corners: [[0,0,1], [1,0,1], [1,1,1], [0,1,1]], uvFace: 'side' },  // pz
       { dir: [0, 0, -1], corners: [[1,0,0], [0,0,0], [0,1,0], [1,1,0]], uvFace: 'side' },  // nz
     ];
