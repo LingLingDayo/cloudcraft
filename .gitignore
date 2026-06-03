@@ -23,5 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 .temp
-AGENTS.md
 docs/superpowers
