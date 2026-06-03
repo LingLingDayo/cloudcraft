@@ -11,7 +11,7 @@
 
 ---
 
-## 混合架构设计
+## 混合物理架构设计
 
 物理系统采用 **自研体素物理为主，局部刚体引擎为辅** 的分层设计：
 
@@ -39,7 +39,7 @@
 2. **RapierPhysics (刚体辅助物理)**:
    - 管理一个平行的 Rapier WASM 物理世界。
    - 托管高级物理交互刚体。
-   - 通过**动态 Collider 注入**：仅把处于受重力刚体周围 $3 \times 3 \times 3$ 范围内的固态体素方块，作为静态 `Collider` 注册入 Rapier 世界，随着刚体运动动态更新/释放 Collider，确保 Rapier 世界的 Collider 数量维持在极低水平（$< 100$ 个）。
+   - 通过**动态 Collider 注入**：仅把处于受重力刚体周围 $3 \times 3 \times 3$ 范围内的固态体素方块，作为静态 `Collider` 注册入 Rapier world，随着刚体运动动态更新/释放 Collider，确保 Rapier 世界的 Collider 数量维持在极低水平（$< 100$ 个）。
 
 ---
 
