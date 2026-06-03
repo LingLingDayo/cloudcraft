@@ -1,0 +1,48 @@
+import { ImprovedNoise } from '../Noise';
+
+export type GrowTreeFn = (
+  chunk: Uint8Array,
+  tx: number,
+  ty: number,
+  tz: number,
+  trunkBlock: number,
+  leafBlock: number,
+  height: number,
+  style: 'oak' | 'birch' | 'spruce' | 'jungle'
+) => void;
+
+export interface Biome {
+  id: string;
+  name: string;
+
+  // 根据坐标 (wx, wz) 和噪声计算该生态在该点的地形高度
+  getHeight(wx: number, wz: number, noise: ImprovedNoise): number;
+
+  // 根据当前列的各种参数，在此高度 y 填充方块类型
+  fillColumn(
+    chunk: Uint8Array,
+    lx: number,
+    lz: number,
+    y: number,
+    finalHeight: number,
+    waterLevel: number,
+    depthBelowSurface: number,
+    noise: ImprovedNoise,
+    wx: number,
+    wz: number
+  ): void;
+
+  // 获取在该生态中长植物/树木的概率
+  getTreeProbability(chunkRandom: number): number;
+
+  // 生态专属的装饰物（树木、仙人掌等）生成逻辑
+  growDecorations(
+    chunk: Uint8Array,
+    tx: number,
+    ty: number,
+    tz: number,
+    chunkRandom: number,
+    treeIndex: number,
+    growTree: GrowTreeFn
+  ): void;
+}
