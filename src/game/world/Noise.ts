@@ -53,13 +53,17 @@ export class ImprovedNoise {
   }
 
   public noise3d(x: number, y: number, z: number): number {
-    const X = Math.floor(x) & 255;
-    const Y = Math.floor(y) & 255;
-    const Z = Math.floor(z) & 255;
+    const floorX = Math.floor(x);
+    const floorY = Math.floor(y);
+    const floorZ = Math.floor(z);
 
-    const xf = x - Math.floor(x);
-    const yf = y - Math.floor(y);
-    const zf = z - Math.floor(z);
+    const X = floorX & 255;
+    const Y = floorY & 255;
+    const Z = floorZ & 255;
+
+    const xf = x - floorX;
+    const yf = y - floorY;
+    const zf = z - floorZ;
 
     const u = this.fade(xf);
     const v = this.fade(yf);
@@ -88,11 +92,14 @@ export class ImprovedNoise {
   }
 
   public noise(x: number, y: number): number {
-    const X = Math.floor(x) & 255;
-    const Y = Math.floor(y) & 255;
+    const floorX = Math.floor(x);
+    const floorY = Math.floor(y);
 
-    const xf = x - Math.floor(x);
-    const yf = y - Math.floor(y);
+    const X = floorX & 255;
+    const Y = floorY & 255;
+
+    const xf = x - floorX;
+    const yf = y - floorY;
 
     const u = this.fade(xf);
     const v = this.fade(yf);

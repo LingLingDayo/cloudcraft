@@ -55,6 +55,44 @@ export class ChunkRenderer {
     const worldStartX = cx * CHUNK_SIZE_X;
     const worldStartZ = cz * CHUNK_SIZE_Z;
 
+    const eastChunk = chunks.get(`${cx + 1},${cz}`);
+    const westChunk = chunks.get(`${cx - 1},${cz}`);
+    const southChunk = chunks.get(`${cx},${cz + 1}`);
+    const northChunk = chunks.get(`${cx},${cz - 1}`);
+
+    const getNeighbor = (lx: number, ly: number, lz: number, dir: number[]): number => {
+      const ny = ly + dir[1];
+      if (ny < 0 || ny >= CHUNK_SIZE_Y) return BLOCK_TYPES.AIR;
+
+      const nx = lx + dir[0];
+      const nz = lz + dir[2];
+
+      if (nx >= 0 && nx < CHUNK_SIZE_X && nz >= 0 && nz < CHUNK_SIZE_Z) {
+        return chunk[nx + nz * CHUNK_SIZE_X + ny * CHUNK_SIZE_X * CHUNK_SIZE_Z];
+      }
+
+      let neighborChunk: Uint8Array | undefined;
+      let nlx = nx;
+      let nlz = nz;
+
+      if (nx < 0) {
+        neighborChunk = westChunk;
+        nlx = CHUNK_SIZE_X - 1;
+      } else if (nx >= CHUNK_SIZE_X) {
+        neighborChunk = eastChunk;
+        nlx = 0;
+      } else if (nz < 0) {
+        neighborChunk = northChunk;
+        nlz = CHUNK_SIZE_Z - 1;
+      } else if (nz >= CHUNK_SIZE_Z) {
+        neighborChunk = southChunk;
+        nlz = 0;
+      }
+
+      if (!neighborChunk) return BLOCK_TYPES.AIR;
+      return neighborChunk[nlx + nlz * CHUNK_SIZE_X + ny * CHUNK_SIZE_X * CHUNK_SIZE_Z];
+    };
+
     // Face definition helper variables
     // px, nx, py, ny, pz, nz
     const faces = [
@@ -83,11 +121,7 @@ export class ChunkRenderer {
           const wz = worldStartZ + z;
 
           for (const face of faces) {
-            const nx = wx + face.dir[0];
-            const ny = y + face.dir[1];
-            const nz = wz + face.dir[2];
-
-            const neighbor = this.world.getBlock(nx, ny, nz);
+            const neighbor = getNeighbor(x, y, z, face.dir);
             
             // Draw face if:
             // 1. Neighbor is air/transparent
