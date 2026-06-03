@@ -353,23 +353,36 @@ body, html {
     align-items: center;
     pointer-events: none;
 
+    .hotbar-label {
+      background: transparent;
+      padding: 0;
+      margin-bottom: 8px;
+      border-radius: 0;
+      border: none;
+      font-size: 14px;
+      color: white;
+      text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.85);
+      pointer-events: none;
+      animation: fadeIn 0.15s ease-out;
+      white-space: nowrap;
+      z-index: 20;
+    }
+
     .hud-hotbar-stats {
       display: flex;
       justify-content: flex-start;
-      width: 500px;
-      padding-left: 9px;
+      width: 448px;
+      padding-left: 4px;
       box-sizing: border-box;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .hud-hearts {
       display: flex;
-      gap: 4px;
+      gap: 3px;
 
-      .heart {
-        font-size: 16px;
-        color: #ef4444;
-        filter: drop-shadow(0 2px 4px rgba(239, 68, 68, 0.3));
+      .pixelHeart {
+        filter: drop-shadow(1px 1px 0px rgba(0, 0, 0, 0.75));
         animation: pulse 1.5s infinite alternate;
       }
     }
@@ -378,88 +391,97 @@ body, html {
     .hotbar-container {
       display: flex;
       align-items: center;
-      padding: 6px;
-      background: rgba(10, 12, 22, 0.7);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      padding: 4px;
+      background: rgba(139, 139, 139, 0.85);
+      border: 4px solid #3c3c3c;
+      border-radius: 0px;
+      box-shadow: 
+        inset 4px 4px 0px rgba(255, 255, 255, 0.8),
+        inset -4px -4px 0px rgba(85, 85, 85, 0.8);
       pointer-events: auto;
+      gap: 0px;
 
       .hotbar-slot {
         width: 48px;
         height: 48px;
-        margin: 0 3px;
+        margin: 0;
         display: flex;
         justify-content: center;
         align-items: center;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 0px;
+        background: transparent;
+        border: none;
         cursor: pointer;
         position: relative;
-        transition: all 0.15s ease;
+        box-sizing: border-box;
+
+        box-shadow: 
+          inset 2px 2px 0px rgba(55, 55, 55, 0.85),
+          inset -2px -2px 0px rgba(255, 255, 255, 0.15);
 
         &:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.15);
+          background: rgba(255, 255, 255, 0.15);
         }
 
         &.active {
-          background: rgba(99, 102, 241, 0.15);
-          border: 2px solid #818cf8;
-          box-shadow: 0 0 10px 0 rgba(99, 102, 241, 0.4);
+          background: rgba(0, 0, 0, 0.05);
+          box-shadow: none;
+          z-index: 10;
+
+          &::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 4px solid #ffffff;
+            outline: 4px solid #000000;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+          }
         }
 
         .hotbar-slot-key {
           position: absolute;
-          top: 2px;
-          left: 4px;
+          top: 4px;
+          left: 6px;
           font-size: 8px;
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(255, 255, 255, 0.35);
+          font-family: 'Press Start 2P', monospace;
+          text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
+          z-index: 11;
         }
 
         .hotbar-slot-count {
           position: absolute;
-          bottom: 2px;
-          right: 4px;
-          font-size: 8px;
+          bottom: 4px;
+          right: 6px;
+          font-size: 9px;
           color: #ffffff;
-          font-family: 'Press Start 2P', monospace;
-          text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
+          font-family: 'Press Start 2P', monospace !important;
+          font-weight: bold;
+          text-shadow: 1.5px 1.5px 0px rgba(0, 0, 0, 0.85);
           pointer-events: none;
+          z-index: 11;
         }
 
         /* Item block icons created with canvas texture sub-positions */
         .block-preview {
-          width: 26px;
-          height: 26px;
-          border-radius: 4px;
-          box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+          width: 28px;
+          height: 28px;
+          border-radius: 0px;
+          box-shadow: 
+            inset 2px 2px 0px rgba(255, 255, 255, 0.35),
+            inset -2px -2px 0px rgba(0, 0, 0, 0.35);
 
           &.empty {
             background: rgba(0, 0, 0, 0.2);
-            box-shadow: none;
-            border: 1px dashed rgba(255, 255, 255, 0.05);
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.45);
+            border: none;
           }
         }
       }
-    }
-
-    .hotbar-label {
-      position: absolute;
-      bottom: 95px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(10, 10, 15, 0.85);
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      pointer-events: none;
-      animation: fadeIn 0.15s ease-out;
-      white-space: nowrap;
     }
   }
 }

@@ -31,6 +31,34 @@ const getBlockBorder = (type: number): string => {
   return found ? found.border : 'none';
 };
 
+const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 9 9"
+    style={{ imageRendering: 'pixelated' }}
+    className={styles.pixelHeart}
+  >
+    <path
+      d="M1,0h2v1h-2z M6,0h2v1h-2z M0,1h1v1h-1z M3,1h1v1h-1z M5,1h1v1h-1z M8,1h1v1h-1z M0,2h1v1h-1z M4,2h1v1h-1z M8,2h1v1h-1z M0,3h1v1h-1z M8,3h1v1h-1z M1,4h1v1h-1z M7,4h1v1h-1z M2,5h1v1h-1z M6,5h1v1h-1z M3,6h1v1h-1z M5,6h1v1h-1z M4,7h1v1h-1z"
+      fill="#000000"
+    />
+    {filled ? (
+      <>
+        <path
+          d="M2,1h1v1h-1z M6,1h2v1h-2z M1,2h3v1h-3z M5,2h3v1h-3z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
+          fill="#ff2222"
+        />
+        <path d="M1,1h1v1h-1z" fill="#ffffff" />
+      </>
+    ) : (
+      <path
+        d="M1,1h2v1h-2z M6,1h2v1h-2z M1,2h3v1h-3z M5,2h3v1h-3z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
+        fill="#434343"
+      />
+    )}
+  </svg>
+);
 
 export const HUD: React.FC = () => {
   const [activeLabel, setActiveLabel] = useState<string>('');
@@ -165,16 +193,7 @@ export const HUD: React.FC = () => {
           <div className="hud-hotbar-stats">
             <div className="hud-hearts">
               {Array.from({ length: 10 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="heart"
-                  style={{
-                    color: i < life ? '#ef4444' : '#475569',
-                    opacity: i < life ? 1 : 0.4,
-                  }}
-                >
-                  ❤
-                </span>
+                <PixelHeart key={i} filled={i < life} />
               ))}
             </div>
           </div>
@@ -207,7 +226,7 @@ export const HUD: React.FC = () => {
                       }}
                     ></div>
                     {item.count > 0 && gameMode !== 'creative' && (
-                      <span className="hotbar-slot-count pixel-text-sm">{item.count}</span>
+                      <span className="hotbar-slot-count">{item.count}</span>
                     )}
                   </>
                 ) : (
