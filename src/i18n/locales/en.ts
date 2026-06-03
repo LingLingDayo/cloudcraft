@@ -15,7 +15,6 @@ export const en = {
   },
   pauseMenu: {
     title: 'Game Paused',
-    description: 'Click "Resume Game" or screen to continue',
     resume: 'Resume Game',
     save: 'Save World',
     saved: 'Saved!',

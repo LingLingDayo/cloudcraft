@@ -34,10 +34,6 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
       width={400}
     >
       <div className={styles.content}>
-        <p className={styles.description}>
-          {t('pauseMenu.description')}
-        </p>
-
         {/* Buttons List */}
         <div className={styles.buttonList}>
           <Button variant="primary" onClick={onResume}>

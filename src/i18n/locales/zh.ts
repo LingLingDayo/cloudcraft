@@ -15,7 +15,6 @@ export const zh = {
   },
   pauseMenu: {
     title: '游戏已暂停',
-    description: '点击“返回游戏”或点击画面继续',
     resume: '返回游戏',
     save: '保存世界',
     saved: '已保存！',

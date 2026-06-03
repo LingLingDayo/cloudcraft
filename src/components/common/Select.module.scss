@@ -8,7 +8,7 @@
 
 .label {
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 12px;
   color: #3f3f3f;
   text-shadow: 1px 1px 0px #fff;
   font-weight: bold;
@@ -22,7 +22,7 @@
 
 .trigger {
   font-family: 'Press Start 2P', monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: #e0e0e0;
   text-shadow: 2px 2px 0px #000;
   background: #5c5c5c;
@@ -31,7 +31,8 @@
     inset 2px 2px 0px #8b8b8b,
     inset -2px -2px 0px #373737;
   image-rendering: pixelated;
-  padding: 10px 12px;
+  padding: 0 12px;
+  height: 34px;
   cursor: pointer;
   outline: none;
   user-select: none;
