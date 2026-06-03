@@ -21,6 +21,11 @@ export class World {
   public chunks: Map<string, Uint8Array>;
   public group: THREE.Group;
   
+  // Track modifications: chunkKey -> relativePosKey -> blockType
+  public modifiedBlocks: Map<string, Map<string, number>>;
+  // Track original blocks for reverting: chunkKey -> relativePosKey -> blockType
+  private originalBlocks: Map<string, Map<string, number>>;
+
   private seed: string;
   private generator: WorldGenerator;
   private renderer: ChunkRenderer;
@@ -33,6 +38,8 @@ export class World {
     this.blockEntities = new BlockEntityManager();
     this.fallingBlocks = new Map();
     this.chunks = new Map();
+    this.modifiedBlocks = new Map();
+    this.originalBlocks = new Map();
     this.group = new THREE.Group();
     
     this.generator = new WorldGenerator(seed);
@@ -74,6 +81,7 @@ export class World {
     let chunk = this.chunks.get(key);
     if (!chunk) {
       chunk = this.generator.generateChunkData(cx, cz);
+      this.applyChunkModifications(key, chunk);
       this.chunks.set(key, chunk);
     }
 
@@ -95,6 +103,7 @@ export class World {
     let chunk = this.chunks.get(key);
     if (!chunk) {
       chunk = this.generator.generateChunkData(cx, cz);
+      this.applyChunkModifications(key, chunk);
       this.chunks.set(key, chunk);
     }
 
@@ -104,6 +113,47 @@ export class World {
 
     const oldType = chunk[index];
     if (oldType === type) return;
+
+    // Track modification
+    const posKey = `${lx},${y},${lz}`;
+    let chunkOriginal = this.originalBlocks.get(key);
+    if (!chunkOriginal) {
+      chunkOriginal = new Map();
+      this.originalBlocks.set(key, chunkOriginal);
+    }
+
+    if (!chunkOriginal.has(posKey)) {
+      const chunkModified = this.modifiedBlocks.get(key);
+      if (chunkModified && chunkModified.has(posKey)) {
+        const originalChunk = this.generator.generateChunkData(cx, cz);
+        const originalType = originalChunk[index];
+        chunkOriginal.set(posKey, originalType);
+      } else {
+        chunkOriginal.set(posKey, oldType);
+      }
+    }
+
+    const originalType = chunkOriginal.get(posKey)!;
+
+    let chunkModified = this.modifiedBlocks.get(key);
+    if (!chunkModified) {
+      chunkModified = new Map();
+      this.modifiedBlocks.set(key, chunkModified);
+    }
+
+    if (type === originalType) {
+      chunkModified.delete(posKey);
+      chunkOriginal.delete(posKey);
+    } else {
+      chunkModified.set(posKey, type);
+    }
+
+    if (chunkModified.size === 0) {
+      this.modifiedBlocks.delete(key);
+    }
+    if (chunkOriginal.size === 0) {
+      this.originalBlocks.delete(key);
+    }
 
     const oldBlock = BlockRegistry.get(oldType);
     oldBlock.onDestroyed(this, x, y, z);
@@ -153,6 +203,7 @@ export class World {
         if (shouldSync) {
           if (!this.chunks.has(key)) {
             const chunk = this.generator.generateChunkData(cx, cz);
+            this.applyChunkModifications(key, chunk);
             this.chunks.set(key, chunk);
           }
         } else {
@@ -218,12 +269,12 @@ export class World {
     this.renderer.dispose();
   }
 
-  // Serialize world to JSON (using RLE compression to fit within browser storage quota)
+  // Serialize world to JSON (only saves modified blocks to keep save size minimal)
   public saveWorld(): string {
     return WorldSerializer.saveWorld(this);
   }
 
-  // Load world from JSON (supports both modern RLE compressed and legacy flat CSV formatted saves)
+  // Load world from JSON
   public loadWorld(saveStr: string) {
     WorldSerializer.loadWorld(this, saveStr);
   }
@@ -270,6 +321,7 @@ export class World {
           const [cx, cz] = key.split(',').map(Number);
           if (!this.chunks.has(key)) {
             const chunk = this.generator.generateChunkData(cx, cz);
+            this.applyChunkModifications(key, chunk);
             this.chunks.set(key, chunk);
 
             // Once generated, queue it for mesh creation and re-sort by proximity
@@ -339,5 +391,16 @@ export class World {
     style: TreeStyle
   ): void {
     this.generator.growTree(chunk, tx, ty, tz, trunkBlock, leafBlock, height, style);
+  }
+
+  private applyChunkModifications(chunkKey: string, chunk: Uint8Array): void {
+    const chunkModified = this.modifiedBlocks.get(chunkKey);
+    if (!chunkModified) return;
+
+    for (const [posKey, type] of chunkModified.entries()) {
+      const [lx, y, lz] = posKey.split(',').map(Number);
+      const index = lx + lz * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+      chunk[index] = type;
+    }
   }
 }
