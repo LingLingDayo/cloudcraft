@@ -20,6 +20,24 @@ export class WorldGenerator {
     return this.noise;
   }
 
+  private isWaterArea(wx: number, wz: number): boolean {
+    const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
+    if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
+      return true;
+    }
+    const riverNoise = this.noise.noise(wx * WORLD_CONFIG.river.scale, wz * WORLD_CONFIG.river.scale);
+    const dRiver = Math.abs(riverNoise);
+    if (dRiver < WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth) {
+      const t = dRiver < WORLD_CONFIG.river.threshold
+        ? 1.0
+        : 1.0 - (dRiver - WORLD_CONFIG.river.threshold) / WORLD_CONFIG.river.transitionWidth;
+      if (t > 0.35) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // 3x3 邻域高斯权重插值计算，并返回中心点的主生态
   public getInterpolatedHeightAndBiome(wx: number, wz: number): { height: number; primaryBiome: Biome } {
     const primaryBiome = getBiomeAt(wx, wz, this.noise);
@@ -117,9 +135,39 @@ export class WorldGenerator {
 
           if (t > 0.35) {
             isDryLand = false;
+          } else if (isDryLand) {
+            // 只有当该位置本身是陆地（非海洋）时，才需要对河流岸边进行拉高，防止悬空水墙
+            if (t > 0.0) {
+              const u = t / 0.35; // 从 0 (远离河流) 到 1 (河流分界线)
+              const minShoreHeight = waterLevel + 1; // 至少比水面高出 1 格
+              if (adjustedHeight < minShoreHeight) {
+                adjustedHeight = Math.round(u * minShoreHeight + (1 - u) * adjustedHeight);
+              }
+            }
           }
         }
         // ==========================================================
+
+        // 陆地区域邻域水面保护：若当前块为陆地且高度低于水面+1，检测其水平相邻块是否为水域（海洋或河流）
+        // 如果是，为了防止水平方向水体悬空外露，将当前陆地块拉高至至少 waterLevel + 1 作为堤岸
+        if (isDryLand && adjustedHeight < waterLevel + 1) {
+          const neighbors = [
+            [wx + 1, wz],
+            [wx - 1, wz],
+            [wx, wz + 1],
+            [wx, wz - 1]
+          ];
+          let adjacentToWater = false;
+          for (const [nx, nz] of neighbors) {
+            if (this.isWaterArea(nx, nz)) {
+              adjacentToWater = true;
+              break;
+            }
+          }
+          if (adjacentToWater) {
+            adjustedHeight = waterLevel + 1;
+          }
+        }
 
         const finalHeight = Math.max(3, Math.min(CHUNK_SIZE_Y - 2, adjustedHeight));
 
