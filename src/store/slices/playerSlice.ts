@@ -16,6 +16,9 @@ export const createPlayerSlice: StateCreator<
   onGround: false,
   inWater: false,
   isDamaged: false,
+  activeChest: null,
+  chestInventory: [],
+
 
   setSelectedBlock: (selectedBlock) => set({ selectedBlock }),
   
@@ -111,4 +114,55 @@ export const createPlayerSlice: StateCreator<
       life: life !== undefined ? life : state.life,
     })),
   setIsDamaged: (isDamaged) => set({ isDamaged }),
+
+  openChest: (x, y, z, items) => {
+    // Release pointer lock to show cursor
+    document.exitPointerLock?.();
+    set({
+      activeChest: { x, y, z },
+      chestInventory: items.map(item => item ? { ...item } : null)
+    });
+  },
+
+  closeChest: () => {
+    set({
+      activeChest: null,
+      chestInventory: []
+    });
+  },
+
+  quickMoveItem: (from, index, onSyncToWorld) => {
+    set((state) => {
+      const nextHotbar = [...state.hotbar];
+      const nextChest = [...state.chestInventory];
+
+      if (from === 'hotbar') {
+        const item = nextHotbar[index];
+        if (!item) return {};
+        const emptyIndex = nextChest.findIndex(slot => slot === null);
+        if (emptyIndex !== -1) {
+          nextChest[emptyIndex] = { ...item };
+          nextHotbar[index] = null;
+        }
+      } else {
+        const item = nextChest[index];
+        if (!item) return {};
+        const emptyIndex = nextHotbar.findIndex(slot => slot === null);
+        if (emptyIndex !== -1) {
+          nextHotbar[emptyIndex] = { ...item };
+          nextChest[index] = null;
+        }
+      }
+
+      if (onSyncToWorld) {
+        onSyncToWorld(nextChest);
+      }
+
+      return {
+        hotbar: nextHotbar,
+        chestInventory: nextChest
+      };
+    });
+  }
 });
+

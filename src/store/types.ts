@@ -26,6 +26,8 @@ export interface PlayerSlice {
   onGround: boolean;
   inWater: boolean;
   isDamaged: boolean;
+  activeChest: { x: number; y: number; z: number } | null;
+  chestInventory: (HotbarItem | null)[];
   setSelectedBlock: (block: number) => void;
   setActiveSlot: (slot: number) => void;
   addToHotbar: (blockType: number, count?: number) => boolean;
@@ -39,7 +41,11 @@ export interface PlayerSlice {
     life?: number
   ) => void;
   setIsDamaged: (damaged: boolean) => void;
+  openChest: (x: number, y: number, z: number, items: (HotbarItem | null)[]) => void;
+  closeChest: () => void;
+  quickMoveItem: (from: 'hotbar' | 'chest', index: number, onSyncToWorld?: (items: (HotbarItem | null)[]) => void) => void;
 }
+
 
 export interface DebugSlice {
   debugOverlay: boolean;

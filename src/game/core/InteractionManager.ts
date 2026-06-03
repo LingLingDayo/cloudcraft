@@ -3,6 +3,8 @@ import { GameManager } from './GameManager';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/World';
 import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
+import { BlockRegistry } from '../world/block/BlockRegistry';
+
 
 const BLOCK_COLORS: Record<number, number> = {
   [BLOCK_TYPES.GRASS]: 0x56a032,
@@ -133,13 +135,23 @@ export class InteractionManager {
       this.mouseDownTime = performance.now();
       this.hasTriggeredLongPress = false;
     } else if (e.button === 2) {
-      // Right Click: Place Block
-      const { place } = this.targetedBlockInfo;
+      // Right Click: Place Block or Interact
+      const { target, place } = this.targetedBlockInfo;
+
+      const targetId = this.game.world.getBlock(target.x, target.y, target.z);
+      const block = BlockRegistry.get(targetId);
+      if (block.isInteractable) {
+        const handled = block.onInteract(this.game.world, target.x, target.y, target.z, this.game.player);
+        if (handled) {
+          return; // Intercept block placement
+        }
+      }
       
       const blockBox = new THREE.Box3(
         place,
         new THREE.Vector3(place.x + 1, place.y + 1, place.z + 1)
       );
+
       const playerBox = this.game.physics.getPlayerBox(this.game.player.position);
       const isCreative = useGameStore.getState().gameMode === 'creative';
 

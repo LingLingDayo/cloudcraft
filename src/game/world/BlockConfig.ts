@@ -12,6 +12,8 @@ export const BLOCK_TYPES = {
   COAL: 10,
   IRON: 11,
   DIAMOND: 12,
+  CHEST: 13,
+  LEVER: 14,
 };
 
 // Mapping each block type's top, bottom, and side faces to tile indices in the 4x4 atlas grid (0 to 15)
@@ -28,6 +30,8 @@ export const BLOCK_FACES: Record<number, { top: number; bottom: number; side: nu
   [BLOCK_TYPES.COAL]: { top: 11, bottom: 11, side: 11 },
   [BLOCK_TYPES.IRON]: { top: 12, bottom: 12, side: 12 },
   [BLOCK_TYPES.DIAMOND]: { top: 13, bottom: 13, side: 13 },
+  [BLOCK_TYPES.CHEST]: { top: 5, bottom: 5, side: 5 }, // 借用木头贴图
+  [BLOCK_TYPES.LEVER]: { top: 3, bottom: 3, side: 3 }, // 借用石头贴图
 };
 
 export interface BlockProperties {
@@ -220,8 +224,19 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   },
 };
 
+// Let propertiesResolver fall back to local static BLOCK_PROPERTIES initially,
+// then override it from BlockRegistry at runtime.
+let propertiesResolver: (blockId: number) => BlockProperties = (blockId) => {
+  return BLOCK_PROPERTIES[blockId] || BLOCK_PROPERTIES[BLOCK_TYPES.AIR];
+};
+
+export function setPropertiesResolver(resolver: (blockId: number) => BlockProperties) {
+  propertiesResolver = resolver;
+}
+
 // Helper function to safely fetch properties of any block ID, defaulting to AIR properties
 export function getBlockProperties(blockId: number): BlockProperties {
-  return BLOCK_PROPERTIES[blockId] || BLOCK_PROPERTIES[BLOCK_TYPES.AIR];
+  return propertiesResolver(blockId);
 }
+
 
