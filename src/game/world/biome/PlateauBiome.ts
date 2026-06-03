@@ -22,17 +22,21 @@ export class PlateauBiome implements Biome {
     y: number,
     finalHeight: number,
     waterLevel: number,
-    depthBelowSurface: number
+    depthBelowSurface: number,
+    _noise: ImprovedNoise,
+    _wx: number,
+    _wz: number,
+    isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + y * 256;
     if (y === finalHeight) {
-      if (y < waterLevel + 2) {
+      if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.GRASS;
       }
     } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2) {
+      if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.DIRT;

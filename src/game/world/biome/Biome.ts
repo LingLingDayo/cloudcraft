@@ -39,7 +39,8 @@ export interface Biome {
     depthBelowSurface: number,
     noise: ImprovedNoise,
     wx: number,
-    wz: number
+    wz: number,
+    isDryLand: boolean
   ): void;
 
   // 获取在该生态中长植物/树木的概率

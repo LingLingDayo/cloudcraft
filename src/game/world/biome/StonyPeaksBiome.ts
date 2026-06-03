@@ -20,7 +20,13 @@ export class StonyPeaksBiome implements Biome {
     lx: number,
     lz: number,
     y: number,
-    _finalHeight: number
+    _finalHeight: number,
+    _waterLevel: number,
+    _depthBelowSurface: number,
+    _noise: ImprovedNoise,
+    _wx: number,
+    _wz: number,
+    _isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + y * 256;
     if (y === 0) {

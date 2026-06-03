@@ -119,6 +119,35 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     expect(foundDryLandBelowSeaLevel).toBe(true);
   });
 
+  test('should generate grass on surface when dry land is below waterLevel', () => {
+    const world = new World('minicraft-seed');
+    world.loadArea(0, 0, 2);
+    
+    let verified = false;
+    for (let x = -32; x < 32; x++) {
+      for (let z = -32; z < 32; z++) {
+        // Find surface height
+        let y = 62; // CHUNK_SIZE_Y - 2 where CHUNK_SIZE_Y is 64
+        while (y > 0 && world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
+          y--;
+        }
+        
+        const surfaceBlock = world.getBlock(x, y, z);
+        
+        // If surface is below waterLevel (22) and it's dry (not water)
+        if (y < 22 && surfaceBlock !== BLOCK_TYPES.WATER && surfaceBlock !== BLOCK_TYPES.AIR) {
+          // It should generate grass instead of sand in grassy biomes
+          if (surfaceBlock === BLOCK_TYPES.GRASS) {
+            verified = true;
+            break;
+          }
+        }
+      }
+      if (verified) break;
+    }
+    expect(verified).toBe(true);
+  });
+
   test('should generate caves (AIR pockets) underground inside stone layers', () => {
     const world = new World('minicraft-seed');
     world.loadArea(0, 0, 2);
