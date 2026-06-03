@@ -8,6 +8,20 @@ export interface OreConfig {
 
 export const WORLD_CONFIG = {
   waterLevel: 22,
+  ocean: {
+    scale: 0.001,
+    threshold: -0.15, // 低于此噪波值为海洋
+    transitionWidth: 0.15,
+    shoreWidth: 0.05,
+    baseHeight: 12,
+  },
+  caves: {
+    scaleXZ: 0.04,
+    scaleY: 0.06,
+    threshold: 0.08,
+    minHeight: 3,
+    maxHeightOffset: 3, // 低于地表几格开始生成矿洞
+  },
   biomeScale: 0.003,
   biomeOffset: 2000,
   biomeTempThresholds: {

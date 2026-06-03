@@ -72,8 +72,34 @@ export class WorldGenerator {
 
         // 使用 3x3 邻域插值计算平滑高度与主生态
         const { height: interpolatedHeight, primaryBiome } = this.getInterpolatedHeightAndBiome(wx, wz);
-        const finalHeight = Math.min(CHUNK_SIZE_Y - 2, interpolatedHeight);
+        
+        // 计算海洋掩码 (Ocean/Land mask)
+        const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
         const waterLevel = WORLD_CONFIG.waterLevel;
+        
+        let adjustedHeight = interpolatedHeight;
+        let isDryLand = true;
+
+        if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
+          // 海洋区域
+          isDryLand = false;
+          const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - oceanNoise) / WORLD_CONFIG.ocean.transitionWidth);
+          // 在海洋深处，基础高度为 12 左右，并带有一些轻微的海底噪波起伏
+          const oceanBaseHeight = WORLD_CONFIG.ocean.baseHeight + this.noise.noise(wx * 0.02, wz * 0.02) * 3;
+          adjustedHeight = Math.round((1 - oceanFactor) * interpolatedHeight + oceanFactor * oceanBaseHeight);
+        } else {
+          // 陆地区域。通过海岸线平滑拉高，防止海陆分界线处出现悬空的水墙
+          const distToShore = oceanNoise - WORLD_CONFIG.ocean.threshold;
+          if (distToShore < WORLD_CONFIG.ocean.shoreWidth) {
+            const t = distToShore / WORLD_CONFIG.ocean.shoreWidth;
+            const minShoreHeight = waterLevel + 1; // 至少比海平面高出 1 格
+            if (adjustedHeight < minShoreHeight) {
+              adjustedHeight = Math.round(t * adjustedHeight + (1 - t) * minShoreHeight);
+            }
+          }
+        }
+
+        const finalHeight = Math.max(3, Math.min(CHUNK_SIZE_Y - 2, adjustedHeight));
 
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
           const index = x + z * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
@@ -84,8 +110,28 @@ export class WorldGenerator {
           } else if (y <= finalHeight) {
             const depth = finalHeight - y + 1;
             primaryBiome.fillColumn(chunk, x, z, y, finalHeight, waterLevel, depth, this.noise, wx, wz);
-          } else if (y <= waterLevel) {
-            // Water filling
+
+            // 矿洞刻蚀 (Cave carving)
+            // 矿洞仅在 minHeight 以上、地表下 3 格以下（避免破坏草地表面和露天结构）生成
+            if (y >= WORLD_CONFIG.caves.minHeight && y <= finalHeight - WORLD_CONFIG.caves.maxHeightOffset) {
+              const n1 = this.noise.noise3d(
+                wx * WORLD_CONFIG.caves.scaleXZ,
+                y * WORLD_CONFIG.caves.scaleY,
+                wz * WORLD_CONFIG.caves.scaleXZ
+              );
+              const n2 = this.noise.noise3d(
+                wx * WORLD_CONFIG.caves.scaleXZ + 100,
+                y * WORLD_CONFIG.caves.scaleY + 100,
+                wz * WORLD_CONFIG.caves.scaleXZ + 100
+              );
+              
+              if (Math.abs(n1) < WORLD_CONFIG.caves.threshold && Math.abs(n2) < WORLD_CONFIG.caves.threshold) {
+                // 雕刻为空气 (Caves are filled with air)
+                chunk[index] = BLOCK_TYPES.AIR;
+              }
+            }
+          } else if (y <= waterLevel && !isDryLand) {
+            // 只在海洋/湖泊区域填充水，陆地区域低于海平面也保持空气
             chunk[index] = BLOCK_TYPES.WATER;
           } else {
             // Air
