@@ -1,11 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { sound } from '@game/systems/Sound';
+import type { SelectOption } from '@type';
 import styles from './Select.module.scss';
-
-export interface SelectOption {
-  label: string;
-  value: string | number;
-}
 
 interface SelectProps {
   label?: string;

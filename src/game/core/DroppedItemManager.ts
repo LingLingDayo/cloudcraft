@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GameManager } from './GameManager';
 import { getBlockProperties } from '@game/world/World';
-import { BLOCK_FACES } from '@game/world/BlockConfig';
+import { BLOCK_FACES, type BlockType } from '@game/world/BlockConfig';
 import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
 
@@ -9,7 +9,7 @@ export class DroppedItemManager {
   private game: GameManager;
   private droppedItems: {
     id: string;
-    type: number;
+    type: BlockType;
     position: THREE.Vector3;
     velocity: THREE.Vector3;
     mesh: THREE.Mesh;
@@ -115,7 +115,7 @@ export class DroppedItemManager {
     }
   }
 
-  public spawnItem(blockType: number, pos: THREE.Vector3) {
+  public spawnItem(blockType: BlockType, pos: THREE.Vector3) {
     const isTrans = getBlockProperties(blockType).opacity < 1.0;
     const material = isTrans ? this.game.world.materials.transparent : this.game.world.materials.solid;
     
@@ -187,7 +187,7 @@ export class DroppedItemManager {
     return colliders;
   }
 
-  private createBlockItemGeometry(blockType: number): THREE.BufferGeometry {
+  private createBlockItemGeometry(blockType: BlockType): THREE.BufferGeometry {
     const geom = new THREE.BufferGeometry();
     const size = 0.25;
     const h = size / 2;

@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, GameSlice } from '../types';
 import { BLOCK_TYPES } from '@game/world/BlockConfig';
+import { GameState, GameMode, type Language } from '@type';
 
 export const createGameSlice: StateCreator<
   GameStoreState,
@@ -8,17 +9,17 @@ export const createGameSlice: StateCreator<
   [],
   GameSlice
 > = (set) => ({
-  gameState: 'MENU',
+  gameState: GameState.MENU,
   renderDistance: 3,
   fov: 75,
-  gameMode: 'adventure',
-  language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as 'zh' | 'en' : 'zh') || 'zh',
+  gameMode: GameMode.ADVENTURE,
+  language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as Language : 'zh') || 'zh',
 
   setGameState: (gameState) => set({ gameState }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
   setFov: (fov) => set({ fov }),
   setGameMode: (gameMode) => set(() => {
-    if (gameMode === 'creative') {
+    if (gameMode === GameMode.CREATIVE) {
       return {
         gameMode,
         hotbar: [

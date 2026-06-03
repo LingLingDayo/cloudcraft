@@ -3,7 +3,7 @@ import { World } from '@game/world/World';
 import { Physics } from '@game/physics/Physics';
 import { Controls } from '@game/systems/Controls';
 import { sound } from '@game/systems/Sound';
-import { BLOCK_TYPES } from '@game/world/BlockConfig';
+import { BLOCK_TYPES, type BlockType } from '@game/world/BlockConfig';
 import { GameAction } from '@game/systems/HotkeyManager';
 import { useGameStore } from '@store/useGameStore';
 
@@ -13,7 +13,7 @@ export class Player {
   public state = { onGround: false, inWater: false };
   public isFlying = false;
   public life = 10;
-  public selectedBlockType = BLOCK_TYPES.GRASS;
+  public selectedBlockType: BlockType = BLOCK_TYPES.GRASS;
 
   private camera: THREE.PerspectiveCamera;
   private onTakeDamage?: () => void;

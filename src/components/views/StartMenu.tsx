@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { StartMenuProps } from '@type';
+import { type StartMenuProps, GameMode } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
@@ -92,8 +92,8 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <Switch
               label={t('startMenu.creativeMode')}
-              checked={gameMode === 'creative'}
-              onChange={(checked) => setGameMode(checked ? 'creative' : 'adventure')}
+              checked={gameMode === GameMode.CREATIVE}
+              onChange={(checked) => setGameMode(checked ? GameMode.CREATIVE : GameMode.ADVENTURE)}
               containerStyle={{ flex: 1 }}
               labelStyle={labelStyle}
             />

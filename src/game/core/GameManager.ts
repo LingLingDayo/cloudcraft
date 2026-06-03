@@ -7,7 +7,7 @@ import { sound } from '@game/systems/Sound';
 import { FPSCounter } from './FPSCounter';
 import { ParticleSystem } from '@game/systems/Particles';
 import { Player } from '@game/entities/Player';
-import type { DebugMetrics } from '@type';
+import { GameState, GameMode, type DebugMetrics } from '@type';
 import { useGameStore } from '@store/useGameStore';
 import { EnvironmentManager } from './EnvironmentManager';
 import { InteractionManager } from './InteractionManager';
@@ -106,7 +106,7 @@ export class GameManager {
     this.controls = new Controls(this.camera, this.canvas);
 
     this.controls.addLockChangeListener((locked) => {
-      useGameStore.getState().setGameState(locked ? 'PLAYING' : 'PAUSED');
+      useGameStore.getState().setGameState(locked ? GameState.PLAYING : GameState.PAUSED);
       if (!locked) {
         if (this.interaction) {
           this.interaction.isLeftMouseDown = false;
@@ -129,7 +129,7 @@ export class GameManager {
     };
 
     this.controls.onF4Pressed = () => {
-      if (useGameStore.getState().gameMode === 'creative') {
+      if (useGameStore.getState().gameMode === GameMode.CREATIVE) {
         this.player.isFlying = !this.player.isFlying;
         sound.playClick();
       }
