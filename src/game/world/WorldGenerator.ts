@@ -20,7 +20,7 @@ export class WorldGenerator {
     return this.noise;
   }
 
-  private getRiverValue(wx: number, wz: number): { t: number; bedHeight: number } {
+  private getRiverValue(wx: number, wz: number): { t: number; bedHeight: number; dRiver: number } {
     // 增加坐标扭曲 (Domain Warping)，使河流具有弯曲多变的形状
     const warpX = this.noise.noise(wx * 0.01, wz * 0.01) * 15;
     const warpZ = this.noise.noise(wx * 0.01 + 50, wz * 0.01 + 50) * 15;
@@ -43,7 +43,7 @@ export class WorldGenerator {
     const depthNoise = this.noise.noise(wx * 0.015, wz * 0.015);
     const bedHeight = WORLD_CONFIG.river.bedHeight + depthNoise * 6;
 
-    return { t, bedHeight };
+    return { t, bedHeight, dRiver };
   }
 
   private getFlatnessFactor(wx: number, wz: number): number {
@@ -273,11 +273,26 @@ export class WorldGenerator {
         }
 
         // ==================== 新增河流与水潭生成逻辑 ====================
-        const { t: riverT, bedHeight: riverBedHeight } = this.getRiverValue(wx, wz);
+        const { t: riverT, bedHeight: riverBedHeight, dRiver } = this.getRiverValue(wx, wz);
+        
+        // 河谷压平逻辑：在靠近河流时，逐渐将高于目标高度的陆地压平至 valleyTargetHeight 左右
+        const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
+        const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
+        
+        if (dRiver < valleyEnd && adjustedHeight > WORLD_CONFIG.river.valleyTargetHeight) {
+          const tVal = 1.0 - (dRiver - valleyStart) / WORLD_CONFIG.river.valleyInfluenceWidth;
+          const clampedT = Math.max(0, Math.min(1, tVal));
+          const flattenWeight = clampedT * clampedT * (3 - 2 * clampedT); // 三次 smoothstep 平滑
+          
+          const valleyTarget = WORLD_CONFIG.river.valleyTargetHeight;
+          adjustedHeight = Math.round(adjustedHeight * (1 - flattenWeight) + valleyTarget * flattenWeight);
+        }
         
         if (riverT > 0) {
+          // 使用三次 smoothstep 对 riverT 进行平滑，使河岸及河床的横断面呈平滑 S 型曲线
+          const smoothedRiverT = riverT * riverT * (3 - 2 * riverT);
           if (adjustedHeight > riverBedHeight) {
-            adjustedHeight = Math.round(adjustedHeight * (1 - riverT) + riverBedHeight * riverT);
+            adjustedHeight = Math.round(adjustedHeight * (1 - smoothedRiverT) + riverBedHeight * smoothedRiverT);
           }
 
           if (riverT > 0.35) {
