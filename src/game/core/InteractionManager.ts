@@ -7,20 +7,6 @@ import type { BlockType } from '@type';
 import { BlockRegistry } from '../world/block/BlockRegistry';
 
 
-const BLOCK_COLORS: Record<number, number> = {
-  [BLOCK_TYPES.GRASS]: 0x56a032,
-  [BLOCK_TYPES.DIRT]: 0x825a3c,
-  [BLOCK_TYPES.STONE]: 0x787878,
-  [BLOCK_TYPES.WOOD]: 0x78552d,
-  [BLOCK_TYPES.LEAF]: 0x2d7823,
-  [BLOCK_TYPES.BRICK]: 0xa03c2d,
-  [BLOCK_TYPES.GLASS]: 0xe0f7fa,
-  [BLOCK_TYPES.WATER]: 0x286edc,
-  [BLOCK_TYPES.SAND]: 0xdccd8c,
-  [BLOCK_TYPES.COAL]: 0x282828,
-  [BLOCK_TYPES.IRON]: 0xbe825a,
-  [BLOCK_TYPES.DIAMOND]: 0x5cdcfa,
-};
 
 export class InteractionManager {
   private game: GameManager;
@@ -145,7 +131,7 @@ export class InteractionManager {
           this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
           sound.playBreak();
           
-          const color = BLOCK_COLORS[blockId] ?? 0x787878;
+          const color = getBlockProperties(blockId).colorHex ?? 0x787878;
           this.game.particles.spawn(
             new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
             color,
@@ -181,7 +167,7 @@ export class InteractionManager {
         this.game.world.setBlock(place.x, place.y, place.z, this.game.player.selectedBlockType);
         sound.playPlace();
 
-        const color = BLOCK_COLORS[this.game.player.selectedBlockType] ?? 0xffffff;
+        const color = getBlockProperties(this.game.player.selectedBlockType).colorHex ?? 0xffffff;
         this.game.particles.spawn(
           new THREE.Vector3(place.x + 0.5, place.y + 0.5, place.z + 0.5),
           color,
@@ -255,7 +241,7 @@ export class InteractionManager {
             this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
             sound.playBreak();
             
-            const color = BLOCK_COLORS[blockId] ?? 0x787878;
+            const color = getBlockProperties(blockId).colorHex ?? 0x787878;
             this.game.particles.spawn(
               new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
               color,
@@ -323,7 +309,7 @@ export class InteractionManager {
 
     if (currentTime - this.lastDigParticleTime > 120) {
       this.lastDigParticleTime = currentTime;
-      const color = BLOCK_COLORS[blockId] ?? 0x787878;
+      const color = getBlockProperties(blockId).colorHex ?? 0x787878;
       this.game.particles.spawn(
         new THREE.Vector3(
           target.x + 0.2 + Math.random() * 0.6,
@@ -359,7 +345,7 @@ export class InteractionManager {
       this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
       sound.playBreak();
 
-      const color = BLOCK_COLORS[blockId] ?? 0x787878;
+      const color = getBlockProperties(blockId).colorHex ?? 0x787878;
       this.game.particles.spawn(
         new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
         color,

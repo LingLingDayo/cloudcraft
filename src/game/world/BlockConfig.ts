@@ -32,6 +32,9 @@ export interface BlockProperties {
   opacity: number;            // 渲染不透明度：0.0到1.0 (如水 0.8，空气 0.0，玻璃 0.3，普通方块 1.0)
   soundType: SoundType;       // 破坏/放置/行走音效类型
   showBreakCracks?: boolean;  // 破坏过程中是否显示裂纹，默认 true
+  color?: string;             // UI preview color (hex string like '#56a032' or rgba)
+  colorHex?: number;          // 3D particle/material color (number like 0x56a032)
+  border?: string;            // UI preview border (optional)
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
@@ -48,6 +51,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     opacity: 0.0,
     soundType: 'none',
     showBreakCracks: false,
+    color: 'transparent',
+    colorHex: 0x000000,
   },
   [BLOCK_TYPES.GRASS]: {
     id: BLOCK_TYPES.GRASS,
@@ -61,6 +66,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'grass',
+    color: '#56a032',
+    colorHex: 0x56a032,
   },
   [BLOCK_TYPES.DIRT]: {
     id: BLOCK_TYPES.DIRT,
@@ -74,6 +81,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'grass',
+    color: '#825a3c',
+    colorHex: 0x825a3c,
   },
   [BLOCK_TYPES.STONE]: {
     id: BLOCK_TYPES.STONE,
@@ -87,6 +96,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'stone',
+    color: '#787878',
+    colorHex: 0x787878,
   },
   [BLOCK_TYPES.WOOD]: {
     id: BLOCK_TYPES.WOOD,
@@ -100,6 +111,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'wood',
+    color: '#78552d',
+    colorHex: 0x78552d,
   },
   [BLOCK_TYPES.LEAF]: {
     id: BLOCK_TYPES.LEAF,
@@ -113,6 +126,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 0.5,
     soundType: 'grass',
+    color: '#2d7823',
+    colorHex: 0x2d7823,
   },
   [BLOCK_TYPES.BRICK]: {
     id: BLOCK_TYPES.BRICK,
@@ -126,6 +141,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'stone',
+    color: '#b85c38',
+    colorHex: 0xa03c2d,
   },
   [BLOCK_TYPES.GLASS]: {
     id: BLOCK_TYPES.GLASS,
@@ -140,6 +157,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     opacity: 0.3,
     soundType: 'glass',
     showBreakCracks: false,
+    color: 'rgba(150, 230, 255, 0.35)',
+    colorHex: 0xe0f7fa,
+    border: '1.5px solid #96e6ff',
   },
   [BLOCK_TYPES.WATER]: {
     id: BLOCK_TYPES.WATER,
@@ -154,6 +174,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     opacity: 0.8,
     soundType: 'water',
     showBreakCracks: false,
+    color: 'rgba(40, 110, 220, 0.75)',
+    colorHex: 0x286edc,
   },
   [BLOCK_TYPES.SAND]: {
     id: BLOCK_TYPES.SAND,
@@ -167,6 +189,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'sand',
+    color: '#dccd8c',
+    colorHex: 0xdccd8c,
   },
   [BLOCK_TYPES.COAL]: {
     id: BLOCK_TYPES.COAL,
@@ -180,6 +204,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'stone',
+    color: '#2c2c2c',
+    colorHex: 0x282828,
   },
   [BLOCK_TYPES.IRON]: {
     id: BLOCK_TYPES.IRON,
@@ -193,6 +219,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'stone',
+    color: '#d0b090',
+    colorHex: 0xbe825a,
   },
   [BLOCK_TYPES.DIAMOND]: {
     id: BLOCK_TYPES.DIAMOND,
@@ -206,6 +234,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isInteractable: false,
     opacity: 1.0,
     soundType: 'stone',
+    color: '#5cdcfa',
+    colorHex: 0x5cdcfa,
+    border: '1.5px solid #2db4d2',
   },
 };
 
