@@ -18,6 +18,7 @@ function App() {
   const gameMode = useGameStore((state) => state.gameMode);
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
   const activeChest = useGameStore((state) => state.activeChest);
+  const language = useGameStore((state) => state.language);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
@@ -27,6 +28,10 @@ function App() {
   useEffect(() => {
     selectedBlockRef.current = selectedBlock;
   }, [selectedBlock]);
+
+  useEffect(() => {
+    document.documentElement.className = language === 'zh' ? 'lang-zh' : 'lang-en';
+  }, [language]);
 
   // Initialize GameManager once the canvas is mounted and state is PLAYING
   useEffect(() => {

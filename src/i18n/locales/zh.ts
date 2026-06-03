@@ -1,0 +1,32 @@
+export const zh = {
+  startMenu: {
+    title: 'MINICRAFT',
+    subtitle: '轻量版 3D 浏览器“我的世界”',
+    seedLabel: '世界种子 (Seed)',
+    seedPlaceholder: '随机世界种子...',
+    renderDistance: '视距: {{val}} 区块',
+    fov: '视野范围 (FOV): {{val}}°',
+    creativeMode: '创造模式 (Creative Mode)',
+    createWorld: '创建新世界',
+    loadSave: '载入上次存档',
+    footer: 'WASD 移动 | 鼠标视口旋转 | 左键破坏 | 右键放置 | 1-9 选择方块',
+  },
+  pauseMenu: {
+    title: '游戏已暂停',
+    description: '点击“返回游戏”或点击画面继续',
+    resume: '返回游戏',
+    save: '保存世界',
+    saved: '已保存！',
+    quit: '保存并返回主菜单',
+    playerName: '玩家名称 (Name)',
+    playerNamePlaceholder: '请输入玩家名称...',
+    gameMode: '游戏模式 (Game Mode)',
+    gameModeAdventure: '冒险模式 (Adventure)',
+    gameModeCreative: '创造模式 (Creative)',
+    debugOverlay: '调试信息 (Debug Info)',
+    renderDistance: '视距: {{val}} 区块',
+    fov: '视野范围 (FOV): {{val}}°',
+    language: '语言 (Language)',
+  },
+};
+export default zh;

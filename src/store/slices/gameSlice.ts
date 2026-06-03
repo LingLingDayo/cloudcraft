@@ -12,6 +12,7 @@ export const createGameSlice: StateCreator<
   renderDistance: 3,
   fov: 75,
   gameMode: 'adventure',
+  language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as 'zh' | 'en' : 'zh') || 'zh',
 
   setGameState: (gameState) => set({ gameState }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
@@ -42,6 +43,12 @@ export const createGameSlice: StateCreator<
         selectedBlock: BLOCK_TYPES.AIR,
       };
     }
+  }),
+  setLanguage: (language) => set(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('minicraft_language', language);
+    }
+    return { language };
   }),
 });
 

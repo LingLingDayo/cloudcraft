@@ -23,6 +23,7 @@ describe('useGameStore', () => {
       gameMode: 'adventure',
       isInventoryOpen: false,
       inventory: Array(54).fill(null),
+      language: 'zh',
     });
   });
 
@@ -44,6 +45,7 @@ describe('useGameStore', () => {
     expect(state.gameMode).toBe('adventure');
     expect(state.isInventoryOpen).toBe(false);
     expect(state.inventory).toEqual(Array(54).fill(null));
+    expect(state.language).toBe('zh');
   });
 
   test('should set game state via setGameState', () => {
@@ -206,5 +208,13 @@ describe('useGameStore', () => {
     expect(success).toBe(true);
     // Should be in inventory
     expect(useGameStore.getState().inventory[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 10 });
+  });
+
+  test('should set language via setLanguage', () => {
+    useGameStore.getState().setLanguage('en');
+    expect(useGameStore.getState().language).toBe('en');
+
+    useGameStore.getState().setLanguage('zh');
+    expect(useGameStore.getState().language).toBe('zh');
   });
 });
