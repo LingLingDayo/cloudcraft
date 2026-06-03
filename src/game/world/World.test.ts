@@ -1,5 +1,5 @@
 import { vi, describe, test, expect } from 'vitest';
-import { World, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
+import { World, CHUNK_SIZE_Y } from './World';
 import { BLOCK_TYPES } from './BlockConfig';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
