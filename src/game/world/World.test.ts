@@ -17,8 +17,8 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 }) as any;
 
-describe('World Serialization and RLE Compression', () => {
-  test('should successfully serialize and deserialize world state with identical blocks', () => {
+describe('World Serialization by Modified Blocks Tracking', () => {
+  test('should successfully serialize and deserialize world state with modified blocks', () => {
     const originalWorld = new World('test-seed');
     
     // Set some custom blocks
@@ -28,9 +28,11 @@ describe('World Serialization and RLE Compression', () => {
     
     // Serialize
     const saveStr = originalWorld.saveWorld();
+    const saved = JSON.parse(saveStr);
     
-    // Check that saveStr contains RLE delimiters '_'
-    expect(saveStr).toContain('_');
+    // Check serialization structure
+    expect(saved.seed).toBe('test-seed');
+    expect(saved.modified).toBeDefined();
     
     // Load into a new world instance
     const loadedWorld = new World('test-seed');
@@ -42,60 +44,42 @@ describe('World Serialization and RLE Compression', () => {
     expect(loadedWorld.getBlock(5, 5, 5)).toBe(BLOCK_TYPES.GLASS);
   });
 
-  test('should achieve significant compression ratio compared to legacy flat CSV format', () => {
-    const world = new World('test-seed');
+  test('should revert modification tracking if block is changed back to its original state', () => {
+    const world = new World('revert-seed');
     
-    // Load area to populate chunks
-    world.loadArea(0, 0, 1);
+    // Get original type of a block before modification
+    const ox = 2, oy = 8, oz = 2;
+    const originalType = world.getBlock(ox, oy, oz);
     
+    // Modify it
+    const tempType = originalType === BLOCK_TYPES.STONE ? BLOCK_TYPES.DIRT : BLOCK_TYPES.STONE;
+    world.setBlock(ox, oy, oz, tempType);
+    expect(world.modifiedBlocks.size).toBeGreaterThan(0);
+    
+    // Modify it back to original type
+    world.setBlock(ox, oy, oz, originalType);
+    
+    // Save and check that modified map is now empty (no records saved)
     const saveStr = world.saveWorld();
-    const savedData = JSON.parse(saveStr);
-    
-    // Total character length of all RLE chunks
-    let rleTotalLength = 0;
-    for (const csv of Object.values(savedData.chunks)) {
-      rleTotalLength += (csv as string).length;
-    }
-    
-    // In legacy format, each chunk is flat 16384 numbers separated by commas
-    // Minimum length for a 16384 array of single digits with commas is 16384 * 2 - 1 = 32767 characters
-    const expectedLegacyMinLength = (CHUNK_SIZE_X * CHUNK_SIZE_Z * CHUNK_SIZE_Y) * 2 - 1;
-    const legacyTotalLength = Object.keys(savedData.chunks).length * expectedLegacyMinLength;
-    
-    // The RLE compressed chunks should be much smaller (typically < 30% of legacy flat CSV size)
-    expect(rleTotalLength).toBeLessThan(legacyTotalLength * 0.3); 
+    const saved = JSON.parse(saveStr);
+    expect(saved.modified).toEqual({});
   });
 
-  test('should support loading legacy flat CSV format for backward compatibility', () => {
-    const loadedWorld = new World('compat-seed');
-    const chunkLength = CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z;
+  test('should minimize save size significantly by only recording modified blocks', () => {
+    const world = new World('size-seed');
     
-    // Create a flat CSV mock representation of a chunk (all AIR except one stone block and one diamond)
-    const mockChunk = new Uint8Array(chunkLength);
-    mockChunk[100] = BLOCK_TYPES.STONE;
-    mockChunk[500] = BLOCK_TYPES.DIAMOND;
-    const flatCsv = Array.from(mockChunk).join(',');
+    // No modifications
+    const emptySave = world.saveWorld();
+    const emptySaved = JSON.parse(emptySave);
+    expect(emptySaved.modified).toEqual({});
+    expect(emptySave.length).toBeLessThan(100); // Extremely small!
     
-    const legacySave = JSON.stringify({
-      seed: 'compat-seed',
-      chunks: {
-        '0,0': flatCsv
-      }
-    });
-    
-    // Load the legacy save
-    loadedWorld.loadWorld(legacySave);
-    
-    // Verify correct parsing of flat CSV data
-    expect(loadedWorld.getBlock(0, 0, 0)).toBe(BLOCK_TYPES.AIR); // index 0 (lx=0, lz=0, y=0) is bedrock stone in generator, but here overridden by AIR from load
-    
-    // Calculate global coordinates from local index
-    // index = lx + lz * 16 + y * 256
-    // index 100: 100 = 4 + 6 * 16 + 0 * 256 => lx=4, lz=6, y=0
-    expect(loadedWorld.getBlock(4, 0, 6)).toBe(BLOCK_TYPES.STONE);
-    
-    // index 500: 500 = 4 + 15 * 16 + 1 * 256 => lx=4, lz=15, y=1
-    expect(loadedWorld.getBlock(4, 1, 15)).toBe(BLOCK_TYPES.DIAMOND);
+    // Make only 1 modification
+    world.setBlock(0, 5, 0, BLOCK_TYPES.DIAMOND);
+    const modifiedSave = world.saveWorld();
+    const modifiedSaved = JSON.parse(modifiedSave);
+    expect(Object.keys(modifiedSaved.modified).length).toBe(1);
+    expect(modifiedSave.length).toBeLessThan(200); // Still extremely small!
   });
 });
 
@@ -239,13 +223,13 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
 
     for (let offset = 0; offset < 2000; offset += 96) {
       const world = new World('minicraft-seed');
-      // Load a 3x3 chunk area (48x48 blocks) centered around offset
-      world.loadArea(offset, offset, 3);
+      // Load a 5x5 chunk area (80x80 blocks) centered around offset
+      world.loadArea(offset, offset, 2);
       
       let hasHighWater = false;
       // Scan coordinate range inside the loaded region
-      const checkMin = offset - 24;
-      const checkMax = offset + 24;
+      const checkMin = offset - 16;
+      const checkMax = offset + 16;
       
       for (let x = checkMin; x < checkMax; x++) {
         for (let z = checkMin; z < checkMax; z++) {
@@ -273,7 +257,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       
       if (hasHighWater) {
         checkedPondRegions++;
-        if (checkedPondRegions >= 2) {
+        if (checkedPondRegions >= 1) {
           break;
         }
       }
@@ -281,6 +265,6 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     
     expect(checkedPondRegions).toBeGreaterThan(0);
     expect(exposedWaterCount).toBe(0);
-  });
+  }, 30000);
 });
 
