@@ -189,15 +189,16 @@ export class WorldGenerator {
                 y * WORLD_CONFIG.caves.scaleY,
                 wz * WORLD_CONFIG.caves.scaleXZ
               );
-              const n2 = this.noise.noise3d(
-                wx * WORLD_CONFIG.caves.scaleXZ + 100,
-                y * WORLD_CONFIG.caves.scaleY + 100,
-                wz * WORLD_CONFIG.caves.scaleXZ + 100
-              );
-              
-              if (Math.abs(n1) < WORLD_CONFIG.caves.threshold && Math.abs(n2) < WORLD_CONFIG.caves.threshold) {
-                // 雕刻为空气 (Caves are filled with air)
-                chunk[index] = BLOCK_TYPES.AIR;
+              if (Math.abs(n1) < WORLD_CONFIG.caves.threshold) {
+                const n2 = this.noise.noise3d(
+                  wx * WORLD_CONFIG.caves.scaleXZ + 100,
+                  y * WORLD_CONFIG.caves.scaleY + 100,
+                  wz * WORLD_CONFIG.caves.scaleXZ + 100
+                );
+                if (Math.abs(n2) < WORLD_CONFIG.caves.threshold) {
+                  // 雕刻为空气 (Caves are filled with air)
+                  chunk[index] = BLOCK_TYPES.AIR;
+                }
               }
             }
           } else if (y <= waterLevel && !isDryLand) {
