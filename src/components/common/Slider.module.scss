@@ -5,7 +5,23 @@
   width: 100%;
 }
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #3f3f3f;
+  text-shadow: 1px 1px 0px #fff;
+  font-weight: bold;
+  user-select: none;
+}
+
+.value {
   font-family: 'Press Start 2P', monospace;
   font-size: 10px;
   color: #3f3f3f;
