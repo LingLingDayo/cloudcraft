@@ -32,7 +32,6 @@ export class InteractionManager {
   public isMining = false;
   public isLeftMouseDown = false;
   private mouseDownTime = 0;
-  private hasTriggeredLongPress = false;
   private miningBlockPos = new THREE.Vector3();
   private miningTime = 0;
   private miningBreakTime = 0;
@@ -40,6 +39,8 @@ export class InteractionManager {
   private lastDigParticleTime = 0;
   private crackTextures: THREE.Texture[] = [];
   private crackMesh!: THREE.Mesh;
+  private lastCreativeBreakTime = 0;
+  private lastCreativeBreakPos = new THREE.Vector3();
 
   constructor(game: GameManager) {
     this.game = game;
@@ -133,7 +134,27 @@ export class InteractionManager {
     if (e.button === 0) {
       this.isLeftMouseDown = true;
       this.mouseDownTime = performance.now();
-      this.hasTriggeredLongPress = false;
+
+      const isCreative = useGameStore.getState().gameMode === 'creative';
+      if (isCreative && this.targetedBlockInfo) {
+        const { target } = this.targetedBlockInfo;
+        const blockId = this.game.world.getBlock(target.x, target.y, target.z);
+        const props = getBlockProperties(blockId);
+        if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
+          this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
+          sound.playBreak();
+          
+          const color = BLOCK_COLORS[blockId] ?? 0x787878;
+          this.game.particles.spawn(
+            new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
+            color,
+            15
+          );
+          this.lastCreativeBreakTime = performance.now();
+          this.lastCreativeBreakPos.copy(target);
+          this.updateTargetedBlock();
+        }
+      }
     } else if (e.button === 2) {
       // Right Click: Place Block or Interact
       const { target, place } = this.targetedBlockInfo;
@@ -177,7 +198,6 @@ export class InteractionManager {
   public onMouseUp = (e: MouseEvent) => {
     if (e.button === 0) {
       this.isLeftMouseDown = false;
-      this.hasTriggeredLongPress = false;
       this.cancelMining();
     }
   };
@@ -221,34 +241,39 @@ export class InteractionManager {
       return;
     }
 
-    const now = performance.now();
-    const pressDuration = now - this.mouseDownTime;
+    const isCreative = useGameStore.getState().gameMode === 'creative';
 
-    if (pressDuration < 200) {
+    if (isCreative) {
+      if (this.isLeftMouseDown && this.targetedBlockInfo) {
+        const now = performance.now();
+        if (now - this.lastCreativeBreakTime >= 200) {
+          const { target } = this.targetedBlockInfo;
+          const blockId = this.game.world.getBlock(target.x, target.y, target.z);
+          const props = getBlockProperties(blockId);
+          if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
+            this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
+            sound.playBreak();
+            
+            const color = BLOCK_COLORS[blockId] ?? 0x787878;
+            this.game.particles.spawn(
+              new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
+              color,
+              15
+            );
+            this.lastCreativeBreakTime = now;
+            this.lastCreativeBreakPos.copy(target);
+            this.updateTargetedBlock();
+          }
+        }
+      }
       this.cancelMining();
       return;
     }
 
-    const isCreative = useGameStore.getState().gameMode === 'creative';
+    const now = performance.now();
+    const pressDuration = now - this.mouseDownTime;
 
-    if (isCreative) {
-      if (!this.hasTriggeredLongPress && this.targetedBlockInfo) {
-        const { target } = this.targetedBlockInfo;
-        const blockId = this.game.world.getBlock(target.x, target.y, target.z);
-        const props = getBlockProperties(blockId);
-        if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
-          this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
-          sound.playBreak();
-          
-          const color = BLOCK_COLORS[blockId] ?? 0x787878;
-          this.game.particles.spawn(
-            new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
-            color,
-            15
-          );
-        }
-        this.hasTriggeredLongPress = true;
-      }
+    if (pressDuration < 200) {
       this.cancelMining();
       return;
     }
@@ -265,7 +290,6 @@ export class InteractionManager {
           this.miningBreakTime = props.hardness * 1.0;
           this.lastDigSoundTime = 0;
           this.lastDigParticleTime = 0;
-          this.hasTriggeredLongPress = true;
         }
       } else {
         this.cancelMining();
