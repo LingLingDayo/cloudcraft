@@ -120,11 +120,6 @@ export class WorldGenerator {
     };
   }
 
-  private pseudoRandom2D(x: number, y: number): number {
-    const a = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-    return a - Math.floor(a);
-  }
-
   // Procedural chunk generation
   public generateChunkData(cx: number, cz: number): Uint8Array {
     const chunk = new Uint8Array(CHUNK_SIZE_X * CHUNK_SIZE_Z * CHUNK_SIZE_Y);
@@ -250,7 +245,7 @@ export class WorldGenerator {
                   wz * WORLD_CONFIG.caves.scaleXZ + 100
                 );
                 if (Math.abs(n2) < WORLD_CONFIG.caves.threshold) {
-                  // 检查是否靠近任何水域（当 y <= waterLevel 时），防止矿洞从侧面穿透水体
+                  // 检查是否靠近 any water域（当 y <= waterLevel 时），防止矿洞从侧面穿透水体
                   let adjacentToWater = false;
                   if (y <= waterLevel) {
                     const neighbors = [
@@ -286,12 +281,12 @@ export class WorldGenerator {
     }
 
     // Procedural decoration: grow trees/decorations in this chunk
-    // Seeded random based on chunk coordinates
-    const chunkRandom = this.pseudoRandom2D(cx, cz);
+    // Seeded random based on chunk coordinates and world seed
+    const chunkRandom = this.noise.pseudoRandom2d(cx, cz);
     const numTrees = Math.floor(chunkRandom * 12) % 3 + 1; // 1 to 3 decoration attempts
     for (let t = 0; t < numTrees; t++) {
-      const tx = 2 + Math.floor(this.pseudoRandom2D(cx * 10 + t, cz * 10 + t) * (CHUNK_SIZE_X - 4));
-      const tz = 2 + Math.floor(this.pseudoRandom2D(cx * 20 + t, cz * 20 + t) * (CHUNK_SIZE_Z - 4));
+      const tx = 2 + Math.floor(this.noise.pseudoRandom2d(cx * 10 + t, cz * 10 + t) * (CHUNK_SIZE_X - 4));
+      const tz = 2 + Math.floor(this.noise.pseudoRandom2d(cx * 20 + t, cz * 20 + t) * (CHUNK_SIZE_Z - 4));
       
       const wx = worldStartX + tx;
       const wz = worldStartZ + tz;
@@ -299,7 +294,7 @@ export class WorldGenerator {
 
       // 以该生态的特定概率决定是否生成装饰物
       const prob = biome.getTreeProbability(chunkRandom);
-      const spawnRand = this.pseudoRandom2D(wx * 7 + t, wz * 13 + t);
+      const spawnRand = this.noise.pseudoRandom2d(wx * 7 + t, wz * 13 + t);
       if (spawnRand < prob) {
         // 寻找地表高度
         let ty = CHUNK_SIZE_Y - 2;
@@ -326,6 +321,7 @@ export class WorldGenerator {
 
     return chunk;
   }
+
 
   public growTree(
     chunk: Uint8Array,
@@ -374,7 +370,7 @@ export class WorldGenerator {
             // Random variation: slightly skip some outer leaves to make the shape irregular
             const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
             if (isOuter && !(lx === 0 && lz === 0)) {
-              const leafRand = this.pseudoRandom2D(wlx * 17 + tx, wlz * 23 + tz + wly);
+              const leafRand = this.noise.pseudoRandom2d(wlx * 17 + tx, wlz * 23 + tz + wly);
               if (leafRand < 0.20) {
                 continue;
               }
@@ -416,7 +412,7 @@ export class WorldGenerator {
             // Random variation: slightly skip some outer leaves to make the shape irregular
             const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
             if (isOuter && !(lx === 0 && lz === 0)) {
-              const leafRand = this.pseudoRandom2D(wlx * 17 + tx, wlz * 23 + tz + wly);
+              const leafRand = this.noise.pseudoRandom2d(wlx * 17 + tx, wlz * 23 + tz + wly);
               if (leafRand < 0.20) {
                 continue;
               }
@@ -451,7 +447,7 @@ export class WorldGenerator {
             // Denser jungle leaves: only 10% chance of random skipping
             const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
             if (isOuter && !(lx === 0 && lz === 0)) {
-              const leafRand = this.pseudoRandom2D(wlx * 17 + tx, wlz * 23 + tz + wly);
+              const leafRand = this.noise.pseudoRandom2d(wlx * 17 + tx, wlz * 23 + tz + wly);
               if (leafRand < 0.10) {
                 continue;
               }

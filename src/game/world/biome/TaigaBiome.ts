@@ -19,9 +19,9 @@ export class TaigaBiome implements Biome {
     finalHeight: number,
     waterLevel: number,
     depthBelowSurface: number,
-    _noise: ImprovedNoise,
-    _wx: number,
-    _wz: number,
+    noise: ImprovedNoise,
+    wx: number,
+    wz: number,
     isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + y * 256;
@@ -39,9 +39,10 @@ export class TaigaBiome implements Biome {
       }
     } else {
       // 矿石脉生成
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE);
+      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
     }
   }
+
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.3; // 针叶林树木稍微密集一些
