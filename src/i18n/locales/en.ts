@@ -1,0 +1,32 @@
+export const en = {
+  startMenu: {
+    title: 'MINICRAFT',
+    subtitle: 'Lightweight 3D Browser Minecraft',
+    seedLabel: 'World Seed',
+    seedPlaceholder: 'Random Seed...',
+    renderDistance: 'Render Distance: {{val}} Chunks',
+    fov: 'FOV: {{val}}°',
+    creativeMode: 'Creative Mode',
+    createWorld: 'Create New World',
+    loadSave: 'Load Last Save',
+    footer: 'WASD to Move | Mouse to Rotate | Left Click to Break | Right Click to Place | 1-9 to Select Block',
+  },
+  pauseMenu: {
+    title: 'Game Paused',
+    description: 'Click "Resume Game" or screen to continue',
+    resume: 'Resume Game',
+    save: 'Save World',
+    saved: 'Saved!',
+    quit: 'Save & Quit to Title',
+    playerName: 'Player Name',
+    playerNamePlaceholder: 'Enter player name...',
+    gameMode: 'Game Mode',
+    gameModeAdventure: 'Adventure Mode',
+    gameModeCreative: 'Creative Mode',
+    debugOverlay: 'Debug Info',
+    renderDistance: 'Render Distance: {{val}} Chunks',
+    fov: 'FOV: {{val}}°',
+    language: 'Language',
+  },
+};
+export default en;

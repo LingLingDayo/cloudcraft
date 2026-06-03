@@ -5,10 +5,12 @@ export interface GameSlice {
   renderDistance: number;
   fov: number;
   gameMode: GameMode;
+  language: 'zh' | 'en';
   setGameState: (state: GameState) => void;
   setRenderDistance: (dist: number) => void;
   setFov: (fov: number) => void;
   setGameMode: (mode: GameMode) => void;
+  setLanguage: (lang: 'zh' | 'en') => void;
 }
 
 

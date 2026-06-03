@@ -7,6 +7,7 @@ import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
 import { Dialog } from '@components/common/Dialog';
 import { useGameStore } from '@store/useGameStore';
+import { useTranslation } from '../../i18n';
 import styles from './PauseMenu.module.scss';
 
 export const PauseMenu: React.FC<PauseMenuProps> = ({
@@ -14,7 +15,8 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
   onSave,
   onQuit,
 }) => {
-  const [saveStatus, setSaveStatus] = useState<string>('保存世界');
+  const { t } = useTranslation();
+  const [saveStatusKey, setSaveStatusKey] = useState<'save' | 'saved'>('save');
   const [playerName, setPlayerName] = useState<string>(() => {
     return localStorage.getItem('minicraft_player_name') || 'Steve';
   });
@@ -31,43 +33,45 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
   const setGameMode = useGameStore((state) => state.setGameMode);
   const debugOverlay = useGameStore((state) => state.debugOverlay);
   const setDebugOverlay = useGameStore((state) => state.setDebugOverlay);
+  const language = useGameStore((state) => state.language);
+  const setLanguage = useGameStore((state) => state.setLanguage);
 
   const handleSave = () => {
     onSave();
-    setSaveStatus('已保存！');
+    setSaveStatusKey('saved');
     setTimeout(() => {
-      setSaveStatus('保存世界');
+      setSaveStatusKey('save');
     }, 1500);
   };
 
   const gameModeOptions = [
-    { label: '冒险模式 (Adventure)', value: 'adventure' },
-    { label: '创造模式 (Creative)', value: 'creative' },
+    { label: t('pauseMenu.gameModeAdventure'), value: 'adventure' },
+    { label: t('pauseMenu.gameModeCreative'), value: 'creative' },
   ];
 
   return (
     <Dialog 
-      title="游戏已暂停" 
+      title={t('pauseMenu.title')} 
       onClose={onResume} 
       width={400}
     >
       <div className={styles.content}>
         <p className={styles.description}>
-          点击“返回游戏”或点击画面继续
+          {t('pauseMenu.description')}
         </p>
 
         {/* Buttons List */}
         <div className={styles.buttonList}>
           <Button variant="primary" onClick={onResume}>
-            返回游戏
+            {t('pauseMenu.resume')}
           </Button>
           
           <Button variant="secondary" onClick={handleSave}>
-            {saveStatus}
+            {t(`pauseMenu.${saveStatusKey}`)}
           </Button>
 
           <Button variant="danger" onClick={onQuit}>
-            保存并返回主菜单
+            {t('pauseMenu.quit')}
           </Button>
         </div>
 
@@ -75,17 +79,28 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
 
         {/* Quick Settings */}
         <div className={styles.settingsList}>
+          {/* Language Select */}
+          <Select
+            label={t('pauseMenu.language')}
+            value={language}
+            options={[
+              { label: '简体中文', value: 'zh' },
+              { label: 'English', value: 'en' },
+            ]}
+            onChange={(val) => setLanguage(val as 'zh' | 'en')}
+          />
+
           {/* Player Name Input */}
           <Input
-            label="玩家名称 (Name)"
+            label={t('pauseMenu.playerName')}
             value={playerName}
             onChange={setPlayerName}
-            placeholder="请输入玩家名称..."
+            placeholder={t('pauseMenu.playerNamePlaceholder')}
           />
 
           {/* Game Mode Select */}
           <Select
-            label="游戏模式 (Game Mode)"
+            label={t('pauseMenu.gameMode')}
             value={gameMode}
             options={gameModeOptions}
             onChange={(val) => setGameMode(val)}
@@ -93,14 +108,14 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
 
           {/* Debug Switch */}
           <Switch
-            label="调试信息 (Debug Info)"
+            label={t('pauseMenu.debugOverlay')}
             checked={debugOverlay}
             onChange={(checked) => setDebugOverlay(checked)}
           />
 
           {/* Render Distance Slider */}
           <Slider
-            label={`视距: ${renderDistance} 区块`}
+            label={t('pauseMenu.renderDistance', { val: renderDistance })}
             min={2}
             max={5}
             value={renderDistance}
@@ -109,7 +124,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
 
           {/* FOV Slider */}
           <Slider
-            label={`视野范围 (FOV): ${fov}°`}
+            label={t('pauseMenu.fov', { val: fov })}
             min={60}
             max={90}
             step={5}
