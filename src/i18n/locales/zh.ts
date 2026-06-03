@@ -28,5 +28,11 @@ export const zh = {
     fov: '视野范围: {{val}}°',
     language: '语言',
   },
+  settings: {
+    title: '游戏设置',
+    general: '常规设置',
+    graphics: '画面设置',
+    done: '完成',
+  },
 };
 export default zh;
