@@ -109,7 +109,7 @@ export class WorldGenerator {
             chunk[index] = BLOCK_TYPES.STONE;
           } else if (y <= finalHeight) {
             const depth = finalHeight - y + 1;
-            primaryBiome.fillColumn(chunk, x, z, y, finalHeight, waterLevel, depth, this.noise, wx, wz);
+            primaryBiome.fillColumn(chunk, x, z, y, finalHeight, waterLevel, depth, this.noise, wx, wz, isDryLand);
 
             // 矿洞刻蚀 (Cave carving)
             // 矿洞仅在 minHeight 以上、地表下 3 格以下（避免破坏草地表面和露天结构）生成

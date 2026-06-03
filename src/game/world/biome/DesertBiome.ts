@@ -19,7 +19,11 @@ export class DesertBiome implements Biome {
     y: number,
     finalHeight: number,
     _waterLevel: number,
-    depthBelowSurface: number
+    depthBelowSurface: number,
+    _noise: ImprovedNoise,
+    _wx: number,
+    _wz: number,
+    _isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + y * 256;
     if (y === 0) {
