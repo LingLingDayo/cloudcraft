@@ -431,9 +431,10 @@ body, html {
             left: -4px;
             right: -4px;
             bottom: -4px;
-            border: 4px solid #ffffff;
-            outline: 4px solid #000000;
-            box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+            border: 4px solid #000000;
+            box-shadow: 
+              inset 0 0 0 4px #ffffff,
+              inset 0 0 0 6px rgba(255, 255, 255, 0.4);
             pointer-events: none;
           }
         }
