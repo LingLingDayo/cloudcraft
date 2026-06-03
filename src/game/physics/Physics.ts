@@ -21,6 +21,7 @@ export class Physics {
   public jumpSpeed = 8.5;
   public walkSpeed = 6.0;
   public swimSpeed = 3.0;
+  public stepHeight = 0.6;
 
   constructor(world: World) {
     // 传入 this 作为 settings 引用，支持动态属性修改的实时更新
@@ -83,5 +84,16 @@ export class Physics {
 
     // 2. 更新局部物理辅助引擎（处理粒子、爆炸碎屑、投掷物等）
     this.rigidbodyPhysics.update(dt);
+  }
+
+  /**
+   * 执行高效精确的 DDA 射线检测 (Fast Voxel Traversal)
+   */
+  public raycast(
+    origin: THREE.Vector3,
+    direction: THREE.Vector3,
+    maxDistance: number
+  ) {
+    return this.voxelPhysics.raycast(origin, direction, maxDistance);
   }
 }
