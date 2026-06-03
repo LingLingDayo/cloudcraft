@@ -1,5 +1,14 @@
 import { ImprovedNoise } from '../Noise';
 
+export const TreeStyle = {
+  OAK: 'oak',
+  BIRCH: 'birch',
+  SPRUCE: 'spruce',
+  JUNGLE: 'jungle',
+} as const;
+
+export type TreeStyle = typeof TreeStyle[keyof typeof TreeStyle];
+
 export type GrowTreeFn = (
   chunk: Uint8Array,
   tx: number,
@@ -8,7 +17,7 @@ export type GrowTreeFn = (
   trunkBlock: number,
   leafBlock: number,
   height: number,
-  style: 'oak' | 'birch' | 'spruce' | 'jungle'
+  style: TreeStyle
 ) => void;
 
 export interface Biome {

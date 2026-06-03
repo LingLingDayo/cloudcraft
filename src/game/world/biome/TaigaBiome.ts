@@ -1,4 +1,4 @@
-import type { Biome, GrowTreeFn } from './Biome';
+import { type Biome, type GrowTreeFn, TreeStyle } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 
@@ -66,6 +66,6 @@ export class TaigaBiome implements Biome {
     const treeHeight = 6 + Math.floor(absHeight * 3); // 6 to 8
 
     // 只生成松木/云杉
-    growTree(chunk, tx, ty, tz, BLOCK_TYPES.SPRUCE_WOOD, BLOCK_TYPES.SPRUCE_LEAVES, treeHeight, 'spruce');
+    growTree(chunk, tx, ty, tz, BLOCK_TYPES.SPRUCE_WOOD, BLOCK_TYPES.SPRUCE_LEAVES, treeHeight, TreeStyle.SPRUCE);
   }
 }

@@ -1,7 +1,7 @@
 import { ImprovedNoise } from './Noise';
 import { BLOCK_TYPES } from './BlockConfig';
 import { getBiomeAt } from './biome/BiomeRegistry';
-import { type Biome } from './biome/Biome';
+import { type Biome, TreeStyle } from './biome/Biome';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
 
 export class WorldGenerator {
@@ -143,7 +143,7 @@ export class WorldGenerator {
     trunkBlock: number,
     leafBlock: number,
     height: number,
-    style: 'oak' | 'birch' | 'spruce' | 'jungle'
+    style: TreeStyle
   ): void {
     // Change grass below trunk to dirt
     chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z] = BLOCK_TYPES.DIRT;
@@ -160,9 +160,9 @@ export class WorldGenerator {
     // Grow canopy (leaves)
     const leafCenterY = ty + height;
 
-    if (style === 'oak' || style === 'birch') {
+    if (style === TreeStyle.OAK || style === TreeStyle.BIRCH) {
       // Round canopy style
-      const startY = style === 'birch' ? -3 : -2;
+      const startY = style === TreeStyle.BIRCH ? -3 : -2;
       for (let ly = startY; ly <= 1; ly++) {
         const radius = ly === 1 ? 1 : 2;
         for (let lx = -radius; lx <= radius; lx++) {
@@ -171,7 +171,7 @@ export class WorldGenerator {
             if (lx === 0 && lz === 0 && ly <= 0) continue;
             
             // For birch, round the corners at the bottom layers to make it look nicer
-            if (style === 'birch' && ly === startY && Math.abs(lx) === radius && Math.abs(lz) === radius) {
+            if (style === TreeStyle.BIRCH && ly === startY && Math.abs(lx) === radius && Math.abs(lz) === radius) {
               continue;
             }
 
@@ -197,7 +197,7 @@ export class WorldGenerator {
           }
         }
       }
-    } else if (style === 'spruce') {
+    } else if (style === TreeStyle.SPRUCE) {
       // Conical/layered canopy style for Spruce
       for (let ly = -4; ly <= 1; ly++) {
         let radius = 1;
@@ -239,7 +239,7 @@ export class WorldGenerator {
           }
         }
       }
-    } else if (style === 'jungle') {
+    } else if (style === TreeStyle.JUNGLE) {
       // Jungle canopy, similar to oak but larger and denser
       for (let ly = -3; ly <= 1; ly++) {
         const radius = ly === 1 ? 1 : (ly === -3 ? 1 : 2);

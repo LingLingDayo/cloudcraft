@@ -1,4 +1,4 @@
-import type { Biome, GrowTreeFn } from './Biome';
+import { type Biome, type GrowTreeFn, TreeStyle } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 
@@ -67,6 +67,6 @@ export class JungleBiome implements Biome {
     // 树木很高：7 到 11 格
     const treeHeight = 7 + Math.floor(absHeight * 5);
 
-    growTree(chunk, tx, ty, tz, BLOCK_TYPES.JUNGLE_WOOD, BLOCK_TYPES.JUNGLE_LEAVES, treeHeight, 'jungle');
+    growTree(chunk, tx, ty, tz, BLOCK_TYPES.JUNGLE_WOOD, BLOCK_TYPES.JUNGLE_LEAVES, treeHeight, TreeStyle.JUNGLE);
   }
 }
