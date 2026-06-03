@@ -23,9 +23,9 @@ export class PlateauBiome implements Biome {
     finalHeight: number,
     waterLevel: number,
     depthBelowSurface: number,
-    _noise: ImprovedNoise,
-    _wx: number,
-    _wz: number,
+    noise: ImprovedNoise,
+    wx: number,
+    wz: number,
     isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + y * 256;
@@ -43,9 +43,10 @@ export class PlateauBiome implements Biome {
       }
     } else {
       // 矿脉
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE);
+      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
     }
   }
+
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.15; // 高原植物较少

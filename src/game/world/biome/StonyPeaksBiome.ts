@@ -23,9 +23,9 @@ export class StonyPeaksBiome implements Biome {
     _finalHeight: number,
     _waterLevel: number,
     _depthBelowSurface: number,
-    _noise: ImprovedNoise,
-    _wx: number,
-    _wz: number,
+    noise: ImprovedNoise,
+    wx: number,
+    wz: number,
     _isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + y * 256;
@@ -33,9 +33,10 @@ export class StonyPeaksBiome implements Biome {
       chunk[index] = BLOCK_TYPES.STONE; // 基岩
     } else {
       // 表面及地表下方全部直接裸露石头，包含较高矿石生成概率
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.stonyPeaks, BLOCK_TYPES.STONE);
+      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.stonyPeaks, BLOCK_TYPES.STONE, noise, wx, wz);
     }
   }
+
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0; // 石头山上不长树

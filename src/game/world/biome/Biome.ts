@@ -58,8 +58,15 @@ export interface Biome {
   ): void;
 }
 
-export function getOreType(y: number, ores: readonly OreConfig[], defaultBlock: number): number {
-  const r = Math.random();
+export function getOreType(
+  y: number,
+  ores: readonly OreConfig[],
+  defaultBlock: number,
+  noise: ImprovedNoise,
+  wx: number,
+  wz: number
+): number {
+  const r = noise.pseudoRandom3d(wx, y, wz);
   for (const ore of ores) {
     if (r < ore.probability && y < ore.maxLevel) {
       return ore.blockType;
@@ -67,3 +74,4 @@ export function getOreType(y: number, ores: readonly OreConfig[], defaultBlock: 
   }
   return defaultBlock;
 }
+

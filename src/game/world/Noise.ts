@@ -127,4 +127,44 @@ export class ImprovedNoise {
     }
     return total / maxValue;
   }
+
+  /**
+   * Generates a deterministic 2D pseudo-random number in [0, 1) based on coordinates.
+   * This is fully tied to the seed permutation array (p).
+   */
+  public pseudoRandom2d(x: number, y: number): number {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+
+    const h1 = this.p[X] + Y;
+    const val1 = this.p[h1 & 255];
+
+    const h2 = this.p[(X + 37) & 255] + (Y + 79);
+    const val2 = this.p[h2 & 255];
+
+    const combined = (val1 << 8) | val2;
+    return combined / 65536.0;
+  }
+
+  /**
+   * Generates a deterministic 3D pseudo-random number in [0, 1) based on coordinates.
+   * This is fully tied to the seed permutation array (p).
+   */
+  public pseudoRandom3d(x: number, y: number, z: number): number {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const Z = Math.floor(z) & 255;
+
+    const h1 = this.p[X] + Y;
+    const h2 = this.p[h1 & 255] + Z;
+    const val1 = this.p[h2 & 255];
+
+    const h3 = this.p[(X + 57) & 255] + (Y + 113);
+    const h4 = this.p[h3 & 255] + (Z + 151);
+    const val2 = this.p[h4 & 255];
+
+    const combined = (val1 << 8) | val2;
+    return combined / 65536.0;
+  }
 }
+

@@ -19,9 +19,9 @@ export class ForestBiome implements Biome {
     finalHeight: number,
     waterLevel: number,
     depthBelowSurface: number,
-    _noise: ImprovedNoise,
-    _wx: number,
-    _wz: number,
+    noise: ImprovedNoise,
+    wx: number,
+    wz: number,
     isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + y * 256;
@@ -38,9 +38,10 @@ export class ForestBiome implements Biome {
         chunk[index] = BLOCK_TYPES.DIRT;
       }
     } else {
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE);
+      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
     }
   }
+
 
   public getTreeProbability(_chunkRandom: number): number {
     // 25% 概率在区块内长树，并在区块内长 1~3 棵
