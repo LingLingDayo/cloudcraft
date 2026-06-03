@@ -6,6 +6,7 @@ import { BlockEntityManager } from './block/BlockEntityManager';
 import { WorldGenerator } from './WorldGenerator';
 import { ChunkRenderer } from './ChunkRenderer';
 import { WorldSerializer } from './WorldSerializer';
+import { TreeStyle } from './biome/Biome';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -249,7 +250,7 @@ export class World {
     trunkBlock: number,
     leafBlock: number,
     height: number,
-    style: 'oak' | 'birch' | 'spruce' | 'jungle'
+    style: TreeStyle
   ): void {
     this.generator.growTree(chunk, tx, ty, tz, trunkBlock, leafBlock, height, style);
   }

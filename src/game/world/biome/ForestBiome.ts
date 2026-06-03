@@ -1,4 +1,4 @@
-import type { Biome, GrowTreeFn } from './Biome';
+import { type Biome, type GrowTreeFn, TreeStyle } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 
@@ -72,11 +72,11 @@ export class ForestBiome implements Biome {
     if (absType < 0.45) {
       // Oak tree
       const treeHeight = 4 + Math.floor(absHeight * 2);
-      growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, 'oak');
+      growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, TreeStyle.OAK);
     } else {
       // Birch tree
       const treeHeight = 5 + Math.floor(absHeight * 3);
-      growTree(chunk, tx, ty, tz, BLOCK_TYPES.BIRCH_WOOD, BLOCK_TYPES.BIRCH_LEAVES, treeHeight, 'birch');
+      growTree(chunk, tx, ty, tz, BLOCK_TYPES.BIRCH_WOOD, BLOCK_TYPES.BIRCH_LEAVES, treeHeight, TreeStyle.BIRCH);
     }
   }
 }

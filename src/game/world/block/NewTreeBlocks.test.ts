@@ -3,6 +3,7 @@ import { vi, describe, test, expect } from 'vitest';
 import { World, CHUNK_SIZE_X, CHUNK_SIZE_Z } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { BlockRegistry } from './BlockRegistry';
+import { TreeStyle } from '../biome/Biome';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -62,7 +63,7 @@ describe('New Tree Blocks and Generic Generation Algorithm', () => {
     
     // Call growTree for oak
     const treeHeight = 5;
-    (world as any).growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, 'oak');
+    (world as any).growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, TreeStyle.OAK);
     
     // 1. Ground should change to DIRT
     expect(chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z]).toBe(BLOCK_TYPES.DIRT);
@@ -95,7 +96,7 @@ describe('New Tree Blocks and Generic Generation Algorithm', () => {
     chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z] = BLOCK_TYPES.GRASS;
     
     const treeHeight = 7;
-    (world as any).growTree(chunk, tx, ty, tz, BLOCK_TYPES.SPRUCE_WOOD, BLOCK_TYPES.SPRUCE_LEAVES, treeHeight, 'spruce');
+    (world as any).growTree(chunk, tx, ty, tz, BLOCK_TYPES.SPRUCE_WOOD, BLOCK_TYPES.SPRUCE_LEAVES, treeHeight, TreeStyle.SPRUCE);
     
     // Ground changes to DIRT
     expect(chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z]).toBe(BLOCK_TYPES.DIRT);
