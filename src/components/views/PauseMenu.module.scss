@@ -1,22 +1,18 @@
-.panel {
-  width: 380px;
-  padding: 36px;
-  text-align: center;
+.content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-.title {
-  font-size: 24px;
-  color: #f8fafc;
-  margin: 0 0 4px 0;
+  gap: 16px;
+  width: 100%;
 }
 
 .description {
-  color: #94a3b8;
-  font-size: 13px;
-  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #555555;
+  text-shadow: 1px 1px 0px #fff;
+  margin: 0 0 8px 0;
+  text-align: center;
+  user-select: none;
 }
 
 .buttonList {
@@ -27,13 +23,13 @@
 
 .divider {
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 4px 0;
+  border-top: 2px solid #555555;
+  border-bottom: 2px solid #ffffff;
+  margin: 8px 0;
 }
 
 .settingsList {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  text-align: left;
 }

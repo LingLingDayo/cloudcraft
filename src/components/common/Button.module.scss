@@ -1,0 +1,118 @@
+.btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px; /* MC text in buttons is relatively small but readable */
+  color: #e0e0e0;
+  text-shadow: 2px 2px 0px #000;
+  border: 2px solid #000;
+  image-rendering: pixelated;
+  padding: 12px 20px;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  transition: none; /* Instant feedback */
+
+  &:hover:not(:disabled) {
+    color: #ffffa0;
+    text-shadow: 2px 2px 0px #000;
+  }
+
+  &:active:not(:disabled) {
+    padding-top: 14px;
+    padding-bottom: 10px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: #a0a0a0;
+    text-shadow: 2px 2px 0px #202020;
+  }
+}
+
+.primary {
+  composes: btn;
+  background: #7c7c7c;
+  box-shadow: 
+    inset 2px 2px 0px #aeaeae,
+    inset -2px -2px 0px #5c5c5c;
+
+  &:hover:not(:disabled) {
+    background: #8c8c8c;
+    box-shadow: 
+      inset 2px 2px 0px #bebebe,
+      inset -2px -2px 0px #6c6c6c;
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: 
+      inset -2px -2px 0px #bebebe,
+      inset 2px 2px 0px #5c5c5c;
+  }
+
+  &:disabled {
+    background: #555555;
+    box-shadow: 
+      inset 2px 2px 0px #777777,
+      inset -2px -2px 0px #3f3f3f;
+  }
+}
+
+.secondary {
+  composes: btn;
+  background: #4c4c4c;
+  box-shadow: 
+    inset 2px 2px 0px #7c7c7c,
+    inset -2px -2px 0px #2c2c2c;
+
+  &:hover:not(:disabled) {
+    background: #5c5c5c;
+    box-shadow: 
+      inset 2px 2px 0px #8c8c8c,
+      inset -2px -2px 0px #3c3c3c;
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: 
+      inset -2px -2px 0px #8c8c8c,
+      inset 2px 2px 0px #2c2c2c;
+  }
+
+  &:disabled {
+    background: #333333;
+    box-shadow: 
+      inset 2px 2px 0px #555555,
+      inset -2px -2px 0px #1a1a1a;
+  }
+}
+
+.danger {
+  composes: btn;
+  background: #a82e2e;
+  box-shadow: 
+    inset 2px 2px 0px #df5c5c,
+    inset -2px -2px 0px #701c1c;
+
+  &:hover:not(:disabled) {
+    background: #be3b3b;
+    box-shadow: 
+      inset 2px 2px 0px #ef6c6c,
+      inset -2px -2px 0px #802323;
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: 
+      inset -2px -2px 0px #ef6c6c,
+      inset 2px 2px 0px #701c1c;
+  }
+
+  &:disabled {
+    background: #5c2020;
+    box-shadow: 
+      inset 2px 2px 0px #7c3a3a,
+      inset -2px -2px 0px #3a1515;
+  }
+}

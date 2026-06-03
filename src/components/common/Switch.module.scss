@@ -2,7 +2,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 0;
+  padding: 8px 0;
   cursor: pointer;
   user-select: none;
   width: 100%;
@@ -14,41 +14,51 @@
 }
 
 .label {
-  font-size: 12px;
-  color: #94a3b8;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #3f3f3f;
+  text-shadow: 1px 1px 0px #fff;
   font-weight: bold;
 }
 
 .switch {
   position: relative;
-  width: 44px;
+  width: 48px;
   height: 24px;
-  background-color: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  transition: background-color 0.2s, border-color 0.2s;
+  background-color: #2e2e2e;
+  border: 2px solid #000;
+  box-shadow: 
+    inset -2px -2px 0px #4a4a4a,
+    inset 2px 2px 0px #1c1c1c;
   display: flex;
   align-items: center;
-  padding: 0 2px;
+  padding: 2px;
   box-sizing: border-box;
+  transition: background-color 0.1s;
 
   &.checked {
-    background-color: #6366f1;
-    border-color: #818cf8;
-    
+    background-color: #3b8b3b;
+    box-shadow: 
+      inset -2px -2px 0px #5ebf5e,
+      inset 2px 2px 0px #1a3e1a;
+      
     .thumb {
-      transform: translateX(18px);
-      background-color: #ffffff;
-      box-shadow: 0 0 8px rgba(129, 140, 248, 0.8);
+      transform: translateX(20px);
+      background-color: #c6c6c6;
+      box-shadow: 
+        inset 2px 2px 0px #ffffff,
+        inset -2px -2px 0px #555555;
     }
   }
 }
 
 .thumb {
-  width: 18px;
-  height: 18px;
-  background-color: #94a3b8;
-  border-radius: 50%;
-  transition: transform 0.2s, background-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  width: 20px;
+  height: 16px;
+  background-color: #c6c6c6;
+  border: 2px solid #000;
+  box-shadow: 
+    inset 2px 2px 0px #ffffff,
+    inset -2px -2px 0px #555555;
+  transition: transform 0.1s;
 }

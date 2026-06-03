@@ -1,5 +1,6 @@
 import React from 'react';
 import { sound } from '@game/systems/Sound';
+import styles from './Button.module.scss';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';
@@ -24,15 +25,8 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const getClassName = () => {
-    switch (variant) {
-      case 'secondary':
-        return `btn-secondary ${className}`;
-      case 'danger':
-        return `btn-danger ${className}`;
-      case 'primary':
-      default:
-        return `btn-primary ${className}`;
-    }
+    const variantClass = styles[variant] || styles.primary;
+    return `${variantClass} ${className}`;
   };
 
   return (
@@ -41,3 +35,4 @@ export const Button: React.FC<ButtonProps> = ({
     </button>
   );
 };
+
