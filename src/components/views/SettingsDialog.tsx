@@ -50,8 +50,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.container}>
+    <div className={`settings-dialog-overlay ${styles.overlay}`}>
+      <div className={`settings-dialog-container ${styles.container}`}>
         {/* Close Button at top-right */}
         <button
           type="button"

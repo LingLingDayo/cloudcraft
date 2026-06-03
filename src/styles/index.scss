@@ -515,6 +515,12 @@ body, html {
 
 /* 中文模式字体与对齐优化，避免 Press Start 2P 导致的字体过小、不对齐 */
 :global(.lang-zh) {
+  // 强制设置弹窗内的所有元素不使用 Press Start 2P 字体
+  .settings-dialog-container,
+  .settings-dialog-container * {
+    font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+  }
+
   // 原来使用 Press Start 2P 的全部类和元素统一替换为 Outfit 以及系统无衬线字体
   .pixel-text,
   :global(.pixel-text),
