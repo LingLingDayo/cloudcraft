@@ -98,3 +98,53 @@ describe('World Serialization and RLE Compression', () => {
     expect(loadedWorld.getBlock(4, 1, 15)).toBe(BLOCK_TYPES.DIAMOND);
   });
 });
+
+describe('World Cave and Dry Land Ocean Mask Generation', () => {
+  test('should generate dry land below waterLevel when oceanNoise is above threshold', () => {
+    const world = new World('minicraft-seed');
+    world.loadArea(0, 0, 2);
+    
+    let foundDryLandBelowSeaLevel = false;
+    for (let x = -32; x < 32; x += 2) {
+      for (let z = -32; z < 32; z += 2) {
+        const block = world.getBlock(x, 15, z);
+        const block2 = world.getBlock(x, 21, z);
+        if (block === BLOCK_TYPES.AIR || block2 === BLOCK_TYPES.AIR) {
+          foundDryLandBelowSeaLevel = true;
+          break;
+        }
+      }
+      if (foundDryLandBelowSeaLevel) break;
+    }
+    expect(foundDryLandBelowSeaLevel).toBe(true);
+  });
+
+  test('should generate caves (AIR pockets) underground inside stone layers', () => {
+    const world = new World('minicraft-seed');
+    world.loadArea(0, 0, 2);
+
+    let foundUndergroundCave = false;
+    for (let x = -32; x < 32; x++) {
+      for (let z = -32; z < 32; z++) {
+        let surfaceHeight = 63;
+        while (surfaceHeight > 0 && world.getBlock(x, surfaceHeight, z) === BLOCK_TYPES.AIR) {
+          surfaceHeight--;
+        }
+        
+        if (surfaceHeight > 25) {
+          // Check range y=5 to y=15 for cave air pockets
+          for (let y = 5; y < 15; y++) {
+            if (world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
+              foundUndergroundCave = true;
+              break;
+            }
+          }
+        }
+        if (foundUndergroundCave) break;
+      }
+      if (foundUndergroundCave) break;
+    }
+    expect(foundUndergroundCave).toBe(true);
+  });
+});
+

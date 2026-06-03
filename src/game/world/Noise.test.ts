@@ -42,4 +42,28 @@ describe('ImprovedNoise', () => {
 
     expect(noiseGen1.noise(0.5, 0.5)).toBe(noiseGen2.noise(0.5, 0.5));
   });
+
+  test('should generate consistent 3D noise values and vary by seed', () => {
+    const genA1 = new ImprovedNoise('seed-a');
+    const genA2 = new ImprovedNoise('seed-a');
+    const genB = new ImprovedNoise('seed-b');
+
+    const valA1 = genA1.noise3d(1.1, 2.2, 3.3);
+    const valA2 = genA2.noise3d(1.1, 2.2, 3.3);
+    const valB = genB.noise3d(1.1, 2.2, 3.3);
+
+    expect(valA1).toBe(valA2);
+    expect(valA1).not.toBe(valB);
+
+    // Check bound ranges over sample points
+    for (let x = 0; x < 20; x += 5) {
+      for (let y = 0; y < 20; y += 5) {
+        for (let z = 0; z < 20; z += 5) {
+          const val = genA1.noise3d(x * 0.1, y * 0.1, z * 0.1);
+          expect(val).toBeGreaterThanOrEqual(-1.5);
+          expect(val).toBeLessThanOrEqual(1.5);
+        }
+      }
+    }
+  });
 });

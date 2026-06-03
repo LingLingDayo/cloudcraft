@@ -45,6 +45,48 @@ export class ImprovedNoise {
     return ((h & 1) ? -u : u) + ((h & 2) ? -2.0 * v : 2.0 * v);
   }
 
+  private grad3d(hash: number, x: number, y: number, z: number): number {
+    const h = hash & 15;
+    const u = h < 8 ? x : y;
+    const v = h < 4 ? y : h === 12 || h === 14 ? x : z;
+    return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+  }
+
+  public noise3d(x: number, y: number, z: number): number {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const Z = Math.floor(z) & 255;
+
+    const xf = x - Math.floor(x);
+    const yf = y - Math.floor(y);
+    const zf = z - Math.floor(z);
+
+    const u = this.fade(xf);
+    const v = this.fade(yf);
+    const w = this.fade(zf);
+
+    const A = this.p[X] + Y;
+    const AA = this.p[A] + Z;
+    const AB = this.p[A + 1] + Z;
+    const B = this.p[X + 1] + Y;
+    const BA = this.p[B] + Z;
+    const BB = this.p[B + 1] + Z;
+
+    return this.lerp(
+      w,
+      this.lerp(
+        v,
+        this.lerp(u, this.grad3d(this.p[AA], xf, yf, zf), this.grad3d(this.p[BA], xf - 1, yf, zf)),
+        this.lerp(u, this.grad3d(this.p[AB], xf, yf - 1, zf), this.grad3d(this.p[BB], xf - 1, yf - 1, zf))
+      ),
+      this.lerp(
+        v,
+        this.lerp(u, this.grad3d(this.p[AA + 1], xf, yf, zf - 1), this.grad3d(this.p[BA + 1], xf - 1, yf, zf - 1)),
+        this.lerp(u, this.grad3d(this.p[AB + 1], xf, yf - 1, zf - 1), this.grad3d(this.p[BB + 1], xf - 1, yf - 1, zf - 1))
+      )
+    );
+  }
+
   public noise(x: number, y: number): number {
     const X = Math.floor(x) & 255;
     const Y = Math.floor(y) & 255;
