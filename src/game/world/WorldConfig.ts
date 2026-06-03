@@ -21,6 +21,12 @@ export const WORLD_CONFIG = {
     transitionWidth: 0.03,
     bedHeight: 142,
   },
+  pond: {
+    probability: 0.03, // 3% of cells have a pond
+    gridSize: 32,
+    minRadius: 4,
+    maxRadius: 18,
+  },
   caves: {
     scaleXZ: 0.04,
     scaleY: 0.06,

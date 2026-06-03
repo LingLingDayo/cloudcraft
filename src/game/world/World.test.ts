@@ -207,5 +207,30 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     
     expect(exposedWaterCount).toBe(0);
   }, 20000);
+
+  test('should generate high-altitude ponds on land with water blocks above sea level', () => {
+    let foundHighPondWater = false;
+    
+    // Search different regions to find a high-altitude pond (since probability is 3%)
+    for (let offset = 0; offset < 2000; offset += 96) {
+      const world = new World('minicraft-seed');
+      world.loadArea(offset, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
+      
+      for (let x = offset - 32; x < offset + 32; x++) {
+        for (let z = offset - 32; z < offset + 32; z++) {
+          for (let y = 152; y < 250; y++) {
+            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+              foundHighPondWater = true;
+              break;
+            }
+          }
+          if (foundHighPondWater) break;
+        }
+        if (foundHighPondWater) break;
+      }
+      if (foundHighPondWater) break;
+    }
+    expect(foundHighPondWater).toBe(true);
+  });
 });
 
