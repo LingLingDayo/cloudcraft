@@ -51,6 +51,30 @@ export class BlockRegistry {
     }));
 
     this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.BIRCH_WOOD, name: '桦木', isSolid: true, isTransparent: false, isLiquid: false,
+      hardness: 2.0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'wood',
+      color: '#dcdcdc', colorHex: 0xdcdcdc
+    }));
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.BIRCH_LEAVES, name: '桦树叶', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+      color: '#8fc04e', colorHex: 0x8fc04e
+    }));
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.SPRUCE_WOOD, name: '松木', isSolid: true, isTransparent: false, isLiquid: false,
+      hardness: 2.0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'wood',
+      color: '#5c4033', colorHex: 0x5c4033
+    }));
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.SPRUCE_LEAVES, name: '松树叶', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+      color: '#2d5a27', colorHex: 0x2d5a27
+    }));
+
+    this.register(new SimpleSolidBlock({
       id: BLOCK_TYPES.BRICK, name: '红砖', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 2.0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'stone',
       color: '#b85c38', colorHex: 0xa03c2d
