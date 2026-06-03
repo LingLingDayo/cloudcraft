@@ -17,6 +17,9 @@ export class Player {
 
   private camera: THREE.PerspectiveCamera;
   private onTakeDamage?: () => void;
+  private lastJumpPressed = false;
+  private lastJumpTime = 0;
+  private doubleJumpDelay = 0.25; // 250ms
 
   constructor(camera: THREE.PerspectiveCamera, onTakeDamage?: () => void) {
     this.camera = camera;
@@ -43,8 +46,32 @@ export class Player {
   }
 
   public update(dt: number, physics: Physics, controls: Controls, world: World) {
+    const isCreative = useGameStore.getState().gameMode === 'creative';
+
+    // Reset flying state if not in creative mode
+    if (!isCreative && this.isFlying) {
+      this.isFlying = false;
+    }
+
     const inputDirection = controls.getMovementDirection();
     const isJumping = controls.isActionPressed(GameAction.JUMP);
+
+    // Double-click jump to toggle flying (Creative mode only)
+    if (isCreative) {
+      const jumpJustPressed = isJumping && !this.lastJumpPressed;
+      if (jumpJustPressed) {
+        const now = performance.now() / 1000;
+        if (now - this.lastJumpTime < this.doubleJumpDelay) {
+          this.isFlying = !this.isFlying;
+          sound.playClick();
+          this.lastJumpTime = 0;
+        } else {
+          this.lastJumpTime = now;
+        }
+      }
+    }
+    this.lastJumpPressed = isJumping;
+
     const canJump = this.state.onGround && !this.state.inWater && !this.isFlying;
     const wasYVelocity = this.velocity.y;
 
@@ -66,7 +93,6 @@ export class Player {
     }
 
     // Apply fall damage
-    const isCreative = useGameStore.getState().gameMode === 'creative';
     if (
       this.state.onGround &&
       wasYVelocity < -14.0 &&
