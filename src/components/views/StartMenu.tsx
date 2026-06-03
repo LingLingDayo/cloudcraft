@@ -3,10 +3,19 @@ import type { StartMenuProps } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
+import { Input } from '@components/common/Input';
 import { useGameStore } from '@store/useGameStore';
 import styles from './StartMenu.module.scss';
 
 const SLIDER_CONTAINER_STYLE = { flex: 1 };
+
+const DARK_LABEL_STYLE: React.CSSProperties = {
+  color: '#e0e0e0',
+  textShadow: '2px 2px 0px #000000',
+  fontFamily: "'Press Start 2P', monospace",
+  fontSize: '10px',
+  fontWeight: 'normal',
+};
 
 export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 999999).toString());
@@ -22,13 +31,18 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   };
 
   return (
-    <div className="menu-bg">
-      <div className={`glass-panel ${styles.panel}`}>
-        <div>
-          {/* Pulsing Pixel Title */}
-          <h1 className={`pixel-text ${styles.title}`}>
-            MINICRAFT
-          </h1>
+    <div className={styles.menuBg}>
+      <div className={styles.panel}>
+        <div className={styles.titleContainer}>
+          {/* Pulsing Pixel Title with Splash */}
+          <div className={styles.splashContainer}>
+            <h1 className={`pixel-text ${styles.title}`}>
+              MINICRAFT
+            </h1>
+            <span className={`pixel-text-sm ${styles.splashText}`}>
+              Web Edition!
+            </span>
+          </div>
           <p className={styles.subtitle}>
             轻量版 3D 浏览器“我的世界”
           </p>
@@ -36,18 +50,13 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
 
         {/* Form Inputs Container */}
         <div className={styles.formContainer}>
-          <div className={styles.inputGroup}>
-            <label className={styles.inputLabel}>
-              世界种子 (Seed)
-            </label>
-            <input
-              type="text"
-              className="custom-input"
-              value={seed}
-              onChange={(e) => setSeed(e.target.value)}
-              placeholder="随机世界种子..."
-            />
-          </div>
+          <Input
+            label="世界种子 (Seed)"
+            value={seed}
+            onChange={setSeed}
+            placeholder="随机世界种子..."
+            labelStyle={DARK_LABEL_STYLE}
+          />
 
           <div className={styles.slidersRow}>
             <Slider
@@ -57,6 +66,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
               value={renderDistance}
               onChange={setRenderDistance}
               containerStyle={SLIDER_CONTAINER_STYLE}
+              labelStyle={DARK_LABEL_STYLE}
             />
 
             <Slider
@@ -67,6 +77,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
               value={fov}
               onChange={setFov}
               containerStyle={SLIDER_CONTAINER_STYLE}
+              labelStyle={DARK_LABEL_STYLE}
             />
           </div>
 
@@ -76,6 +87,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
               checked={gameMode === 'creative'}
               onChange={(checked) => setGameMode(checked ? 'creative' : 'adventure')}
               containerStyle={{ flex: 1 }}
+              labelStyle={DARK_LABEL_STYLE}
             />
           </div>
         </div>
@@ -104,4 +116,5 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
     </div>
   );
 };
+
 
