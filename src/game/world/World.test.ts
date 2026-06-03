@@ -243,9 +243,9 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       world.loadArea(offset, offset, 3);
       
       let hasHighWater = false;
-      // Scan coordinate range inside the center chunk of this loaded region
-      const checkMin = offset - 8;
-      const checkMax = offset + 8;
+      // Scan coordinate range inside the loaded region
+      const checkMin = offset - 24;
+      const checkMax = offset + 24;
       
       for (let x = checkMin; x < checkMax; x++) {
         for (let z = checkMin; z < checkMax; z++) {
