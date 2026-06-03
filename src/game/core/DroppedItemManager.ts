@@ -115,7 +115,8 @@ export class DroppedItemManager {
     }
   }
 
-  public spawnItem(blockType: BlockType, pos: THREE.Vector3) {
+  public spawnItem(blockType: BlockType, pos: THREE.Vector3 | { x: number; y: number; z: number }, count?: number) {
+    void count;
     const isTrans = getBlockProperties(blockType).opacity < 1.0;
     const material = isTrans ? this.game.world.materials.transparent : this.game.world.materials.solid;
     
@@ -124,19 +125,16 @@ export class DroppedItemManager {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     
-    mesh.position.copy(pos);
+    const spawnPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+    mesh.position.copy(spawnPos);
     this.game.scene.add(mesh);
 
-    const velocity = new THREE.Vector3(
-      (Math.random() - 0.5) * 1.5,
-      2.5 + Math.random() * 1.5,
-      (Math.random() - 0.5) * 1.5
-    );
+    const velocity = new THREE.Vector3(0, 0, 0);
 
     this.droppedItems.push({
       id: Math.random().toString(36).substring(2, 9),
       type: blockType,
-      position: pos.clone(),
+      position: spawnPos,
       velocity,
       mesh,
       onGround: false,

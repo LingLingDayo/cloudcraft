@@ -167,13 +167,6 @@ export class InteractionManager {
         this.game.world.setBlock(place.x, place.y, place.z, this.game.player.selectedBlockType);
         sound.playPlace();
 
-        const color = getBlockProperties(this.game.player.selectedBlockType).colorHex ?? 0xffffff;
-        this.game.particles.spawn(
-          new THREE.Vector3(place.x + 0.5, place.y + 0.5, place.z + 0.5),
-          color,
-          8
-        );
-
         if (!isCreative) {
           const activeSlot = useGameStore.getState().activeSlot;
           useGameStore.getState().decrementHotbarItem(activeSlot);
