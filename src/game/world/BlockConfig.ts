@@ -43,6 +43,7 @@ export interface BlockProperties {
   color?: string;             // UI preview color (hex string like '#56a032' or rgba)
   colorHex?: number;          // 3D particle/material color (number like 0x56a032)
   border?: string;            // UI preview border (optional)
+  allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
@@ -76,6 +77,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     soundType: 'grass',
     color: '#56a032',
     colorHex: 0x56a032,
+    allowVegetationBase: true,
   },
   [BLOCK_TYPES.DIRT]: {
     id: BLOCK_TYPES.DIRT,
@@ -91,6 +93,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     soundType: 'grass',
     color: '#825a3c',
     colorHex: 0x825a3c,
+    allowVegetationBase: true,
   },
   [BLOCK_TYPES.STONE]: {
     id: BLOCK_TYPES.STONE,
@@ -106,6 +109,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     soundType: 'stone',
     color: '#787878',
     colorHex: 0x787878,
+    allowVegetationBase: true,
   },
   [BLOCK_TYPES.WOOD]: {
     id: BLOCK_TYPES.WOOD,
@@ -199,6 +203,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     soundType: 'sand',
     color: '#dccd8c',
     colorHex: 0xdccd8c,
+    allowVegetationBase: true,
   },
   [BLOCK_TYPES.COAL]: {
     id: BLOCK_TYPES.COAL,

@@ -26,6 +26,23 @@ describe('Block Registry and Entity System', () => {
     expect(grass.name).toBe('草方块');
     expect(grass.isSolid).toBe(true);
     expect(grass.isInteractable).toBe(false);
+    expect(grass.properties.allowVegetationBase).toBe(true);
+
+    const dirt = BlockRegistry.get(BLOCK_TYPES.DIRT);
+    expect(dirt).toBeDefined();
+    expect(dirt.properties.allowVegetationBase).toBe(true);
+
+    const sand = BlockRegistry.get(BLOCK_TYPES.SAND);
+    expect(sand).toBeDefined();
+    expect(sand.properties.allowVegetationBase).toBe(true);
+
+    const stone = BlockRegistry.get(BLOCK_TYPES.STONE);
+    expect(stone).toBeDefined();
+    expect(stone.properties.allowVegetationBase).toBe(true);
+
+    const air = BlockRegistry.get(BLOCK_TYPES.AIR);
+    expect(air).toBeDefined();
+    expect(air.properties.allowVegetationBase).toBeFalsy();
 
     const chest = BlockRegistry.get(13); // CHEST
     expect(chest).toBeDefined();

@@ -30,7 +30,8 @@ export class SandBlock extends Block {
       id: BLOCK_TYPES.SAND, name: '沙子', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 0.5, affectedByGravity: true, lightLevel: 0, isInteractable: false, opacity: 1.0,
       soundType: 'sand',
-      color: '#dccd8c', colorHex: 0xdccd8c
+      color: '#dccd8c', colorHex: 0xdccd8c,
+      allowVegetationBase: true
     });
   }
 
