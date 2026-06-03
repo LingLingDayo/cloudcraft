@@ -9,8 +9,8 @@ export class DesertBiome implements Biome {
   public name = '沙漠';
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 极其平缓，有微弱的沙丘起伏
-    return Math.floor(160 + noise.noise(wx * 0.05, wz * 0.05) * 4);
+    // 极其平缓，有微弱的沙丘起伏，比海平面(150)高出约 1-10 格
+    return Math.floor(154 + noise.noise(wx * 0.05, wz * 0.05) * 4);
   }
 
   public fillColumn(

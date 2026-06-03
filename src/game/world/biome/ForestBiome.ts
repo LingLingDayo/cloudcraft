@@ -8,7 +8,8 @@ export class ForestBiome implements Biome {
   public name = '森林';
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    return Math.floor(165 + noise.fbm(wx * 0.015, wz * 0.015, 3, 0.4) * 25);
+    // 森林也属于平缓的普通地形，比海平面(150)高出约 1-10 格，但有轻微坡度起伏
+    return Math.floor(155 + noise.fbm(wx * 0.015, wz * 0.015, 2, 0.4) * 5);
   }
 
   public fillColumn(

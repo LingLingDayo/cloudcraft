@@ -8,8 +8,8 @@ export class JungleBiome implements Biome {
   public name = '丛林';
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 丛林地表稍有起伏
-    return Math.floor(168 + noise.fbm(wx * 0.02, wz * 0.02, 3, 0.4) * 20);
+    // 丛林地表也比较平缓，比海平面(150)高出约 1-10 格
+    return Math.floor(155 + noise.fbm(wx * 0.02, wz * 0.02, 2, 0.4) * 5);
   }
 
   public fillColumn(

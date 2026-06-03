@@ -8,8 +8,8 @@ export class PlainsBiome implements Biome {
   public name = '平原';
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 极其平缓，利用低频 fbm 控制轻微波动
-    return Math.floor(162 + noise.fbm(wx * 0.01, wz * 0.01, 2, 0.4) * 6);
+    // 极其平缓，利用低频 fbm 控制轻微波动，比海平面(150)高出约 1-10 格
+    return Math.floor(155 + noise.fbm(wx * 0.01, wz * 0.01, 2, 0.4) * 4);
   }
 
   public fillColumn(
