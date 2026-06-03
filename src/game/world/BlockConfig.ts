@@ -1,20 +1,5 @@
-export const BLOCK_TYPES = {
-  AIR: 0,
-  GRASS: 1,
-  DIRT: 2,
-  STONE: 3,
-  WOOD: 4,
-  LEAF: 5,
-  BRICK: 6,
-  GLASS: 7,
-  WATER: 8,
-  SAND: 9,
-  COAL: 10,
-  IRON: 11,
-  DIAMOND: 12,
-  CHEST: 13,
-  LEVER: 14,
-};
+import { BlockType, BLOCK_TYPES, SoundType } from '@type';
+export { BlockType, BLOCK_TYPES };
 
 // Mapping each block type's top, bottom, and side faces to tile indices in the 4x4 atlas grid (0 to 15)
 export const BLOCK_FACES: Record<number, { top: number; bottom: number; side: number }> = {
@@ -35,7 +20,7 @@ export const BLOCK_FACES: Record<number, { top: number; bottom: number; side: nu
 };
 
 export interface BlockProperties {
-  id: number;
+  id: BlockType;
   name: string;
   isSolid: boolean;           // 是否为实体，供物理碰撞检测使用 (如玩家是否可以穿过)
   isTransparent: boolean;     // 是否为透明/透光方块 (光线穿过、网格绘制时是否剔除邻面)
@@ -45,7 +30,7 @@ export interface BlockProperties {
   lightLevel: number;         // 光照亮度等级：0-15 (如南瓜灯/火把/荧石为15)
   isInteractable: boolean;    // 是否可交互 (如箱子、门、熔炉、拉杆等)
   opacity: number;            // 渲染不透明度：0.0到1.0 (如水 0.8，空气 0.0，玻璃 0.3，普通方块 1.0)
-  soundType: 'stone' | 'grass' | 'wood' | 'sand' | 'glass' | 'water' | 'none'; // 破坏/放置/行走音效类型
+  soundType: SoundType;       // 破坏/放置/行走音效类型
   showBreakCracks?: boolean;  // 破坏过程中是否显示裂纹，默认 true
 }
 

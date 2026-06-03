@@ -1,13 +1,13 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useGameStore } from './useGameStore';
 import { BLOCK_TYPES } from '@game/world/World';
-import type { DebugMetrics } from '@type';
+import { GameState, GameMode, type DebugMetrics } from '@type';
 
 describe('useGameStore', () => {
   beforeEach(() => {
     // 重置状态
     useGameStore.setState({
-      gameState: 'MENU',
+      gameState: GameState.MENU,
       selectedBlock: BLOCK_TYPES.AIR,
       activeSlot: 0,
       hotbar: Array(9).fill(null),
@@ -20,7 +20,7 @@ describe('useGameStore', () => {
       isDamaged: false,
       renderDistance: 3,
       fov: 75,
-      gameMode: 'adventure',
+      gameMode: GameMode.ADVENTURE,
       isInventoryOpen: false,
       inventory: Array(54).fill(null),
       language: 'zh',
@@ -29,7 +29,7 @@ describe('useGameStore', () => {
 
   test('should have initial state', () => {
     const state = useGameStore.getState();
-    expect(state.gameState).toBe('MENU');
+    expect(state.gameState).toBe(GameState.MENU);
     expect(state.selectedBlock).toBe(BLOCK_TYPES.AIR);
     expect(state.activeSlot).toBe(0);
     expect(state.hotbar).toEqual(Array(9).fill(null));
@@ -42,28 +42,28 @@ describe('useGameStore', () => {
     expect(state.isDamaged).toBe(false);
     expect(state.renderDistance).toBe(3);
     expect(state.fov).toBe(75);
-    expect(state.gameMode).toBe('adventure');
+    expect(state.gameMode).toBe(GameMode.ADVENTURE);
     expect(state.isInventoryOpen).toBe(false);
     expect(state.inventory).toEqual(Array(54).fill(null));
     expect(state.language).toBe('zh');
   });
 
   test('should set game state via setGameState', () => {
-    useGameStore.getState().setGameState('PLAYING');
-    expect(useGameStore.getState().gameState).toBe('PLAYING');
+    useGameStore.getState().setGameState(GameState.PLAYING);
+    expect(useGameStore.getState().gameState).toBe(GameState.PLAYING);
 
-    useGameStore.getState().setGameState('PAUSED');
-    expect(useGameStore.getState().gameState).toBe('PAUSED');
+    useGameStore.getState().setGameState(GameState.PAUSED);
+    expect(useGameStore.getState().gameState).toBe(GameState.PAUSED);
   });
 
   test('should set game mode via setGameMode and auto reset hotbar', () => {
-    useGameStore.getState().setGameMode('creative');
-    expect(useGameStore.getState().gameMode).toBe('creative');
+    useGameStore.getState().setGameMode(GameMode.CREATIVE);
+    expect(useGameStore.getState().gameMode).toBe(GameMode.CREATIVE);
     expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.GRASS, count: 1 });
     expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.GRASS);
 
-    useGameStore.getState().setGameMode('adventure');
-    expect(useGameStore.getState().gameMode).toBe('adventure');
+    useGameStore.getState().setGameMode(GameMode.ADVENTURE);
+    expect(useGameStore.getState().gameMode).toBe(GameMode.ADVENTURE);
     expect(useGameStore.getState().hotbar[0]).toBeNull();
     expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
   });

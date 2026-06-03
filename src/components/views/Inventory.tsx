@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { Dialog } from '@components/common/Dialog';
-import { BLOCK_TYPES } from '@game/world/BlockConfig';
+import { BLOCK_TYPES, type BlockType } from '@game/world/BlockConfig';
 import type { HotbarItem } from '@store/types';
 import type { GameManager } from '@game/core/GameManager';
 import styles from './Inventory.module.scss';
@@ -31,7 +31,7 @@ const ALL_BLOCKS = [
 ];
 
 interface HeldItem {
-  type: number;
+  type: BlockType;
   count: number;
   source: 'hotbar' | 'inventory' | 'creative';
   sourceIndex: number;
@@ -146,7 +146,7 @@ export const Inventory: React.FC = () => {
   const handleSlotClick = (
     zone: 'hotbar' | 'inventory' | 'creative',
     index: number,
-    blockId?: number
+    blockId?: BlockType
   ) => {
     const nextHotbar = [...hotbar];
     const nextInventory = [...inventory];

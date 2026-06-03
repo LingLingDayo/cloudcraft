@@ -3,6 +3,7 @@ import { GameManager } from './GameManager';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/World';
 import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
+import type { BlockType } from '@type';
 import { BlockRegistry } from '../world/block/BlockRegistry';
 
 
@@ -365,7 +366,7 @@ export class InteractionManager {
         15
       );
 
-      this.game.droppedItems.spawnItem(blockId, new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5));
+      this.game.droppedItems.spawnItem(blockId as BlockType, new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5));
       this.cancelMining();
     }
   }

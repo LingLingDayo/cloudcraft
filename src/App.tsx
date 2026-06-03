@@ -5,6 +5,7 @@ import { HUD } from '@components/views/HUD';
 import { PauseMenu } from '@components/views/PauseMenu';
 import { useGameStore } from '@store/useGameStore';
 import styles from './App.module.scss';
+import { GameState, GameMode, type BlockType } from '@type';
 
 function App() {
   const gameState = useGameStore((state) => state.gameState);
@@ -23,7 +24,7 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
   const activeParamsRef = useRef<{ seed: string; renderDistance: number; fov: number; loadSave: boolean } | null>(null);
-  const selectedBlockRef = useRef<number>(selectedBlock);
+  const selectedBlockRef = useRef<BlockType>(selectedBlock);
 
   useEffect(() => {
     selectedBlockRef.current = selectedBlock;
@@ -35,7 +36,7 @@ function App() {
 
   // Initialize GameManager once the canvas is mounted and state is PLAYING
   useEffect(() => {
-    if (gameState === 'PLAYING' && canvasRef.current && !gameManagerRef.current) {
+    if (gameState === GameState.PLAYING && canvasRef.current && !gameManagerRef.current) {
       const params = activeParamsRef.current;
       const seed = params?.seed || 'minicraft';
       const initialDistance = params?.renderDistance || 3;
@@ -92,7 +93,7 @@ function App() {
     }
 
     // Clean up game instance when switching back to menu
-    if (gameState === 'MENU' && gameManagerRef.current) {
+    if (gameState === GameState.MENU && gameManagerRef.current) {
       gameManagerRef.current.dispose();
       gameManagerRef.current = null;
     }
@@ -132,7 +133,7 @@ function App() {
   useEffect(() => {
     const gm = gameManagerRef.current;
     if (gm) {
-      if (gameMode !== 'creative') {
+      if (gameMode !== GameMode.CREATIVE) {
         gm.player.isFlying = false;
       }
     }
@@ -154,7 +155,7 @@ function App() {
     };
     setRenderDistance(distVal);
     setFov(fovVal);
-    setGameState('PLAYING');
+    setGameState(GameState.PLAYING);
   };
 
   // Resume game handler
@@ -189,14 +190,14 @@ function App() {
   // Quit game handler
   const handleQuit = () => {
     handleSave();
-    setGameState('MENU');
+    setGameState(GameState.MENU);
   };
 
   return (
     <div className={styles.appContainer}>
-      {gameState === 'MENU' && <StartMenu onStartGame={handleStartGame} />}
+      {gameState === GameState.MENU && <StartMenu onStartGame={handleStartGame} />}
 
-      {gameState !== 'MENU' && (
+      {gameState !== GameState.MENU && (
         <div className="game-container">
           <canvas ref={canvasRef} className="game-canvas" />
 
@@ -209,7 +210,7 @@ function App() {
         </div>
       )}
 
-      {gameState === 'PAUSED' && !activeChest && !isInventoryOpen && (
+      {gameState === GameState.PAUSED && !activeChest && !isInventoryOpen && (
         <PauseMenu
           onResume={handleResume}
           onSave={handleSave}

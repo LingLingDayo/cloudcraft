@@ -1,26 +1,21 @@
-import type { GameState, DebugMetrics, GameMode } from '@type';
+import type { GameState, DebugMetrics, GameMode, Language, HotbarItem, BlockType } from '@type';
+export type { HotbarItem } from '@type';
 
 export interface GameSlice {
   gameState: GameState;
   renderDistance: number;
   fov: number;
   gameMode: GameMode;
-  language: 'zh' | 'en';
+  language: Language;
   setGameState: (state: GameState) => void;
   setRenderDistance: (dist: number) => void;
   setFov: (fov: number) => void;
   setGameMode: (mode: GameMode) => void;
-  setLanguage: (lang: 'zh' | 'en') => void;
-}
-
-
-export interface HotbarItem {
-  type: number;
-  count: number;
+  setLanguage: (lang: Language) => void;
 }
 
 export interface PlayerSlice {
-  selectedBlock: number;
+  selectedBlock: BlockType;
   activeSlot: number;
   hotbar: (HotbarItem | null)[];
   life: number;
@@ -32,11 +27,11 @@ export interface PlayerSlice {
   chestInventory: (HotbarItem | null)[];
   isInventoryOpen: boolean;
   inventory: (HotbarItem | null)[];
-  setSelectedBlock: (block: number) => void;
+  setSelectedBlock: (block: BlockType) => void;
   setActiveSlot: (slot: number) => void;
-  addToHotbar: (blockType: number, count?: number) => boolean;
+  addToHotbar: (blockType: BlockType, count?: number) => boolean;
   decrementHotbarItem: (slotIndex: number) => void;
-  resetHotbar: (mode: 'adventure' | 'creative') => void;
+  resetHotbar: (mode: GameMode) => void;
   setLife: (life: number) => void;
   setPlayerState: (
     position: { x: number; y: number; z: number },

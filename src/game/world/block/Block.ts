@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type { World } from '../World';
 import type { BlockEntity } from './BlockEntity';
+import { BlockType, SoundType } from '@type';
 
 export interface BlockProperties {
-  id: number;
+  id: BlockType;
   name: string;
   isSolid: boolean;
   isTransparent: boolean;
@@ -13,7 +14,7 @@ export interface BlockProperties {
   lightLevel: number;
   isInteractable: boolean;
   opacity: number;
-  soundType: 'stone' | 'grass' | 'wood' | 'sand' | 'glass' | 'water' | 'none';
+  soundType: SoundType;
   showBreakCracks?: boolean;
 }
 
@@ -24,7 +25,7 @@ export abstract class Block {
     this.properties = properties;
   }
 
-  public get id(): number { return this.properties.id; }
+  public get id(): BlockType { return this.properties.id; }
   public get name(): string { return this.properties.name; }
   public get isSolid(): boolean { return this.properties.isSolid; }
   public get isTransparent(): boolean { return this.properties.isTransparent; }
@@ -34,7 +35,7 @@ export abstract class Block {
   public get lightLevel(): number { return this.properties.lightLevel; }
   public get isInteractable(): boolean { return this.properties.isInteractable; }
   public get opacity(): number { return this.properties.opacity; }
-  public get soundType() { return this.properties.soundType; }
+  public get soundType(): SoundType { return this.properties.soundType; }
   public get showBreakCracks(): boolean { return this.properties.showBreakCracks !== false; }
 
   /**

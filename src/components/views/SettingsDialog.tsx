@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../../i18n';
 import { useGameStore } from '@store/useGameStore';
+import { GameMode, type Language } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
@@ -40,8 +41,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
   };
 
   const gameModeOptions = [
-    { label: t('pauseMenu.gameModeAdventure'), value: 'adventure' },
-    { label: t('pauseMenu.gameModeCreative'), value: 'creative' },
+    { label: t('pauseMenu.gameModeAdventure'), value: GameMode.ADVENTURE },
+    { label: t('pauseMenu.gameModeCreative'), value: GameMode.CREATIVE },
   ];
 
   const tabs = [
@@ -100,7 +101,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
                       { label: '简体中文', value: 'zh' },
                       { label: 'English', value: 'en' },
                     ]}
-                    onChange={(val) => setLanguage(val as 'zh' | 'en')}
+                    onChange={(val) => setLanguage(val as Language)}
                   />
                 </div>
 
@@ -118,7 +119,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
                     label={t('pauseMenu.gameMode')}
                     value={gameMode}
                     options={gameModeOptions}
-                    onChange={(val) => setGameMode(val as 'adventure' | 'creative')}
+                    onChange={(val) => setGameMode(val as GameMode)}
                   />
                 </div>
               </div>

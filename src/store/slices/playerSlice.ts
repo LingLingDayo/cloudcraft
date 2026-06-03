@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, PlayerSlice } from '../types';
 import { BLOCK_TYPES } from '@game/world/World';
+import { GameMode } from '@type';
 
 export const createPlayerSlice: StateCreator<
   GameStoreState,
@@ -33,7 +34,7 @@ export const createPlayerSlice: StateCreator<
   addToHotbar: (blockType, count = 1) => {
     let success = false;
     set((state) => {
-      if (state.gameMode === 'creative') {
+      if (state.gameMode === GameMode.CREATIVE) {
         return {};
       }
 
@@ -81,7 +82,7 @@ export const createPlayerSlice: StateCreator<
   },
 
   decrementHotbarItem: (slotIndex) => set((state) => {
-    if (state.gameMode === 'creative') {
+    if (state.gameMode === GameMode.CREATIVE) {
       return {};
     }
     const nextHotbar = [...state.hotbar];
@@ -100,7 +101,7 @@ export const createPlayerSlice: StateCreator<
   }),
 
   resetHotbar: (mode) => set(() => {
-    if (mode === 'creative') {
+    if (mode === GameMode.CREATIVE) {
       return {
         hotbar: [
           { type: BLOCK_TYPES.GRASS, count: 1 },
