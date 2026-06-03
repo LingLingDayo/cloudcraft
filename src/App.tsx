@@ -63,9 +63,16 @@ function App() {
               useGameStore.getState().setGameMode(saved.gameMode);
             }
             if (saved.hotbar !== undefined) {
+              let loadedInventory = saved.inventory ?? Array(54).fill(null);
+              if (loadedInventory.length < 54) {
+                loadedInventory = [
+                  ...loadedInventory,
+                  ...Array(54 - loadedInventory.length).fill(null)
+                ];
+              }
               useGameStore.setState({
                 hotbar: saved.hotbar,
-                inventory: saved.inventory ?? Array(27).fill(null),
+                inventory: loadedInventory,
                 activeSlot: saved.activeSlot ?? 0,
                 selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0 // 0 is BLOCK_TYPES.AIR
               });

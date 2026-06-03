@@ -2,19 +2,20 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 350px;
+  width: 100%;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .tabContainer {
   display: flex;
   gap: 4px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .tabBtn {
   background: #c6c6c6;
-  border: 2px solid #000;
+  border: 2px solid #373737;
   box-shadow: 
     inset 2px 2px 0 #fff,
     inset -2px -2px 0 #555;
@@ -49,19 +50,35 @@
 }
 
 .creativeSection {
-  background: #8b8b8b;
+  background: #a8a8a8;
   border: 2px solid #373737;
   padding: 10px;
-  box-shadow: inset -2px -2px 0 #fff;
 }
 
 .creativeGrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: 6px;
   max-height: 180px;
   overflow-y: auto;
   padding: 2px;
+
+  /* Pixel Art Scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #8b8b8b;
+    border-left: 2px solid #373737;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #c6c6c6;
+    border: 2px solid #373737;
+    box-shadow: inset 1px 1px 0 #fff;
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
 }
 
 .survivalSection {
@@ -80,17 +97,35 @@
 .inventoryGrid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  gap: 4px;
-  background: #8b8b8b;
+  gap: 6px;
+  background: #a8a8a8;
   border: 2px solid #373737;
-  padding: 6px;
-  box-shadow: inset -2px -2px 0 #fff;
+  padding: 8px;
+  max-height: 172px; /* Displays exactly 4 rows cleanly, scroll for more */
+  overflow-y: auto;
+  box-sizing: border-box;
+
+  /* Pixel Art Scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: #8b8b8b;
+    border-left: 2px solid #373737;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #c6c6c6;
+    border: 2px solid #373737;
+    box-shadow: inset 1px 1px 0 #fff;
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
 }
 
 .divider {
-  height: 4px;
-  background: #555555;
-  border-bottom: 2px solid #ffffff;
+  height: 2px;
+  background: #373737;
   margin: 4px 0;
 }
 
@@ -103,23 +138,21 @@
 .hotbarGrid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  gap: 4px;
-  background: #8b8b8b;
+  gap: 6px;
+  background: #a8a8a8;
   border: 2px solid #373737;
-  padding: 6px;
-  box-shadow: inset -2px -2px 0 #fff;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
-/* Item Slot Styling - Inset Minecraft Vibe */
+/* Item Slot Styling - Clean Modern Pixel Art Vibe */
 .itemSlot {
   position: relative;
   width: 32px;
   height: 32px;
-  background: #8b8b8b;
-  border-top: 2px solid #373737;
-  border-left: 2px solid #373737;
-  border-bottom: 2px solid #ffffff;
-  border-right: 2px solid #ffffff;
+  background: rgba(0, 0, 0, 0.12);
+  border: 2px solid #373737;
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
   display: flex;
   justify-content: center;
@@ -127,7 +160,8 @@
   cursor: pointer;
 
   &:hover {
-    background: #a8a8a8;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #8b8b8b;
     &::after {
       content: '';
       position: absolute;
@@ -135,26 +169,26 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.12);
       pointer-events: none;
     }
   }
 
   &.activeSlotBorder {
-    outline: 2px solid #ffff00;
-    outline-offset: -2px;
+    border-color: #ffff00;
+    box-shadow: 0 0 4px rgba(255, 255, 0, 0.5);
   }
 }
 
 .itemPreview {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   pointer-events: none;
 }
 
 .emptyItem {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   pointer-events: none;
 }
 
@@ -184,7 +218,7 @@
 
 .footerHint {
   font-size: 9px;
-  color: #777777;
+  color: #555555;
   text-align: center;
   margin-top: 4px;
 }

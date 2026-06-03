@@ -287,7 +287,11 @@ export const Inventory: React.FC = () => {
 
   return (
     <>
-      <Dialog title={gameMode === 'creative' ? '创造模式物品栏' : '背包'} onClose={handleClose}>
+      <Dialog 
+        title={gameMode === 'creative' ? '创造模式物品栏' : '背包'} 
+        onClose={handleClose}
+        width={412}
+      >
         <div className={styles.container}>
           {/* Creative Mode Tabs */}
           {gameMode === 'creative' && (
