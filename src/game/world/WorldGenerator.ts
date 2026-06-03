@@ -3,6 +3,7 @@ import { BLOCK_TYPES } from './BlockConfig';
 import { getBiomeAt } from './biome/BiomeRegistry';
 import { type Biome, TreeStyle } from './biome/Biome';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
+import { WORLD_CONFIG } from './WorldConfig';
 
 export class WorldGenerator {
   private noise: ImprovedNoise;
@@ -26,9 +27,10 @@ export class WorldGenerator {
     let totalHeight = 0;
     let totalWeight = 0;
     
-    // 3x3 采样，步长设为 4
-    for (let dx = -4; dx <= 4; dx += 4) {
-      for (let dz = -4; dz <= 4; dz += 4) {
+    const step = WORLD_CONFIG.heightInterpolation.step;
+    // 3x3 采样，步长设为 step
+    for (let dx = -step; dx <= step; dx += step) {
+      for (let dz = -step; dz <= step; dz += step) {
         const sampleX = wx + dx;
         const sampleZ = wz + dz;
         const biome = getBiomeAt(sampleX, sampleZ, this.noise);
@@ -36,9 +38,9 @@ export class WorldGenerator {
         // 用该生态规律计算中心点的高度
         const height = biome.getHeight(wx, wz, this.noise);
         
-        // 高斯权重：dSq = dx^2 + dz^2，W = exp(-dSq / 32)
+        // 高斯权重：dSq = dx^2 + dz^2，W = exp(-dSq / sigmaSq)
         const dSq = dx * dx + dz * dz;
-        const weight = Math.exp(-dSq / 32);
+        const weight = Math.exp(-dSq / WORLD_CONFIG.heightInterpolation.sigmaSq);
         
         totalHeight += height * weight;
         totalWeight += weight;
@@ -71,7 +73,7 @@ export class WorldGenerator {
         // 使用 3x3 邻域插值计算平滑高度与主生态
         const { height: interpolatedHeight, primaryBiome } = this.getInterpolatedHeightAndBiome(wx, wz);
         const finalHeight = Math.min(CHUNK_SIZE_Y - 2, interpolatedHeight);
-        const waterLevel = 22;
+        const waterLevel = WORLD_CONFIG.waterLevel;
 
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
           const index = x + z * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;

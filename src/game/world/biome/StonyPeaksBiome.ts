@@ -1,6 +1,7 @@
-import type { Biome } from './Biome';
+import { type Biome, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
+import { WORLD_CONFIG } from '../WorldConfig';
 
 export class StonyPeaksBiome implements Biome {
   public id = 'stony_peaks';
@@ -26,16 +27,7 @@ export class StonyPeaksBiome implements Biome {
       chunk[index] = BLOCK_TYPES.STONE; // 基岩
     } else {
       // 表面及地表下方全部直接裸露石头，包含较高矿石生成概率
-      const r = Math.random();
-      if (r < 0.012 && y < 20) {
-        chunk[index] = BLOCK_TYPES.DIAMOND;
-      } else if (r < 0.03 && y < 45) {
-        chunk[index] = BLOCK_TYPES.IRON;
-      } else if (r < 0.06 && y < 55) {
-        chunk[index] = BLOCK_TYPES.COAL;
-      } else {
-        chunk[index] = BLOCK_TYPES.STONE;
-      }
+      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.stonyPeaks, BLOCK_TYPES.STONE);
     }
   }
 

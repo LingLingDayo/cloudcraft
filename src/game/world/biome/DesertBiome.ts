@@ -1,6 +1,7 @@
-import type { Biome } from './Biome';
+import { type Biome, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
+import { WORLD_CONFIG } from '../WorldConfig';
 
 export class DesertBiome implements Biome {
   public id = 'desert';
@@ -30,16 +31,7 @@ export class DesertBiome implements Biome {
         chunk[index] = BLOCK_TYPES.SANDSTONE; // 深层砂岩
       } else {
         // 最深层是石头加矿石
-        const r = Math.random();
-        if (r < 0.01 && y < 15) {
-          chunk[index] = BLOCK_TYPES.DIAMOND;
-        } else if (r < 0.02 && y < 30) {
-          chunk[index] = BLOCK_TYPES.IRON;
-        } else if (r < 0.04 && y < 45) {
-          chunk[index] = BLOCK_TYPES.COAL;
-        } else {
-          chunk[index] = BLOCK_TYPES.STONE;
-        }
+        chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE);
       }
     }
   }

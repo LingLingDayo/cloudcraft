@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { World } from '@game/world/World';
 import { VoxelPhysics } from './voxel/VoxelPhysics';
 import { RapierPhysicsPlaceholder } from './rigidbody/RapierPhysicsPlaceholder';
+import { PHYSICS_CONFIG } from './PhysicsConfig';
 
 /**
  * 物理引擎管理器 (Physics Manager)
@@ -15,13 +16,13 @@ export class Physics {
   private rigidbodyPhysics: RapierPhysicsPlaceholder;
 
   // 物理配置参数（公共字段，允许运行时动态修改，VoxelPhysics 引用此处的实时参数）
-  public playerSize = { width: 0.6, height: 1.8, depth: 0.6 };
-  public gravity = -26; // blocks per second squared
-  public terminalVelocity = -50;
-  public jumpSpeed = 8.5;
-  public walkSpeed = 6.0;
-  public swimSpeed = 3.0;
-  public stepHeight = 0.6;
+  public playerSize = { ...PHYSICS_CONFIG.playerSize };
+  public gravity: number = PHYSICS_CONFIG.gravity;
+  public terminalVelocity: number = PHYSICS_CONFIG.terminalVelocity;
+  public jumpSpeed: number = PHYSICS_CONFIG.jumpSpeed;
+  public walkSpeed: number = PHYSICS_CONFIG.walkSpeed;
+  public swimSpeed: number = PHYSICS_CONFIG.swimSpeed;
+  public stepHeight: number = PHYSICS_CONFIG.stepHeight;
 
   constructor(world: World) {
     // 传入 this 作为 settings 引用，支持动态属性修改的实时更新

@@ -1,6 +1,7 @@
-import { type Biome, type GrowTreeFn, TreeStyle } from './Biome';
+import { type Biome, type GrowTreeFn, TreeStyle, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
+import { WORLD_CONFIG } from '../WorldConfig';
 
 export class JungleBiome implements Biome {
   public id = 'jungle';
@@ -35,16 +36,7 @@ export class JungleBiome implements Biome {
       }
     } else {
       // 矿石脉
-      const r = Math.random();
-      if (r < 0.01 && y < 15) {
-        chunk[index] = BLOCK_TYPES.DIAMOND;
-      } else if (r < 0.02 && y < 30) {
-        chunk[index] = BLOCK_TYPES.IRON;
-      } else if (r < 0.04 && y < 45) {
-        chunk[index] = BLOCK_TYPES.COAL;
-      } else {
-        chunk[index] = BLOCK_TYPES.STONE;
-      }
+      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE);
     }
   }
 
