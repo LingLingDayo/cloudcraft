@@ -6,6 +6,7 @@ import { DesertBiome } from './DesertBiome';
 import { JungleBiome } from './JungleBiome';
 import { PlateauBiome } from './PlateauBiome';
 import { StonyPeaksBiome } from './StonyPeaksBiome';
+import { WORLD_CONFIG } from '../WorldConfig';
 
 export const BiomeRegistry = {
   FOREST: new ForestBiome(),
@@ -19,21 +20,21 @@ export const BiomeRegistry = {
 export type BiomeType = keyof typeof BiomeRegistry;
 
 export function getBiomeAt(wx: number, wz: number, noise: ImprovedNoise): Biome {
-  // 比例尺设为 0.003，保证单个生态区域在 300~500 格左右，大小适中
-  const scale = 0.003;
+  // 比例尺设为 WORLD_CONFIG.biomeScale，保证单个生态区域在 300~500 格左右，大小适中
+  const scale = WORLD_CONFIG.biomeScale;
   // 偏移以避免温度与湿度出现明显的噪波条纹共振
   const temp = (noise.noise(wx * scale, wz * scale) + 1) / 2;
-  const moisture = (noise.noise((wx + 2000) * scale, (wz + 2000) * scale) + 1) / 2;
+  const moisture = (noise.noise((wx + WORLD_CONFIG.biomeOffset) * scale, (wz + WORLD_CONFIG.biomeOffset) * scale) + 1) / 2;
 
-  if (temp > 0.65) {
-    if (moisture < 0.35) return BiomeRegistry.DESERT;
-    if (moisture > 0.65) return BiomeRegistry.JUNGLE;
+  if (temp > WORLD_CONFIG.biomeTempThresholds.hot) {
+    if (moisture < WORLD_CONFIG.biomeMoistureThresholds.dry) return BiomeRegistry.DESERT;
+    if (moisture > WORLD_CONFIG.biomeMoistureThresholds.wet) return BiomeRegistry.JUNGLE;
     return BiomeRegistry.FOREST;
-  } else if (temp < 0.35) {
-    if (moisture < 0.35) return BiomeRegistry.STONY_PEAKS;
+  } else if (temp < WORLD_CONFIG.biomeTempThresholds.cold) {
+    if (moisture < WORLD_CONFIG.biomeMoistureThresholds.dry) return BiomeRegistry.STONY_PEAKS;
     return BiomeRegistry.TAIGA;
   } else {
-    if (moisture < 0.35) return BiomeRegistry.PLATEAU;
+    if (moisture < WORLD_CONFIG.biomeMoistureThresholds.dry) return BiomeRegistry.PLATEAU;
     return BiomeRegistry.FOREST;
   }
 }

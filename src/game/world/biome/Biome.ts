@@ -1,4 +1,5 @@
 import { ImprovedNoise } from '../Noise';
+import type { OreConfig } from '../WorldConfig';
 
 export const TreeStyle = {
   OAK: 'oak',
@@ -54,4 +55,14 @@ export interface Biome {
     treeIndex: number,
     growTree: GrowTreeFn
   ): void;
+}
+
+export function getOreType(y: number, ores: readonly OreConfig[], defaultBlock: number): number {
+  const r = Math.random();
+  for (const ore of ores) {
+    if (r < ore.probability && y < ore.maxLevel) {
+      return ore.blockType;
+    }
+  }
+  return defaultBlock;
 }
