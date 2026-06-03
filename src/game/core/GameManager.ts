@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as THREE from 'three';
 import { World, getBlockProperties } from '@game/world/World';
 import { Physics } from '@game/physics/Physics';
@@ -97,7 +98,8 @@ export class GameManager {
   }
 
   private initGame(seed: string) {
-    this.world = new World(seed);
+    this.world = new World(seed, this);
+    (window as any).gameInstance = this;
     this.scene.add(this.world.group);
 
     this.physics = new Physics(this.world);
@@ -200,6 +202,8 @@ export class GameManager {
 
       if (this.interaction) this.interaction.update(dt);
       if (this.droppedItems) this.droppedItems.update(dt);
+      this.world.update(dt);
+
 
       const currentMs = performance.now();
       if (currentMs - this.lastUiUpdateTime > 100) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { BLOCK_TYPES } from '@game/world/World';
 import { useGameStore } from '@store/useGameStore';
@@ -16,6 +17,20 @@ const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.DIAMOND, name: '钻石矿', color: '#5cdcfa', border: '1.5px solid #2db4d2' },
 ];
 
+const getBlockColor = (type: number): string => {
+  const found = HOTBAR_ITEMS.find(item => item.id === type);
+  if (found) return found.color;
+  if (type === 13) return '#78552d'; // 木箱色
+  if (type === 14) return '#787878'; // 拉杆灰
+  return '#a1a1aa';
+};
+
+const getBlockBorder = (type: number): string => {
+  const found = HOTBAR_ITEMS.find(item => item.id === type);
+  return found ? found.border : 'none';
+};
+
+
 export const HUD: React.FC = () => {
   const [activeLabel, setActiveLabel] = useState<string>('');
 
@@ -30,6 +45,24 @@ export const HUD: React.FC = () => {
   const debugOverlay = useGameStore((state) => state.debugOverlay);
   const debugMetrics = useGameStore((state) => state.debugMetrics);
   const gameMode = useGameStore((state) => state.gameMode);
+
+  const activeChest = useGameStore((state) => state.activeChest);
+  const chestInventory = useGameStore((state) => state.chestInventory);
+  const quickMoveItem = useGameStore((state) => state.quickMoveItem);
+  const closeChest = useGameStore((state) => state.closeChest);
+
+  const handleQuickMove = (from: 'hotbar' | 'chest', index: number) => {
+    quickMoveItem(from, index, (nextChest) => {
+      const gameInstance = (window as any).gameInstance;
+      if (activeChest && gameInstance) {
+        const entity = gameInstance.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
+        if (entity && 'inventory' in entity) {
+          (entity as any).inventory = [...nextChest];
+        }
+      }
+    });
+  };
+
 
   // Keyboard 1-9 number row selection using HotkeyManager
   useEffect(() => {
@@ -196,6 +229,46 @@ export const HUD: React.FC = () => {
             ) : (
               <span className={styles.noBlock}>无</span>
             )}
+          </div>
+        </div>
+      )}
+      {activeChest && (
+        <div className={styles.chestOverlay}>
+          <div className={`${styles.chestWindow} glass-panel`}>
+            <div className={styles.chestHeader}>
+              <span className="pixel-text-sm">储物箱 (Chest)</span>
+              <button className={styles.closeBtn} onClick={() => {
+                closeChest();
+                (window as any).gameInstance?.controls?.lock();
+              }}>✕</button>
+            </div>
+            <div className={styles.sectionTitle}>箱子物品</div>
+            <div className={styles.chestGrid}>
+              {chestInventory.map((item, idx) => (
+                <div key={`c-${idx}`} className={styles.chestSlot} onClick={() => handleQuickMove('chest', idx)}>
+                  {item ? (
+                    <>
+                      <div className={styles.itemPreview} style={{ backgroundColor: getBlockColor(item.type), border: getBlockBorder(item.type) }} />
+                      <span className={styles.itemCount}>{item.count}</span>
+                    </>
+                  ) : <div className={styles.itemEmpty} />}
+                </div>
+              ))}
+            </div>
+            <div className={styles.divider} />
+            <div className={styles.sectionTitle}>快捷栏</div>
+            <div className={styles.hotbarGrid}>
+              {hotbar.map((item, idx) => (
+                <div key={`h-${idx}`} className={styles.hotbarSlot} onClick={() => handleQuickMove('hotbar', idx)}>
+                  {item ? (
+                    <>
+                      <div className={styles.itemPreview} style={{ backgroundColor: getBlockColor(item.type), border: getBlockBorder(item.type) }} />
+                      <span className={styles.itemCount}>{item.count}</span>
+                    </>
+                  ) : <div className={styles.itemEmpty} />}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

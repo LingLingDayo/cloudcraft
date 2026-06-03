@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as THREE from 'three';
 import { ImprovedNoise } from './Noise';
 import { BLOCK_TYPES, BLOCK_FACES, getBlockProperties } from './BlockConfig';
 import { generateTextureAtlas } from './TextureAtlas';
+import { BlockRegistry } from './block/BlockRegistry';
+import { BlockEntityManager } from './block/BlockEntityManager';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -10,6 +13,9 @@ export const CHUNK_SIZE_Z = 16;
 export const CHUNK_SIZE_Y = 64;
 
 export class World {
+  public game: any;
+  public blockEntities: BlockEntityManager;
+  private fallingBlocks: Map<string, { x: number; y: number; z: number; blockId: number; timer: number }>;
   private chunks: Map<string, Uint8Array>;
   private noise: ImprovedNoise;
   private seed: string;
@@ -18,8 +24,11 @@ export class World {
   private chunkMeshes: Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh }>;
   public materials: { solid: THREE.Material; transparent: THREE.Material };
 
-  constructor(seed = 'minicraft') {
+  constructor(seed = 'minicraft', game?: any) {
     this.seed = seed;
+    this.game = game;
+    this.blockEntities = new BlockEntityManager();
+    this.fallingBlocks = new Map();
     this.chunks = new Map();
     this.noise = new ImprovedNoise(seed);
     this.group = new THREE.Group();
@@ -96,8 +105,20 @@ export class World {
     const oldType = chunk[index];
     if (oldType === type) return;
 
+    const oldBlock = BlockRegistry.get(oldType);
+    oldBlock.onDestroyed(this, x, y, z);
+    this.blockEntities.removeEntity(x, y, z);
+
     chunk[index] = type;
     this.chunks.set(key, chunk);
+
+    const newBlock = BlockRegistry.get(type);
+    if (newBlock.hasBlockEntity()) {
+      const entityType = type === BLOCK_TYPES.CHEST ? 'chest' : 'lever';
+      this.blockEntities.createEntity(entityType, x, y, z);
+    }
+    newBlock.onPlaced(this, x, y, z);
+    this.notifyNeighborsOfStateChange(x, y, z);
 
     // Rebuild this chunk's mesh
     this.updateChunkMesh(cx, cz);
@@ -108,6 +129,7 @@ export class World {
     if (lz === 0) this.updateChunkMesh(cx, cz - 1);
     if (lz === CHUNK_SIZE_Z - 1) this.updateChunkMesh(cx, cz + 1);
   }
+
 
   // Procedural chunk generation
   private generateChunkData(cx: number, cz: number): Uint8Array {
@@ -495,7 +517,8 @@ export class World {
     }
     return JSON.stringify({
       seed: this.seed,
-      chunks: serializedChunks
+      chunks: serializedChunks,
+      entities: this.blockEntities.serialize()
     });
   }
 
@@ -532,8 +555,62 @@ export class World {
           }
         }
       }
+      if (saved.entities) {
+        this.blockEntities.deserialize(saved.entities);
+      } else {
+        this.blockEntities.clear();
+      }
     } catch (e) {
       console.error('Failed to load world', e);
     }
   }
+
+  public addFallingBlock(x: number, y: number, z: number) {
+    const blockId = this.getBlock(x, y, z);
+    if (blockId === BLOCK_TYPES.AIR) return;
+    const key = `${x},${y},${z}`;
+    if (!this.fallingBlocks.has(key)) {
+      this.fallingBlocks.set(key, { x, y, z, blockId, timer: 0.1 });
+    }
+  }
+
+  public update(dt: number) {
+    if (this.fallingBlocks.size === 0) return;
+    const fbs = Array.from(this.fallingBlocks.entries());
+    for (const [key, fb] of fbs) {
+      fb.timer -= dt;
+      if (fb.timer <= 0) {
+        this.fallingBlocks.delete(key);
+        const currentType = this.getBlock(fb.x, fb.y, fb.z);
+        if (currentType === fb.blockId) {
+          const belowY = fb.y - 1;
+          const belowType = this.getBlock(fb.x, belowY, fb.z);
+          if (belowType === BLOCK_TYPES.AIR || belowType === BLOCK_TYPES.WATER) {
+            // Lower sand block by 1 voxel
+            this.setBlock(fb.x, fb.y, fb.z, BLOCK_TYPES.AIR);
+            this.setBlock(fb.x, belowY, fb.z, fb.blockId);
+            // Recursively trigger next fall check
+            this.addFallingBlock(fb.x, belowY, fb.z);
+          }
+        }
+      }
+    }
+  }
+
+  public notifyNeighborsOfStateChange(x: number, y: number, z: number) {
+    const neighbors = [
+      [1, 0, 0], [-1, 0, 0],
+      [0, 1, 0], [0, -1, 0],
+      [0, 0, 1], [0, 0, -1]
+    ];
+    for (const [dx, dy, dz] of neighbors) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const nz = z + dz;
+      const neighborId = this.getBlock(nx, ny, nz);
+      const neighborBlock = BlockRegistry.get(neighborId);
+      neighborBlock.onNeighborChanged(this, nx, ny, nz, x, y, z);
+    }
+  }
+
 }

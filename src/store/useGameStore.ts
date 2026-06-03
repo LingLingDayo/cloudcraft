@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import type { GameStoreState } from './types';
 import { createGameSlice } from './slices/gameSlice';
@@ -11,3 +12,8 @@ export const useGameStore = create<GameStoreState>()((...a) => ({
   ...createPlayerSlice(...a),
   ...createDebugSlice(...a),
 }));
+
+if (typeof window !== 'undefined') {
+  (window as any).useGameStore = useGameStore;
+}
+
