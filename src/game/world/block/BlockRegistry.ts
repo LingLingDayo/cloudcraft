@@ -23,19 +23,19 @@ export class BlockRegistry {
     this.register(new SimpleSolidBlock({
       id: BLOCK_TYPES.GRASS, name: '草方块', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 0.6, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'grass',
-      color: '#56a032', colorHex: 0x56a032
+      color: '#56a032', colorHex: 0x56a032, allowVegetationBase: true
     }));
 
     this.register(new SimpleSolidBlock({
       id: BLOCK_TYPES.DIRT, name: '泥土', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 0.5, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'grass',
-      color: '#825a3c', colorHex: 0x825a3c
+      color: '#825a3c', colorHex: 0x825a3c, allowVegetationBase: true
     }));
 
     this.register(new SimpleSolidBlock({
       id: BLOCK_TYPES.STONE, name: '石头', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 1.5, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'stone',
-      color: '#787878', colorHex: 0x787878
+      color: '#787878', colorHex: 0x787878, allowVegetationBase: true
     }));
 
     this.register(new SimpleSolidBlock({

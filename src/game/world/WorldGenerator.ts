@@ -1,5 +1,5 @@
 import { ImprovedNoise } from './Noise';
-import { BLOCK_TYPES } from './BlockConfig';
+import { BLOCK_TYPES, getBlockProperties } from './BlockConfig';
 import { getBiomeAt } from './biome/BiomeRegistry';
 import { type Biome, TreeStyle } from './biome/Biome';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
@@ -165,7 +165,7 @@ export class WorldGenerator {
 
         const blockType = chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z];
         // 允许的植被生长地基（如草方块、沙子等）
-        const isValidGround = blockType === BLOCK_TYPES.GRASS || blockType === BLOCK_TYPES.SAND || blockType === BLOCK_TYPES.STONE;
+        const isValidGround = getBlockProperties(blockType).allowVegetationBase === true;
         if (isValidGround && ty > 20) {
           biome.growDecorations(
             chunk,

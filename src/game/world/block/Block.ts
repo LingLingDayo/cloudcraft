@@ -25,6 +25,7 @@ export abstract class Block {
   public get opacity(): number { return this.properties.opacity; }
   public get soundType(): SoundType { return this.properties.soundType; }
   public get showBreakCracks(): boolean { return this.properties.showBreakCracks !== false; }
+  public get allowVegetationBase(): boolean { return this.properties.allowVegetationBase === true; }
 
   /**
    * 玩家右键交互
