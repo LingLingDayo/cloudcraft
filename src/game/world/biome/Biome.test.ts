@@ -26,6 +26,10 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
     // 4. 石头山生态 (低温, 低湿)
     expect(BiomeRegistry.STONY_PEAKS.id).toBe('stony_peaks');
     expect(BiomeRegistry.STONY_PEAKS.name).toBe('石头山');
+
+    // 5. 平原生态 (中温, 偏干)
+    expect(BiomeRegistry.PLAINS.id).toBe('plains');
+    expect(BiomeRegistry.PLAINS.name).toBe('平原');
   });
 
   test('不同生态在特定坐标计算的高度应符合设计预期范围', () => {
@@ -36,6 +40,14 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
     expect(desertH1).toBeLessThanOrEqual(165);
     expect(desertH2).toBeGreaterThanOrEqual(155);
     expect(desertH2).toBeLessThanOrEqual(165);
+
+    // 平原地形应非常平缓 (高度在 156 ~ 170 之间)
+    const plainsH1 = BiomeRegistry.PLAINS.getHeight(0, 0, mockNoise);
+    const plainsH2 = BiomeRegistry.PLAINS.getHeight(100, 100, mockNoise);
+    expect(plainsH1).toBeGreaterThanOrEqual(156);
+    expect(plainsH1).toBeLessThanOrEqual(170);
+    expect(plainsH2).toBeGreaterThanOrEqual(156);
+    expect(plainsH2).toBeLessThanOrEqual(170);
 
     // 石头山地势应高耸且波动起伏大 (高度大约在 200 ~ 280)
     const stonyH1 = BiomeRegistry.STONY_PEAKS.getHeight(0, 0, mockNoise);

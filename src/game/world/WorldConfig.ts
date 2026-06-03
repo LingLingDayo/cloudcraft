@@ -10,7 +10,7 @@ export const WORLD_CONFIG = {
   waterLevel: 150,
   ocean: {
     scale: 0.001,
-    threshold: -0.15, // 低于此噪波值为海洋
+    threshold: -0.30, // 低于此噪波值为海洋
     transitionWidth: 0.15,
     shoreWidth: 0.05,
     baseHeight: 80,
