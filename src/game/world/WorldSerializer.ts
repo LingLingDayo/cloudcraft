@@ -1,4 +1,4 @@
-import type { World } from './World';
+import { World, CHUNK_SIZE_X, CHUNK_SIZE_Z, CHUNK_SIZE_Y } from './World';
 
 export class WorldSerializer {
   // Compress Uint8Array block data using Run-Length Encoding (RLE) to keep save size minimal
@@ -78,7 +78,7 @@ export class WorldSerializer {
         world.chunks.clear();
 
         // Restore chunk data
-        const expectedLength = 16 * 16 * 64; // CHUNK_SIZE_X * CHUNK_SIZE_Z * CHUNK_SIZE_Y
+        const expectedLength = CHUNK_SIZE_X * CHUNK_SIZE_Z * CHUNK_SIZE_Y;
         for (const [key, csv] of Object.entries(saved.chunks)) {
           const csvStr = csv as string;
           if (csvStr.includes('_')) {

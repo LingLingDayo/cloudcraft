@@ -99,6 +99,28 @@ export class WorldGenerator {
           }
         }
 
+        // ==================== 新增河流生成逻辑 ====================
+        const riverNoise = this.noise.noise(wx * WORLD_CONFIG.river.scale, wz * WORLD_CONFIG.river.scale);
+        const dRiver = Math.abs(riverNoise);
+        
+        if (dRiver < WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth) {
+          const t = dRiver < WORLD_CONFIG.river.threshold
+            ? 1.0
+            : 1.0 - (dRiver - WORLD_CONFIG.river.threshold) / WORLD_CONFIG.river.transitionWidth;
+
+          // 河床基础高度在海平面（150）以下约 8 格，带微弱起伏
+          const riverBedHeight = WORLD_CONFIG.river.bedHeight + this.noise.noise(wx * 0.05, wz * 0.05) * 3;
+          
+          if (adjustedHeight > riverBedHeight) {
+            adjustedHeight = Math.round(adjustedHeight * (1 - t) + riverBedHeight * t);
+          }
+
+          if (t > 0.35) {
+            isDryLand = false;
+          }
+        }
+        // ==========================================================
+
         const finalHeight = Math.max(3, Math.min(CHUNK_SIZE_Y - 2, adjustedHeight));
 
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
@@ -166,7 +188,7 @@ export class WorldGenerator {
         const blockType = chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z];
         // 允许的植被生长地基（如草方块、沙子等）
         const isValidGround = getBlockProperties(blockType).allowVegetationBase === true;
-        if (isValidGround && ty > 20) {
+        if (isValidGround && ty > WORLD_CONFIG.waterLevel - 2) {
           biome.growDecorations(
             chunk,
             tx,

@@ -29,28 +29,28 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
   });
 
   test('不同生态在特定坐标计算的高度应符合设计预期范围', () => {
-    // 沙漠地形应极度平缓 (高度波动应很小，基本在 23 ~ 26)
+    // 沙漠地形应极度平缓 (高度波动应很小，基本在 156 ~ 164)
     const desertH1 = BiomeRegistry.DESERT.getHeight(0, 0, mockNoise);
     const desertH2 = BiomeRegistry.DESERT.getHeight(100, 100, mockNoise);
-    expect(desertH1).toBeGreaterThanOrEqual(22);
-    expect(desertH1).toBeLessThanOrEqual(27);
-    expect(desertH2).toBeGreaterThanOrEqual(22);
-    expect(desertH2).toBeLessThanOrEqual(27);
+    expect(desertH1).toBeGreaterThanOrEqual(155);
+    expect(desertH1).toBeLessThanOrEqual(165);
+    expect(desertH2).toBeGreaterThanOrEqual(155);
+    expect(desertH2).toBeLessThanOrEqual(165);
 
-    // 石头山地势应高耸且波动起伏大 (高度大约在 32 ~ 56)
+    // 石头山地势应高耸且波动起伏大 (高度大约在 200 ~ 280)
     const stonyH1 = BiomeRegistry.STONY_PEAKS.getHeight(0, 0, mockNoise);
     const stonyH2 = BiomeRegistry.STONY_PEAKS.getHeight(50, 50, mockNoise);
-    expect(stonyH1).toBeGreaterThanOrEqual(30);
-    expect(stonyH1).toBeLessThanOrEqual(58);
-    expect(stonyH2).toBeGreaterThanOrEqual(30);
-    expect(stonyH2).toBeLessThanOrEqual(58);
+    expect(stonyH1).toBeGreaterThanOrEqual(195);
+    expect(stonyH1).toBeLessThanOrEqual(285);
+    expect(stonyH2).toBeGreaterThanOrEqual(195);
+    expect(stonyH2).toBeLessThanOrEqual(285);
 
-    // 高原高度应该稳定维持在高海拔区 (大约在 28 ~ 45)
+    // 高原高度应该稳定维持在高海拔区 (大约在 190 ~ 230)
     const plateauH1 = BiomeRegistry.PLATEAU.getHeight(0, 0, mockNoise);
     const plateauH2 = BiomeRegistry.PLATEAU.getHeight(200, 200, mockNoise);
-    expect(plateauH1).toBeGreaterThanOrEqual(27);
-    expect(plateauH1).toBeLessThanOrEqual(46);
-    expect(plateauH2).toBeGreaterThanOrEqual(27);
-    expect(plateauH2).toBeLessThanOrEqual(46);
+    expect(plateauH1).toBeGreaterThanOrEqual(185);
+    expect(plateauH1).toBeLessThanOrEqual(235);
+    expect(plateauH2).toBeGreaterThanOrEqual(185);
+    expect(plateauH2).toBeLessThanOrEqual(235);
   });
 });

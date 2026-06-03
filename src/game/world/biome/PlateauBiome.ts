@@ -8,11 +8,11 @@ export class PlateauBiome implements Biome {
   public name = '高原';
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 基础高度 28 左右，利用 smoothstep 实现平坦高台
+    // 基础高度 190 左右，利用 smoothstep 实现平坦高台
     const rawNoise = noise.fbm(wx * 0.012, wz * 0.012, 3, 0.4); // -1 to 1
     const t = Math.max(0, Math.min(1, (rawNoise + 0.15) / 0.8));
     const smoothT = t * t * (3 - 2 * t);
-    return Math.floor(28 + smoothT * 16);
+    return Math.floor(190 + smoothT * 40);
   }
 
   public fillColumn(

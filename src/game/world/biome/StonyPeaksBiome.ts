@@ -9,10 +9,10 @@ export class StonyPeaksBiome implements Biome {
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 高耸起伏大，使用脊线噪波 (1 - abs(noise)) 模拟尖锐山脊
-    const base = 32;
+    const base = 200;
     const n = noise.fbm(wx * 0.015, wz * 0.015, 3, 0.4);
     const ridged = 1.0 - Math.abs(n);
-    return Math.floor(base + ridged * 24);
+    return Math.floor(base + ridged * 80);
   }
 
   public fillColumn(
