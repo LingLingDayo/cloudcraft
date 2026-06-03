@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as THREE from 'three';
 import { ImprovedNoise } from './Noise';
-import { BLOCK_TYPES, BLOCK_FACES, getBlockProperties } from './BlockConfig';
+import { BLOCK_TYPES, BLOCK_FACES, getBlockProperties, type BlockType } from './BlockConfig';
 import { generateTextureAtlas } from './TextureAtlas';
 import { BlockRegistry } from './block/BlockRegistry';
 import { BlockEntityManager } from './block/BlockEntityManager';
@@ -201,13 +201,13 @@ export class World {
 
     // Procedural decoration: grow trees in this chunk (only if surface is grass)
     // Seeded random for trees based on chunk coordinates
-    const r = Math.abs((cx * 12345 + cz * 678910) % 100) / 100;
-    if (r < 0.35) { // 35% chance to have trees in a chunk
-      const numTrees = Math.floor(r * 4) + 1; // 1 to 4 trees
+    const chunkRandom = this.pseudoRandom2D(cx, cz);
+    if (chunkRandom < 0.25) { // 25% chance to have trees in a chunk
+      const numTrees = Math.floor(chunkRandom * 12) % 3 + 1; // 1 to 3 trees
       for (let t = 0; t < numTrees; t++) {
-        // Tree position (leave padding so trees don't overlap chunk boundaries easily)
-        const tx = 2 + Math.floor(((r * 32423 + t * 4392) % 1) * (CHUNK_SIZE_X - 4));
-        const tz = 2 + Math.floor(((r * 87424 + t * 7623) % 1) * (CHUNK_SIZE_Z - 4));
+        // Tree position using distinct seeds
+        const tx = 2 + Math.floor(this.pseudoRandom2D(cx * 10 + t, cz * 10 + t) * (CHUNK_SIZE_X - 4));
+        const tz = 2 + Math.floor(this.pseudoRandom2D(cx * 20 + t, cz * 20 + t) * (CHUNK_SIZE_Z - 4));
         // Find surface height
         let ty = CHUNK_SIZE_Y - 2;
         while (ty > 0 && chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z] === BLOCK_TYPES.AIR) {
@@ -216,43 +216,135 @@ export class World {
 
         const blockType = chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z];
         if (blockType === BLOCK_TYPES.GRASS && ty > 22) {
-          // Change grass below trunk to dirt
-          chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z] = BLOCK_TYPES.DIRT;
+          // Determine tree type and size using a seeded random
+          const treeTypeVal = this.pseudoRandom2D(cx * 30 + t, cz * 30 + t);
+          const heightRand = this.pseudoRandom2D(cx * 40 + t, cz * 40 + t);
+          
+          let treeType: 'oak' | 'birch' | 'spruce' = 'oak';
+          let trunkBlock: BlockType = BLOCK_TYPES.WOOD;
+          let leafBlock: BlockType = BLOCK_TYPES.LEAF;
+          let treeHeight = 4 + Math.floor(heightRand * 2); // default Oak height: 4 to 5
 
-          // Grow trunk (4 to 5 blocks)
-          const treeHeight = 4 + Math.floor(((r * 9831 + t * 711) % 1) * 2);
-          for (let h = 1; h <= treeHeight; h++) {
-            const trunkIdx = tx + tz * CHUNK_SIZE_X + (ty + h) * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-            chunk[trunkIdx] = BLOCK_TYPES.WOOD;
+          if (treeTypeVal < 0.4) {
+            // Oak tree (40% probability)
+            treeType = 'oak';
+            trunkBlock = BLOCK_TYPES.WOOD;
+            leafBlock = BLOCK_TYPES.LEAF;
+            treeHeight = 4 + Math.floor(heightRand * 2);
+          } else if (treeTypeVal < 0.75) {
+            // Birch tree (35% probability)
+            treeType = 'birch';
+            trunkBlock = BLOCK_TYPES.BIRCH_WOOD;
+            leafBlock = BLOCK_TYPES.BIRCH_LEAVES;
+            treeHeight = 5 + Math.floor(heightRand * 3); // Height: 5 to 7
+          } else {
+            // Spruce tree (25% probability)
+            treeType = 'spruce';
+            trunkBlock = BLOCK_TYPES.SPRUCE_WOOD;
+            leafBlock = BLOCK_TYPES.SPRUCE_LEAVES;
+            treeHeight = 6 + Math.floor(heightRand * 3); // Height: 6 to 8
           }
 
-          // Grow canopy (leaves)
-          const leafCenterY = ty + treeHeight;
-          for (let ly = -2; ly <= 1; ly++) {
-            const radius = ly === 1 ? 1 : ly === 0 ? 2 : 2;
-            for (let lx = -radius; lx <= radius; lx++) {
-              for (let lz = -radius; lz <= radius; lz++) {
-                // Avoid placing leaves directly where trunk is, or outside chunk bounds easily
-                if (lx === 0 && lz === 0 && ly > 0) continue;
-                
-                const wlx = tx + lx;
-                const wlz = tz + lz;
-                const wly = leafCenterY + ly;
+          this.growTree(chunk, tx, ty, tz, trunkBlock, leafBlock, treeHeight, treeType);
+        }
+      }
+    }
 
-                if (wlx >= 0 && wlx < CHUNK_SIZE_X && wlz >= 0 && wlz < CHUNK_SIZE_Z && wly >= 0 && wly < CHUNK_SIZE_Y) {
-                  const leafIdx = wlx + wlz * CHUNK_SIZE_X + wly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-                  if (chunk[leafIdx] === BLOCK_TYPES.AIR) {
-                    chunk[leafIdx] = BLOCK_TYPES.LEAF;
-                  }
-                }
+    return chunk;
+  }
+
+  private pseudoRandom2D(x: number, y: number): number {
+    const a = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+    return a - Math.floor(a);
+  }
+
+  private growTree(
+    chunk: Uint8Array,
+    tx: number,
+    ty: number,
+    tz: number,
+    trunkBlock: number,
+    leafBlock: number,
+    height: number,
+    style: 'oak' | 'birch' | 'spruce'
+  ): void {
+    // Change grass below trunk to dirt
+    chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z] = BLOCK_TYPES.DIRT;
+
+    // Grow trunk
+    for (let h = 1; h <= height; h++) {
+      const wly = ty + h;
+      if (wly < CHUNK_SIZE_Y) {
+        const trunkIdx = tx + tz * CHUNK_SIZE_X + wly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+        chunk[trunkIdx] = trunkBlock;
+      }
+    }
+
+    // Grow canopy (leaves)
+    const leafCenterY = ty + height;
+
+    if (style === 'oak' || style === 'birch') {
+      // Round canopy style
+      const startY = style === 'birch' ? -3 : -2;
+      for (let ly = startY; ly <= 1; ly++) {
+        const radius = ly === 1 ? 1 : 2;
+        for (let lx = -radius; lx <= radius; lx++) {
+          for (let lz = -radius; lz <= radius; lz++) {
+            // Avoid placing leaves directly where trunk is
+            if (lx === 0 && lz === 0 && ly > 0) continue;
+            
+            // For birch, round the corners at the bottom layers to make it look nicer
+            if (style === 'birch' && ly === startY && Math.abs(lx) === radius && Math.abs(lz) === radius) {
+              continue;
+            }
+
+            const wlx = tx + lx;
+            const wlz = tz + lz;
+            const wly = leafCenterY + ly;
+
+            if (wlx >= 0 && wlx < CHUNK_SIZE_X && wlz >= 0 && wlz < CHUNK_SIZE_Z && wly >= 0 && wly < CHUNK_SIZE_Y) {
+              const leafIdx = wlx + wlz * CHUNK_SIZE_X + wly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+              if (chunk[leafIdx] === BLOCK_TYPES.AIR) {
+                chunk[leafIdx] = leafBlock;
+              }
+            }
+          }
+        }
+      }
+    } else if (style === 'spruce') {
+      // Conical/layered canopy style for Spruce
+      for (let ly = -4; ly <= 1; ly++) {
+        let radius = 1;
+        if (ly === 1) radius = 0;
+        else if (ly === 0) radius = 1;
+        else if (ly === -1) radius = 2;
+        else if (ly === -2) radius = 1;
+        else if (ly === -3) radius = 2;
+        else if (ly === -4) radius = 2;
+
+        for (let lx = -radius; lx <= radius; lx++) {
+          for (let lz = -radius; lz <= radius; lz++) {
+            if (lx === 0 && lz === 0 && ly > 0) continue;
+            
+            // Round the 5x5 layers by clipping the corners
+            if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) {
+              continue;
+            }
+
+            const wlx = tx + lx;
+            const wlz = tz + lz;
+            const wly = leafCenterY + ly;
+
+            if (wlx >= 0 && wlx < CHUNK_SIZE_X && wlz >= 0 && wlz < CHUNK_SIZE_Z && wly >= 0 && wly < CHUNK_SIZE_Y) {
+              const leafIdx = wlx + wlz * CHUNK_SIZE_X + wly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+              if (chunk[leafIdx] === BLOCK_TYPES.AIR) {
+                chunk[leafIdx] = leafBlock;
               }
             }
           }
         }
       }
     }
-
-    return chunk;
   }
 
   // Check if a block is transparent (allows face rendering behind it)
@@ -350,13 +442,13 @@ export class World {
               // Atlas is 4x4 tiles, so each tile is 0.25 x 0.25
               const atlasIndex = BLOCK_FACES[blockType]?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3; // Default to stone if undefined
               
-              const tx = atlasIndex % 4;
-              const ty = 3 - Math.floor(atlasIndex / 4); // Invert Y for WebGL texture coordinate space
+              const tx = atlasIndex % 8;
+              const ty = 7 - Math.floor(atlasIndex / 8); // Invert Y for WebGL texture coordinate space
               
-              const uMin = tx * 0.25;
-              const uMax = (tx + 1) * 0.25;
-              const vMin = ty * 0.25;
-              const vMax = (ty + 1) * 0.25;
+              const uMin = tx * 0.125;
+              const uMax = (tx + 1) * 0.125;
+              const vMin = ty * 0.125;
+              const vMax = (ty + 1) * 0.125;
 
               // Map face corners to UV coordinates
               // corners sequence matches: v0, v1, v2, v3

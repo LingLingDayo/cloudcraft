@@ -220,12 +220,12 @@ export class DroppedItemManager {
       }
 
       const atlasIndex = BLOCK_FACES[blockType]?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3;
-      const tx = atlasIndex % 4;
-      const ty = 3 - Math.floor(atlasIndex / 4);
-      const uMin = tx * 0.25;
-      const uMax = (tx + 1) * 0.25;
-      const vMin = ty * 0.25;
-      const vMax = (ty + 1) * 0.25;
+      const tx = atlasIndex % 8;
+      const ty = 7 - Math.floor(atlasIndex / 8);
+      const uMin = tx * 0.125;
+      const uMax = (tx + 1) * 0.125;
+      const vMin = ty * 0.125;
+      const vMax = (ty + 1) * 0.125;
 
       const uv0 = [uMin, vMin];
       const uv1 = [uMin, vMax];

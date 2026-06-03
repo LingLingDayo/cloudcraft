@@ -14,6 +14,10 @@ export const BlockType = {
   DIAMOND: 12,
   CHEST: 13,
   LEVER: 14,
+  BIRCH_WOOD: 15,
+  BIRCH_LEAVES: 16,
+  SPRUCE_WOOD: 17,
+  SPRUCE_LEAVES: 18,
 } as const;
 export type BlockType = typeof BlockType[keyof typeof BlockType];
 
