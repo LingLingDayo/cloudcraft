@@ -3,6 +3,7 @@ import type { World } from '../World';
 import type { BlockEntity } from './BlockEntity';
 import { BlockType, SoundType } from '@type';
 import type { BlockProperties } from '../BlockConfig';
+export type { BlockProperties };
 
 
 export abstract class Block {

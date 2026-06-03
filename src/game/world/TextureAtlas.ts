@@ -19,8 +19,8 @@ export function generateTextureAtlas(): THREE.Texture {
     }
   };
 
-  let x = 0;
-  let y = 0;
+  let x: number;
+  let y: number;
 
   // 0: Grass Top
   x = (0 % 8) * tileSize;
