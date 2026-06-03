@@ -28,5 +28,11 @@ export const en = {
     fov: 'FOV: {{val}}°',
     language: 'Language',
   },
+  settings: {
+    title: 'Game Settings',
+    general: 'General Settings',
+    graphics: 'Graphics Settings',
+    done: 'Done',
+  },
 };
 export default en;
