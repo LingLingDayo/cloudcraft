@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { PauseMenuProps } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
+import { Input } from '@components/common/Input';
+import { Select } from '@components/common/Select';
+import { Dialog } from '@components/common/Dialog';
 import { useGameStore } from '@store/useGameStore';
 import styles from './PauseMenu.module.scss';
-
-// Styles for sliders to avoid inline styling in JSX
-const SLIDER_LABEL_STYLE = { fontSize: '11px' };
-const SLIDER_CONTAINER_STYLE = { gap: '4px' };
 
 export const PauseMenu: React.FC<PauseMenuProps> = ({
   onResume,
@@ -16,14 +15,22 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
   onQuit,
 }) => {
   const [saveStatus, setSaveStatus] = useState<string>('保存世界');
-  
+  const [playerName, setPlayerName] = useState<string>(() => {
+    return localStorage.getItem('minicraft_player_name') || 'Steve';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('minicraft_player_name', playerName);
+  }, [playerName]);
+
   const renderDistance = useGameStore((state) => state.renderDistance);
   const setRenderDistance = useGameStore((state) => state.setRenderDistance);
   const fov = useGameStore((state) => state.fov);
   const setFov = useGameStore((state) => state.setFov);
   const gameMode = useGameStore((state) => state.gameMode);
   const setGameMode = useGameStore((state) => state.setGameMode);
-
+  const debugOverlay = useGameStore((state) => state.debugOverlay);
+  const setDebugOverlay = useGameStore((state) => state.setDebugOverlay);
 
   const handleSave = () => {
     onSave();
@@ -33,17 +40,21 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
     }, 1500);
   };
 
+  const gameModeOptions = [
+    { label: '冒险模式 (Adventure)', value: 'adventure' },
+    { label: '创造模式 (Creative)', value: 'creative' },
+  ];
+
   return (
-    <div className="overlay-container">
-      <div className={`glass-panel ${styles.panel}`}>
-        <div>
-          <h2 className={`pixel-text ${styles.title}`}>
-            游戏已暂停
-          </h2>
-          <p className={styles.description}>
-            点击“返回游戏”或点击画面继续
-          </p>
-        </div>
+    <Dialog 
+      title="游戏已暂停" 
+      onClose={onResume} 
+      width={400}
+    >
+      <div className={styles.content}>
+        <p className={styles.description}>
+          点击“返回游戏”或点击画面继续
+        </p>
 
         {/* Buttons List */}
         <div className={styles.buttonList}>
@@ -64,24 +75,39 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
 
         {/* Quick Settings */}
         <div className={styles.settingsList}>
-          <Switch
-            label="创造模式 (Creative Mode)"
-            checked={gameMode === 'creative'}
-            onChange={(checked) => setGameMode(checked ? 'creative' : 'adventure')}
-            labelStyle={SLIDER_LABEL_STYLE}
-            containerStyle={SLIDER_CONTAINER_STYLE}
+          {/* Player Name Input */}
+          <Input
+            label="玩家名称 (Name)"
+            value={playerName}
+            onChange={setPlayerName}
+            placeholder="请输入玩家名称..."
           />
 
+          {/* Game Mode Select */}
+          <Select
+            label="游戏模式 (Game Mode)"
+            value={gameMode}
+            options={gameModeOptions}
+            onChange={(val) => setGameMode(val)}
+          />
+
+          {/* Debug Switch */}
+          <Switch
+            label="调试信息 (Debug Info)"
+            checked={debugOverlay}
+            onChange={(checked) => setDebugOverlay(checked)}
+          />
+
+          {/* Render Distance Slider */}
           <Slider
             label={`视距: ${renderDistance} 区块`}
             min={2}
             max={5}
             value={renderDistance}
             onChange={setRenderDistance}
-            labelStyle={SLIDER_LABEL_STYLE}
-            containerStyle={SLIDER_CONTAINER_STYLE}
           />
 
+          {/* FOV Slider */}
           <Slider
             label={`视野范围 (FOV): ${fov}°`}
             min={60}
@@ -89,13 +115,9 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
             step={5}
             value={fov}
             onChange={setFov}
-            labelStyle={SLIDER_LABEL_STYLE}
-            containerStyle={SLIDER_CONTAINER_STYLE}
           />
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };
-
-

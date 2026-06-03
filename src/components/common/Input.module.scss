@@ -1,0 +1,45 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #3f3f3f;
+  text-shadow: 1px 1px 0px #fff;
+  font-weight: bold;
+  user-select: none;
+}
+
+.input {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  background-color: #000000;
+  color: #ffffff;
+  border: 2px solid #a0a0a0;
+  padding: 10px 12px;
+  outline: none;
+  box-sizing: border-box;
+  width: 100%;
+  image-rendering: pixelated;
+  text-shadow: 1px 1px 0px #202020;
+
+  &:focus {
+    border-color: #ffffff;
+  }
+
+  &:disabled {
+    color: #707070;
+    border-color: #555555;
+    background-color: #1a1a1a;
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: #555555;
+    text-shadow: none;
+  }
+}
