@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { type StartMenuProps, GameMode } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
@@ -6,6 +6,7 @@ import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
+import { SaveManager } from '@game/systems/SaveManager';
 import styles from './StartMenu.module.scss';
 
 const SLIDER_CONTAINER_STYLE = { flex: 1 };
@@ -27,10 +28,44 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 999999).toString());
   const [renderDistance, setRenderDistance] = useState<number>(() => useGameStore.getState().renderDistance);
   const [fov, setFov] = useState<number>(() => useGameStore.getState().fov);
-  const [hasSave] = useState<boolean>(() => !!localStorage.getItem('minicraft_save'));
+  const [hasSave, setHasSave] = useState<boolean>(() => !!localStorage.getItem('minicraft_save_default_world'));
 
   const gameMode = useGameStore((state) => state.gameMode);
   const setGameMode = useGameStore((state) => state.setGameMode);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportSave = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsed = JSON.parse(content);
+        
+        // Basic validation of save data structure
+        if (!parsed || typeof parsed !== 'object' || !parsed.world) {
+          alert(language === 'zh' ? '无效的存档文件：缺少世界数据' : 'Invalid save file: missing world data');
+          return;
+        }
+
+        // Save it using SaveManager
+        SaveManager.saveGame('default_world', parsed, language === 'zh' ? '默认世界' : 'Default World');
+        
+        // Update state
+        setHasSave(true);
+        alert(language === 'zh' ? '存档导入成功！' : 'Save imported successfully!');
+      } catch (err) {
+        console.error(err);
+        alert(language === 'zh' ? '解析存档文件失败' : 'Failed to parse save file');
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input value so same file can be selected again
+    event.target.value = '';
+  };
 
   const handleStart = (loadSave: boolean) => {
     onStartGame(seed, renderDistance, fov, loadSave);
@@ -114,6 +149,21 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
           >
             {t('startMenu.loadSave')}
           </Button>
+
+          <Button
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <span>{t('startMenu.importSave')}</span>
+          </Button>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept=".json"
+            onChange={handleImportSave}
+          />
         </div>
 
         {/* Footer */}

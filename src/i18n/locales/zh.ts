@@ -11,6 +11,7 @@ export const zh = {
     creativeMode: '创造模式',
     createWorld: '创建新世界',
     loadSave: '载入上次存档',
+    importSave: '导入本地存档',
     footer: 'WASD 移动 | 鼠标视口旋转 | 左键破坏 | 右键放置 | 1-9 选择方块',
   },
   pauseMenu: {
@@ -37,6 +38,8 @@ export const zh = {
     general: '常规设置',
     graphics: '画面设置',
     done: '完成',
+    saveData: '存档管理',
+    exportSave: '导出当前存档',
   },
 };
 export default zh;

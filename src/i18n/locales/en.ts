@@ -11,6 +11,7 @@ export const en = {
     creativeMode: 'Creative Mode',
     createWorld: 'Create New World',
     loadSave: 'Load Last Save',
+    importSave: 'Import Save File',
     footer: 'WASD to Move | Mouse to Rotate | Left Click to Break | Right Click to Place | 1-9 to Select Block',
   },
   pauseMenu: {
@@ -37,6 +38,8 @@ export const en = {
     general: 'General Settings',
     graphics: 'Graphics Settings',
     done: 'Done',
+    saveData: 'Save Management',
+    exportSave: 'Export Save File',
   },
 };
 export default en;

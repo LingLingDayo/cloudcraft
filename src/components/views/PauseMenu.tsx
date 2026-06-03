@@ -24,7 +24,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
   };
 
   if (showSettings) {
-    return <SettingsDialog onClose={() => setShowSettings(false)} />;
+    return <SettingsDialog onClose={() => setShowSettings(false)} onSave={onSave} />;
   }
 
   return (
