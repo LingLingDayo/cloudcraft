@@ -5,12 +5,25 @@ interface DialogProps {
   title?: string;
   onClose: () => void;
   children: React.ReactNode;
+  width?: string | number;
+  height?: string | number;
 }
 
-export const Dialog: React.FC<DialogProps> = ({ title, onClose, children }) => {
+export const Dialog: React.FC<DialogProps> = ({ 
+  title, 
+  onClose, 
+  children, 
+  width, 
+  height 
+}) => {
+  const style: React.CSSProperties = {
+    ...(width !== undefined ? { width } : {}),
+    ...(height !== undefined ? { height } : {}),
+  };
+
   return (
     <div className={styles.dialogOverlay}>
-      <div className={styles.dialogWindow}>
+      <div className={styles.dialogWindow} style={style}>
         <div className={styles.dialogHeader}>
           {title ? (
             <h3 className={`pixel-text-sm ${styles.dialogTitle}`}>{title}</h3>

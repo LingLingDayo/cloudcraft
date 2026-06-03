@@ -19,7 +19,7 @@ export const createPlayerSlice: StateCreator<
   activeChest: null,
   chestInventory: [],
   isInventoryOpen: false,
-  inventory: Array(27).fill(null),
+  inventory: Array(54).fill(null),
 
 
   setSelectedBlock: (selectedBlock) => set({ selectedBlock }),
@@ -38,7 +38,7 @@ export const createPlayerSlice: StateCreator<
       }
 
       const nextHotbar = [...state.hotbar];
-      const nextInventory = [...(state.inventory || Array(27).fill(null))];
+      const nextInventory = [...(state.inventory || Array(54).fill(null))];
       
       // 1. Try to find in hotbar
       const existingHotbarIndex = nextHotbar.findIndex(item => item && item.type === blockType);
@@ -115,14 +115,14 @@ export const createPlayerSlice: StateCreator<
         ],
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.GRASS,
-        inventory: Array(27).fill(null),
+        inventory: Array(54).fill(null),
       };
     } else {
       return {
         hotbar: Array(9).fill(null),
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.AIR,
-        inventory: Array(27).fill(null),
+        inventory: Array(54).fill(null),
       };
     }
   }),

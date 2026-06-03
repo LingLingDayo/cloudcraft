@@ -22,7 +22,7 @@ describe('useGameStore', () => {
       fov: 75,
       gameMode: 'adventure',
       isInventoryOpen: false,
-      inventory: Array(27).fill(null),
+      inventory: Array(54).fill(null),
     });
   });
 
@@ -43,7 +43,7 @@ describe('useGameStore', () => {
     expect(state.fov).toBe(75);
     expect(state.gameMode).toBe('adventure');
     expect(state.isInventoryOpen).toBe(false);
-    expect(state.inventory).toEqual(Array(27).fill(null));
+    expect(state.inventory).toEqual(Array(54).fill(null));
   });
 
   test('should set game state via setGameState', () => {
@@ -190,7 +190,7 @@ describe('useGameStore', () => {
     useGameStore.getState().toggleInventory();
     expect(useGameStore.getState().isInventoryOpen).toBe(false);
 
-    const testInv = Array(27).fill(null);
+    const testInv = Array(54).fill(null);
     testInv[0] = { type: BLOCK_TYPES.STONE, count: 64 };
     useGameStore.getState().setInventory(testInv);
     expect(useGameStore.getState().inventory[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 64 });
