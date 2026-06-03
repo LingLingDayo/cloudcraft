@@ -24,6 +24,8 @@ export class World {
   private seed: string;
   private generator: WorldGenerator;
   private renderer: ChunkRenderer;
+  private pendingGenerationQueue: string[] = [];
+  private pendingMeshQueue: string[] = [];
 
   constructor(seed = 'minicraft', game?: any) {
     this.seed = seed;
@@ -133,11 +135,13 @@ export class World {
   }
 
   // Load an area around a central chunk (generate if not existing, create meshes)
-  public loadArea(centerX: number, centerZ: number, radius: number) {
+  public loadArea(centerX: number, centerZ: number, radius: number, sync = false) {
+    const shouldSync = sync || !this.game;
     const ccx = Math.floor(centerX / CHUNK_SIZE_X);
     const ccz = Math.floor(centerZ / CHUNK_SIZE_Z);
 
     const activeKeys = new Set<string>();
+    const neededGeneration: string[] = [];
 
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dz = -radius; dz <= radius; dz++) {
@@ -146,24 +150,58 @@ export class World {
         const key = `${cx},${cz}`;
         activeKeys.add(key);
 
-        if (!this.chunks.has(key)) {
-          // Generate data first
-          const chunk = this.generator.generateChunkData(cx, cz);
-          this.chunks.set(key, chunk);
+        if (shouldSync) {
+          if (!this.chunks.has(key)) {
+            const chunk = this.generator.generateChunkData(cx, cz);
+            this.chunks.set(key, chunk);
+          }
+        } else {
+          if (!this.chunks.has(key)) {
+            neededGeneration.push(key);
+          }
         }
       }
     }
 
-    // Build meshes for those that need it
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dz = -radius; dz <= radius; dz++) {
-        const cx = ccx + dx;
-        const cz = ccz + dz;
-        const key = `${cx},${cz}`;
-        if (!this.renderer.hasChunkMesh(key)) {
-          this.updateChunkMesh(cx, cz);
+    if (shouldSync) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dz = -radius; dz <= radius; dz++) {
+          const cx = ccx + dx;
+          const cz = ccz + dz;
+          const key = `${cx},${cz}`;
+          if (!this.renderer.hasChunkMesh(key)) {
+            this.updateChunkMesh(cx, cz);
+          }
         }
       }
+      this.pendingGenerationQueue = [];
+      this.pendingMeshQueue = [];
+    } else {
+      const neededMesh: string[] = [];
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dz = -radius; dz <= radius; dz++) {
+          const cx = ccx + dx;
+          const cz = ccz + dz;
+          const key = `${cx},${cz}`;
+          if (!this.renderer.hasChunkMesh(key) && this.chunks.has(key)) {
+            neededMesh.push(key);
+          }
+        }
+      }
+
+      // Sort both queues by distance to player (closer chunks loaded first)
+      const getDistanceSq = (key: string) => {
+        const [cx, cz] = key.split(',').map(Number);
+        const dcx = cx - ccx;
+        const dcz = cz - ccz;
+        return dcx * dcx + dcz * dcz;
+      };
+
+      neededGeneration.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
+      neededMesh.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
+
+      this.pendingGenerationQueue = neededGeneration;
+      this.pendingMeshQueue = neededMesh;
     }
 
     // Unload chunks that are too far away
@@ -199,7 +237,55 @@ export class World {
     }
   }
 
+  private processIncrementalLoading() {
+    if (!this.game) return;
+
+    const startTime = performance.now();
+    const BUDGET_MS = 8; // Max time budget in ms per frame for loading chunks
+
+    const playerX = this.game.player.position.x;
+    const playerZ = this.game.player.position.z;
+    const ccx = Math.floor(playerX / CHUNK_SIZE_X);
+    const ccz = Math.floor(playerZ / CHUNK_SIZE_Z);
+
+    const getDistanceSq = (key: string) => {
+      const [cx, cz] = key.split(',').map(Number);
+      const dcx = cx - ccx;
+      const dcz = cz - ccz;
+      return dcx * dcx + dcz * dcz;
+    };
+
+    while (performance.now() - startTime < BUDGET_MS) {
+      if (this.pendingMeshQueue.length > 0) {
+        const key = this.pendingMeshQueue.shift();
+        if (key) {
+          const [cx, cz] = key.split(',').map(Number);
+          if (this.chunks.has(key)) {
+            this.updateChunkMesh(cx, cz);
+          }
+        }
+      } else if (this.pendingGenerationQueue.length > 0) {
+        const key = this.pendingGenerationQueue.shift();
+        if (key) {
+          const [cx, cz] = key.split(',').map(Number);
+          if (!this.chunks.has(key)) {
+            const chunk = this.generator.generateChunkData(cx, cz);
+            this.chunks.set(key, chunk);
+
+            // Once generated, queue it for mesh creation and re-sort by proximity
+            this.pendingMeshQueue.push(key);
+            this.pendingMeshQueue.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
+          }
+        }
+      } else {
+        break; // No more items to load
+      }
+    }
+  }
+
   public update(dt: number) {
+    this.processIncrementalLoading();
+
     if (this.fallingBlocks.size === 0) return;
     const fbs = Array.from(this.fallingBlocks.entries());
     for (const [key, fb] of fbs) {
