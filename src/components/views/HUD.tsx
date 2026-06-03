@@ -40,20 +40,20 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
     className={styles.pixelHeart}
   >
     <path
-      d="M1,0h2v1h-2z M6,0h2v1h-2z M0,1h1v1h-1z M3,1h1v1h-1z M5,1h1v1h-1z M8,1h1v1h-1z M0,2h1v1h-1z M4,2h1v1h-1z M8,2h1v1h-1z M0,3h1v1h-1z M8,3h1v1h-1z M1,4h1v1h-1z M7,4h1v1h-1z M2,5h1v1h-1z M6,5h1v1h-1z M3,6h1v1h-1z M5,6h1v1h-1z M4,7h1v1h-1z"
+      d="M1,0h2v1h-2z M6,0h2v1h-2z M0,1h1v1h-1z M3,1h1v1h-1z M5,1h1v1h-1z M8,1h1v1h-1z M0,2h1v1h-1z M8,2h1v1h-1z M0,3h1v1h-1z M8,3h1v1h-1z M1,4h1v1h-1z M7,4h1v1h-1z M2,5h1v1h-1z M6,5h1v1h-1z M3,6h1v1h-1z M5,6h1v1h-1z M4,7h1v1h-1z"
       fill="#000000"
     />
     {filled ? (
       <>
         <path
-          d="M2,1h1v1h-1z M6,1h2v1h-2z M1,2h3v1h-3z M5,2h3v1h-3z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
+          d="M2,1h1v1h-1z M6,1h2v1h-2z M1,2h7v1h-7z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
           fill="#ff2222"
         />
         <path d="M1,1h1v1h-1z" fill="#ffffff" />
       </>
     ) : (
       <path
-        d="M1,1h2v1h-2z M6,1h2v1h-2z M1,2h3v1h-3z M5,2h3v1h-3z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
+        d="M1,1h2v1h-2z M6,1h2v1h-2z M1,2h7v1h-7z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
         fill="#434343"
       />
     )}
