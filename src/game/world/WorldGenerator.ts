@@ -74,46 +74,7 @@ export class WorldGenerator {
   }
 
   private isPondArea(wx: number, wz: number): boolean {
-    const gridSize = WORLD_CONFIG.pond.gridSize;
-    const cellX = Math.floor(wx / gridSize);
-    const cellZ = Math.floor(wz / gridSize);
-
-    for (let dx = -1; dx <= 1; dx++) {
-      for (let dz = -1; dz <= 1; dz++) {
-        const nx = cellX + dx;
-        const nz = cellZ + dz;
-
-        const pondRand = this.noise.pseudoRandom2d(nx * 13, nz * 17);
-        if (pondRand >= WORLD_CONFIG.pond.probability) {
-          continue;
-        }
-
-        const randX = this.noise.pseudoRandom2d(nx, nz);
-        const randZ = this.noise.pseudoRandom2d(nx + 100, nz + 100);
-        const cellCenterX = nx * gridSize + 8 + Math.floor(randX * 16);
-        const cellCenterZ = nz * gridSize + 8 + Math.floor(randZ * 16);
-
-        const flatness = this.getFlatnessFactor(cellCenterX, cellCenterZ);
-        if (flatness <= 0) {
-          continue;
-        }
-
-        const dist = Math.sqrt((wx - cellCenterX) ** 2 + (wz - cellCenterZ) ** 2);
-        const pondRadius = WORLD_CONFIG.pond.minRadius + randX * (WORLD_CONFIG.pond.maxRadius - WORLD_CONFIG.pond.minRadius);
-        const shapeNoise = this.noise.noise(wx * 0.15, wz * 0.15) * 1.5;
-        const effectiveRadius = pondRadius + shapeNoise;
-
-        if (dist < effectiveRadius) {
-          const t = dist / effectiveRadius;
-          const centerT = (1.0 - t) * flatness;
-          if (centerT > 0.15) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
+    return this.getPondValue(wx, wz, 0).isPond;
   }
 
   private getPondValue(
@@ -159,13 +120,39 @@ export class WorldGenerator {
           const centerT = (1.0 - t) * flatness;
 
           if (centerT > maxCenterT) {
-            maxCenterT = centerT;
             const centerBiome = getBiomeAt(cellCenterX, cellCenterZ, this.noise);
             const centerSurfaceHeight = centerBiome.getHeight(cellCenterX, cellCenterZ, this.noise);
-            pondWaterLevel = Math.max(WORLD_CONFIG.waterLevel, Math.round(centerSurfaceHeight - 1));
-            
-            const depthNoise = this.noise.noise(wx * 0.1, wz * 0.1);
-            pondBedHeight = pondWaterLevel - 3 + depthNoise * 1.0;
+
+            // 采样边缘 8 个方向的高度，防止水位溢出边缘最低点
+            let minEdgeHeight = Infinity;
+            const r = Math.round(pondRadius + 2); // 采样半径稍微大于水潭最大半径
+            const rHalf = Math.round(r * 0.707);
+            const checkPoints = [
+              [cellCenterX + r, cellCenterZ],
+              [cellCenterX - r, cellCenterZ],
+              [cellCenterX, cellCenterZ + r],
+              [cellCenterX, cellCenterZ - r],
+              [cellCenterX + rHalf, cellCenterZ + rHalf],
+              [cellCenterX - rHalf, cellCenterZ - rHalf],
+              [cellCenterX + rHalf, cellCenterZ - rHalf],
+              [cellCenterX - rHalf, cellCenterZ + rHalf]
+            ];
+            for (const [px, pz] of checkPoints) {
+              const b = getBiomeAt(px, pz, this.noise);
+              const h = b.getHeight(px, pz, this.noise);
+              if (h < minEdgeHeight) {
+                minEdgeHeight = h;
+              }
+            }
+
+            // 如果边缘的最低陆地高度 - 1 比海平面还要低，说明四周有缺口低于海平面，水潭无法蓄水，跳过此水潭
+            if (minEdgeHeight - 1 >= WORLD_CONFIG.waterLevel) {
+              maxCenterT = centerT;
+              pondWaterLevel = Math.min(Math.round(centerSurfaceHeight - 1), Math.round(minEdgeHeight - 1));
+              
+              const depthNoise = this.noise.noise(wx * 0.1, wz * 0.1);
+              pondBedHeight = pondWaterLevel - 3 + depthNoise * 1.0;
+            }
           }
         }
       }
@@ -181,6 +168,22 @@ export class WorldGenerator {
     }
 
     return { isPond: false, bedHeight: surfaceHeight + 10, centerT: 0, waterLevel: WORLD_CONFIG.waterLevel };
+  }
+
+  private getWaterLevelAt(wx: number, wz: number): number {
+    const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
+    if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
+      return WORLD_CONFIG.waterLevel;
+    }
+    const { t } = this.getRiverValue(wx, wz);
+    if (t > 0.35) {
+      return WORLD_CONFIG.waterLevel;
+    }
+    const { isPond, waterLevel } = this.getPondValue(wx, wz, 0);
+    if (isPond) {
+      return waterLevel;
+    }
+    return 0;
   }
 
   private isWaterArea(wx: number, wz: number): boolean {
@@ -331,24 +334,24 @@ export class WorldGenerator {
         }
         // ==========================================================
 
-        // 陆地区域邻域水面保护：若当前块为陆地且高度低于水面，检测其水平相邻块是否为水域（海洋、河流或水潭）
-        // 如果是，为了防止水平方向水体悬空外露，将当前陆地块拉高至至少 waterLevel 作为堤岸
-        if (isDryLand && adjustedHeight < localWaterLevel) {
+        // 陆地区域邻域水面保护：检测其水平相邻块的水域水位，如果相邻有水域且当前陆地高度低于该水域水位，
+        // 则将当前陆地拉高至该水位作为堤岸，防止水体水平外露
+        if (isDryLand) {
           const neighbors = [
             [wx + 1, wz],
             [wx - 1, wz],
             [wx, wz + 1],
             [wx, wz - 1]
           ];
-          let adjacentToWater = false;
+          let maxAdjacentWaterLevel = 0;
           for (const [nx, nz] of neighbors) {
-            if (this.isWaterArea(nx, nz)) {
-              adjacentToWater = true;
-              break;
+            const wLevel = this.getWaterLevelAt(nx, nz);
+            if (wLevel > maxAdjacentWaterLevel) {
+              maxAdjacentWaterLevel = wLevel;
             }
           }
-          if (adjacentToWater) {
-            adjustedHeight = localWaterLevel;
+          if (maxAdjacentWaterLevel > 0 && adjustedHeight < maxAdjacentWaterLevel) {
+            adjustedHeight = maxAdjacentWaterLevel;
           }
         }
 

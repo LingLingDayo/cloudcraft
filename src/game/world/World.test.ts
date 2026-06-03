@@ -232,5 +232,55 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     }
     expect(foundHighPondWater).toBe(true);
   });
+
+  test('should not generate exposed floating water walls at high altitudes for ponds', () => {
+    let checkedPondRegions = 0;
+    let exposedWaterCount = 0;
+
+    for (let offset = 0; offset < 2000; offset += 96) {
+      const world = new World('minicraft-seed');
+      // Load a 3x3 chunk area (48x48 blocks) centered around offset
+      world.loadArea(offset, offset, 3);
+      
+      let hasHighWater = false;
+      // Scan coordinate range inside the center chunk of this loaded region
+      const checkMin = offset - 8;
+      const checkMax = offset + 8;
+      
+      for (let x = checkMin; x < checkMax; x++) {
+        for (let z = checkMin; z < checkMax; z++) {
+          for (let y = 151; y < CHUNK_SIZE_Y - 2; y++) {
+            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+              hasHighWater = true;
+              
+              const neighbors = [
+                { name: 'X+1', val: world.getBlock(x + 1, y, z) },
+                { name: 'X-1', val: world.getBlock(x - 1, y, z) },
+                { name: 'Z+1', val: world.getBlock(x, y, z + 1) },
+                { name: 'Z-1', val: world.getBlock(x, y, z - 1) }
+              ];
+              
+              for (const neighbor of neighbors) {
+                if (neighbor.val === BLOCK_TYPES.AIR) {
+                  console.log(`Exposed high-altitude water at: (${x}, ${y}, ${z}) during test, neighbor ${neighbor.name} is AIR`);
+                  exposedWaterCount++;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      if (hasHighWater) {
+        checkedPondRegions++;
+        if (checkedPondRegions >= 2) {
+          break;
+        }
+      }
+    }
+    
+    expect(checkedPondRegions).toBeGreaterThan(0);
+    expect(exposedWaterCount).toBe(0);
+  });
 });
 
