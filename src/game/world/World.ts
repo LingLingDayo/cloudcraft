@@ -409,7 +409,9 @@ export class World {
       for (let z = 0; z < CHUNK_SIZE_Z; z++) {
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
           const index = x + z * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-          const blockType = chunk[index];
+          const rawBlockType = chunk[index];
+          const blockType = rawBlockType & 0x3F;
+          const orientation = rawBlockType >> 6; // 0: Y, 1: X, 2: Z
 
           if (blockType === BLOCK_TYPES.AIR) continue;
 
@@ -458,7 +460,34 @@ export class World {
 
               // Add UV coordinates mapping to the dynamic atlas
               // Atlas is 4x4 tiles, so each tile is 0.25 x 0.25
-              const atlasIndex = BLOCK_FACES[blockType]?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3; // Default to stone if undefined
+              let uvFace: 'top' | 'bottom' | 'side' = face.uvFace as 'top' | 'bottom' | 'side';
+              let rotateUV = false;
+
+              // 1. Process oriented logs (WOOD, BIRCH_WOOD, SPRUCE_WOOD) using orientation metadata
+              const isLog = blockType === BLOCK_TYPES.WOOD || blockType === BLOCK_TYPES.BIRCH_WOOD || blockType === BLOCK_TYPES.SPRUCE_WOOD;
+              if (isLog) {
+                if (orientation === 1) { // X axis
+                  const isXFace = face.dir[0] !== 0; // px (1,0,0) or nx (-1,0,0)
+                  if (isXFace) {
+                    uvFace = 'top';
+                  } else {
+                    uvFace = 'side';
+                    rotateUV = true;
+                  }
+                } else if (orientation === 2) { // Z axis
+                  const isZFace = face.dir[2] !== 0; // pz (0,0,1) or nz (0,0,-1)
+                  if (isZFace) {
+                    uvFace = 'top';
+                  } else {
+                    uvFace = 'side';
+                    if (face.dir[0] !== 0) { // px or nx side face needs rotation
+                      rotateUV = true;
+                    }
+                  }
+                }
+              }
+
+              const atlasIndex = BLOCK_FACES[blockType]?.[uvFace] ?? 3; // Default to stone if undefined
               
               const tx = atlasIndex % 8;
               const ty = 7 - Math.floor(atlasIndex / 8); // Invert Y for WebGL texture coordinate space
@@ -476,9 +505,13 @@ export class World {
               const uv2 = [uMax, vMax];
               const uv3 = [uMax, vMin];
 
+              const finalUVs = rotateUV 
+                ? [uv3, uv0, uv1, uv2] 
+                : [uv0, uv1, uv2, uv3];
+
               data.uvs.push(
-                ...uv0, ...uv1, ...uv2, // Triangle 1
-                ...uv0, ...uv2, ...uv3  // Triangle 2
+                ...finalUVs[0], ...finalUVs[1], ...finalUVs[2], // Triangle 1
+                ...finalUVs[0], ...finalUVs[2], ...finalUVs[3]  // Triangle 2
               );
             }
           }

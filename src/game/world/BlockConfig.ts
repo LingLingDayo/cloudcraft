@@ -316,7 +316,7 @@ export function setPropertiesResolver(resolver: (blockId: number) => BlockProper
 
 // Helper function to safely fetch properties of any block ID, defaulting to AIR properties
 export function getBlockProperties(blockId: number): BlockProperties {
-  return propertiesResolver(blockId);
+  return propertiesResolver(blockId & 0x3F);
 }
 
 

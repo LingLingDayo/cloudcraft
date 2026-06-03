@@ -13,7 +13,7 @@ export class InteractionManager {
 
   // Interaction properties
   public selectionBox!: THREE.Mesh;
-  public targetedBlockInfo: { target: THREE.Vector3; place: THREE.Vector3 } | null = null;
+  public targetedBlockInfo: { target: THREE.Vector3; place: THREE.Vector3; face: THREE.Vector3 } | null = null;
 
   // Mining state properties
   public isMining = false;
@@ -164,7 +164,16 @@ export class InteractionManager {
       const isCreative = useGameStore.getState().gameMode === 'creative';
 
       if (this.game.player.selectedBlockType !== BLOCK_TYPES.AIR && !playerBox.intersectsBox(blockBox)) {
-        this.game.world.setBlock(place.x, place.y, place.z, this.game.player.selectedBlockType);
+        let blockToPlace: number = this.game.player.selectedBlockType;
+        const face = this.targetedBlockInfo.face;
+
+        const isLog = blockToPlace === BLOCK_TYPES.WOOD || blockToPlace === BLOCK_TYPES.BIRCH_WOOD || blockToPlace === BLOCK_TYPES.SPRUCE_WOOD;
+        if (isLog) {
+          if (face.x !== 0) blockToPlace = blockToPlace | (1 << 6); // X axis
+          else if (face.z !== 0) blockToPlace = blockToPlace | (2 << 6); // Z axis
+        }
+
+        this.game.world.setBlock(place.x, place.y, place.z, blockToPlace);
         sound.playPlace();
 
         if (!isCreative) {
@@ -208,6 +217,7 @@ export class InteractionManager {
       this.targetedBlockInfo = {
         target: hit.target,
         place: hit.place,
+        face: hit.face,
       };
 
       this.selectionBox.position.set(hit.target.x + 0.5, hit.target.y + 0.5, hit.target.z + 0.5);
@@ -345,7 +355,9 @@ export class InteractionManager {
         15
       );
 
-      this.game.droppedItems.spawnItem(blockId as BlockType, new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5));
+      const dropId = blockId & 0x3F;
+
+      this.game.droppedItems.spawnItem(dropId as BlockType, new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5));
       this.cancelMining();
     }
   }
