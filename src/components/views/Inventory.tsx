@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { Dialog } from '@components/common/Dialog';
-import { BLOCK_TYPES, type BlockType } from '@game/world/BlockConfig';
+import { BLOCK_TYPES, type BlockType, getBlockProperties } from '@game/world/BlockConfig';
 import type { HotbarItem } from '@store/types';
 import type { GameManager } from '@game/core/GameManager';
 import styles from './Inventory.module.scss';
@@ -13,21 +13,21 @@ declare global {
 }
 
 // Available blocks list
-const ALL_BLOCKS = [
-  { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
-  { id: BLOCK_TYPES.DIRT, name: '泥土', color: '#825a3c', border: 'none' },
-  { id: BLOCK_TYPES.STONE, name: '石头', color: '#787878', border: 'none' },
-  { id: BLOCK_TYPES.WOOD, name: '原木', color: '#78552d', border: 'none' },
-  { id: BLOCK_TYPES.LEAF, name: '树叶', color: '#2d7823', border: 'none' },
-  { id: BLOCK_TYPES.BRICK, name: '红砖', color: '#b85c38', border: 'none' },
-  { id: BLOCK_TYPES.GLASS, name: '玻璃', color: 'rgba(150, 230, 255, 0.35)', border: '1.5px solid #96e6ff' },
-  { id: BLOCK_TYPES.WATER, name: '水', color: 'rgba(40, 110, 220, 0.75)', border: 'none' },
-  { id: BLOCK_TYPES.SAND, name: '沙子', color: '#dccd8c', border: 'none' },
-  { id: BLOCK_TYPES.COAL, name: '煤矿石', color: '#2c2c2c', border: 'none' },
-  { id: BLOCK_TYPES.IRON, name: '铁矿石', color: '#d0b090', border: 'none' },
-  { id: BLOCK_TYPES.DIAMOND, name: '钻石矿', color: '#5cdcfa', border: '1.5px solid #2db4d2' },
-  { id: BLOCK_TYPES.CHEST, name: '箱子', color: '#78552d', border: '2px solid #5a3c1e' },
-  { id: BLOCK_TYPES.LEVER, name: '拉杆', color: '#555555', border: 'none' },
+const ALL_BLOCKS: BlockType[] = [
+  BLOCK_TYPES.GRASS,
+  BLOCK_TYPES.DIRT,
+  BLOCK_TYPES.STONE,
+  BLOCK_TYPES.WOOD,
+  BLOCK_TYPES.LEAF,
+  BLOCK_TYPES.BRICK,
+  BLOCK_TYPES.GLASS,
+  BLOCK_TYPES.WATER,
+  BLOCK_TYPES.SAND,
+  BLOCK_TYPES.COAL,
+  BLOCK_TYPES.IRON,
+  BLOCK_TYPES.DIAMOND,
+  BLOCK_TYPES.CHEST,
+  BLOCK_TYPES.LEVER,
 ];
 
 interface HeldItem {
@@ -274,13 +274,11 @@ export const Inventory: React.FC = () => {
   };
 
   const getBlockColor = (type: number): string => {
-    const found = ALL_BLOCKS.find((b) => b.id === type);
-    return found ? found.color : '#a1a1aa';
+    return getBlockProperties(type).color || '#a1a1aa';
   };
 
   const getBlockBorder = (type: number): string => {
-    const found = ALL_BLOCKS.find((b) => b.id === type);
-    return found ? found.border : 'none';
+    return getBlockProperties(type).border || 'none';
   };
 
   if (!isInventoryOpen) return null;
@@ -318,22 +316,25 @@ export const Inventory: React.FC = () => {
             <div className={styles.creativeSection}>
               <p className={styles.hint}>点击生成物品到手中，再放入下方快捷栏</p>
               <div className={styles.creativeGrid}>
-                {ALL_BLOCKS.map((block, idx) => (
-                  <div
-                    key={block.id}
-                    className={styles.itemSlot}
-                    onClick={() => handleSlotClick('creative', idx, block.id)}
-                    title={block.name}
-                  >
+                {ALL_BLOCKS.map((blockId, idx) => {
+                  const props = getBlockProperties(blockId);
+                  return (
                     <div
-                      className={styles.itemPreview}
-                      style={{
-                        backgroundColor: block.color,
-                        border: block.border,
-                      }}
-                    />
-                  </div>
-                ))}
+                      key={blockId}
+                      className={styles.itemSlot}
+                      onClick={() => handleSlotClick('creative', idx, blockId)}
+                      title={props.name}
+                    >
+                      <div
+                        className={styles.itemPreview}
+                        style={{
+                          backgroundColor: props.color || '#a1a1aa',
+                          border: props.border || 'none',
+                        }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

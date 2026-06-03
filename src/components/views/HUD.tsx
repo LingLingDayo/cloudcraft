@@ -1,34 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { BLOCK_TYPES } from '@game/world/World';
+import { BLOCK_TYPES, getBlockProperties } from '@game/world/World';
 import { useGameStore } from '@store/useGameStore';
 import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
 
-const HOTBAR_ITEMS = [
-  { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
-  { id: BLOCK_TYPES.DIRT, name: '泥土', color: '#825a3c', border: 'none' },
-  { id: BLOCK_TYPES.STONE, name: '石头', color: '#787878', border: 'none' },
-  { id: BLOCK_TYPES.WOOD, name: '原木', color: '#78552d', border: 'none' },
-  { id: BLOCK_TYPES.LEAF, name: '树叶', color: '#2d7823', border: 'none' },
-  { id: BLOCK_TYPES.GLASS, name: '玻璃', color: 'rgba(150, 230, 255, 0.35)', border: '1.5px solid #96e6ff' },
-  { id: BLOCK_TYPES.WATER, name: '水', color: 'rgba(40, 110, 220, 0.75)', border: 'none' },
-  { id: BLOCK_TYPES.SAND, name: '沙子', color: '#dccd8c', border: 'none' },
-  { id: BLOCK_TYPES.DIAMOND, name: '钻石矿', color: '#5cdcfa', border: '1.5px solid #2db4d2' },
-];
-
 const getBlockColor = (type: number): string => {
-  const found = HOTBAR_ITEMS.find(item => item.id === type);
-  if (found) return found.color;
-  if (type === 13) return '#78552d'; // 木箱色
-  if (type === 14) return '#787878'; // 拉杆灰
-  return '#a1a1aa';
+  return getBlockProperties(type).color || '#a1a1aa';
 };
 
 const getBlockBorder = (type: number): string => {
-  const found = HOTBAR_ITEMS.find(item => item.id === type);
-  return found ? found.border : 'none';
+  return getBlockProperties(type).border || 'none';
 };
 
 const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
@@ -126,10 +109,10 @@ export const HUD: React.FC = () => {
 
   // Show item label briefly when selected block changes
   useEffect(() => {
-    const activeItem = HOTBAR_ITEMS.find((item) => item.id === selectedBlock);
-    if (activeItem) {
+    const props = getBlockProperties(selectedBlock);
+    if (props && selectedBlock !== BLOCK_TYPES.AIR) {
       const frameId = requestAnimationFrame(() => {
-        setActiveLabel(activeItem.name);
+        setActiveLabel(props.name);
       });
 
       const timeout = window.setTimeout(() => {
@@ -207,7 +190,7 @@ export const HUD: React.FC = () => {
             const item = hotbar[index];
             
             // Helper to get display info for a block type
-            const displayInfo = item ? HOTBAR_ITEMS.find((h) => h.id === item.type) : null;
+            const props = item ? getBlockProperties(item.type) : null;
             
             return (
               <div
@@ -216,13 +199,13 @@ export const HUD: React.FC = () => {
                 onClick={() => setActiveSlot(index)}
               >
                 <span className="hotbar-slot-key">{index + 1}</span>
-                {item && displayInfo ? (
+                {item && props ? (
                   <>
                     <div
                       className="block-preview"
                       style={{
-                        backgroundColor: displayInfo.color,
-                        border: displayInfo.border,
+                        backgroundColor: props.color || '#a1a1aa',
+                        border: props.border || 'none',
                       }}
                     ></div>
                     {item.count > 0 && gameMode !== 'creative' && (

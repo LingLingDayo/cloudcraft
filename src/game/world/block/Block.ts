@@ -2,21 +2,8 @@
 import type { World } from '../World';
 import type { BlockEntity } from './BlockEntity';
 import { BlockType, SoundType } from '@type';
+import type { BlockProperties } from '../BlockConfig';
 
-export interface BlockProperties {
-  id: BlockType;
-  name: string;
-  isSolid: boolean;
-  isTransparent: boolean;
-  isLiquid: boolean;
-  hardness: number;
-  affectedByGravity: boolean;
-  lightLevel: number;
-  isInteractable: boolean;
-  opacity: number;
-  soundType: SoundType;
-  showBreakCracks?: boolean;
-}
 
 export abstract class Block {
   public readonly properties: BlockProperties;

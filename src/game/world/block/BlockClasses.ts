@@ -12,7 +12,8 @@ export class AirBlock extends Block {
     super({
       id: BLOCK_TYPES.AIR, name: '空气', isSolid: false, isTransparent: true, isLiquid: false,
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.0,
-      soundType: 'none', showBreakCracks: false
+      soundType: 'none', showBreakCracks: false,
+      color: 'transparent', colorHex: 0x000000
     });
   }
 }
@@ -28,7 +29,8 @@ export class SandBlock extends Block {
     super({
       id: BLOCK_TYPES.SAND, name: '沙子', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 0.5, affectedByGravity: true, lightLevel: 0, isInteractable: false, opacity: 1.0,
-      soundType: 'sand'
+      soundType: 'sand',
+      color: '#dccd8c', colorHex: 0xdccd8c
     });
   }
 
@@ -57,7 +59,8 @@ export class ChestBlock extends Block {
       id: 13, // Chest ID
       name: '箱子', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 2.5, affectedByGravity: false, lightLevel: 0, isInteractable: true, opacity: 1.0,
-      soundType: 'wood'
+      soundType: 'wood',
+      color: '#78552d', colorHex: 0x78552d, border: '2px solid #5a3c1e'
     });
   }
 
@@ -98,7 +101,8 @@ export class LeverBlock extends Block {
       id: 14, // Lever ID
       name: '拉杆', isSolid: false, isTransparent: true, isLiquid: false,
       hardness: 0.5, affectedByGravity: false, lightLevel: 0, isInteractable: true, opacity: 1.0,
-      soundType: 'stone'
+      soundType: 'stone',
+      color: '#555555', colorHex: 0x555555
     });
   }
 
