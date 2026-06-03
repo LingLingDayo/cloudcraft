@@ -138,6 +138,9 @@ export class GameManager {
     this.particles = new ParticleSystem(this.scene);
     this.player.spawn(this.world, this.physics);
 
+    // Synchronously load chunks around the player spawn to prevent void fall and render instantly
+    this.world.loadArea(this.player.position.x, this.player.position.z, 2, true);
+
     // Initialize Sub-managers
     this.environment = new EnvironmentManager(this);
     this.interaction = new InteractionManager(this);
@@ -146,6 +149,7 @@ export class GameManager {
 
   public spawnPlayer() {
     this.player.spawn(this.world, this.physics);
+    this.world.loadArea(this.player.position.x, this.player.position.z, 2, true);
   }
 
   private initListeners() {
