@@ -6,6 +6,7 @@ import { DesertBiome } from './DesertBiome';
 import { JungleBiome } from './JungleBiome';
 import { PlateauBiome } from './PlateauBiome';
 import { StonyPeaksBiome } from './StonyPeaksBiome';
+import { PlainsBiome } from './PlainsBiome';
 import { WORLD_CONFIG } from '../WorldConfig';
 
 export const BiomeRegistry = {
@@ -15,6 +16,7 @@ export const BiomeRegistry = {
   JUNGLE: new JungleBiome(),
   PLATEAU: new PlateauBiome(),
   STONY_PEAKS: new StonyPeaksBiome(),
+  PLAINS: new PlainsBiome(),
 } as const;
 
 export type BiomeType = keyof typeof BiomeRegistry;
@@ -29,12 +31,16 @@ export function getBiomeAt(wx: number, wz: number, noise: ImprovedNoise): Biome 
   if (temp > WORLD_CONFIG.biomeTempThresholds.hot) {
     if (moisture < WORLD_CONFIG.biomeMoistureThresholds.dry) return BiomeRegistry.DESERT;
     if (moisture > WORLD_CONFIG.biomeMoistureThresholds.wet) return BiomeRegistry.JUNGLE;
+    // 炎热过渡带：偏干为平原，偏湿为森林
+    if (moisture < 0.50) return BiomeRegistry.PLAINS;
     return BiomeRegistry.FOREST;
   } else if (temp < WORLD_CONFIG.biomeTempThresholds.cold) {
     if (moisture < WORLD_CONFIG.biomeMoistureThresholds.dry) return BiomeRegistry.STONY_PEAKS;
     return BiomeRegistry.TAIGA;
   } else {
     if (moisture < WORLD_CONFIG.biomeMoistureThresholds.dry) return BiomeRegistry.PLATEAU;
+    // 温和过渡带：偏干为平原，偏湿为森林
+    if (moisture < 0.50) return BiomeRegistry.PLAINS;
     return BiomeRegistry.FOREST;
   }
 }
