@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GameManager } from './GameManager';
 import { getBlockProperties } from '@game/world/World';
-import { BLOCK_FACES, type BlockType } from '@game/world/BlockConfig';
+import { type BlockType } from '@game/world/BlockConfig';
 import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
 
@@ -217,7 +217,7 @@ export class DroppedItemManager {
         normals.push(...face.dir);
       }
 
-      const atlasIndex = BLOCK_FACES[blockType]?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3;
+      const atlasIndex = getBlockProperties(blockType).textureFaces?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3;
       const tx = atlasIndex % 8;
       const ty = 7 - Math.floor(atlasIndex / 8);
       const uMin = tx * 0.125;

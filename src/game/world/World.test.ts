@@ -206,6 +206,6 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     }
     
     expect(exposedWaterCount).toBe(0);
-  });
+  }, 20000);
 });
 

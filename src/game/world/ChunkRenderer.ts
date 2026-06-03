@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BLOCK_TYPES, BLOCK_FACES, getBlockProperties } from './BlockConfig';
+import { BLOCK_TYPES, getBlockProperties } from './BlockConfig';
 import { generateTextureAtlas } from './TextureAtlas';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
 import type { World } from './World';
@@ -148,7 +148,7 @@ export class ChunkRenderer {
                 }
               }
 
-              const atlasIndex = BLOCK_FACES[blockType]?.[uvFace] ?? 3; // Default to stone if undefined
+              const atlasIndex = getBlockProperties(blockType).textureFaces?.[uvFace] ?? 3; // Default to stone if undefined
               
               const tx = atlasIndex % 8;
               const ty = 7 - Math.floor(atlasIndex / 8); // Invert Y for WebGL texture coordinate space

@@ -6,6 +6,8 @@ import { PauseMenu } from '@components/views/PauseMenu';
 import { useGameStore } from '@store/useGameStore';
 import styles from './App.module.scss';
 import { GameState, GameMode, type BlockType } from '@type';
+import { GameProvider } from './context/GameContext';
+import { SaveManager } from '@game/systems/SaveManager';
 
 function App() {
   const gameState = useGameStore((state) => state.gameState);
@@ -54,10 +56,9 @@ function App() {
 
       // Handle loading saved world
       if (params?.loadSave) {
-        const rawSave = localStorage.getItem('minicraft_save');
-        if (rawSave) {
+        const saved = SaveManager.getSave('default_world');
+        if (saved) {
           try {
-            const saved = JSON.parse(rawSave);
             if (saved.world) {
               gm.world.loadWorld(saved.world);
             }
@@ -80,7 +81,7 @@ function App() {
                 hotbar: saved.hotbar,
                 inventory: loadedInventory,
                 activeSlot: saved.activeSlot ?? 0,
-                selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0 // 0 is BLOCK_TYPES.AIR
+                selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0
               });
             }
             // Trigger immediate render distance load
@@ -183,7 +184,7 @@ function App() {
         activeSlot: useGameStore.getState().activeSlot,
         gameMode: useGameStore.getState().gameMode,
       };
-      localStorage.setItem('minicraft_save', JSON.stringify(saveData));
+      SaveManager.saveGame('default_world', saveData, '默认世界');
     }
   };
 
@@ -206,7 +207,9 @@ function App() {
             <div className={styles.damageOverlay} />
           )}
 
-          <HUD />
+          <GameProvider value={gameManagerRef.current}>
+            <HUD />
+          </GameProvider>
         </div>
       )}
 

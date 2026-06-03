@@ -3,14 +3,8 @@ import { useGameStore } from '@store/useGameStore';
 import { Dialog } from '@components/common/Dialog';
 import { BLOCK_TYPES, type BlockType, getBlockProperties } from '@game/world/BlockConfig';
 import type { HotbarItem } from '@store/types';
-import type { GameManager } from '@game/core/GameManager';
 import styles from './Inventory.module.scss';
-
-declare global {
-  interface Window {
-    gameInstance?: GameManager;
-  }
-}
+import { useGame } from '../../context/GameContext';
 
 // Available blocks list
 const ALL_BLOCKS: BlockType[] = [
@@ -42,6 +36,7 @@ interface HeldItem {
 }
 
 export const Inventory: React.FC = () => {
+  const gameInstance = useGame();
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
   const closeInventory = useGameStore((state) => state.closeInventory);
   const gameMode = useGameStore((state) => state.gameMode);
@@ -105,7 +100,6 @@ export const Inventory: React.FC = () => {
 
     // 3. Fallback: Drop on the ground in front of the player
     if (!placed) {
-      const gameInstance = window.gameInstance;
       if (gameInstance && gameInstance.droppedItems && gameInstance.player) {
         const dropPos = gameInstance.player.position.clone();
         gameInstance.droppedItems.spawnItem(item.type, dropPos);
@@ -129,7 +123,7 @@ export const Inventory: React.FC = () => {
     }
     closeInventory();
     // Relock pointer in game controls
-    window.gameInstance?.controls?.requestLock?.();
+    gameInstance?.controls?.requestLock?.();
   };
 
   // Safe helper to update Zustand store states
