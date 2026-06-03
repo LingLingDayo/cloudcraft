@@ -2,6 +2,7 @@ import { type Biome, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
+import { CHUNK_SIZE_Y } from '../World';
 
 export class DesertBiome implements Biome {
   public id = 'desert';
@@ -9,7 +10,7 @@ export class DesertBiome implements Biome {
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 极其平缓，有微弱的沙丘起伏
-    return Math.floor(24 + noise.noise(wx * 0.05, wz * 0.05) * 1.5);
+    return Math.floor(160 + noise.noise(wx * 0.05, wz * 0.05) * 4);
   }
 
   public fillColumn(
@@ -60,7 +61,7 @@ export class DesertBiome implements Biome {
 
     for (let h = 1; h <= cactusHeight; h++) {
       const cy = ty + h;
-      if (cy < 64) {
+      if (cy < CHUNK_SIZE_Y) {
         const idx = tx + tz * 16 + cy * 256;
         if (chunk[idx] === BLOCK_TYPES.AIR) {
           chunk[idx] = BLOCK_TYPES.CACTUS;

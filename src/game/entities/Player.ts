@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World } from '@game/world/World';
+import { World, CHUNK_SIZE_Y } from '@game/world/World';
 import { Physics } from '@game/physics/Physics';
 import { Controls } from '@game/systems/Controls';
 import { sound } from '@game/systems/Sound';
@@ -20,6 +20,7 @@ export class Player {
   private lastJumpPressed = false;
   private lastJumpTime = 0;
   private doubleJumpDelay = 0.25; // 250ms
+  private voidDamageTimer = 0;
 
   constructor(camera: THREE.PerspectiveCamera, onTakeDamage?: () => void) {
     this.camera = camera;
@@ -29,7 +30,7 @@ export class Player {
   public spawn(world: World, physics: Physics) {
     const startX = 8.5;
     const startZ = 8.5;
-    let startY = 64 - 2; // CHUNK_SIZE_Y = 64
+    let startY = CHUNK_SIZE_Y - 2; // CHUNK_SIZE_Y = 64
 
     // Trace down to find first solid block
     while (
@@ -104,6 +105,17 @@ export class Player {
     ) {
       const damage = Math.max(1, Math.floor((-wasYVelocity - 12.0) * 0.7));
       this.takeDamage(damage, world, physics);
+    }
+
+    // Apply void damage
+    if (this.position.y < 0 && !isCreative) {
+      this.voidDamageTimer += dt;
+      if (this.voidDamageTimer >= 0.5) {
+        this.takeDamage(2, world, physics);
+        this.voidDamageTimer = 0;
+      }
+    } else {
+      this.voidDamageTimer = 0;
     }
 
     // Sync camera

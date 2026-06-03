@@ -8,7 +8,7 @@ export class ForestBiome implements Biome {
   public name = '森林';
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    return Math.floor(noise.fbm(wx * 0.015, wz * 0.015, 3, 0.4) * 20 + 25);
+    return Math.floor(165 + noise.fbm(wx * 0.015, wz * 0.015, 3, 0.4) * 25);
   }
 
   public fillColumn(

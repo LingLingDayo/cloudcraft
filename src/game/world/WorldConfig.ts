@@ -7,20 +7,26 @@ export interface OreConfig {
 }
 
 export const WORLD_CONFIG = {
-  waterLevel: 22,
+  waterLevel: 150,
   ocean: {
     scale: 0.001,
     threshold: -0.15, // 低于此噪波值为海洋
     transitionWidth: 0.15,
     shoreWidth: 0.05,
-    baseHeight: 12,
+    baseHeight: 80,
+  },
+  river: {
+    scale: 0.0025,
+    threshold: 0.04,
+    transitionWidth: 0.03,
+    bedHeight: 142,
   },
   caves: {
     scaleXZ: 0.04,
     scaleY: 0.06,
     threshold: 0.08,
-    minHeight: 3,
-    maxHeightOffset: 3, // 低于地表几格开始生成矿洞
+    minHeight: 10,
+    maxHeightOffset: 20, // 低于地表几格开始生成矿洞
   },
   biomeScale: 0.003,
   biomeOffset: 2000,
@@ -38,14 +44,14 @@ export const WORLD_CONFIG = {
   },
   oreGeneration: {
     default: [
-      { blockType: BLOCK_TYPES.DIAMOND, probability: 0.01, maxLevel: 15 },
-      { blockType: BLOCK_TYPES.IRON, probability: 0.02, maxLevel: 30 },
-      { blockType: BLOCK_TYPES.COAL, probability: 0.04, maxLevel: 45 },
+      { blockType: BLOCK_TYPES.DIAMOND, probability: 0.01, maxLevel: 120 },
+      { blockType: BLOCK_TYPES.IRON, probability: 0.02, maxLevel: 240 },
+      { blockType: BLOCK_TYPES.COAL, probability: 0.04, maxLevel: 350 },
     ] as const,
     stonyPeaks: [
-      { blockType: BLOCK_TYPES.DIAMOND, probability: 0.012, maxLevel: 20 },
-      { blockType: BLOCK_TYPES.IRON, probability: 0.03, maxLevel: 45 },
-      { blockType: BLOCK_TYPES.COAL, probability: 0.06, maxLevel: 55 },
+      { blockType: BLOCK_TYPES.DIAMOND, probability: 0.012, maxLevel: 150 },
+      { blockType: BLOCK_TYPES.IRON, probability: 0.03, maxLevel: 350 },
+      { blockType: BLOCK_TYPES.COAL, probability: 0.06, maxLevel: 420 },
     ] as const,
   },
 } as const;

@@ -9,7 +9,7 @@ export class JungleBiome implements Biome {
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 丛林地表稍有起伏
-    return Math.floor(26 + noise.fbm(wx * 0.02, wz * 0.02, 3, 0.4) * 12);
+    return Math.floor(168 + noise.fbm(wx * 0.02, wz * 0.02, 3, 0.4) * 20);
   }
 
   public fillColumn(

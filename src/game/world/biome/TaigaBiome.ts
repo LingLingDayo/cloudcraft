@@ -8,7 +8,7 @@ export class TaigaBiome implements Biome {
   public name = '针叶林';
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    return Math.floor(noise.fbm(wx * 0.015, wz * 0.015, 3, 0.4) * 18 + 28);
+    return Math.floor(172 + noise.fbm(wx * 0.012, wz * 0.012, 3, 0.4) * 30);
   }
 
   public fillColumn(

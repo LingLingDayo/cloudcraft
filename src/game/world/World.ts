@@ -12,7 +12,7 @@ export { BLOCK_TYPES, getBlockProperties };
 
 export const CHUNK_SIZE_X = 16;
 export const CHUNK_SIZE_Z = 16;
-export const CHUNK_SIZE_Y = 64;
+export const CHUNK_SIZE_Y = 500;
 
 export class World {
   public game: any;
