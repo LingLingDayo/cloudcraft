@@ -229,9 +229,7 @@ export const HUD: React.FC = () => {
                       <span className="hotbar-slot-count">{item.count}</span>
                     )}
                   </>
-                ) : (
-                  <div className="block-preview empty"></div>
-                )}
+                ) : null}
               </div>
             );
           })}
