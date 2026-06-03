@@ -64,7 +64,7 @@ export class ChestBlock extends Block {
       hardness: 2.5, affectedByGravity: false, lightLevel: 0, isInteractable: true, opacity: 1.0,
       soundType: 'wood',
       color: '#78552d', colorHex: 0x78552d, border: '2px solid #5a3c1e',
-      textureFaces: { top: 5, bottom: 5, side: 5 }
+      textureFaces: { top: 15, bottom: 15, side: 14 }
     });
   }
 
