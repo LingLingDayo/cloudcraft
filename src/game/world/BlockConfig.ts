@@ -1,32 +1,6 @@
 import { BlockType, BLOCK_TYPES, SoundType } from '@type';
 export { BlockType, BLOCK_TYPES };
 
-// Mapping each block type's top, bottom, and side faces to tile indices in the 4x4 atlas grid (0 to 15)
-export const BLOCK_FACES: Record<number, { top: number; bottom: number; side: number }> = {
-  [BLOCK_TYPES.GRASS]: { top: 0, bottom: 2, side: 1 },
-  [BLOCK_TYPES.DIRT]: { top: 2, bottom: 2, side: 2 },
-  [BLOCK_TYPES.STONE]: { top: 3, bottom: 3, side: 3 },
-  [BLOCK_TYPES.WOOD]: { top: 5, bottom: 5, side: 4 },
-  [BLOCK_TYPES.LEAF]: { top: 6, bottom: 6, side: 6 },
-  [BLOCK_TYPES.BRICK]: { top: 7, bottom: 7, side: 7 },
-  [BLOCK_TYPES.GLASS]: { top: 8, bottom: 8, side: 8 },
-  [BLOCK_TYPES.WATER]: { top: 9, bottom: 9, side: 9 },
-  [BLOCK_TYPES.SAND]: { top: 10, bottom: 10, side: 10 },
-  [BLOCK_TYPES.COAL]: { top: 11, bottom: 11, side: 11 },
-  [BLOCK_TYPES.IRON]: { top: 12, bottom: 12, side: 12 },
-  [BLOCK_TYPES.DIAMOND]: { top: 13, bottom: 13, side: 13 },
-  [BLOCK_TYPES.CHEST]: { top: 5, bottom: 5, side: 5 }, // 借用木头贴图
-  [BLOCK_TYPES.LEVER]: { top: 3, bottom: 3, side: 3 }, // 借用石头贴图
-  [BLOCK_TYPES.BIRCH_WOOD]: { top: 17, bottom: 17, side: 16 },
-  [BLOCK_TYPES.BIRCH_LEAVES]: { top: 18, bottom: 18, side: 18 },
-  [BLOCK_TYPES.SPRUCE_WOOD]: { top: 20, bottom: 20, side: 19 },
-  [BLOCK_TYPES.SPRUCE_LEAVES]: { top: 21, bottom: 21, side: 21 },
-  [BLOCK_TYPES.CACTUS]: { top: 23, bottom: 23, side: 22 },
-  [BLOCK_TYPES.JUNGLE_WOOD]: { top: 25, bottom: 25, side: 24 },
-  [BLOCK_TYPES.JUNGLE_LEAVES]: { top: 26, bottom: 26, side: 26 },
-  [BLOCK_TYPES.SANDSTONE]: { top: 27, bottom: 27, side: 27 },
-};
-
 export interface BlockProperties {
   id: BlockType;
   name: string;
@@ -44,6 +18,7 @@ export interface BlockProperties {
   colorHex?: number;          // 3D particle/material color (number like 0x56a032)
   border?: string;            // UI preview border (optional)
   allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
+  textureFaces?: { top: number; bottom: number; side: number };
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {

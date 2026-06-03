@@ -5,6 +5,7 @@ import { useGameStore } from '@store/useGameStore';
 import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
+import { useGame } from '../../context/GameContext';
 
 const getBlockColor = (type: number): string => {
   return getBlockProperties(type).color || '#a1a1aa';
@@ -45,6 +46,7 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
 
 export const HUD: React.FC = () => {
   const [activeLabel, setActiveLabel] = useState<string>('');
+  const gameInstance = useGame();
 
   const selectedBlock = useGameStore((state) => state.selectedBlock);
   const hotbar = useGameStore((state) => state.hotbar);
@@ -65,7 +67,6 @@ export const HUD: React.FC = () => {
 
   const handleQuickMove = (from: 'hotbar' | 'chest', index: number) => {
     quickMoveItem(from, index, (nextChest) => {
-      const gameInstance = (window as any).gameInstance;
       if (activeChest && gameInstance) {
         const entity = gameInstance.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
         if (entity && 'inventory' in entity) {
@@ -95,7 +96,7 @@ export const HUD: React.FC = () => {
         const state = useGameStore.getState();
         if (state.activeChest) {
           state.closeChest();
-          (window as any).gameInstance?.controls?.domElement?.requestPointerLock();
+          gameInstance?.controls?.domElement?.requestPointerLock();
         } else {
           state.toggleInventory();
         }
@@ -256,7 +257,7 @@ export const HUD: React.FC = () => {
               <span className="pixel-text-sm">储物箱 (Chest)</span>
               <button className={styles.closeBtn} onClick={() => {
                 closeChest();
-                (window as any).gameInstance?.controls?.lock();
+                gameInstance?.controls?.requestLock();
               }}>✕</button>
             </div>
             <div className={styles.sectionTitle}>箱子物品</div>
