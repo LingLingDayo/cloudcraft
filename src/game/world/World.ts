@@ -220,10 +220,10 @@ export class World {
           const treeTypeVal = this.pseudoRandom2D(cx * 30 + t, cz * 30 + t);
           const heightRand = this.pseudoRandom2D(cx * 40 + t, cz * 40 + t);
           
-          let treeType: 'oak' | 'birch' | 'spruce' = 'oak';
-          let trunkBlock: BlockType = BLOCK_TYPES.WOOD;
-          let leafBlock: BlockType = BLOCK_TYPES.LEAF;
-          let treeHeight = 4 + Math.floor(heightRand * 2); // default Oak height: 4 to 5
+          let treeType: 'oak' | 'birch' | 'spruce';
+          let trunkBlock: BlockType;
+          let leafBlock: BlockType;
+          let treeHeight: number;
 
           if (treeTypeVal < 0.4) {
             // Oak tree (40% probability)
@@ -291,7 +291,7 @@ export class World {
         for (let lx = -radius; lx <= radius; lx++) {
           for (let lz = -radius; lz <= radius; lz++) {
             // Avoid placing leaves directly where trunk is
-            if (lx === 0 && lz === 0 && ly > 0) continue;
+            if (lx === 0 && lz === 0 && ly <= 0) continue;
             
             // For birch, round the corners at the bottom layers to make it look nicer
             if (style === 'birch' && ly === startY && Math.abs(lx) === radius && Math.abs(lz) === radius) {
@@ -301,6 +301,15 @@ export class World {
             const wlx = tx + lx;
             const wlz = tz + lz;
             const wly = leafCenterY + ly;
+
+            // Random variation: slightly skip some outer leaves to make the shape irregular
+            const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
+            if (isOuter && !(lx === 0 && lz === 0)) {
+              const leafRand = this.pseudoRandom2D(wlx * 17 + tx, wlz * 23 + tz + wly);
+              if (leafRand < 0.20) {
+                continue;
+              }
+            }
 
             if (wlx >= 0 && wlx < CHUNK_SIZE_X && wlz >= 0 && wlz < CHUNK_SIZE_Z && wly >= 0 && wly < CHUNK_SIZE_Y) {
               const leafIdx = wlx + wlz * CHUNK_SIZE_X + wly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
@@ -324,7 +333,7 @@ export class World {
 
         for (let lx = -radius; lx <= radius; lx++) {
           for (let lz = -radius; lz <= radius; lz++) {
-            if (lx === 0 && lz === 0 && ly > 0) continue;
+            if (lx === 0 && lz === 0 && ly <= 0) continue;
             
             // Round the 5x5 layers by clipping the corners
             if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) {
@@ -334,6 +343,15 @@ export class World {
             const wlx = tx + lx;
             const wlz = tz + lz;
             const wly = leafCenterY + ly;
+
+            // Random variation: slightly skip some outer leaves to make the shape irregular
+            const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
+            if (isOuter && !(lx === 0 && lz === 0)) {
+              const leafRand = this.pseudoRandom2D(wlx * 17 + tx, wlz * 23 + tz + wly);
+              if (leafRand < 0.20) {
+                continue;
+              }
+            }
 
             if (wlx >= 0 && wlx < CHUNK_SIZE_X && wlz >= 0 && wlz < CHUNK_SIZE_Z && wly >= 0 && wly < CHUNK_SIZE_Y) {
               const leafIdx = wlx + wlz * CHUNK_SIZE_X + wly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
