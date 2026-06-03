@@ -16,6 +16,8 @@ function App() {
   const fov = useGameStore((state) => state.fov);
   const setFov = useGameStore((state) => state.setFov);
   const gameMode = useGameStore((state) => state.gameMode);
+  const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
+  const activeChest = useGameStore((state) => state.activeChest);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
@@ -63,6 +65,7 @@ function App() {
             if (saved.hotbar !== undefined) {
               useGameStore.setState({
                 hotbar: saved.hotbar,
+                inventory: saved.inventory ?? Array(27).fill(null),
                 activeSlot: saved.activeSlot ?? 0,
                 selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0 // 0 is BLOCK_TYPES.AIR
               });
@@ -163,6 +166,7 @@ function App() {
           z: gm.player.position.z,
         },
         hotbar: useGameStore.getState().hotbar,
+        inventory: useGameStore.getState().inventory,
         activeSlot: useGameStore.getState().activeSlot,
         gameMode: useGameStore.getState().gameMode,
       };
@@ -193,7 +197,7 @@ function App() {
         </div>
       )}
 
-      {gameState === 'PAUSED' && (
+      {gameState === 'PAUSED' && !activeChest && !isInventoryOpen && (
         <PauseMenu
           onResume={handleResume}
           onSave={handleSave}

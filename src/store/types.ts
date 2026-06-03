@@ -28,6 +28,8 @@ export interface PlayerSlice {
   isDamaged: boolean;
   activeChest: { x: number; y: number; z: number } | null;
   chestInventory: (HotbarItem | null)[];
+  isInventoryOpen: boolean;
+  inventory: (HotbarItem | null)[];
   setSelectedBlock: (block: number) => void;
   setActiveSlot: (slot: number) => void;
   addToHotbar: (blockType: number, count?: number) => boolean;
@@ -43,6 +45,10 @@ export interface PlayerSlice {
   setIsDamaged: (damaged: boolean) => void;
   openChest: (x: number, y: number, z: number, items: (HotbarItem | null)[]) => void;
   closeChest: () => void;
+  openInventory: () => void;
+  closeInventory: () => void;
+  toggleInventory: () => void;
+  setInventory: (inventory: (HotbarItem | null)[]) => void;
   quickMoveItem: (from: 'hotbar' | 'chest', index: number, onSyncToWorld?: (items: (HotbarItem | null)[]) => void) => void;
 }
 
