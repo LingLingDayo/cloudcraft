@@ -136,4 +136,86 @@ describe('Physics System', () => {
 
     expect(pos.y).toBeGreaterThanOrEqual(40.0);
   });
+
+  describe('Step-up Behavior', () => {
+    test('player can step up a small ledge (0.5 block high)', () => {
+      // 地基高度为 y=38
+      for (let x = 8; x <= 12; x++) {
+        for (let z = 8; z <= 12; z++) {
+          mockBlockMap.set(`${x},38,${z}`, BLOCK_TYPES.STONE);
+        }
+      }
+      // 临时将 stepHeight 设为 1.1，从而能够上 1.0 高度的普通 Stone 方块！
+      physics.stepHeight = 1.1; 
+
+      mockBlockMap.set('11,39,10', BLOCK_TYPES.STONE); // 在 x=11 处放置 Stone
+
+      const pos = new THREE.Vector3(10.5, 39.0, 10.5); // 玩家站在 y=39.0 上 (底部是 y=38 的地面)
+      const vel = new THREE.Vector3(5.0, 0, 0); // 向 +X 移动
+      const state = { onGround: true, inWater: false };
+
+      // 迭代 3 步以使其越过 x=11 台阶
+      for (let i = 0; i < 3; i++) {
+        physics.update(pos, vel, 0.05, new THREE.Vector3(1, 0, 0), false, false, false, state);
+      }
+
+      // 玩家应该顺利翻过 x=11, 高度上升到 y=40.0
+      expect(pos.x).toBeGreaterThan(10.8);
+      expect(pos.y).toBeCloseTo(40.0);
+      expect(state.onGround).toBe(true);
+    });
+
+    test('player cannot step up a tall wall (greater than stepHeight)', () => {
+      // 玩家前方的方块很高 (高于 stepHeight)
+      physics.stepHeight = 0.6; // 恢复 0.6
+      for (let x = 8; x <= 12; x++) {
+        mockBlockMap.set(`${x},38,10`, BLOCK_TYPES.STONE);
+      }
+      mockBlockMap.set('11,39,10', BLOCK_TYPES.STONE); // 1.0 格高完整方块大于 0.6 限制
+
+      const pos = new THREE.Vector3(10.5, 39.0, 10.5);
+      const vel = new THREE.Vector3(5.0, 0, 0);
+      const state = { onGround: true, inWater: false };
+
+      physics.update(pos, vel, 0.05, new THREE.Vector3(1, 0, 0), false, false, false, state);
+
+      // 玩家无法翻越，x 被阻挡限制在 11.0 之前，高度 y 保持 39.0
+      expect(pos.x).toBeLessThan(10.8);
+      expect(pos.y).toBe(39.0);
+    });
+  });
+
+  describe('DDA Raycast Exact Precision', () => {
+    test('raycast hits solid block ahead in +X direction', () => {
+      // 在 x=13 放置一个 Stone 方块
+      mockBlockMap.set('13,5,10', BLOCK_TYPES.STONE);
+
+      const origin = new THREE.Vector3(10.5, 5.5, 10.5);
+      const direction = new THREE.Vector3(1, 0, 0); // 朝 +X
+      const hit = physics.raycast(origin, direction, 5.0);
+
+      expect(hit).not.toBeNull();
+      expect(hit!.target.x).toBe(13);
+      expect(hit!.target.y).toBe(5);
+      expect(hit!.target.z).toBe(10);
+      
+      // 因为射线从 -X 向 +X 射入，碰到的面法线应为 (-1, 0, 0)
+      expect(hit!.face.x).toBe(-1);
+      expect(hit!.face.y).toBe(0);
+      expect(hit!.face.z).toBe(0);
+      
+      // 放置点应该是 target + face = (13 - 1, 5, 10) = (12, 5, 10)
+      expect(hit!.place.x).toBe(12);
+      expect(hit!.place.y).toBe(5);
+      expect(hit!.place.z).toBe(10);
+    });
+
+    test('raycast returns null when no block is hit within maxDistance', () => {
+      const origin = new THREE.Vector3(10.5, 5.5, 10.5);
+      const direction = new THREE.Vector3(1, 0, 0);
+      const hit = physics.raycast(origin, direction, 1.0); // 距离太短
+
+      expect(hit).toBeNull();
+    });
+  });
 });

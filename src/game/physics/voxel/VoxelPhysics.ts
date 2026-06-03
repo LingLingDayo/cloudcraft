@@ -18,6 +18,7 @@ export class VoxelPhysics {
     jumpSpeed: number;
     walkSpeed: number;
     swimSpeed: number;
+    stepHeight: number;
   };
 
   constructor(
@@ -29,6 +30,7 @@ export class VoxelPhysics {
       jumpSpeed: number;
       walkSpeed: number;
       swimSpeed: number;
+      stepHeight: number;
     }
   ) {
     this.world = world;
@@ -149,37 +151,135 @@ export class VoxelPhysics {
     }
 
     // 4. Resolve collisions axis by axis
-    // Move along X
+    const oldX = position.x;
+    const oldY = position.y;
+    const oldZ = position.z;
+    const oldVelX = velocity.x;
+    const oldVelZ = velocity.z;
+
+    // Move along X (Normal Path)
     position.x += velocity.x * dt;
     let box = this.getPlayerBox(position);
     let colliders = this.getCollidingBlocks(box);
+    let collidedX = false;
     for (const block of colliders) {
       const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
       if (overlapX > 0) {
-        if (velocity.x > 0) {
-          position.x -= overlapX;
-        } else if (velocity.x < 0) {
-          position.x += overlapX;
-        }
+        if (velocity.x > 0) position.x -= overlapX;
+        else if (velocity.x < 0) position.x += overlapX;
         velocity.x = 0;
+        collidedX = true;
         box = this.getPlayerBox(position);
       }
     }
 
-    // Move along Z
+    // Move along Z (Normal Path)
     position.z += velocity.z * dt;
     box = this.getPlayerBox(position);
     colliders = this.getCollidingBlocks(box);
+    let collidedZ = false;
     for (const block of colliders) {
       const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
       if (overlapZ > 0) {
-        if (velocity.z > 0) {
-          position.z -= overlapZ;
-        } else if (velocity.z < 0) {
-          position.z += overlapZ;
-        }
+        if (velocity.z > 0) position.z -= overlapZ;
+        else if (velocity.z < 0) position.z += overlapZ;
         velocity.z = 0;
+        collidedZ = true;
         box = this.getPlayerBox(position);
+      }
+    }
+
+    const normalX = position.x;
+    const normalZ = position.z;
+    const normalY = position.y;
+
+    // Step-up 自动上台阶判定
+    const stepHeight = this.settings.stepHeight;
+    if (state.onGround && !isFlying && (collidedX || collidedZ)) {
+      // 恢复移动前位置
+      position.set(oldX, oldY, oldZ);
+
+      // AABB 向上尝试抬升 stepHeight (同时防头顶卡实心方块)
+      position.y += stepHeight;
+      box = this.getPlayerBox(position);
+      colliders = this.getCollidingBlocks(box);
+      for (const block of colliders) {
+        const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
+        if (overlapY > 0) {
+          position.y -= overlapY;
+          box = this.getPlayerBox(position);
+        }
+      }
+      const actualStepUpY = position.y - oldY;
+
+      if (actualStepUpY > 0) {
+        // 在升高高度重新应用水平 X 轴和 Z 轴位移
+        // 重新进行 X 移动与碰撞检测
+        position.x += oldVelX * dt;
+        box = this.getPlayerBox(position);
+        colliders = this.getCollidingBlocks(box);
+        let stepCollidedX = false;
+        for (const block of colliders) {
+          const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
+          if (overlapX > 0) {
+            if (oldVelX > 0) position.x -= overlapX;
+            else if (oldVelX < 0) position.x += overlapX;
+            stepCollidedX = true;
+            box = this.getPlayerBox(position);
+          }
+        }
+
+        // 重新进行 Z 移动与碰撞检测
+        position.z += oldVelZ * dt;
+        box = this.getPlayerBox(position);
+        colliders = this.getCollidingBlocks(box);
+        let stepCollidedZ = false;
+        for (const block of colliders) {
+          const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
+          if (overlapZ > 0) {
+            if (oldVelZ > 0) position.z -= overlapZ;
+            else if (oldVelZ < 0) position.z += overlapZ;
+            stepCollidedZ = true;
+            box = this.getPlayerBox(position);
+          }
+        }
+
+        // 尝试下沉还原抬高的空间，对齐站在台阶表面
+        position.y -= actualStepUpY;
+        box = this.getPlayerBox(position);
+        colliders = this.getCollidingBlocks(box);
+        for (const block of colliders) {
+          const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
+          if (overlapY > 0) {
+            position.y += overlapY;
+            box = this.getPlayerBox(position);
+          }
+        }
+
+        // 决策：比较水平移动效率
+        const distNormalSq = (normalX - oldX) * (normalX - oldX) + (normalZ - oldZ) * (normalZ - oldZ);
+        const distStepSq = (position.x - oldX) * (position.x - oldX) + (position.z - oldZ) * (position.z - oldZ);
+
+        if (distStepSq > distNormalSq) {
+          // 采纳上台阶结果
+          velocity.x = stepCollidedX ? 0 : oldVelX;
+          velocity.z = stepCollidedZ ? 0 : oldVelZ;
+          velocity.y = 0; // 重置 Y 轴速度（在地上上台不应该有重力下坠趋势）
+        } else {
+          // 放弃上台，还原到不上台位置
+          position.x = normalX;
+          position.z = normalZ;
+          position.y = normalY;
+          velocity.x = collidedX ? 0 : oldVelX;
+          velocity.z = collidedZ ? 0 : oldVelZ;
+        }
+      } else {
+        // 头顶无抬高空间，还原
+        position.x = normalX;
+        position.z = normalZ;
+        position.y = normalY;
+        velocity.x = collidedX ? 0 : oldVelX;
+        velocity.z = collidedZ ? 0 : oldVelZ;
       }
     }
 
@@ -216,5 +316,102 @@ export class VoxelPhysics {
         state.onGround = true;
       }
     }
+  }
+
+  /**
+   * 使用高效的 DDA (Fast Voxel Traversal) 算法在体素网格中执行射线追踪。
+   * 
+   * @param origin 射线起点
+   * @param direction 射线方向向量 (未归一化或已归一化)
+   * @param maxDistance 最大探测距离
+   */
+  public raycast(
+    origin: THREE.Vector3,
+    direction: THREE.Vector3,
+    maxDistance: number
+  ): {
+    target: THREE.Vector3;
+    place: THREE.Vector3;
+    face: THREE.Vector3;
+    blockId: number;
+  } | null {
+    const dir = direction.clone().normalize();
+
+    let x = Math.floor(origin.x);
+    let y = Math.floor(origin.y);
+    let z = Math.floor(origin.z);
+
+    const stepX = dir.x > 0 ? 1 : (dir.x < 0 ? -1 : 0);
+    const stepY = dir.y > 0 ? 1 : (dir.y < 0 ? -1 : 0);
+    const stepZ = dir.z > 0 ? 1 : (dir.z < 0 ? -1 : 0);
+
+    const tDeltaX = dir.x !== 0 ? Math.abs(1 / dir.x) : Infinity;
+    const tDeltaY = dir.y !== 0 ? Math.abs(1 / dir.y) : Infinity;
+    const tDeltaZ = dir.z !== 0 ? Math.abs(1 / dir.z) : Infinity;
+
+    let tMaxX = dir.x > 0 ? (x + 1 - origin.x) / dir.x : (dir.x < 0 ? (x - origin.x) / dir.x : Infinity);
+    let tMaxY = dir.y > 0 ? (y + 1 - origin.y) / dir.y : (dir.y < 0 ? (y - origin.y) / dir.y : Infinity);
+    let tMaxZ = dir.z > 0 ? (z + 1 - origin.z) / dir.z : (dir.z < 0 ? (z - origin.z) / dir.z : Infinity);
+
+    let t = 0;
+    const face = new THREE.Vector3(0, 0, 0);
+
+    // 首先检查起点本身是否就是实心方块
+    const startBlock = this.world.getBlock(x, y, z);
+    if (startBlock !== 0 && this.isSolid(startBlock)) {
+      return {
+        target: new THREE.Vector3(x, y, z),
+        place: new THREE.Vector3(x, y, z),
+        face: new THREE.Vector3(0, 1, 0),
+        blockId: startBlock
+      };
+    }
+
+    const maxSteps = 150; // 防死循环上限
+    let steps = 0;
+
+    while (t < maxDistance && steps < maxSteps) {
+      steps++;
+
+      if (tMaxX < tMaxY) {
+        if (tMaxX < tMaxZ) {
+          x += stepX;
+          t = tMaxX;
+          tMaxX += tDeltaX;
+          face.set(-stepX, 0, 0);
+        } else {
+          z += stepZ;
+          t = tMaxZ;
+          tMaxZ += tDeltaZ;
+          face.set(0, 0, -stepZ);
+        }
+      } else {
+        if (tMaxY < tMaxZ) {
+          y += stepY;
+          t = tMaxY;
+          tMaxY += tDeltaY;
+          face.set(0, -stepY, 0);
+        } else {
+          z += stepZ;
+          t = tMaxZ;
+          tMaxZ += tDeltaZ;
+          face.set(0, 0, -stepZ);
+        }
+      }
+
+      if (t > maxDistance) break;
+
+      const blockId = this.world.getBlock(x, y, z);
+      if (blockId !== 0 && this.isSolid(blockId)) {
+        return {
+          target: new THREE.Vector3(x, y, z),
+          place: new THREE.Vector3(x, y, z).add(face),
+          face,
+          blockId
+        };
+      }
+    }
+
+    return null;
   }
 }

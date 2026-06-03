@@ -493,7 +493,7 @@ export class GameManager {
     e.preventDefault();
   };
 
-  // Perform a custom stepping raycast to find targeted block
+  // Perform a custom DDA raycast to find targeted block
   private updateTargetedBlock() {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
@@ -501,38 +501,20 @@ export class GameManager {
     const origin = raycaster.ray.origin;
 
     const maxDist = 5.2;
-    const step = 0.04;
-    const current = origin.clone();
 
     this.targetedBlockInfo = null;
     this.selectionBox.visible = false;
 
-    for (let d = 0; d < maxDist; d += step) {
-      current.addScaledVector(dir, step);
-      const bx = Math.floor(current.x);
-      const by = Math.floor(current.y);
-      const bz = Math.floor(current.z);
+    const hit = this.physics.raycast(origin, dir, maxDist);
+    if (hit) {
+      this.targetedBlockInfo = {
+        target: hit.target,
+        place: hit.place,
+      };
 
-      const blockType = this.world.getBlock(bx, by, bz);
-      const props = getBlockProperties(blockType);
-      // We can only target non-air, non-liquid blocks (solid blocks and transparent glass)
-      if (blockType !== BLOCK_TYPES.AIR && !props.isLiquid) {
-        // Calculate block coordinate to place (previous step position)
-        const prev = current.clone().addScaledVector(dir, -step);
-        const px = Math.floor(prev.x);
-        const py = Math.floor(prev.y);
-        const pz = Math.floor(prev.z);
-
-        this.targetedBlockInfo = {
-          target: new THREE.Vector3(bx, by, bz),
-          place: new THREE.Vector3(px, py, pz),
-        };
-
-        // Align selection box
-        this.selectionBox.position.set(bx + 0.5, by + 0.5, bz + 0.5);
-        this.selectionBox.visible = true;
-        break;
-      }
+      // Align selection box
+      this.selectionBox.position.set(hit.target.x + 0.5, hit.target.y + 0.5, hit.target.z + 0.5);
+      this.selectionBox.visible = true;
     }
   }
 
