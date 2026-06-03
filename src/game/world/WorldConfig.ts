@@ -20,6 +20,8 @@ export const WORLD_CONFIG = {
     threshold: 0.04,
     transitionWidth: 0.03,
     bedHeight: 142,
+    valleyInfluenceWidth: 0.10, // 新增：河谷扁平化过渡宽度
+    valleyTargetHeight: 153,    // 新增：目标河谷地表高度，比海平面高 3 格
   },
   pond: {
     probability: 0.03, // 3% of cells have a pond
