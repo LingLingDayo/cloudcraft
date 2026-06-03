@@ -175,5 +175,37 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     }
     expect(foundUndergroundCave).toBe(true);
   });
+
+  test('should not generate exposed floating water walls adjacent to air', () => {
+    const world = new World('minicraft-seed');
+    world.loadArea(0, 0, 3); // Load a 3x3 chunk area
+
+    let exposedWaterCount = 0;
+    
+    // Scan global coordinates inside the loaded area to check all water blocks
+    for (let x = -32; x < 32; x++) {
+      for (let z = -32; z < 32; z++) {
+        for (let y = 1; y <= 150; y++) {
+          if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+            const neighbors = [
+              { name: 'X+1', val: world.getBlock(x + 1, y, z) },
+              { name: 'X-1', val: world.getBlock(x - 1, y, z) },
+              { name: 'Z+1', val: world.getBlock(x, y, z + 1) },
+              { name: 'Z-1', val: world.getBlock(x, y, z - 1) }
+            ];
+            
+            for (const neighbor of neighbors) {
+              if (neighbor.val === BLOCK_TYPES.AIR) {
+                console.log(`Exposed water at: (${x}, ${y}, ${z}), neighbor ${neighbor.name} is AIR`);
+                exposedWaterCount++;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    expect(exposedWaterCount).toBe(0);
+  });
 });
 
