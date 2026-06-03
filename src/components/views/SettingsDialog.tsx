@@ -30,6 +30,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
   const setDebugOverlay = useGameStore((state) => state.setDebugOverlay);
   const language = useGameStore((state) => state.language);
   const setLanguage = useGameStore((state) => state.setLanguage);
+  const autoJump = useGameStore((state) => state.autoJump);
+  const setAutoJump = useGameStore((state) => state.setAutoJump);
 
   const [playerName, setPlayerName] = useState<string>(() => {
     return localStorage.getItem('minicraft_player_name') || 'Steve';
@@ -120,6 +122,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
                     value={gameMode}
                     options={gameModeOptions}
                     onChange={(val) => setGameMode(val as GameMode)}
+                  />
+                </div>
+
+                <div className={styles.optionItem}>
+                  <Switch
+                    label={t('pauseMenu.autoJump')}
+                    checked={autoJump}
+                    onChange={(checked) => setAutoJump(checked)}
                   />
                 </div>
               </div>

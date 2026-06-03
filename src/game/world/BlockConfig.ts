@@ -26,7 +26,7 @@ export interface BlockProperties {
   isTransparent: boolean;     // 是否为透明/透光方块 (光线穿过、网格绘制时是否剔除邻面)
   isLiquid: boolean;          // 是否为液体 (如水、岩浆等)
   hardness: number;           // 挖掘硬度 (-1表示不可破坏如基岩，0表示即时破坏，1.0为泥土，2.0为石头等)
-  affectedByGravity: boolean;  // 是否受重力影响 (如沙子、红沙、砾石在没有支撑时会下落)
+  affectedByGravity: boolean; // 是否受重力影响 (如沙子、红沙、砾石在没有支撑时会下落)
   lightLevel: number;         // 光照亮度等级：0-15 (如南瓜灯/火把/荧石为15)
   isInteractable: boolean;    // 是否可交互 (如箱子、门、熔炉、拉杆等)
   opacity: number;            // 渲染不透明度：0.0到1.0 (如水 0.8，空气 0.0，玻璃 0.3，普通方块 1.0)

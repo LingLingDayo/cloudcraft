@@ -7,11 +7,13 @@ export interface GameSlice {
   fov: number;
   gameMode: GameMode;
   language: Language;
+  autoJump: boolean;
   setGameState: (state: GameState) => void;
   setRenderDistance: (dist: number) => void;
   setFov: (fov: number) => void;
   setGameMode: (mode: GameMode) => void;
   setLanguage: (lang: Language) => void;
+  setAutoJump: (autoJump: boolean) => void;
 }
 
 export interface PlayerSlice {

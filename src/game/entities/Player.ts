@@ -74,6 +74,7 @@ export class Player {
 
     const canJump = this.state.onGround && !this.state.inWater && !this.isFlying;
     const wasYVelocity = this.velocity.y;
+    const autoJump = useGameStore.getState().autoJump;
 
     // Update positions, resolve collisions
     physics.update(
@@ -84,11 +85,12 @@ export class Player {
       isJumping,
       controls.isActionPressed(GameAction.SNEAK),
       this.isFlying,
-      this.state
+      this.state,
+      autoJump
     );
 
     // Play jump sound
-    if (isJumping && canJump && this.velocity.y === physics.jumpSpeed) {
+    if (canJump && this.velocity.y === physics.jumpSpeed) {
       sound.playJump();
     }
 

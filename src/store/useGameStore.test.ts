@@ -24,6 +24,7 @@ describe('useGameStore', () => {
       isInventoryOpen: false,
       inventory: Array(54).fill(null),
       language: 'zh',
+      autoJump: true,
     });
   });
 
@@ -46,6 +47,7 @@ describe('useGameStore', () => {
     expect(state.isInventoryOpen).toBe(false);
     expect(state.inventory).toEqual(Array(54).fill(null));
     expect(state.language).toBe('zh');
+    expect(state.autoJump).toBe(true);
   });
 
   test('should set game state via setGameState', () => {
@@ -216,5 +218,13 @@ describe('useGameStore', () => {
 
     useGameStore.getState().setLanguage('zh');
     expect(useGameStore.getState().language).toBe('zh');
+  });
+
+  test('should set auto jump via setAutoJump', () => {
+    useGameStore.getState().setAutoJump(false);
+    expect(useGameStore.getState().autoJump).toBe(false);
+
+    useGameStore.getState().setAutoJump(true);
+    expect(useGameStore.getState().autoJump).toBe(true);
   });
 });
