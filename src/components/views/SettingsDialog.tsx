@@ -11,11 +11,12 @@ import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {
   onClose: () => void;
+  onSave?: () => void;
 }
 
 type TabType = 'general' | 'graphics';
 
-export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
+export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('general');
 
@@ -40,6 +41,31 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
   const handlePlayerNameChange = (name: string) => {
     setPlayerName(name);
     localStorage.setItem('minicraft_player_name', name);
+  };
+
+  const handleExport = () => {
+    if (onSave) {
+      onSave();
+    }
+    const saveDataStr = localStorage.getItem('minicraft_save_default_world');
+    if (!saveDataStr) {
+      alert(language === 'zh' ? '没有找到存档数据！' : 'No save data found!');
+      return;
+    }
+    try {
+      const blob = new Blob([saveDataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `minicraft_save_${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert(language === 'zh' ? '导出存档失败' : 'Failed to export save');
+    }
   };
 
   const gameModeOptions = [
@@ -131,6 +157,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
                     checked={autoJump}
                     onChange={(checked) => setAutoJump(checked)}
                   />
+                </div>
+
+                <div className={styles.optionItem}>
+                  <span className={styles.label} style={{ marginBottom: '8px' }}>
+                    {t('settings.saveData')}
+                  </span>
+                  <Button variant="secondary" onClick={handleExport}>
+                    {t('settings.exportSave')}
+                  </Button>
                 </div>
               </div>
             )}
