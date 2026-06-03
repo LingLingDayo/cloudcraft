@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { ImprovedNoise } from '../Noise';
-import { BiomeRegistry, getBiomeAt } from './BiomeRegistry';
+import { BiomeRegistry } from './BiomeRegistry';
 
 describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
   const mockNoise = new ImprovedNoise('test-seed');
