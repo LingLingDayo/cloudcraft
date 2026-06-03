@@ -140,22 +140,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose }) => {
 
                 <div className={styles.optionItem}>
                   <Slider
-                    label={t('pauseMenu.renderDistance', { val: renderDistance })}
+                    label={t('pauseMenu.renderDistance')}
                     min={2}
                     max={5}
                     value={renderDistance}
                     onChange={setRenderDistance}
+                    valueFormatter={(val) => t('pauseMenu.renderDistanceValue', { val })}
                   />
                 </div>
 
                 <div className={styles.optionItem}>
                   <Slider
-                    label={t('pauseMenu.fov', { val: fov })}
+                    label={t('pauseMenu.fov')}
                     min={60}
                     max={90}
                     step={5}
                     value={fov}
                     onChange={setFov}
+                    valueFormatter={(val) => t('pauseMenu.fovValue', { val })}
                   />
                 </div>
               </div>

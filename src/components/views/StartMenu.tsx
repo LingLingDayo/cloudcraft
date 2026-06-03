@@ -66,22 +66,24 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
 
           <div className={styles.slidersRow}>
             <Slider
-              label={t('startMenu.renderDistance', { val: renderDistance })}
+              label={t('startMenu.renderDistance')}
               min={2}
               max={5}
               value={renderDistance}
               onChange={setRenderDistance}
+              valueFormatter={(val) => t('startMenu.renderDistanceValue', { val })}
               containerStyle={SLIDER_CONTAINER_STYLE}
               labelStyle={labelStyle}
             />
 
             <Slider
-              label={t('startMenu.fov', { val: fov })}
+              label={t('startMenu.fov')}
               min={60}
               max={90}
               step={5}
               value={fov}
               onChange={setFov}
+              valueFormatter={(val) => t('startMenu.fovValue', { val })}
               containerStyle={SLIDER_CONTAINER_STYLE}
               labelStyle={labelStyle}
             />

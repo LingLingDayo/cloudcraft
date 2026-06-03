@@ -10,6 +10,7 @@ interface SliderProps {
   onChange: (value: number) => void;
   labelStyle?: React.CSSProperties;
   containerStyle?: React.CSSProperties;
+  valueFormatter?: (value: number) => string;
 }
 
 export const Slider: React.FC<SliderProps> = ({
@@ -21,12 +22,18 @@ export const Slider: React.FC<SliderProps> = ({
   onChange,
   labelStyle = {},
   containerStyle = {},
+  valueFormatter,
 }) => {
   return (
     <div className={styles.container} style={containerStyle}>
-      <label className={styles.label} style={labelStyle}>
-        {label}
-      </label>
+      <div className={styles.header}>
+        <label className={styles.label} style={labelStyle}>
+          {label}
+        </label>
+        <span className={styles.value} style={labelStyle}>
+          {valueFormatter ? valueFormatter(value) : value}
+        </span>
+      </div>
       <input
         type="range"
         min={min}
