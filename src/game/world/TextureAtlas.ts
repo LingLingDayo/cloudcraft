@@ -232,6 +232,62 @@ export function generateTextureAtlas(): THREE.Texture {
     ctx.fillRect(x + Math.floor(Math.random() * tileSize), y + Math.floor(Math.random() * tileSize), 3, 1);
   }
 
+  // 22: Cactus Side (Green base with yellow-white spikes and deep green lines)
+  x = (22 % 8) * tileSize;
+  y = Math.floor(22 / 8) * tileSize;
+  fillNoise(x, y, 40, 120, 30, 15);
+  ctx.fillStyle = 'rgb(20, 70, 15)'; // Vertical stripes
+  ctx.fillRect(x + 3, y, 2, tileSize);
+  ctx.fillRect(x + 11, y, 2, tileSize);
+  ctx.fillStyle = 'rgb(240, 240, 220)'; // Spikes
+  for (let i = 0; i < 8; i++) {
+    ctx.fillRect(x + 1 + Math.floor(Math.random() * (tileSize - 2)), y + Math.floor(Math.random() * (tileSize - 2)), 1, 1);
+  }
+
+  // 23: Cactus Top (Light green with cross patterns)
+  x = (23 % 8) * tileSize;
+  y = Math.floor(23 / 8) * tileSize;
+  fillNoise(x, y, 60, 140, 50, 10);
+  ctx.fillStyle = 'rgb(30, 90, 25)';
+  ctx.fillRect(x + 7, y, 2, tileSize);
+  ctx.fillRect(x, y + 7, tileSize, 2);
+
+  // 24: Jungle Wood Side (Dark brown bark with coarse, horizontal ridges)
+  x = (24 % 8) * tileSize;
+  y = Math.floor(24 / 8) * tileSize;
+  fillNoise(x, y, 90, 60, 40, 15);
+  ctx.fillStyle = 'rgb(55, 35, 20)'; // Dark splits
+  for (let py = 0; py < tileSize; py += 3) {
+    ctx.fillRect(x + Math.floor(Math.random() * 8), y + py, 5, 1);
+    ctx.fillRect(x + 8 + Math.floor(Math.random() * 8), y + py + 1, 5, 1);
+  }
+
+  // 25: Jungle Wood Top (Dark core with brownish outer rings)
+  x = (25 % 8) * tileSize;
+  y = Math.floor(25 / 8) * tileSize;
+  fillNoise(x, y, 140, 105, 75, 10);
+  ctx.strokeStyle = 'rgb(90, 60, 40)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 2.5, y + 2.5, tileSize - 5, tileSize - 5);
+  ctx.strokeRect(x + 5.5, y + 5.5, tileSize - 11, tileSize - 11);
+
+  // 26: Jungle Leaves (Densely packed dark green foliage)
+  x = (26 % 8) * tileSize;
+  y = Math.floor(26 / 8) * tileSize;
+  fillNoise(x, y, 25, 95, 20, 20);
+  ctx.fillStyle = 'rgb(12, 50, 8)';
+  for (let i = 0; i < 15; i++) {
+    ctx.fillRect(x + Math.floor(Math.random() * tileSize), y + Math.floor(Math.random() * tileSize), 2, 2);
+  }
+
+  // 27: Sandstone (Yellowish-tan layer cake rock)
+  x = (27 % 8) * tileSize;
+  y = Math.floor(27 / 8) * tileSize;
+  fillNoise(x, y, 210, 180, 120, 12);
+  ctx.fillStyle = 'rgb(180, 150, 100)'; // Bedding lines
+  ctx.fillRect(x, y + 3, tileSize, 2);
+  ctx.fillRect(x, y + 10, tileSize, 2);
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;

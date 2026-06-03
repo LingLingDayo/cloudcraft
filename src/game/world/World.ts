@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as THREE from 'three';
 import { ImprovedNoise } from './Noise';
-import { BLOCK_TYPES, BLOCK_FACES, getBlockProperties, type BlockType } from './BlockConfig';
+import { BLOCK_TYPES, BLOCK_FACES, getBlockProperties } from './BlockConfig';
 import { generateTextureAtlas } from './TextureAtlas';
 import { BlockRegistry } from './block/BlockRegistry';
 import { BlockEntityManager } from './block/BlockEntityManager';
+import type { Biome } from './biome/Biome';
+import { getBiomeAt } from './biome/BiomeRegistry';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -55,6 +57,38 @@ export class World {
         side: THREE.DoubleSide,
         depthWrite: false, // Prevents depth buffer issues with water
       }),
+    };
+  }
+
+  // 3x3 邻域高斯权重插值计算，并返回中心点的主生态
+  public getInterpolatedHeightAndBiome(wx: number, wz: number): { height: number; primaryBiome: Biome } {
+    const primaryBiome = getBiomeAt(wx, wz, this.noise);
+    
+    let totalHeight = 0;
+    let totalWeight = 0;
+    
+    // 3x3 采样，步长设为 4
+    for (let dx = -4; dx <= 4; dx += 4) {
+      for (let dz = -4; dz <= 4; dz += 4) {
+        const sampleX = wx + dx;
+        const sampleZ = wz + dz;
+        const biome = getBiomeAt(sampleX, sampleZ, this.noise);
+        
+        // 用该生态规律计算中心点的高度
+        const height = biome.getHeight(wx, wz, this.noise);
+        
+        // 高斯权重：dSq = dx^2 + dz^2，W = exp(-dSq / 32)
+        const dSq = dx * dx + dz * dz;
+        const weight = Math.exp(-dSq / 32);
+        
+        totalHeight += height * weight;
+        totalWeight += weight;
+      }
+    }
+    
+    return {
+      height: Math.round(totalHeight / totalWeight),
+      primaryBiome,
     };
   }
 
@@ -146,14 +180,9 @@ export class World {
         const wx = worldStartX + x;
         const wz = worldStartZ + z;
 
-        // Use noise to generate height
-        // Base terrain
-        const baseHeight = Math.floor(this.noise.fbm(wx * 0.015, wz * 0.015, 3, 0.4) * 20 + 25);
-        // Mountains
-        const mountainNoise = this.noise.noise(wx * 0.005, wz * 0.005);
-        const mountainHeight = mountainNoise > 0.1 ? Math.floor(mountainNoise * 25) : 0;
-        
-        const finalHeight = Math.min(CHUNK_SIZE_Y - 2, baseHeight + mountainHeight);
+        // 使用 3x3 邻域插值计算平滑高度与主生态
+        const { height: interpolatedHeight, primaryBiome } = this.getInterpolatedHeightAndBiome(wx, wz);
+        const finalHeight = Math.min(CHUNK_SIZE_Y - 2, interpolatedHeight);
         const waterLevel = 22;
 
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
@@ -163,31 +192,8 @@ export class World {
             // Bedrock layer
             chunk[index] = BLOCK_TYPES.STONE;
           } else if (y <= finalHeight) {
-            if (y === finalHeight) {
-              if (y < waterLevel + 2) {
-                chunk[index] = BLOCK_TYPES.SAND; // Sandy shores
-              } else {
-                chunk[index] = BLOCK_TYPES.GRASS; // Grassy surface
-              }
-            } else if (y > finalHeight - 4) {
-              if (y < waterLevel + 2) {
-                chunk[index] = BLOCK_TYPES.SAND;
-              } else {
-                chunk[index] = BLOCK_TYPES.DIRT;
-              }
-            } else {
-              // Deep stone with ore veins
-              const r = Math.random();
-              if (r < 0.01 && y < 15) {
-                chunk[index] = BLOCK_TYPES.DIAMOND;
-              } else if (r < 0.02 && y < 30) {
-                chunk[index] = BLOCK_TYPES.IRON;
-              } else if (r < 0.04 && y < 45) {
-                chunk[index] = BLOCK_TYPES.COAL;
-              } else {
-                chunk[index] = BLOCK_TYPES.STONE;
-              }
-            }
+            const depth = finalHeight - y + 1;
+            primaryBiome.fillColumn(chunk, x, z, y, finalHeight, waterLevel, depth, this.noise, wx, wz);
           } else if (y <= waterLevel) {
             // Water filling
             chunk[index] = BLOCK_TYPES.WATER;
@@ -199,53 +205,41 @@ export class World {
       }
     }
 
-    // Procedural decoration: grow trees in this chunk (only if surface is grass)
-    // Seeded random for trees based on chunk coordinates
+    // Procedural decoration: grow trees/decorations in this chunk
+    // Seeded random based on chunk coordinates
     const chunkRandom = this.pseudoRandom2D(cx, cz);
-    if (chunkRandom < 0.25) { // 25% chance to have trees in a chunk
-      const numTrees = Math.floor(chunkRandom * 12) % 3 + 1; // 1 to 3 trees
-      for (let t = 0; t < numTrees; t++) {
-        // Tree position using distinct seeds
-        const tx = 2 + Math.floor(this.pseudoRandom2D(cx * 10 + t, cz * 10 + t) * (CHUNK_SIZE_X - 4));
-        const tz = 2 + Math.floor(this.pseudoRandom2D(cx * 20 + t, cz * 20 + t) * (CHUNK_SIZE_Z - 4));
-        // Find surface height
+    const numTrees = Math.floor(chunkRandom * 12) % 3 + 1; // 1 to 3 decoration attempts
+    for (let t = 0; t < numTrees; t++) {
+      const tx = 2 + Math.floor(this.pseudoRandom2D(cx * 10 + t, cz * 10 + t) * (CHUNK_SIZE_X - 4));
+      const tz = 2 + Math.floor(this.pseudoRandom2D(cx * 20 + t, cz * 20 + t) * (CHUNK_SIZE_Z - 4));
+      
+      const wx = worldStartX + tx;
+      const wz = worldStartZ + tz;
+      const biome = getBiomeAt(wx, wz, this.noise);
+
+      // 以该生态的特定概率决定是否生成装饰物
+      const prob = biome.getTreeProbability(chunkRandom);
+      const spawnRand = this.pseudoRandom2D(wx * 7 + t, wz * 13 + t);
+      if (spawnRand < prob) {
+        // 寻找地表高度
         let ty = CHUNK_SIZE_Y - 2;
         while (ty > 0 && chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z] === BLOCK_TYPES.AIR) {
           ty--;
         }
 
         const blockType = chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z];
-        if (blockType === BLOCK_TYPES.GRASS && ty > 22) {
-          // Determine tree type and size using a seeded random
-          const treeTypeVal = this.pseudoRandom2D(cx * 30 + t, cz * 30 + t);
-          const heightRand = this.pseudoRandom2D(cx * 40 + t, cz * 40 + t);
-          
-          let treeType: 'oak' | 'birch' | 'spruce';
-          let trunkBlock: BlockType;
-          let leafBlock: BlockType;
-          let treeHeight: number;
-
-          if (treeTypeVal < 0.4) {
-            // Oak tree (40% probability)
-            treeType = 'oak';
-            trunkBlock = BLOCK_TYPES.WOOD;
-            leafBlock = BLOCK_TYPES.LEAF;
-            treeHeight = 4 + Math.floor(heightRand * 2);
-          } else if (treeTypeVal < 0.75) {
-            // Birch tree (35% probability)
-            treeType = 'birch';
-            trunkBlock = BLOCK_TYPES.BIRCH_WOOD;
-            leafBlock = BLOCK_TYPES.BIRCH_LEAVES;
-            treeHeight = 5 + Math.floor(heightRand * 3); // Height: 5 to 7
-          } else {
-            // Spruce tree (25% probability)
-            treeType = 'spruce';
-            trunkBlock = BLOCK_TYPES.SPRUCE_WOOD;
-            leafBlock = BLOCK_TYPES.SPRUCE_LEAVES;
-            treeHeight = 6 + Math.floor(heightRand * 3); // Height: 6 to 8
-          }
-
-          this.growTree(chunk, tx, ty, tz, trunkBlock, leafBlock, treeHeight, treeType);
+        // 允许的植被生长地基（如草方块、沙子等）
+        const isValidGround = blockType === BLOCK_TYPES.GRASS || blockType === BLOCK_TYPES.SAND || blockType === BLOCK_TYPES.STONE;
+        if (isValidGround && ty > 20) {
+          biome.growDecorations(
+            chunk,
+            tx,
+            ty,
+            tz,
+            chunkRandom,
+            t,
+            this.growTree.bind(this)
+          );
         }
       }
     }
@@ -266,7 +260,7 @@ export class World {
     trunkBlock: number,
     leafBlock: number,
     height: number,
-    style: 'oak' | 'birch' | 'spruce'
+    style: 'oak' | 'birch' | 'spruce' | 'jungle'
   ): void {
     // Change grass below trunk to dirt
     chunk[tx + tz * CHUNK_SIZE_X + ty * CHUNK_SIZE_X * CHUNK_SIZE_Z] = BLOCK_TYPES.DIRT;
@@ -349,6 +343,41 @@ export class World {
             if (isOuter && !(lx === 0 && lz === 0)) {
               const leafRand = this.pseudoRandom2D(wlx * 17 + tx, wlz * 23 + tz + wly);
               if (leafRand < 0.20) {
+                continue;
+              }
+            }
+
+            if (wlx >= 0 && wlx < CHUNK_SIZE_X && wlz >= 0 && wlz < CHUNK_SIZE_Z && wly >= 0 && wly < CHUNK_SIZE_Y) {
+              const leafIdx = wlx + wlz * CHUNK_SIZE_X + wly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+              if (chunk[leafIdx] === BLOCK_TYPES.AIR) {
+                chunk[leafIdx] = leafBlock;
+              }
+            }
+          }
+        }
+      }
+    } else if (style === 'jungle') {
+      // Jungle canopy, similar to oak but larger and denser
+      for (let ly = -3; ly <= 1; ly++) {
+        const radius = ly === 1 ? 1 : (ly === -3 ? 1 : 2);
+        for (let lx = -radius; lx <= radius; lx++) {
+          for (let lz = -radius; lz <= radius; lz++) {
+            if (lx === 0 && lz === 0 && ly <= 0) continue;
+            
+            // Round the corners
+            if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) {
+              continue;
+            }
+
+            const wlx = tx + lx;
+            const wlz = tz + lz;
+            const wly = leafCenterY + ly;
+
+            // Denser jungle leaves: only 10% chance of random skipping
+            const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
+            if (isOuter && !(lx === 0 && lz === 0)) {
+              const leafRand = this.pseudoRandom2D(wlx * 17 + tx, wlz * 23 + tz + wly);
+              if (leafRand < 0.10) {
                 continue;
               }
             }

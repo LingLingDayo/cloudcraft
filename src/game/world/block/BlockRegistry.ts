@@ -114,6 +114,30 @@ export class BlockRegistry {
 
     this.register(new ChestBlock());
     this.register(new LeverBlock());
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.CACTUS, name: '仙人掌', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0.4, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'grass',
+      color: '#2d7823', colorHex: 0x2d7823
+    }));
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.JUNGLE_WOOD, name: '丛林木', isSolid: true, isTransparent: false, isLiquid: false,
+      hardness: 2.0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'wood',
+      color: '#5c4033', colorHex: 0x5c4033
+    }));
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.JUNGLE_LEAVES, name: '丛林叶', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+      color: '#1a5f12', colorHex: 0x1a5f12
+    }));
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.SANDSTONE, name: '砂岩', isSolid: true, isTransparent: false, isLiquid: false,
+      hardness: 0.8, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'stone',
+      color: '#d2b48c', colorHex: 0xd2b48c
+    }));
   }
 
   public static get(id: number): Block {
