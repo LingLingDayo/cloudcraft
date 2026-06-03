@@ -22,58 +22,153 @@ export class SaveManager {
   private static INDEX_KEY = 'minicraft_saves_index';
   private static SAVE_PREFIX = 'minicraft_save_';
 
-  public static listSaves(): SaveMetadata[] {
-    const raw = localStorage.getItem(this.INDEX_KEY);
-    if (!raw) return [];
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return [];
-    }
-  }
+  // Detect environment support for IndexedDB (fallback to localStorage in Vitest Node environment)
+  private static useLocalStorage = typeof indexedDB === 'undefined';
 
-  public static getSave(id: string): SaveData | null {
-    const raw = localStorage.getItem(`${this.SAVE_PREFIX}${id}`);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-
-  public static saveGame(id: string, data: Omit<SaveData, 'createdAt'>, displayName?: string): void {
-    const now = Date.now();
-    
-    // Save the actual data
-    localStorage.setItem(`${this.SAVE_PREFIX}${id}`, JSON.stringify(data));
-
-    // Update metadata index
-    const index = this.listSaves();
-    const existingIdx = index.findIndex(meta => meta.id === id);
-    if (existingIdx !== -1) {
-      index[existingIdx] = {
-        ...index[existingIdx],
-        updatedAt: now,
-        gameMode: data.gameMode,
+  private static getDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('minicraft_db', 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains('saves')) {
+          db.createObjectStore('saves');
+        }
+        if (!db.objectStoreNames.contains('metadata')) {
+          db.createObjectStore('metadata');
+        }
       };
-    } else {
-      index.push({
-        id,
-        displayName: displayName || id,
-        createdAt: now,
-        updatedAt: now,
-        gameMode: data.gameMode,
-        seed: 'minicraft', // Placeholder, default seed
-      });
-    }
-    localStorage.setItem(this.INDEX_KEY, JSON.stringify(index));
+    });
   }
 
-  public static deleteSave(id: string): void {
-    localStorage.removeItem(`${this.SAVE_PREFIX}${id}`);
-    const index = this.listSaves();
-    const updated = index.filter(meta => meta.id !== id);
-    localStorage.setItem(this.INDEX_KEY, JSON.stringify(updated));
+  public static async listSaves(): Promise<SaveMetadata[]> {
+    if (this.useLocalStorage) {
+      const raw = localStorage.getItem(this.INDEX_KEY);
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return [];
+      }
+    }
+
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('metadata', 'readonly');
+      const store = transaction.objectStore('metadata');
+      const request = store.getAll();
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result || []);
+    });
+  }
+
+  public static async getSave(id: string): Promise<SaveData | null> {
+    if (this.useLocalStorage) {
+      const raw = localStorage.getItem(`${this.SAVE_PREFIX}${id}`);
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('saves', 'readonly');
+      const store = transaction.objectStore('saves');
+      const request = store.get(id);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result || null);
+    });
+  }
+
+  public static async saveGame(id: string, data: Omit<SaveData, 'createdAt'>, displayName?: string): Promise<void> {
+    const now = Date.now();
+
+    if (this.useLocalStorage) {
+      localStorage.setItem(`${this.SAVE_PREFIX}${id}`, JSON.stringify(data));
+      const index = await this.listSaves();
+      const existingIdx = index.findIndex(meta => meta.id === id);
+      if (existingIdx !== -1) {
+        index[existingIdx] = {
+          ...index[existingIdx],
+          updatedAt: now,
+          gameMode: data.gameMode,
+        };
+      } else {
+        index.push({
+          id,
+          displayName: displayName || id,
+          createdAt: now,
+          updatedAt: now,
+          gameMode: data.gameMode,
+          seed: 'minicraft',
+        });
+      }
+      localStorage.setItem(this.INDEX_KEY, JSON.stringify(index));
+      return;
+    }
+
+    const db = await this.getDB();
+
+    // 1. Fetch metadata or initialize new
+    const metadata: SaveMetadata = await new Promise((resolve, reject) => {
+      const transaction = db.transaction('metadata', 'readonly');
+      const store = transaction.objectStore('metadata');
+      const request = store.get(id);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    }) || {
+      id,
+      displayName: displayName || id,
+      createdAt: now,
+      updatedAt: now,
+      gameMode: data.gameMode,
+      seed: 'minicraft',
+    };
+
+    metadata.updatedAt = now;
+    metadata.gameMode = data.gameMode;
+    if (displayName) {
+      metadata.displayName = displayName;
+    }
+
+    // 2. Put records atomically
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['saves', 'metadata'], 'readwrite');
+      transaction.onerror = () => reject(transaction.error);
+      transaction.oncomplete = () => resolve();
+
+      const savesStore = transaction.objectStore('saves');
+      const metadataStore = transaction.objectStore('metadata');
+
+      savesStore.put(data, id);
+      metadataStore.put(metadata, id);
+    });
+  }
+
+  public static async deleteSave(id: string): Promise<void> {
+    if (this.useLocalStorage) {
+      localStorage.removeItem(`${this.SAVE_PREFIX}${id}`);
+      const index = await this.listSaves();
+      const updated = index.filter(meta => meta.id !== id);
+      localStorage.setItem(this.INDEX_KEY, JSON.stringify(updated));
+      return;
+    }
+
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['saves', 'metadata'], 'readwrite');
+      transaction.onerror = () => reject(transaction.error);
+      transaction.oncomplete = () => resolve();
+
+      const savesStore = transaction.objectStore('saves');
+      const metadataStore = transaction.objectStore('metadata');
+
+      savesStore.delete(id);
+      metadataStore.delete(id);
+    });
   }
 }

@@ -7,6 +7,7 @@ import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
+import { SaveManager } from '@game/systems/SaveManager';
 import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {
@@ -43,16 +44,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
     localStorage.setItem('minicraft_player_name', name);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (onSave) {
-      onSave();
-    }
-    const saveDataStr = localStorage.getItem('minicraft_save_default_world');
-    if (!saveDataStr) {
-      alert(language === 'zh' ? '没有找到存档数据！' : 'No save data found!');
-      return;
+      try {
+        await onSave();
+      } catch (err) {
+        console.error('Failed to auto-save before export:', err);
+      }
     }
     try {
+      const saveData = await SaveManager.getSave('default_world');
+      if (!saveData) {
+        alert(language === 'zh' ? '没有找到存档数据！' : 'No save data found!');
+        return;
+      }
+      const saveDataStr = JSON.stringify(saveData);
       const blob = new Blob([saveDataStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
