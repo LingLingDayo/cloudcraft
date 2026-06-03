@@ -14,6 +14,7 @@ export const createGameSlice: StateCreator<
   fov: 75,
   gameMode: GameMode.ADVENTURE,
   language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as Language : 'zh') || 'zh',
+  autoJump: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_auto_jump') !== 'false' : true,
 
   setGameState: (gameState) => set({ gameState }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
@@ -50,6 +51,12 @@ export const createGameSlice: StateCreator<
       localStorage.setItem('minicraft_language', language);
     }
     return { language };
+  }),
+  setAutoJump: (autoJump) => set(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('minicraft_auto_jump', String(autoJump));
+    }
+    return { autoJump };
   }),
 });
 

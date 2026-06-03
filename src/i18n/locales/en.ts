@@ -30,6 +30,7 @@ export const en = {
     fov: 'FOV',
     fovValue: '{{val}}°',
     language: 'Language',
+    autoJump: 'Auto Jump',
   },
   settings: {
     title: 'Game Settings',

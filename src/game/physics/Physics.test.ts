@@ -96,7 +96,7 @@ describe('Physics System', () => {
     const state = { onGround: true, inWater: false };
     const inputDir = new THREE.Vector3(1, 0, 0); // Move +X
 
-    physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
+    physics.update(pos, vel, 0.1, inputDir, false, false, false, state, false);
     
     // walkSpeed is 6.0. Over 0.1s with input 1, velocity.x should be 6.0, position.x should move to 10.5 + 0.6 = 11.1
     expect(vel.x).toBe(6.0);
@@ -109,7 +109,7 @@ describe('Physics System', () => {
     state.onGround = true;
     mockBlockMap.set('11,5,10', BLOCK_TYPES.STONE);
 
-    physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
+    physics.update(pos, vel, 0.1, inputDir, false, false, false, state, false);
 
     // The player should not be able to cross into x=11 because of the solid wall
     // Since player width is 0.6 (half width = 0.3), the max x of player is 11.1.
@@ -177,10 +177,50 @@ describe('Physics System', () => {
       const vel = new THREE.Vector3(5.0, 0, 0);
       const state = { onGround: true, inWater: false };
 
-      physics.update(pos, vel, 0.05, new THREE.Vector3(1, 0, 0), false, false, false, state);
+      physics.update(pos, vel, 0.05, new THREE.Vector3(1, 0, 0), false, false, false, state, false);
 
       // 玩家无法翻越，x 被阻挡限制在 11.0 之前，高度 y 保持 39.0
       expect(pos.x).toBeLessThan(10.8);
+      expect(pos.y).toBe(39.0);
+    });
+
+    test('player auto jumps over a 1-block high obstacle when autoJump is enabled', () => {
+      physics.stepHeight = 0.6;
+      for (let x = 8; x <= 12; x++) {
+        mockBlockMap.set(`${x},38,10`, BLOCK_TYPES.STONE);
+      }
+      mockBlockMap.set('11,39,10', BLOCK_TYPES.STONE); // 1-block high obstacle
+
+      const pos = new THREE.Vector3(10.5, 39.0, 10.5);
+      const vel = new THREE.Vector3(5.0, 0, 0);
+      const state = { onGround: true, inWater: false };
+
+      // Pass autoJump = true
+      physics.update(pos, vel, 0.05, new THREE.Vector3(1, 0, 0), false, false, false, state, true);
+
+      // Should trigger auto jump
+      expect(vel.y).toBe(physics.jumpSpeed);
+      expect(state.onGround).toBe(false);
+      expect(pos.y).toBeGreaterThan(39.0);
+    });
+
+    test('player does not auto jump if obstacle is 2 blocks high', () => {
+      physics.stepHeight = 0.6;
+      for (let x = 8; x <= 12; x++) {
+        mockBlockMap.set(`${x},38,10`, BLOCK_TYPES.STONE);
+      }
+      mockBlockMap.set('11,39,10', BLOCK_TYPES.STONE); // Block 1
+      mockBlockMap.set('11,40,10', BLOCK_TYPES.STONE); // Block 2 (2-blocks high wall)
+
+      const pos = new THREE.Vector3(10.5, 39.0, 10.5);
+      const vel = new THREE.Vector3(5.0, 0, 0);
+      const state = { onGround: true, inWater: false };
+
+      physics.update(pos, vel, 0.05, new THREE.Vector3(1, 0, 0), false, false, false, state, true);
+
+      // Should NOT trigger auto jump because wall is 2 blocks high
+      expect(vel.y).toBe(0);
+      expect(state.onGround).toBe(true);
       expect(pos.y).toBe(39.0);
     });
   });

@@ -102,7 +102,8 @@ export class VoxelPhysics {
     isJumping: boolean,
     isShiftLeft: boolean,
     isFlying: boolean,
-    state: { onGround: boolean; inWater: boolean }
+    state: { onGround: boolean; inWater: boolean },
+    autoJump: boolean = true
   ) {
     // Limit dt to prevent huge physics steps (e.g. during lag spikes)
     dt = Math.min(dt, 0.1);
@@ -212,6 +213,8 @@ export class VoxelPhysics {
       }
       const actualStepUpY = position.y - oldY;
 
+      let triggerAutoJump = false;
+
       if (actualStepUpY > 0) {
         // 在升高高度重新应用水平 X 轴和 Z 轴位移
         // 重新进行 X 移动与碰撞检测
@@ -272,6 +275,7 @@ export class VoxelPhysics {
           position.y = normalY;
           velocity.x = collidedX ? 0 : oldVelX;
           velocity.z = collidedZ ? 0 : oldVelZ;
+          triggerAutoJump = true;
         }
       } else {
         // 头顶无抬高空间，还原
@@ -280,6 +284,48 @@ export class VoxelPhysics {
         position.y = normalY;
         velocity.x = collidedX ? 0 : oldVelX;
         velocity.z = collidedZ ? 0 : oldVelZ;
+        triggerAutoJump = true;
+      }
+
+      // 自动跳跃 (Auto Jump)
+      if (triggerAutoJump && autoJump && !isShiftLeft) {
+        const baseDirY = Math.floor(position.y);
+        let shouldAutoJump = false;
+
+        if (collidedX) {
+          const dx = Math.sign(oldVelX);
+          const checkX = Math.floor(position.x + dx * 0.35);
+          const checkZ = Math.floor(position.z);
+
+          const feetSolid = this.isSolid(this.world.getBlock(checkX, baseDirY, checkZ));
+          const kneeSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 1, checkZ));
+          const headSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 2, checkZ));
+
+          if (feetSolid && !kneeSolid && !headSolid) {
+            shouldAutoJump = true;
+          }
+        }
+
+        if (collidedZ && !shouldAutoJump) {
+          const dz = Math.sign(oldVelZ);
+          const checkX = Math.floor(position.x);
+          const checkZ = Math.floor(position.z + dz * 0.35);
+
+          const feetSolid = this.isSolid(this.world.getBlock(checkX, baseDirY, checkZ));
+          const kneeSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 1, checkZ));
+          const headSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 2, checkZ));
+
+          if (feetSolid && !kneeSolid && !headSolid) {
+            shouldAutoJump = true;
+          }
+        }
+
+        if (shouldAutoJump) {
+          velocity.y = this.settings.jumpSpeed;
+          state.onGround = false;
+          velocity.x = oldVelX;
+          velocity.z = oldVelZ;
+        }
       }
     }
 

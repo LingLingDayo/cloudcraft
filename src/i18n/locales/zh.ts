@@ -30,6 +30,7 @@ export const zh = {
     fov: '视野范围',
     fovValue: '{{val}}°',
     language: '语言',
+    autoJump: '自动跳跃',
   },
   settings: {
     title: '游戏设置',
