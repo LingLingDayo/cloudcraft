@@ -34,7 +34,7 @@
 }
 
 .primary {
-  composes: btn;
+  @extend .btn;
   background: #7c7c7c;
   box-shadow: 
     inset 2px 2px 0px #aeaeae,
@@ -62,7 +62,7 @@
 }
 
 .secondary {
-  composes: btn;
+  @extend .btn;
   background: #4c4c4c;
   box-shadow: 
     inset 2px 2px 0px #7c7c7c,
@@ -90,7 +90,7 @@
 }
 
 .danger {
-  composes: btn;
+  @extend .btn;
   background: #a82e2e;
   box-shadow: 
     inset 2px 2px 0px #df5c5c,
