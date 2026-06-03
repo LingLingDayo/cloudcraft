@@ -38,6 +38,8 @@ function App() {
 
   // Initialize GameManager once the canvas is mounted and state is PLAYING
   useEffect(() => {
+    let active = true;
+
     if (gameState === GameState.PLAYING && canvasRef.current && !gameManagerRef.current) {
       const params = activeParamsRef.current;
       const seed = params?.seed || 'minicraft';
@@ -56,40 +58,46 @@ function App() {
 
       // Handle loading saved world
       if (params?.loadSave) {
-        const saved = SaveManager.getSave('default_world');
-        if (saved) {
-          try {
-            if (saved.world) {
-              gm.world.loadWorld(saved.world);
-            }
-            if (saved.player) {
-              gm.player.position.set(saved.player.x, saved.player.y, saved.player.z);
-              gm.player.syncCamera();
-            }
-            if (saved.gameMode) {
-              useGameStore.getState().setGameMode(saved.gameMode);
-            }
-            if (saved.hotbar !== undefined) {
-              let loadedInventory = saved.inventory ?? Array(54).fill(null);
-              if (loadedInventory.length < 54) {
-                loadedInventory = [
-                  ...loadedInventory,
-                  ...Array(54 - loadedInventory.length).fill(null)
-                ];
+        SaveManager.getSave('default_world')
+          .then((saved) => {
+            if (!active || gameManagerRef.current !== gm) return;
+            if (saved) {
+              try {
+                if (saved.world) {
+                  gm.world.loadWorld(saved.world);
+                }
+                if (saved.player) {
+                  gm.player.position.set(saved.player.x, saved.player.y, saved.player.z);
+                  gm.player.syncCamera();
+                }
+                if (saved.gameMode) {
+                  useGameStore.getState().setGameMode(saved.gameMode);
+                }
+                if (saved.hotbar !== undefined) {
+                  let loadedInventory = saved.inventory ?? Array(54).fill(null);
+                  if (loadedInventory.length < 54) {
+                    loadedInventory = [
+                      ...loadedInventory,
+                      ...Array(54 - loadedInventory.length).fill(null)
+                    ];
+                  }
+                  useGameStore.setState({
+                    hotbar: saved.hotbar,
+                    inventory: loadedInventory,
+                    activeSlot: saved.activeSlot ?? 0,
+                    selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0
+                  });
+                }
+                // Trigger immediate render distance load
+                gm.setRenderDistance(initialDistance);
+              } catch (e) {
+                console.error('Error loading save data', e);
               }
-              useGameStore.setState({
-                hotbar: saved.hotbar,
-                inventory: loadedInventory,
-                activeSlot: saved.activeSlot ?? 0,
-                selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0
-              });
             }
-            // Trigger immediate render distance load
-            gm.setRenderDistance(initialDistance);
-          } catch (e) {
-            console.error('Error loading save data', e);
-          }
-        }
+          })
+          .catch((err) => {
+            console.error('Failed to load save:', err);
+          });
       }
     }
 
@@ -98,6 +106,10 @@ function App() {
       gameManagerRef.current.dispose();
       gameManagerRef.current = null;
     }
+
+    return () => {
+      active = false;
+    };
   }, [gameState]);
 
   // Synchronize selected block to GameManager
@@ -169,7 +181,7 @@ function App() {
   };
 
   // Save game handler
-  const handleSave = () => {
+  const handleSave = async () => {
     const gm = gameManagerRef.current;
     if (gm) {
       const saveData = {
@@ -184,13 +196,17 @@ function App() {
         activeSlot: useGameStore.getState().activeSlot,
         gameMode: useGameStore.getState().gameMode,
       };
-      SaveManager.saveGame('default_world', saveData, '默认世界');
+      try {
+        await SaveManager.saveGame('default_world', saveData, '默认世界');
+      } catch (err) {
+        console.error('Failed to save game data:', err);
+      }
     }
   };
 
   // Quit game handler
-  const handleQuit = () => {
-    handleSave();
+  const handleQuit = async () => {
+    await handleSave();
     setGameState(GameState.MENU);
   };
 

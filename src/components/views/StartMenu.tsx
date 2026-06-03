@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { type StartMenuProps, GameMode } from '@type';
 import { Button } from '@components/common/Button';
 import { Slider } from '@components/common/Slider';
@@ -28,7 +28,15 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [seed, setSeed] = useState<string>(() => Math.floor(Math.random() * 999999).toString());
   const [renderDistance, setRenderDistance] = useState<number>(() => useGameStore.getState().renderDistance);
   const [fov, setFov] = useState<number>(() => useGameStore.getState().fov);
-  const [hasSave, setHasSave] = useState<boolean>(() => !!localStorage.getItem('minicraft_save_default_world'));
+  const [hasSave, setHasSave] = useState<boolean>(false);
+
+  useEffect(() => {
+    SaveManager.getSave('default_world').then((save) => {
+      setHasSave(!!save);
+    }).catch((err) => {
+      console.error('Failed to check save state:', err);
+    });
+  }, []);
 
   const gameMode = useGameStore((state) => state.gameMode);
   const setGameMode = useGameStore((state) => state.setGameMode);
@@ -47,16 +55,21 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
         
         // Basic validation of save data structure
         if (!parsed || typeof parsed !== 'object' || !parsed.world) {
-          alert(language === 'zh' ? '无效的存档文件：缺少世界数据' : 'Invalid save file: missing world data');
+          alert(language === 'zh' ? '无效的存档文件：缺少世界 data' : 'Invalid save file: missing world data');
           return;
         }
 
         // Save it using SaveManager
-        SaveManager.saveGame('default_world', parsed, language === 'zh' ? '默认世界' : 'Default World');
-        
-        // Update state
-        setHasSave(true);
-        alert(language === 'zh' ? '存档导入成功！' : 'Save imported successfully!');
+        SaveManager.saveGame('default_world', parsed, language === 'zh' ? '默认世界' : 'Default World')
+          .then(() => {
+            // Update state
+            setHasSave(true);
+            alert(language === 'zh' ? '存档导入成功！' : 'Save imported successfully!');
+          })
+          .catch((err) => {
+            console.error(err);
+            alert(language === 'zh' ? '导入存档失败' : 'Failed to import save');
+          });
       } catch (err) {
         console.error(err);
         alert(language === 'zh' ? '解析存档文件失败' : 'Failed to parse save file');
