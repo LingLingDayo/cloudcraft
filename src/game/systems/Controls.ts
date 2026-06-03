@@ -63,7 +63,7 @@ export class Controls {
   public onF3Pressed?: () => void;
   public onF4Pressed?: () => void;
 
-  private requestLock = () => {
+  public requestLock = () => {
     if (!this.isLocked) {
       this.domElement.requestPointerLock();
     }

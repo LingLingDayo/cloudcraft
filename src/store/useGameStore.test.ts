@@ -21,6 +21,8 @@ describe('useGameStore', () => {
       renderDistance: 3,
       fov: 75,
       gameMode: 'adventure',
+      isInventoryOpen: false,
+      inventory: Array(27).fill(null),
     });
   });
 
@@ -40,6 +42,8 @@ describe('useGameStore', () => {
     expect(state.renderDistance).toBe(3);
     expect(state.fov).toBe(75);
     expect(state.gameMode).toBe('adventure');
+    expect(state.isInventoryOpen).toBe(false);
+    expect(state.inventory).toEqual(Array(27).fill(null));
   });
 
   test('should set game state via setGameState', () => {
@@ -168,5 +172,39 @@ describe('useGameStore', () => {
   test('should set fov via setFov', () => {
     useGameStore.getState().setFov(85);
     expect(useGameStore.getState().fov).toBe(85);
+  });
+
+  test('should handle inventory operations', () => {
+    const store = useGameStore.getState();
+    expect(store.isInventoryOpen).toBe(false);
+
+    store.openInventory();
+    expect(useGameStore.getState().isInventoryOpen).toBe(true);
+
+    useGameStore.getState().closeInventory();
+    expect(useGameStore.getState().isInventoryOpen).toBe(false);
+
+    useGameStore.getState().toggleInventory();
+    expect(useGameStore.getState().isInventoryOpen).toBe(true);
+
+    useGameStore.getState().toggleInventory();
+    expect(useGameStore.getState().isInventoryOpen).toBe(false);
+
+    const testInv = Array(27).fill(null);
+    testInv[0] = { type: BLOCK_TYPES.STONE, count: 64 };
+    useGameStore.getState().setInventory(testInv);
+    expect(useGameStore.getState().inventory[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 64 });
+  });
+
+  test('should add items to inventory if hotbar is full in adventure mode', () => {
+    // Fill hotbar
+    useGameStore.setState({
+      hotbar: Array(9).fill({ type: BLOCK_TYPES.DIRT, count: 64 }),
+    });
+
+    const success = useGameStore.getState().addToHotbar(BLOCK_TYPES.STONE, 10);
+    expect(success).toBe(true);
+    // Should be in inventory
+    expect(useGameStore.getState().inventory[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 10 });
   });
 });

@@ -1,0 +1,190 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 350px;
+  user-select: none;
+}
+
+.tabContainer {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.tabBtn {
+  background: #c6c6c6;
+  border: 2px solid #000;
+  box-shadow: 
+    inset 2px 2px 0 #fff,
+    inset -2px -2px 0 #555;
+  color: #3f3f3f;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 6px 12px;
+  cursor: pointer;
+  outline: none;
+
+  &:hover {
+    background: #a8a8a8;
+    color: #000;
+  }
+
+  &.activeTab {
+    background: #8b8b8b;
+    box-shadow: 
+      inset -2px -2px 0 #fff,
+      inset 2px 2px 0 #3f3f3f;
+    color: #ffff00;
+    text-shadow: 1px 1px 0 #000;
+  }
+}
+
+.hint {
+  font-size: 10px;
+  color: #555555;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.creativeSection {
+  background: #8b8b8b;
+  border: 2px solid #373737;
+  padding: 10px;
+  box-shadow: inset -2px -2px 0 #fff;
+}
+
+.creativeGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.survivalSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.labelRow {
+  font-size: 11px;
+  color: #444444;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #fff;
+}
+
+.inventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  background: #8b8b8b;
+  border: 2px solid #373737;
+  padding: 6px;
+  box-shadow: inset -2px -2px 0 #fff;
+}
+
+.divider {
+  height: 4px;
+  background: #555555;
+  border-bottom: 2px solid #ffffff;
+  margin: 4px 0;
+}
+
+.hotbarSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hotbarGrid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  background: #8b8b8b;
+  border: 2px solid #373737;
+  padding: 6px;
+  box-shadow: inset -2px -2px 0 #fff;
+}
+
+/* Item Slot Styling - Inset Minecraft Vibe */
+.itemSlot {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  background: #8b8b8b;
+  border-top: 2px solid #373737;
+  border-left: 2px solid #373737;
+  border-bottom: 2px solid #ffffff;
+  border-right: 2px solid #ffffff;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+
+  &:hover {
+    background: #a8a8a8;
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.15);
+      pointer-events: none;
+    }
+  }
+
+  &.activeSlotBorder {
+    outline: 2px solid #ffff00;
+    outline-offset: -2px;
+  }
+}
+
+.itemPreview {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.emptyItem {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.itemCount {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0px #000;
+  pointer-events: none;
+}
+
+/* Floating Held Item dragging styles */
+.heldItemFloat {
+  position: fixed;
+  width: 32px;
+  height: 32px;
+  pointer-events: none; // Crucial so clicks pass through to slot
+  z-index: 1300; // Over everything
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  filter: drop-shadow(4px 4px 0px rgba(0, 0, 0, 0.4));
+}
+
+.footerHint {
+  font-size: 9px;
+  color: #777777;
+  text-align: center;
+  margin-top: 4px;
+}

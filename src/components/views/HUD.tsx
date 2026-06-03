@@ -4,6 +4,7 @@ import { BLOCK_TYPES } from '@game/world/World';
 import { useGameStore } from '@store/useGameStore';
 import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
+import { Inventory } from './Inventory';
 
 const HOTBAR_ITEMS = [
   { id: BLOCK_TYPES.GRASS, name: '草方块', color: '#56a032', border: 'none' },
@@ -64,15 +65,31 @@ export const HUD: React.FC = () => {
   };
 
 
-  // Keyboard 1-9 number row selection using HotkeyManager
+  // Keyboard 1-9 number row selection and inventory toggle using HotkeyManager
   useEffect(() => {
     const unsubscribers = Array.from({ length: 9 }).map((_, index) => {
       const slotNum = index + 1;
       const action = `HOTBAR_${slotNum}` as GameAction;
       return hotkeyManager.onActionDown(action, () => {
-        setActiveSlot(index);
+        const state = useGameStore.getState();
+        if (!state.isInventoryOpen && !state.activeChest) {
+          setActiveSlot(index);
+        }
       });
     });
+
+    // Toggle inventory or close chest
+    unsubscribers.push(
+      hotkeyManager.onActionDown(GameAction.OPEN_INVENTORY, () => {
+        const state = useGameStore.getState();
+        if (state.activeChest) {
+          state.closeChest();
+          (window as any).gameInstance?.controls?.domElement?.requestPointerLock();
+        } else {
+          state.toggleInventory();
+        }
+      })
+    );
 
     return () => {
       unsubscribers.forEach((unsub) => unsub());
@@ -272,6 +289,7 @@ export const HUD: React.FC = () => {
           </div>
         </div>
       )}
+      <Inventory />
     </div>
   );
 };

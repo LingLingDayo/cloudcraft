@@ -18,6 +18,8 @@ export const createPlayerSlice: StateCreator<
   isDamaged: false,
   activeChest: null,
   chestInventory: [],
+  isInventoryOpen: false,
+  inventory: Array(27).fill(null),
 
 
   setSelectedBlock: (selectedBlock) => set({ selectedBlock }),
@@ -36,24 +38,42 @@ export const createPlayerSlice: StateCreator<
       }
 
       const nextHotbar = [...state.hotbar];
+      const nextInventory = [...(state.inventory || Array(27).fill(null))];
       
-      const existingIndex = nextHotbar.findIndex(item => item && item.type === blockType);
-      if (existingIndex !== -1) {
-        const item = nextHotbar[existingIndex]!;
-        nextHotbar[existingIndex] = { ...item, count: item.count + count };
+      // 1. Try to find in hotbar
+      const existingHotbarIndex = nextHotbar.findIndex(item => item && item.type === blockType);
+      if (existingHotbarIndex !== -1) {
+        const item = nextHotbar[existingHotbarIndex]!;
+        nextHotbar[existingHotbarIndex] = { ...item, count: item.count + count };
         success = true;
       } else {
-        const emptyIndex = nextHotbar.findIndex(item => item === null);
-        if (emptyIndex !== -1) {
-          nextHotbar[emptyIndex] = { type: blockType, count };
+        // 2. Try to find in inventory
+        const existingInvIndex = nextInventory.findIndex(item => item && item.type === blockType);
+        if (existingInvIndex !== -1) {
+          const item = nextInventory[existingInvIndex]!;
+          nextInventory[existingInvIndex] = { ...item, count: item.count + count };
           success = true;
+        } else {
+          // 3. Try empty space in hotbar
+          const emptyHotbarIndex = nextHotbar.findIndex(item => item === null);
+          if (emptyHotbarIndex !== -1) {
+            nextHotbar[emptyHotbarIndex] = { type: blockType, count };
+            success = true;
+          } else {
+            // 4. Try empty space in inventory
+            const emptyInvIndex = nextInventory.findIndex(item => item === null);
+            if (emptyInvIndex !== -1) {
+              nextInventory[emptyInvIndex] = { type: blockType, count };
+              success = true;
+            }
+          }
         }
       }
 
       if (success) {
         const activeItem = nextHotbar[state.activeSlot];
         const selectedBlock = activeItem ? activeItem.type : BLOCK_TYPES.AIR;
-        return { hotbar: nextHotbar, selectedBlock };
+        return { hotbar: nextHotbar, inventory: nextInventory, selectedBlock };
       }
       return {};
     });
@@ -95,12 +115,14 @@ export const createPlayerSlice: StateCreator<
         ],
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.GRASS,
+        inventory: Array(27).fill(null),
       };
     } else {
       return {
         hotbar: Array(9).fill(null),
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.AIR,
+        inventory: Array(27).fill(null),
       };
     }
   }),
@@ -130,6 +152,26 @@ export const createPlayerSlice: StateCreator<
       chestInventory: []
     });
   },
+
+  openInventory: () => {
+    document.exitPointerLock?.();
+    set({ isInventoryOpen: true });
+  },
+
+  closeInventory: () => {
+    set({ isInventoryOpen: false });
+  },
+
+  toggleInventory: () => set((state) => {
+    if (state.isInventoryOpen) {
+      return { isInventoryOpen: false };
+    } else {
+      document.exitPointerLock?.();
+      return { isInventoryOpen: true };
+    }
+  }),
+
+  setInventory: (inventory) => set({ inventory }),
 
   quickMoveItem: (from, index, onSyncToWorld) => {
     set((state) => {

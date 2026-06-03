@@ -16,6 +16,7 @@ export const GameAction = {
   HOTBAR_7: 'HOTBAR_7',
   HOTBAR_8: 'HOTBAR_8',
   HOTBAR_9: 'HOTBAR_9',
+  OPEN_INVENTORY: 'OPEN_INVENTORY',
 } as const;
 
 export type GameAction = typeof GameAction[keyof typeof GameAction];
@@ -38,6 +39,7 @@ export const DEFAULT_KEY_BINDINGS: Record<GameAction, string[]> = {
   [GameAction.HOTBAR_7]: ['Digit7'],
   [GameAction.HOTBAR_8]: ['Digit8'],
   [GameAction.HOTBAR_9]: ['Digit9'],
+  [GameAction.OPEN_INVENTORY]: ['KeyE'],
 };
 
 type ActionCallback = () => void;
