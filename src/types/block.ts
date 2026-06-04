@@ -22,6 +22,10 @@ export const BlockType = {
   JUNGLE_WOOD: 20,
   JUNGLE_LEAVES: 21,
   SANDSTONE: 22,
+  OAK_SAPLING: 23,
+  BIRCH_SAPLING: 24,
+  SPRUCE_SAPLING: 25,
+  JUNGLE_SAPLING: 26,
 } as const;
 export type BlockType = typeof BlockType[keyof typeof BlockType];
 

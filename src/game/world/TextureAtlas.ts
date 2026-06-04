@@ -469,6 +469,37 @@ export function generateTextureAtlas(): THREE.Texture {
   ctx.fillRect(x + 2, y + 4, 6, 1);
   ctx.fillRect(x + 10, y + 11, 5, 1);
 
+  // Helper to draw pixelated saplings (indices 28-31)
+  const drawSaplingTexture = (index: number, leafColor: string, stemColor = 'rgb(100, 70, 40)') => {
+    const sx = (index % 8) * tileSize;
+    const sy = Math.floor(index / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+
+    // Stem in the middle bottom
+    ctx.fillStyle = stemColor;
+    ctx.fillRect(sx + 7, sy + 8, 2, 8);
+
+    // Leaves cluster
+    ctx.fillStyle = leafColor;
+    ctx.fillRect(sx + 5, sy + 3, 6, 5);
+    ctx.fillRect(sx + 6, sy + 2, 4, 1);
+    ctx.fillRect(sx + 4, sy + 5, 8, 2);
+    // Highlights and shadows
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.fillRect(sx + 6, sy + 4, 2, 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.fillRect(sx + 8, sy + 3, 2, 1);
+  };
+
+  // 28: Oak Sapling
+  drawSaplingTexture(28, 'rgb(76, 148, 54)');
+  // 29: Birch Sapling
+  drawSaplingTexture(29, 'rgb(143, 192, 78)');
+  // 30: Spruce Sapling
+  drawSaplingTexture(30, 'rgb(45, 90, 39)');
+  // 31: Jungle Sapling
+  drawSaplingTexture(31, 'rgb(26, 95, 18)');
+
   try {
     cachedDataURL = canvas.toDataURL();
   } catch (e) {

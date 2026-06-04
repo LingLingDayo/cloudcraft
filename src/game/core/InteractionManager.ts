@@ -3,7 +3,6 @@ import { GameManager } from './GameManager';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/World';
 import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
-import type { BlockType } from '@type';
 import { BlockRegistry } from '../world/block/BlockRegistry';
 
 
@@ -355,9 +354,17 @@ export class InteractionManager {
         15
       );
 
-      const dropId = blockId & 0x3F;
-
-      this.game.droppedItems.spawnItem(dropId as BlockType, new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5));
+      const blockInstance = BlockRegistry.get(blockId);
+      const drops = blockInstance.getDrops();
+      for (const drop of drops) {
+        if (drop.count > 0) {
+          this.game.droppedItems.spawnItem(
+            drop.type,
+            new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
+            drop.count
+          );
+        }
+      }
       this.cancelMining();
     }
   }

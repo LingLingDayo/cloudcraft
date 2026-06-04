@@ -2,9 +2,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Block, type BlockProperties } from './Block';
 import type { World } from '../World';
-import { BLOCK_TYPES } from '../BlockConfig';
+import { BLOCK_TYPES, getBlockProperties } from '../BlockConfig';
 import { ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 import { sound } from '@game/systems/Sound';
+import type { BlockType } from '@type';
 
 
 export class AirBlock extends Block {
@@ -125,5 +126,67 @@ export class LeverBlock extends Block {
       return true;
     }
     return false;
+  }
+}
+
+export class LeafBlock extends Block {
+  constructor(properties: BlockProperties) {
+    super(properties);
+  }
+
+  public getDrops(): { type: BlockType; count: number }[] {
+    // 树叶挖掘后不掉落树叶本身，但有 10% 概率掉落对应的树苗
+    const rand = Math.random();
+    if (rand < 0.1) {
+      let saplingType: BlockType = BLOCK_TYPES.OAK_SAPLING;
+      if (this.id === BLOCK_TYPES.BIRCH_LEAVES) saplingType = BLOCK_TYPES.BIRCH_SAPLING;
+      else if (this.id === BLOCK_TYPES.SPRUCE_LEAVES) saplingType = BLOCK_TYPES.SPRUCE_SAPLING;
+      else if (this.id === BLOCK_TYPES.JUNGLE_LEAVES) saplingType = BLOCK_TYPES.JUNGLE_SAPLING;
+
+      return [{ type: saplingType, count: 1 }];
+    }
+    return [];
+  }
+
+  public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, _ny: number, _nz: number): void {
+    // 当邻居改变时，检查是否仍连接树木
+    world.checkLeafDecay(x, y, z);
+  }
+}
+
+export class SaplingBlock extends Block {
+  constructor(properties: BlockProperties) {
+    super(properties);
+  }
+
+  public onPlaced(world: World, x: number, y: number, z: number): void {
+    const belowType = world.getBlock(x, y - 1, z);
+    const props = getBlockProperties(belowType);
+    if (!props.allowVegetationBase) {
+      // Pop off immediately
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+      if (world.game && world.game.droppedItems) {
+        world.game.droppedItems.spawnItem(this.id, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+      }
+    } else {
+      world.registerSapling(x, y, z, this.id);
+    }
+  }
+
+  public onDestroyed(world: World, x: number, y: number, z: number): void {
+    world.unregisterSapling(x, y, z);
+  }
+
+  public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, ny: number, _nz: number): void {
+    if (ny === y - 1) {
+      const belowType = world.getBlock(x, y - 1, z);
+      const props = getBlockProperties(belowType);
+      if (!props.allowVegetationBase) {
+        world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+        if (world.game && world.game.droppedItems) {
+          world.game.droppedItems.spawnItem(this.id, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        }
+      }
+    }
   }
 }
