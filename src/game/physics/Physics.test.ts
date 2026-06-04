@@ -258,4 +258,50 @@ describe('Physics System', () => {
       expect(hit).toBeNull();
     });
   });
+
+  describe('Water Physics and Buoyancy', () => {
+    test('buoyancy pulls fully submerged player upwards', () => {
+      mockBlockMap.set('10,15,10', BLOCK_TYPES.WATER);
+      mockBlockMap.set('10,16,10', BLOCK_TYPES.WATER);
+
+      const pos = new THREE.Vector3(10.5, 15.0, 10.5);
+      const vel = new THREE.Vector3(0, -0.5, 0);
+      const state = { onGround: false, inWater: true };
+
+      physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, false, false, state);
+
+      expect(vel.y).toBeGreaterThan(-0.5);
+    });
+
+    test('player stabilizes at water surface using spring force when partially submerged', () => {
+      mockBlockMap.set('10,14,10', BLOCK_TYPES.WATER);
+
+      const pos = new THREE.Vector3(10.5, 14.2, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: false, inWater: true };
+
+      physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, false, false, state);
+
+      expect(vel.y).toBeCloseTo(0.8);
+
+      pos.set(10.5, 14.9, 10.5);
+      vel.set(0, 0, 0);
+      state.inWater = true;
+      physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, false, false, state);
+      expect(vel.y).toBeCloseTo(-0.5);
+    });
+
+    test('player can dive downwards in water when shift is pressed', () => {
+      mockBlockMap.set('10,15,10', BLOCK_TYPES.WATER);
+      mockBlockMap.set('10,16,10', BLOCK_TYPES.WATER);
+
+      const pos = new THREE.Vector3(10.5, 15.0, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: false, inWater: true };
+
+      physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, true, false, state);
+
+      expect(vel.y).toBe(-3.0);
+    });
+  });
 });
