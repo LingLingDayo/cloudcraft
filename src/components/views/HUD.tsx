@@ -40,7 +40,6 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
 
 import { SaveManager } from '@game/systems/SaveManager';
 import { GameState } from '@type';
-import { SettingsDialog } from './SettingsDialog';
 
 export const HUD: React.FC = () => {
   const { t } = useTranslation();
@@ -67,11 +66,11 @@ export const HUD: React.FC = () => {
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
 
   const setGameState = useGameStore((state) => state.setGameState);
+  const setIsSettingsOpen = useGameStore((state) => state.setIsSettingsOpen);
 
   // Mobile support states
   const [isMobile, setIsMobile] = useState(false);
   const [toolbarExpanded, setToolbarExpanded] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [activeDirections, setActiveDirections] = useState({
     up: false,
     down: false,
@@ -123,7 +122,7 @@ export const HUD: React.FC = () => {
     setGameState(GameState.MENU);
   };
 
-  // D-pad Touches
+  // D-pad Touches (3x3 grid D-pad style)
   const handleDpadTouch = (e: React.TouchEvent<HTMLDivElement>) => {
     e.stopPropagation();
     if (e.cancelable) {
@@ -132,22 +131,19 @@ export const HUD: React.FC = () => {
 
     if (!dpadRef.current) return;
 
-    const touch = e.touches[0];
+    // Use targetTouches to specifically filter touch on the D-pad container
+    const touch = e.targetTouches[0];
     if (!touch) return;
 
     const rect = dpadRef.current.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const tx = touch.clientX;
-    const ty = touch.clientY;
+    const rx = touch.clientX - rect.left;
+    const ry = touch.clientY - rect.top;
 
-    const dx = tx - cx;
-    const dy = ty - cy;
-    const dist = Math.hypot(dx, dy);
-    const angle = Math.atan2(-dy, dx); // Cartesion angle (up is positive, right is positive)
+    const x = Math.max(0, Math.min(rect.width, rx));
+    const y = Math.max(0, Math.min(rect.height, ry));
 
-    const maxRadius = rect.width / 2;
-    const centerRadius = rect.width * 0.22; // Center jump area
+    const xIndex = Math.floor((x / rect.width) * 3);
+    const yIndex = Math.floor((y / rect.height) * 3);
 
     let up = false;
     let down = false;
@@ -155,26 +151,11 @@ export const HUD: React.FC = () => {
     let right = false;
     let center = false;
 
-    if (dist < centerRadius) {
-      center = true;
-    } else if (dist <= maxRadius * 1.5) {
-      // UP: angle is between [22.5, 157.5]
-      if (angle >= Math.PI / 8 && angle <= (7 * Math.PI) / 8) {
-        up = true;
-      }
-      // DOWN: angle is between [-157.5, -22.5]
-      if (angle >= (-7 * Math.PI) / 8 && angle <= -Math.PI / 8) {
-        down = true;
-      }
-      // RIGHT: angle is between [-67.5, 67.5]
-      if (angle >= -3 * Math.PI / 8 && angle <= 3 * Math.PI / 8) {
-        right = true;
-      }
-      // LEFT: angle is between [112.5, 180] or [-180, -112.5]
-      if (angle >= (5 * Math.PI) / 8 || angle <= (-5 * Math.PI) / 8) {
-        left = true;
-      }
-    }
+    if (xIndex === 1 && yIndex === 0) up = true;
+    else if (xIndex === 1 && yIndex === 2) down = true;
+    else if (xIndex === 0 && yIndex === 1) left = true;
+    else if (xIndex === 2 && yIndex === 1) right = true;
+    else if (xIndex === 1 && yIndex === 1) center = true;
 
     setActiveDirections({ up, down, left, right, center });
 
@@ -189,19 +170,24 @@ export const HUD: React.FC = () => {
   const handleDpadTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     e.stopPropagation();
 
-    setActiveDirections({
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-      center: false,
-    });
+    if (e.targetTouches.length === 0) {
+      setActiveDirections({
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+        center: false,
+      });
 
-    hotkeyManager.setActionPressed(GameAction.MOVE_FORWARD, false);
-    hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, false);
-    hotkeyManager.setActionPressed(GameAction.MOVE_LEFT, false);
-    hotkeyManager.setActionPressed(GameAction.MOVE_RIGHT, false);
-    hotkeyManager.setActionPressed(GameAction.JUMP, false);
+      hotkeyManager.setActionPressed(GameAction.MOVE_FORWARD, false);
+      hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, false);
+      hotkeyManager.setActionPressed(GameAction.MOVE_LEFT, false);
+      hotkeyManager.setActionPressed(GameAction.MOVE_RIGHT, false);
+      hotkeyManager.setActionPressed(GameAction.JUMP, false);
+    } else {
+      // Re-evaluate touch coordinates if fingers remain
+      handleDpadTouch(e);
+    }
   };
 
   const handleQuickMove = (from: 'hotbar' | 'chest', index: number) => {
@@ -235,7 +221,7 @@ export const HUD: React.FC = () => {
         const state = useGameStore.getState();
         if (state.activeChest) {
           state.closeChest();
-          gameInstance?.controls?.domElement?.requestPointerLock();
+          gameInstance?.controls?.requestLock();
         } else {
           state.toggleInventory();
         }
@@ -329,7 +315,7 @@ export const HUD: React.FC = () => {
             <button 
               className={`${styles.toolbarBtn} glass-panel`} 
               onClick={() => {
-                setShowSettings(true);
+                setIsSettingsOpen(true, 'hud');
                 setGameState(GameState.PAUSED);
                 setToolbarExpanded(false);
               }}
@@ -374,21 +360,27 @@ export const HUD: React.FC = () => {
           onTouchCancel={handleDpadTouchEnd}
         >
           <div className={styles.dpad} ref={dpadRef}>
-            <div className={`${styles.dpadSector} ${styles.up} ${activeDirections.up ? styles.active : ''}`}>
+            <div className={styles.dpadEmpty} />
+            <div className={`${styles.dpadBtn} ${styles.up} ${activeDirections.up ? styles.active : ''}`}>
               <span className={styles.arrowIcon}>▲</span>
             </div>
-            <div className={`${styles.dpadSector} ${styles.down} ${activeDirections.down ? styles.active : ''}`}>
-              <span className={styles.arrowIcon}>▼</span>
-            </div>
-            <div className={`${styles.dpadSector} ${styles.left} ${activeDirections.left ? styles.active : ''}`}>
+            <div className={styles.dpadEmpty} />
+
+            <div className={`${styles.dpadBtn} ${styles.left} ${activeDirections.left ? styles.active : ''}`}>
               <span className={styles.arrowIcon}>◀</span>
             </div>
-            <div className={`${styles.dpadSector} ${styles.right} ${activeDirections.right ? styles.active : ''}`}>
+            <div className={`${styles.dpadBtn} ${styles.center} ${activeDirections.center ? styles.active : ''}`}>
+              <span className={styles.centerIcon}>●</span>
+            </div>
+            <div className={`${styles.dpadBtn} ${styles.right} ${activeDirections.right ? styles.active : ''}`}>
               <span className={styles.arrowIcon}>▶</span>
             </div>
-            <div className={`${styles.dpadCenter} ${activeDirections.center ? styles.active : ''}`}>
-              <span className={styles.jumpIcon}>⏏</span>
+
+            <div className={styles.dpadEmpty} />
+            <div className={`${styles.dpadBtn} ${styles.down} ${activeDirections.down ? styles.active : ''}`}>
+              <span className={styles.arrowIcon}>▼</span>
             </div>
+            <div className={styles.dpadEmpty} />
           </div>
         </div>
       )}
@@ -512,16 +504,6 @@ export const HUD: React.FC = () => {
       )}
       <Inventory />
 
-      {/* Settings Dialog directly mapped for Mobile */}
-      {showSettings && (
-        <SettingsDialog 
-          onClose={() => {
-            setShowSettings(false);
-            setGameState(GameState.PLAYING);
-          }} 
-          onSave={handleSave} 
-        />
-      )}
     </div>
   );
 };

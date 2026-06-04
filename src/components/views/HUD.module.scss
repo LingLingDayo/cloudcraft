@@ -198,24 +198,25 @@
   .toolbarToggleBtn {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    color: #f4f4f5;
+    border-radius: 0;
+    border: 3px solid #000000;
+    background: rgba(128, 128, 128, 0.6);
+    box-shadow: inset -2px -2px 0px #373737, inset 2px 2px 0px #e0e0e0;
+    color: #ffffff;
+    text-shadow: 2px 2px 0px #000;
     font-size: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s;
+    transition: transform 0.15s, background 0.15s;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 
     &:active {
-      transform: scale(0.92);
-      background: rgba(255, 255, 255, 0.15);
+      transform: scale(0.95);
+      background: rgba(200, 200, 200, 0.8);
+      box-shadow: inset 2px 2px 0px #373737, inset -2px -2px 0px #e0e0e0;
     }
   }
 
@@ -224,23 +225,22 @@
     flex-direction: column;
     gap: 8px;
     opacity: 0;
-    transform: translateY(-10px) scale(0.9);
+    transform: translateY(-10px);
     pointer-events: none;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
     max-height: 0;
     overflow: hidden;
   }
 
   &.expanded {
     .toolbarToggleBtn {
-      transform: rotate(90deg);
-      background: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.6);
+      box-shadow: inset -2px -2px 0px #7f1d1d, inset 2px 2px 0px #fca5a5;
     }
 
     .toolbarMenu {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
       pointer-events: auto;
       max-height: 300px;
       overflow: visible;
@@ -251,31 +251,32 @@
 .toolbarBtn {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
+  border-radius: 0;
+  border: 3px solid #000000;
+  background: rgba(128, 128, 128, 0.6);
+  box-shadow: inset -2px -2px 0px #373737, inset 2px 2px 0px #e0e0e0;
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #000;
   font-size: 18px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: transform 0.15s, background 0.15s;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 
   &:active {
-    transform: scale(0.9);
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(0.95);
+    background: rgba(200, 200, 200, 0.8);
+    box-shadow: inset 2px 2px 0px #373737, inset -2px -2px 0px #e0e0e0;
   }
 
   &.danger {
     color: #f87171;
     &:active {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.6);
+      box-shadow: inset -2px -2px 0px #7f1d1d, inset 2px 2px 0px #fca5a5;
     }
   }
 }
@@ -298,115 +299,60 @@
   // Height based on screen height to satisfy ~60% height of screen constraints
   width: 60vh;
   height: 60vh;
-  max-width: 250px;
-  max-height: 250px;
-  min-width: 170px;
-  min-height: 170px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(8px);
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  position: relative;
-  overflow: hidden;
+  max-width: 180px;
+  max-height: 180px;
+  min-width: 150px;
+  min-height: 150px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   box-sizing: border-box;
 }
 
-.dpadSector {
-  position: absolute;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s, box-shadow 0.15s;
+.dpadEmpty {
+  background: transparent;
   pointer-events: none;
+}
+
+.dpadBtn {
+  background: rgba(128, 128, 128, 0.6);
+  border: 3px solid #000000;
+  box-shadow: inset -2px -2px 0px #373737, inset 2px 2px 0px #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.1s ease;
+  box-sizing: border-box;
+  image-rendering: pixelated;
 
   .arrowIcon {
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 20px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    transition: transform 0.15s, color 0.15s;
-  }
-
-  &.up {
-    top: 0;
-    left: 25%;
-    width: 50%;
-    height: 38%;
-    border-bottom: 2px dashed rgba(255, 255, 255, 0.05);
-    padding-bottom: 12px;
-  }
-
-  &.down {
-    bottom: 0;
-    left: 25%;
-    width: 50%;
-    height: 38%;
-    border-top: 2px dashed rgba(255, 255, 255, 0.05);
-    padding-top: 12px;
-  }
-
-  &.left {
-    top: 25%;
-    left: 0;
-    width: 38%;
-    height: 50%;
-    border-right: 2px dashed rgba(255, 255, 255, 0.05);
-    padding-right: 12px;
-  }
-
-  &.right {
-    top: 25%;
-    right: 0;
-    width: 38%;
-    height: 50%;
-    border-left: 2px dashed rgba(255, 255, 255, 0.05);
-    padding-left: 12px;
-  }
-
-  &.active {
-    background: rgba(129, 140, 248, 0.25);
-    box-shadow: inset 0 0 15px rgba(129, 140, 248, 0.4);
-    
-    .arrowIcon {
-      color: #818cf8;
-      transform: scale(1.15);
-    }
-  }
-}
-
-.dpadCenter {
-  position: absolute;
-  top: 35%;
-  left: 35%;
-  width: 30%;
-  height: 30%;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2.5px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  pointer-events: none;
-
-  .jumpIcon {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 16px;
+    color: #ffffff;
+    font-size: 22px;
     font-weight: bold;
-    transition: transform 0.15s, color 0.15s;
+    text-shadow: 2px 2px 0px #000;
+    transition: transform 0.1s, color 0.1s;
+  }
+
+  .centerIcon {
+    color: #ffffff;
+    font-size: 16px;
+    text-shadow: 2px 2px 0px #000;
+    transition: transform 0.1s, color 0.1s;
   }
 
   &.active {
-    background: rgba(129, 140, 248, 0.35);
-    border-color: rgba(129, 140, 248, 0.6);
-    box-shadow: 0 0 15px rgba(129, 140, 248, 0.5);
-    transform: scale(0.95);
-
-    .jumpIcon {
-      color: #a5b4fc;
-      transform: scale(1.15);
+    background: rgba(200, 200, 200, 0.8);
+    box-shadow: inset 2px 2px 0px #373737, inset -2px -2px 0px #e0e0e0;
+    
+    .arrowIcon, .centerIcon {
+      transform: scale(0.9);
+      color: #ffff55; /* Minecraft classic yellow selected color */
     }
   }
 }
