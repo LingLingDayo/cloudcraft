@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GameManager } from './GameManager';
 import { ENVIRONMENT_CONFIG } from './EnvironmentConfig';
+import { getBlockProperties } from '@game/world/World';
 
 export class EnvironmentManager {
   private game: GameManager;
@@ -95,7 +96,15 @@ export class EnvironmentManager {
   }
 
   private updateUnderwaterEffect() {
-    if (this.game.player.state.inWater) {
+    const cameraPos = this.game.camera.position;
+    const blockId = this.game.world.getBlock(
+      Math.floor(cameraPos.x),
+      Math.floor(cameraPos.y),
+      Math.floor(cameraPos.z)
+    );
+    const cameraInWater = getBlockProperties(blockId).isLiquid;
+
+    if (cameraInWater) {
       const waterColor = new THREE.Color(ENVIRONMENT_CONFIG.colors.waterColor);
       this.game.renderer.setClearColor(waterColor);
       this.game.scene.background = waterColor;
