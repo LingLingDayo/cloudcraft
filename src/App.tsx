@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { StartMenu } from '@components/views/StartMenu';
+import { WorldLoadingScreen } from '@components/views/WorldLoadingScreen';
 import { useGameStore } from '@store/useGameStore';
 import styles from './App.module.scss';
 import { GameState } from '@type';
@@ -13,6 +14,7 @@ function App() {
   const setRenderDistance = useGameStore((state) => state.setRenderDistance);
   const setFov = useGameStore((state) => state.setFov);
   const language = useGameStore((state) => state.language);
+  const isWorldLoading = useGameStore((state) => state.isWorldLoading);
 
   // Store game parameters to pass to GameStage
   const [gameParams, setGameParams] = useState<{ seed: string; loadSave: boolean } | null>(null);
@@ -50,6 +52,13 @@ function App() {
     fovVal: number,
     loadSaveVal: boolean
   ) => {
+    // 1. Initialize loading screen states
+    const store = useGameStore.getState();
+    store.setWorldLoading(true);
+    store.setWorldLoadingStage('engine');
+    store.setWorldLoadingProgress(0);
+    store.initChunkLoading([]);
+
     setRenderDistance(distVal);
     setFov(fovVal);
     setGameParams({
@@ -64,19 +73,12 @@ function App() {
       {gameState === GameState.MENU && <StartMenu onStartGame={handleStartGame} />}
 
       {gameState !== GameState.MENU && gameParams && (
-        <Suspense
-          fallback={
-            <div className={styles.loadingScreen}>
-              <div className={styles.loadingBox}>
-                <div className={styles.loadingTitle}>正在加载世界...</div>
-                <div className={styles.loadingSub}>生成区块并初始化 3D 渲染引擎</div>
-              </div>
-            </div>
-          }
-        >
+        <Suspense fallback={null}>
           <GameStage seed={gameParams.seed} loadSave={gameParams.loadSave} />
         </Suspense>
       )}
+
+      {isWorldLoading && <WorldLoadingScreen />}
     </div>
   );
 }

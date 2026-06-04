@@ -1,0 +1,162 @@
+.loadingWrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-repeat: repeat;
+  background-size: 64px 64px;
+  image-rendering: pixelated;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  // Vignette effect + dark color tint
+  background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%), rgba(20, 10, 5, 0.25);
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 90%;
+  z-index: 10;
+
+  h1 {
+    font-size: 24px;
+    color: #ffffff;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
+    text-shadow: 3px 3px 0px rgba(0, 0, 0, 0.85);
+  }
+}
+
+/* Minecraft 1.14+ style Chunk Loading Grid */
+.gridContainer {
+  margin-bottom: 28px;
+  perspective: 600px;
+}
+
+.gridOuterBorder {
+  padding: 6px;
+  background: #2b2b2b;
+  border: 4px solid #1a1a1a;
+  box-shadow: 
+    inset 2px 2px 0px rgba(255, 255, 255, 0.15),
+    inset -2px -2px 0px rgba(0, 0, 0, 0.4),
+    0 10px 25px rgba(0, 0, 0, 0.6);
+}
+
+.gridInner {
+  display: grid;
+  // 5x5 grid for spawning chunks (radius 2)
+  grid-template-columns: repeat(5, 20px);
+  grid-template-rows: repeat(5, 20px);
+  gap: 3px;
+  background: #0f0f0f;
+  padding: 4px;
+}
+
+.gridCell {
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  position: relative;
+
+  &.pending {
+    background-color: rgba(25, 25, 25, 0.95);
+    border: 2px solid #3a3a3a;
+    box-shadow: inset 1px 1px 0px rgba(0, 0, 0, 0.5);
+  }
+
+  &.loaded {
+    background-color: #5c8e32;
+    border: 2px solid #8be830;
+    box-shadow: 
+      inset 1px 1px 0px rgba(255, 255, 255, 0.4),
+      inset -1px -1px 0px rgba(0, 0, 0, 0.3),
+      0 0 8px rgba(139, 232, 48, 0.3);
+    animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+}
+
+/* Traditional MC loading progress bar */
+.progressBarWrapper {
+  margin-bottom: 20px;
+}
+
+.progressBar {
+  width: 280px;
+  height: 16px;
+  background: #111111;
+  border: 3px solid #3c3c3c;
+  box-shadow: 
+    inset 2px 2px 0px #000000,
+    1px 1px 0px #555555,
+    -1px -1px 0px #222222;
+  position: relative;
+  overflow: hidden;
+  padding: 1px;
+}
+
+.progressFill {
+  height: 100%;
+  background: #5c8e32;
+  border-right: 2px solid #8be830;
+  box-shadow: inset 0 2px 0px rgba(255, 255, 255, 0.3);
+  transition: width 0.15s ease-out;
+}
+
+.metaInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.progressPercent {
+  font-size: 16px;
+  color: #e2e8f0;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.85);
+}
+
+.stageText {
+  font-size: 13px;
+  color: #a0aec0;
+  letter-spacing: 0.5px;
+  text-shadow: 1.5px 1.5px 0px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1.0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

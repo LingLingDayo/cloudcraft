@@ -9,6 +9,13 @@ export interface GameSlice {
   language: Language;
   autoJump: boolean;
   miningProgress: number | null;
+  
+  // Loading states
+  isWorldLoading: boolean;
+  worldLoadingProgress: number;
+  worldLoadingStage: 'engine' | 'chunks';
+  chunkLoadingStates: Record<string, boolean>;
+
   setGameState: (state: GameState) => void;
   setRenderDistance: (dist: number) => void;
   setFov: (fov: number) => void;
@@ -16,6 +23,13 @@ export interface GameSlice {
   setLanguage: (lang: Language) => void;
   setAutoJump: (autoJump: boolean) => void;
   setMiningProgress: (progress: number | null) => void;
+  
+  // Loading actions
+  setWorldLoading: (loading: boolean) => void;
+  setWorldLoadingProgress: (progress: number) => void;
+  setWorldLoadingStage: (stage: 'engine' | 'chunks') => void;
+  setChunkLoadingState: (key: string, loaded: boolean) => void;
+  initChunkLoading: (keys: string[]) => void;
 }
 
 export interface PlayerSlice {

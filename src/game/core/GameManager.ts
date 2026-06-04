@@ -114,8 +114,8 @@ export class GameManager {
     this.particles = new ParticleSystem(this.scene);
     this.player.spawn(this.world, this.physics);
 
-    // Synchronously load chunks around the player spawn to prevent void fall and render instantly
-    this.world.loadArea(this.player.position.x, this.player.position.z, 2, true);
+    // Load chunks around spawn asynchronously to allow React to render the loading progress
+    this.world.loadArea(this.player.position.x, this.player.position.z, 2, false);
 
     // Initialize Sub-managers
     this.environment = new EnvironmentManager(this);
