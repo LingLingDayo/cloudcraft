@@ -20,6 +20,7 @@ export class VoxelPhysics {
     swimSpeed: number;
     stepHeight: number;
   };
+  private swimTime = 0;
 
   constructor(
     world: World,
@@ -156,19 +157,29 @@ export class VoxelPhysics {
           const bottomIsLiquid = getBlockProperties(blockBottom).isLiquid;
           const eyeIsLiquid = getBlockProperties(blockEye).isLiquid;
 
-          if (eyeIsLiquid) {
-            // 完全浸没在水里时，受浮力影响缓慢上浮
-            velocity.y = Math.min(1.0, velocity.y + 4.0 * dt);
-          } else if (bottomIsLiquid) {
-            // 浮在水面上时（脚在水里，头在空气中），利用弹簧力稳定在水面高度
-            // 水面高度为 Math.floor(position.y) + 1.0。目标脚底高度为 Math.floor(position.y) + 0.8 (浸入 0.2 格)
-            const targetFloatY = Math.floor(position.y) + 0.8;
-            const diff = targetFloatY - position.y;
-            velocity.y = diff * 5.0;
-            velocity.y = Math.max(-0.8, Math.min(0.8, velocity.y)); // 限制起伏速度，使其平滑
+          const isMoving = inputDirection.x !== 0 || inputDirection.z !== 0;
+
+          if (isMoving) {
+            this.swimTime += dt;
+            const wave = Math.sin(this.swimTime * 8.0) * 0.25;
+
+            if (eyeIsLiquid) {
+              // 完全浸没在水里时，向上游泳浮起
+              velocity.y = 0.5 + wave;
+            } else if (bottomIsLiquid) {
+              // 浮在水面上时（脚在水里，头在空气中），利用弹性力稳定在水面高度并叠加起伏波动
+              const targetFloatY = Math.floor(position.y) + 0.8;
+              const diff = targetFloatY - position.y;
+              velocity.y = diff * 4.0 + wave;
+              velocity.y = Math.max(-0.8, Math.min(0.8, velocity.y)); // 限制起伏速度，使其平滑
+            } else {
+              // 安全退回
+              velocity.y = Math.max(-2, velocity.y + this.settings.gravity * 0.15 * dt);
+            }
           } else {
-            // 安全退回
-            velocity.y = Math.max(-2, velocity.y + this.settings.gravity * 0.15 * dt);
+            // 静止无操作：没有浮力，缓慢下沉
+            this.swimTime = 0;
+            velocity.y = Math.max(-0.8, velocity.y - 1.5 * dt);
           }
         }
       } else {

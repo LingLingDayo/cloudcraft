@@ -260,35 +260,51 @@ describe('Physics System', () => {
   });
 
   describe('Water Physics and Buoyancy', () => {
-    test('buoyancy pulls fully submerged player upwards', () => {
+    test('no buoyancy when static, player sinks slowly in water', () => {
       mockBlockMap.set('10,15,10', BLOCK_TYPES.WATER);
       mockBlockMap.set('10,16,10', BLOCK_TYPES.WATER);
 
       const pos = new THREE.Vector3(10.5, 15.0, 10.5);
-      const vel = new THREE.Vector3(0, -0.5, 0);
-      const state = { onGround: false, inWater: true };
-
-      physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, false, false, state);
-
-      expect(vel.y).toBeGreaterThan(-0.5);
-    });
-
-    test('player stabilizes at water surface using spring force when partially submerged', () => {
-      mockBlockMap.set('10,14,10', BLOCK_TYPES.WATER);
-
-      const pos = new THREE.Vector3(10.5, 14.2, 10.5);
       const vel = new THREE.Vector3(0, 0, 0);
       const state = { onGround: false, inWater: true };
 
       physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, false, false, state);
 
-      expect(vel.y).toBeCloseTo(0.8);
+      // 没有操作时应该缓慢下沉 (vel.y 应为负值且接近 -1.5 * 0.1 = -0.15)
+      expect(vel.y).toBeLessThan(0);
+      expect(vel.y).toBeCloseTo(-0.15);
+    });
 
-      pos.set(10.5, 14.9, 10.5);
-      vel.set(0, 0, 0);
-      state.inWater = true;
-      physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, false, false, state);
-      expect(vel.y).toBeCloseTo(-0.5);
+    test('player swims upwards and fluctuates when moving forward in deep water', () => {
+      mockBlockMap.set('10,15,10', BLOCK_TYPES.WATER);
+      mockBlockMap.set('10,16,10', BLOCK_TYPES.WATER);
+
+      const pos = new THREE.Vector3(10.5, 15.0, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: false, inWater: true };
+      const inputDir = new THREE.Vector3(1, 0, 0);
+
+      // 第一步运行，此时 swimTime 增加 0.1，wave = Math.sin(0.8) * 0.25 ≈ 0.179
+      physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
+
+      expect(vel.y).toBeGreaterThan(0);
+      expect(vel.y).toBeCloseTo(0.5 + Math.sin(0.8) * 0.25);
+    });
+
+    test('player stabilizes at water surface with wave fluctuations when moving forward', () => {
+      mockBlockMap.set('10,14,10', BLOCK_TYPES.WATER);
+
+      const pos = new THREE.Vector3(10.5, 14.2, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: false, inWater: true };
+      const inputDir = new THREE.Vector3(1, 0, 0);
+
+      // 目标位置 y = 14.8，diff = 14.8 - 14.2 = 0.6
+      // wave = Math.sin(0.8) * 0.25 ≈ 0.179
+      // vel.y = 0.6 * 4.0 + 0.179 = 2.579，限制在 0.8
+      physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
+
+      expect(vel.y).toBeCloseTo(0.8);
     });
 
     test('player can dive downwards in water when shift is pressed', () => {
