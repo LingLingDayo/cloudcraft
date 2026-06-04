@@ -42,6 +42,7 @@ export const zh = {
     done: '完成',
     saveData: '存档管理',
     exportSave: '导出当前存档',
+    version: '版本: {{version}}',
   },
   controls: {
     keyboard: '键盘操作',
