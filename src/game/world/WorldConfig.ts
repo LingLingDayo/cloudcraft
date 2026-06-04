@@ -35,6 +35,11 @@ export const WORLD_CONFIG = {
     threshold: 0.08,
     minHeight: 10,
     maxHeightOffset: 20, // 低于地表几格开始生成矿洞
+    baseThreshold: 0.12, // 矿洞基础阈值
+    maxHeightOffsetDefault: 12, // 默认限制高度
+    maxHeightOffsetEntrance: -3, // 露天入口限制高度
+    warpScale: 0.05, // 坐标扭曲噪波频率
+    warpStrength: 5.0, // 坐标扭曲偏移强度
   },
   biomeScale: 0.003,
   biomeOffset: 2000,
