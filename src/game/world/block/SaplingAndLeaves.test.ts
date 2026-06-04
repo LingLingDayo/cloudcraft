@@ -24,18 +24,30 @@ describe('Saplings and Leaves Decay/Growth Systems', () => {
     expect(oakSapling).toBeDefined();
     expect(oakSapling.name).toBe('橡树树苗');
     expect(oakSapling.properties.hardness).toBe(0);
+    expect(oakSapling.properties.isSolid).toBe(true);
+    expect(oakSapling.properties.isCollidable).toBe(false);
+    expect(oakSapling.properties.isCrossModel).toBe(true);
 
     const birchSapling = BlockRegistry.get(BLOCK_TYPES.BIRCH_SAPLING);
     expect(birchSapling).toBeDefined();
     expect(birchSapling.name).toBe('桦树树苗');
+    expect(birchSapling.properties.isSolid).toBe(true);
+    expect(birchSapling.properties.isCollidable).toBe(false);
+    expect(birchSapling.properties.isCrossModel).toBe(true);
 
     const spruceSapling = BlockRegistry.get(BLOCK_TYPES.SPRUCE_SAPLING);
     expect(spruceSapling).toBeDefined();
     expect(spruceSapling.name).toBe('松树树苗');
+    expect(spruceSapling.properties.isSolid).toBe(true);
+    expect(spruceSapling.properties.isCollidable).toBe(false);
+    expect(spruceSapling.properties.isCrossModel).toBe(true);
 
     const jungleSapling = BlockRegistry.get(BLOCK_TYPES.JUNGLE_SAPLING);
     expect(jungleSapling).toBeDefined();
     expect(jungleSapling.name).toBe('丛林树苗');
+    expect(jungleSapling.properties.isSolid).toBe(true);
+    expect(jungleSapling.properties.isCollidable).toBe(false);
+    expect(jungleSapling.properties.isCrossModel).toBe(true);
   });
 
   test('should register leaf blocks with renderAdjacentSameType and renderInternalCross properties', () => {
