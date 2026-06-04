@@ -9,6 +9,7 @@ import { WorldSerializer } from './WorldSerializer';
 import { TreeStyle } from './biome/Biome';
 import { sound } from '@game/systems/Sound';
 import type { BlockType } from '@type';
+import { useGameStore } from '@store/useGameStore';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -188,6 +189,15 @@ export class World {
 
   public updateChunkMesh(cx: number, cz: number) {
     this.renderer.updateChunkMesh(cx, cz, this.chunks);
+    
+    // Update chunk loading progress in store
+    const store = useGameStore.getState();
+    if (store.isWorldLoading) {
+      const key = `${cx},${cz}`;
+      if (store.chunkLoadingStates[key] === false) {
+        store.setChunkLoadingState(key, true);
+      }
+    }
   }
 
   // Load an area around a central chunk (generate if not existing, create meshes)
@@ -198,6 +208,34 @@ export class World {
 
     const activeKeys = new Set<string>();
     const neededGeneration: string[] = [];
+
+    // Initialize loading progress for this area if we are in world loading screen and asynchronous
+    if (!shouldSync) {
+      const store = useGameStore.getState();
+      if (store.isWorldLoading) {
+        const keys: string[] = [];
+        for (let dx = -radius; dx <= radius; dx++) {
+          for (let dz = -radius; dz <= radius; dz++) {
+            const cx = ccx + dx;
+            const cz = ccz + dz;
+            keys.push(`${cx},${cz}`);
+          }
+        }
+        // Only initialize if the keys list is different (avoids resetting progress to 0% mid-load if loadArea is called multiple times with same keys)
+        const currentKeys = Object.keys(store.chunkLoadingStates);
+        const keysMatch = keys.length === currentKeys.length && keys.every(k => currentKeys.includes(k));
+        if (!keysMatch) {
+          store.setWorldLoadingStage('chunks');
+          store.initChunkLoading(keys);
+          // Mark already loaded chunks as true immediately
+          keys.forEach(key => {
+            if (this.renderer.hasChunkMesh(key)) {
+              store.setChunkLoadingState(key, true);
+            }
+          });
+        }
+      }
+    }
 
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dz = -radius; dz <= radius; dz++) {

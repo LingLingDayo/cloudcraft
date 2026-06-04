@@ -17,6 +17,12 @@ export const createGameSlice: StateCreator<
   autoJump: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_auto_jump') !== 'false' : true,
   miningProgress: null,
 
+  // Initial loading states
+  isWorldLoading: false,
+  worldLoadingProgress: 0,
+  worldLoadingStage: 'engine',
+  chunkLoadingStates: {},
+
   setGameState: (gameState) => set({ gameState }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
   setFov: (fov) => set({ fov }),
@@ -60,5 +66,40 @@ export const createGameSlice: StateCreator<
     return { autoJump };
   }),
   setMiningProgress: (miningProgress) => set({ miningProgress }),
+
+  // Loading actions implementation
+  setWorldLoading: (isWorldLoading) => set({ isWorldLoading }),
+  setWorldLoadingProgress: (worldLoadingProgress) => set({ worldLoadingProgress }),
+  setWorldLoadingStage: (worldLoadingStage) => set({ worldLoadingStage }),
+  setChunkLoadingState: (key, loaded) => set((state) => {
+    const newStates = { ...state.chunkLoadingStates, [key]: loaded };
+    
+    // Calculate progress based on chunk loading
+    const keys = Object.keys(newStates);
+    const total = keys.length;
+    const loadedCount = keys.filter((k) => newStates[k]).length;
+    
+    let progress = state.worldLoadingProgress;
+    if (state.worldLoadingStage === 'chunks' && total > 0) {
+      // Chunk generation progress maps from 30% to 100%
+      progress = Math.round(30 + (loadedCount / total) * 70);
+    }
+    
+    return {
+      chunkLoadingStates: newStates,
+      worldLoadingProgress: progress
+    };
+  }),
+  initChunkLoading: (keys) => set(() => {
+    const states: Record<string, boolean> = {};
+    keys.forEach((k) => {
+      states[k] = false;
+    });
+    return {
+      chunkLoadingStates: states,
+      // If initializing keys, we set starting progress to 30%
+      worldLoadingProgress: keys.length > 0 ? 30 : 0
+    };
+  }),
 });
 

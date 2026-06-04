@@ -25,6 +25,10 @@ describe('useGameStore', () => {
       inventory: Array(54).fill(null),
       language: 'zh',
       autoJump: true,
+      isWorldLoading: false,
+      worldLoadingProgress: 0,
+      worldLoadingStage: 'engine',
+      chunkLoadingStates: {},
     });
   });
 
@@ -48,6 +52,10 @@ describe('useGameStore', () => {
     expect(state.inventory).toEqual(Array(54).fill(null));
     expect(state.language).toBe('zh');
     expect(state.autoJump).toBe(true);
+    expect(state.isWorldLoading).toBe(false);
+    expect(state.worldLoadingProgress).toBe(0);
+    expect(state.worldLoadingStage).toBe('engine');
+    expect(state.chunkLoadingStates).toEqual({});
   });
 
   test('should set game state via setGameState', () => {
@@ -226,5 +234,40 @@ describe('useGameStore', () => {
 
     useGameStore.getState().setAutoJump(true);
     expect(useGameStore.getState().autoJump).toBe(true);
+  });
+
+  test('should handle loading states and progress correctly', () => {
+    const store = useGameStore.getState();
+    expect(store.isWorldLoading).toBe(false);
+
+    store.setWorldLoading(true);
+    expect(useGameStore.getState().isWorldLoading).toBe(true);
+
+    store.setWorldLoadingStage('chunks');
+    expect(useGameStore.getState().worldLoadingStage).toBe('chunks');
+
+    store.setWorldLoadingProgress(10);
+    expect(useGameStore.getState().worldLoadingProgress).toBe(10);
+
+    // Initialize chunks loading
+    store.initChunkLoading(['1,1', '1,2', '2,1', '2,2']);
+    expect(useGameStore.getState().worldLoadingProgress).toBe(30); // Starts at 30% for chunks stage
+    expect(useGameStore.getState().chunkLoadingStates).toEqual({
+      '1,1': false,
+      '1,2': false,
+      '2,1': false,
+      '2,2': false,
+    });
+
+    // Load one chunk (1 out of 4 is 25% progress of chunks stage: 30 + 0.25 * 70 = 48% approximately)
+    store.setChunkLoadingState('1,1', true);
+    expect(useGameStore.getState().chunkLoadingStates['1,1']).toBe(true);
+    expect(useGameStore.getState().worldLoadingProgress).toBe(Math.round(30 + 0.25 * 70)); // 48%
+
+    // Load all chunks
+    store.setChunkLoadingState('1,2', true);
+    store.setChunkLoadingState('2,1', true);
+    store.setChunkLoadingState('2,2', true);
+    expect(useGameStore.getState().worldLoadingProgress).toBe(100);
   });
 });
