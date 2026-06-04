@@ -67,5 +67,13 @@ export abstract class Block {
   public createBlockEntity(_x: number, _y: number, _z: number): BlockEntity | null {
     return null;
   }
+
+  /**
+   * 获取该方块破坏后的掉落物
+   */
+  public getDrops(): { type: BlockType; count: number }[] {
+    return [{ type: this.id, count: 1 }];
+  }
 }
+
 

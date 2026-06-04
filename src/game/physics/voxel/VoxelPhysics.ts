@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, getBlockProperties } from '@game/world/World';
+import { World, getBlockProperties, BLOCK_TYPES } from '@game/world/World';
 
 /**
  * 自研体素物理引擎 (Voxel Physics)
@@ -42,6 +42,21 @@ export class VoxelPhysics {
     return getBlockProperties(blockId).isSolid;
   }
 
+  private isSapling(blockId: number): boolean {
+    const cleanId = blockId & 0x3F;
+    return (
+      cleanId === BLOCK_TYPES.OAK_SAPLING ||
+      cleanId === BLOCK_TYPES.BIRCH_SAPLING ||
+      cleanId === BLOCK_TYPES.SPRUCE_SAPLING ||
+      cleanId === BLOCK_TYPES.JUNGLE_SAPLING
+    );
+  }
+
+  public isCollidable(blockId: number): boolean {
+    if (this.isSapling(blockId)) return false;
+    return this.isSolid(blockId);
+  }
+
   // Get bounding box of the player
   public getPlayerBox(position: THREE.Vector3): THREE.Box3 {
     const halfW = this.settings.playerSize.width / 2;
@@ -68,7 +83,7 @@ export class VoxelPhysics {
       for (let y = minY; y <= maxY; y++) {
         for (let z = minZ; z <= maxZ; z++) {
           const id = this.world.getBlock(x, y, z);
-          if (this.isSolid(id)) {
+          if (this.isCollidable(id)) {
             const isIntersect = (
               box.min.x + eps < x + 1 &&
               box.max.x - eps > x &&
@@ -319,9 +334,9 @@ export class VoxelPhysics {
           const checkX = Math.floor(position.x + dx * 0.35);
           const checkZ = Math.floor(position.z);
 
-          const feetSolid = this.isSolid(this.world.getBlock(checkX, baseDirY, checkZ));
-          const kneeSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 1, checkZ));
-          const headSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 2, checkZ));
+          const feetSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY, checkZ));
+          const kneeSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 1, checkZ));
+          const headSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 2, checkZ));
 
           if (feetSolid && !kneeSolid && !headSolid) {
             shouldAutoJump = true;
@@ -333,9 +348,9 @@ export class VoxelPhysics {
           const checkX = Math.floor(position.x);
           const checkZ = Math.floor(position.z + dz * 0.35);
 
-          const feetSolid = this.isSolid(this.world.getBlock(checkX, baseDirY, checkZ));
-          const kneeSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 1, checkZ));
-          const headSolid = this.isSolid(this.world.getBlock(checkX, baseDirY + 2, checkZ));
+          const feetSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY, checkZ));
+          const kneeSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 1, checkZ));
+          const headSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 2, checkZ));
 
           if (feetSolid && !kneeSolid && !headSolid) {
             shouldAutoJump = true;

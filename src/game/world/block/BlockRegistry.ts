@@ -5,7 +5,9 @@ import {
   SimpleSolidBlock,
   SandBlock,
   ChestBlock,
-  LeverBlock
+  LeverBlock,
+  LeafBlock,
+  SaplingBlock
 } from './BlockClasses';
 
 export class BlockRegistry {
@@ -48,7 +50,7 @@ export class BlockRegistry {
       textureFaces: { top: 5, bottom: 5, side: 4 }
     }));
 
-    this.register(new SimpleSolidBlock({
+    this.register(new LeafBlock({
       id: BLOCK_TYPES.LEAF, name: '树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d7823', colorHex: 0x2d7823,
@@ -62,7 +64,7 @@ export class BlockRegistry {
       textureFaces: { top: 17, bottom: 17, side: 16 }
     }));
 
-    this.register(new SimpleSolidBlock({
+    this.register(new LeafBlock({
       id: BLOCK_TYPES.BIRCH_LEAVES, name: '桦树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
@@ -76,7 +78,7 @@ export class BlockRegistry {
       textureFaces: { top: 20, bottom: 20, side: 19 }
     }));
 
-    this.register(new SimpleSolidBlock({
+    this.register(new LeafBlock({
       id: BLOCK_TYPES.SPRUCE_LEAVES, name: '松树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
@@ -144,7 +146,7 @@ export class BlockRegistry {
       textureFaces: { top: 25, bottom: 25, side: 24 }
     }));
 
-    this.register(new SimpleSolidBlock({
+    this.register(new LeafBlock({
       id: BLOCK_TYPES.JUNGLE_LEAVES, name: '丛林叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
@@ -156,6 +158,34 @@ export class BlockRegistry {
       hardness: 0.8, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'stone',
       color: '#d2b48c', colorHex: 0xd2b48c,
       textureFaces: { top: 27, bottom: 27, side: 27 }
+    }));
+
+    this.register(new SaplingBlock({
+      id: BLOCK_TYPES.OAK_SAPLING, name: '橡树树苗', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+      color: '#4c9436', colorHex: 0x4c9436,
+      textureFaces: { top: 28, bottom: 28, side: 28 }
+    }));
+
+    this.register(new SaplingBlock({
+      id: BLOCK_TYPES.BIRCH_SAPLING, name: '桦树树苗', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+      color: '#8fc04e', colorHex: 0x8fc04e,
+      textureFaces: { top: 29, bottom: 29, side: 29 }
+    }));
+
+    this.register(new SaplingBlock({
+      id: BLOCK_TYPES.SPRUCE_SAPLING, name: '松树树苗', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+      color: '#2d5a27', colorHex: 0x2d5a27,
+      textureFaces: { top: 30, bottom: 30, side: 30 }
+    }));
+
+    this.register(new SaplingBlock({
+      id: BLOCK_TYPES.JUNGLE_SAPLING, name: '丛林树苗', isSolid: true, isTransparent: true, isLiquid: false,
+      hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+      color: '#1a5f12', colorHex: 0x1a5f12,
+      textureFaces: { top: 31, bottom: 31, side: 31 }
     }));
   }
 
