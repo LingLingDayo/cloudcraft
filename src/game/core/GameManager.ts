@@ -177,7 +177,11 @@ export class GameManager {
       this.particles.update(dt);
     }
 
-    if (this.controls.isLocked) {
+    const isPlaying = this.controls.isMobile
+      ? (useGameStore.getState().gameState === GameState.PLAYING && !useGameStore.getState().isInventoryOpen && !useGameStore.getState().activeChest)
+      : this.controls.isLocked;
+
+    if (isPlaying) {
       if (this.environment) this.environment.update(dt);
       
       this.player.update(dt, this.physics, this.controls, this.world);
