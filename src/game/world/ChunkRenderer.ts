@@ -138,103 +138,105 @@ export class ChunkRenderer {
           const wx = worldStartX + x;
           const wz = worldStartZ + z;
 
-          for (const face of faces) {
-            const neighbor = getNeighbor(x, y, z, face.dir);
-            
-            // Draw face if:
-            // 1. Neighbor is air/transparent
-            // 2. OR neighbor is the same transparent block (stops internal rendering of the same transparent type unless renderAdjacentSameType is true)
-            let drawFace = false;
-            if (this.world.isTransparent(neighbor)) {
-              if (blockType === neighbor) {
-                if (props.renderAdjacentSameType) {
-                  drawFace = true;
-                } else {
-                  drawFace = false;
-                }
-              } else {
-                drawFace = true;
-              }
-            }
-
-            if (drawFace) {
-              // Add vertices
-              const corners = face.corners;
-              const v0 = [wx + corners[0][0], y + corners[0][1], wz + corners[0][2]];
-              const v1 = [wx + corners[1][0], y + corners[1][1], wz + corners[1][2]];
-              const v2 = [wx + corners[2][0], y + corners[2][1], wz + corners[2][2]];
-              const v3 = [wx + corners[3][0], y + corners[3][1], wz + corners[3][2]];
-
-              // Triangle 1
-              data.positions.push(...v0, ...v1, ...v2);
-              // Triangle 2
-              data.positions.push(...v0, ...v2, ...v3);
-
-              // Add normals
-              for (let i = 0; i < 6; i++) {
-                data.normals.push(...face.dir);
-              }
-
-              // Add UV coordinates mapping to the dynamic atlas
-              // Atlas is 8x8 tiles, so each tile is 0.125 x 0.125
-              let uvFace: 'top' | 'bottom' | 'side' = face.uvFace as 'top' | 'bottom' | 'side';
-              let rotateUV = false;
-
-              // 1. Process oriented logs (WOOD, BIRCH_WOOD, SPRUCE_WOOD) using orientation metadata
-              const isLog = blockType === BLOCK_TYPES.WOOD || blockType === BLOCK_TYPES.BIRCH_WOOD || blockType === BLOCK_TYPES.SPRUCE_WOOD;
-              if (isLog) {
-                if (orientation === 1) { // X axis
-                  const isXFace = face.dir[0] !== 0; // px (1,0,0) or nx (-1,0,0)
-                  if (isXFace) {
-                    uvFace = 'top';
+          if (!props.isCrossModel) {
+            for (const face of faces) {
+              const neighbor = getNeighbor(x, y, z, face.dir);
+              
+              // Draw face if:
+              // 1. Neighbor is air/transparent
+              // 2. OR neighbor is the same transparent block (stops internal rendering of the same transparent type unless renderAdjacentSameType is true)
+              let drawFace = false;
+              if (this.world.isTransparent(neighbor)) {
+                if (blockType === neighbor) {
+                  if (props.renderAdjacentSameType) {
+                    drawFace = true;
                   } else {
-                    uvFace = 'side';
-                    rotateUV = true;
+                    drawFace = false;
                   }
-                } else if (orientation === 2) { // Z axis
-                  const isZFace = face.dir[2] !== 0; // pz (0,0,1) or nz (0,0,-1)
-                  if (isZFace) {
-                    uvFace = 'top';
-                  } else {
-                    uvFace = 'side';
-                    if (face.dir[0] !== 0) { // px or nx side face needs rotation
+                } else {
+                  drawFace = true;
+                }
+              }
+
+              if (drawFace) {
+                // Add vertices
+                const corners = face.corners;
+                const v0 = [wx + corners[0][0], y + corners[0][1], wz + corners[0][2]];
+                const v1 = [wx + corners[1][0], y + corners[1][1], wz + corners[1][2]];
+                const v2 = [wx + corners[2][0], y + corners[2][1], wz + corners[2][2]];
+                const v3 = [wx + corners[3][0], y + corners[3][1], wz + corners[3][2]];
+
+                // Triangle 1
+                data.positions.push(...v0, ...v1, ...v2);
+                // Triangle 2
+                data.positions.push(...v0, ...v2, ...v3);
+
+                // Add normals
+                for (let i = 0; i < 6; i++) {
+                  data.normals.push(...face.dir);
+                }
+
+                // Add UV coordinates mapping to the dynamic atlas
+                // Atlas is 8x8 tiles, so each tile is 0.125 x 0.125
+                let uvFace: 'top' | 'bottom' | 'side' = face.uvFace as 'top' | 'bottom' | 'side';
+                let rotateUV = false;
+
+                // 1. Process oriented logs (WOOD, BIRCH_WOOD, SPRUCE_WOOD) using orientation metadata
+                const isLog = blockType === BLOCK_TYPES.WOOD || blockType === BLOCK_TYPES.BIRCH_WOOD || blockType === BLOCK_TYPES.SPRUCE_WOOD;
+                if (isLog) {
+                  if (orientation === 1) { // X axis
+                    const isXFace = face.dir[0] !== 0; // px (1,0,0) or nx (-1,0,0)
+                    if (isXFace) {
+                      uvFace = 'top';
+                    } else {
+                      uvFace = 'side';
                       rotateUV = true;
+                    }
+                  } else if (orientation === 2) { // Z axis
+                    const isZFace = face.dir[2] !== 0; // pz (0,0,1) or nz (0,0,-1)
+                    if (isZFace) {
+                      uvFace = 'top';
+                    } else {
+                      uvFace = 'side';
+                      if (face.dir[0] !== 0) { // px or nx side face needs rotation
+                        rotateUV = true;
+                      }
                     }
                   }
                 }
+
+                const atlasIndex = getBlockProperties(blockType).textureFaces?.[uvFace] ?? 3; // Default to stone if undefined
+                
+                const tx = atlasIndex % 8;
+                const ty = 7 - Math.floor(atlasIndex / 8); // Invert Y for WebGL texture coordinate space
+                
+                const uMin = tx * 0.125;
+                const uMax = (tx + 1) * 0.125;
+                const vMin = ty * 0.125;
+                const vMax = (ty + 1) * 0.125;
+
+                // Map face corners to UV coordinates
+                // corners sequence matches: v0, v1, v2, v3
+                // UV coordinates for the face corners
+                const uv0 = [uMin, vMin];
+                const uv1 = [uMin, vMax];
+                const uv2 = [uMax, vMax];
+                const uv3 = [uMax, vMin];
+
+                const finalUVs = rotateUV 
+                  ? [uv3, uv0, uv1, uv2] 
+                  : [uv0, uv1, uv2, uv3];
+
+                data.uvs.push(
+                  ...finalUVs[0], ...finalUVs[1], ...finalUVs[2], // Triangle 1
+                  ...finalUVs[0], ...finalUVs[2], ...finalUVs[3]  // Triangle 2
+                );
               }
-
-              const atlasIndex = getBlockProperties(blockType).textureFaces?.[uvFace] ?? 3; // Default to stone if undefined
-              
-              const tx = atlasIndex % 8;
-              const ty = 7 - Math.floor(atlasIndex / 8); // Invert Y for WebGL texture coordinate space
-              
-              const uMin = tx * 0.125;
-              const uMax = (tx + 1) * 0.125;
-              const vMin = ty * 0.125;
-              const vMax = (ty + 1) * 0.125;
-
-              // Map face corners to UV coordinates
-              // corners sequence matches: v0, v1, v2, v3
-              // UV coordinates for the face corners
-              const uv0 = [uMin, vMin];
-              const uv1 = [uMin, vMax];
-              const uv2 = [uMax, vMax];
-              const uv3 = [uMax, vMin];
-
-              const finalUVs = rotateUV 
-                ? [uv3, uv0, uv1, uv2] 
-                : [uv0, uv1, uv2, uv3];
-
-              data.uvs.push(
-                ...finalUVs[0], ...finalUVs[1], ...finalUVs[2], // Triangle 1
-                ...finalUVs[0], ...finalUVs[2], ...finalUVs[3]  // Triangle 2
-              );
             }
           }
 
-          // If the block is configured to render internal cross planes
-          if (props.renderInternalCross) {
+          // If the block is configured to render internal cross planes or is a cross model
+          if (props.renderInternalCross || props.isCrossModel) {
             const atlasIndex = props.textureFaces?.side ?? 3;
             const tx = atlasIndex % 8;
             const ty = 7 - Math.floor(atlasIndex / 8);

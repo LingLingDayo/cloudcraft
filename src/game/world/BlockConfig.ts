@@ -22,6 +22,7 @@ export interface BlockProperties {
   droppedModelType?: 'block' | 'cross';
   renderAdjacentSameType?: boolean; // 当相邻方块是相同类型时是否依然渲染邻面 (例如树叶)
   renderInternalCross?: boolean;     // 是否在方块内部渲染交叉的斜对角平面 (例如树叶的高级效果)
+  isCrossModel?: boolean;            // 是否作为交叉的斜对角平面模型渲染 (而非普通的立方体方块)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
   isItem?: boolean;            // 是否为纯物品 (不能作为方块放置在世界中)
@@ -359,7 +360,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.OAK_SAPLING]: {
     id: BLOCK_TYPES.OAK_SAPLING,
     name: '橡树树苗',
-    isSolid: false,
+    isSolid: true,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -373,12 +374,13 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     textureFaces: { top: 28, bottom: 28, side: 28 },
     droppedModelType: 'cross',
     isCollidable: false,
+    isCrossModel: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.BIRCH_SAPLING]: {
     id: BLOCK_TYPES.BIRCH_SAPLING,
     name: '桦树树苗',
-    isSolid: false,
+    isSolid: true,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -392,12 +394,13 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     textureFaces: { top: 29, bottom: 29, side: 29 },
     droppedModelType: 'cross',
     isCollidable: false,
+    isCrossModel: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.SPRUCE_SAPLING]: {
     id: BLOCK_TYPES.SPRUCE_SAPLING,
     name: '松树树苗',
-    isSolid: false,
+    isSolid: true,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -411,12 +414,13 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     textureFaces: { top: 30, bottom: 30, side: 30 },
     droppedModelType: 'cross',
     isCollidable: false,
+    isCrossModel: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.JUNGLE_SAPLING]: {
     id: BLOCK_TYPES.JUNGLE_SAPLING,
     name: '丛林树苗',
-    isSolid: false,
+    isSolid: true,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -430,6 +434,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     textureFaces: { top: 31, bottom: 31, side: 31 },
     droppedModelType: 'cross',
     isCollidable: false,
+    isCrossModel: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.PORKCHOP]: {

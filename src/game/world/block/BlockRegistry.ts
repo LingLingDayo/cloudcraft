@@ -174,7 +174,9 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#4c9436', colorHex: 0x4c9436,
       textureFaces: { top: 28, bottom: 28, side: 28 },
-      droppedModelType: 'cross'
+      droppedModelType: 'cross',
+      isCollidable: false,
+      isCrossModel: true
     }));
 
     this.register(new SaplingBlock({
@@ -182,7 +184,9 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
       textureFaces: { top: 29, bottom: 29, side: 29 },
-      droppedModelType: 'cross'
+      droppedModelType: 'cross',
+      isCollidable: false,
+      isCrossModel: true
     }));
 
     this.register(new SaplingBlock({
@@ -190,7 +194,9 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
       textureFaces: { top: 30, bottom: 30, side: 30 },
-      droppedModelType: 'cross'
+      droppedModelType: 'cross',
+      isCollidable: false,
+      isCrossModel: true
     }));
 
     this.register(new SaplingBlock({
@@ -198,7 +204,9 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
       textureFaces: { top: 31, bottom: 31, side: 31 },
-      droppedModelType: 'cross'
+      droppedModelType: 'cross',
+      isCollidable: false,
+      isCrossModel: true
     }));
 
     this.register(new PureItem({

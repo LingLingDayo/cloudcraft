@@ -19,7 +19,7 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, size, className }
   const props = getBlockProperties(blockId);
   const cubeSize = typeof size === 'number' ? `${size}px` : size;
 
-  if (props.isItem) {
+  if (props.isItem || props.isCrossModel) {
     const atlasIndex = props.textureFaces?.side ?? props.textureFaces?.top ?? 32;
     let style: React.CSSProperties;
     try {
