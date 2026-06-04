@@ -304,4 +304,50 @@ describe('Physics System', () => {
       expect(vel.y).toBe(-3.0);
     });
   });
+
+  describe('Shift Speed-up and Auto-jump', () => {
+    test('should accelerate walk speed by 1.5x when shift is pressed', () => {
+      const pos = new THREE.Vector3(10.5, 5.0, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: true, inWater: false };
+      const inputDir = new THREE.Vector3(1, 0, 0); // Move +X
+
+      physics.update(pos, vel, 0.1, inputDir, false, true, false, state, false);
+
+      expect(vel.x).toBe(9.0);
+      expect(pos.x).toBeCloseTo(11.4);
+    });
+
+    test('should accelerate flying speed by 1.5x when shift is pressed', () => {
+      const pos = new THREE.Vector3(10.5, 20.0, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: false, inWater: false };
+      const inputDir = new THREE.Vector3(1, 0, 0); // Move +X
+
+      physics.update(pos, vel, 0.1, inputDir, false, true, true, state, false);
+
+      expect(vel.x).toBe(18.0);
+      expect(vel.y).toBe(-13.5);
+      expect(pos.x).toBeCloseTo(12.3);
+      expect(pos.y).toBeCloseTo(18.65);
+    });
+
+    test('should auto jump even when shift is pressed', () => {
+      physics.stepHeight = 0.6;
+      for (let x = 8; x <= 12; x++) {
+        mockBlockMap.set(`${x},38,10`, BLOCK_TYPES.STONE);
+      }
+      mockBlockMap.set('11,39,10', BLOCK_TYPES.STONE); // 1-block high obstacle
+
+      const pos = new THREE.Vector3(10.5, 39.0, 10.5);
+      const vel = new THREE.Vector3(5.0, 0, 0);
+      const state = { onGround: true, inWater: false };
+
+      physics.update(pos, vel, 0.05, new THREE.Vector3(1, 0, 0), false, true, false, state, true);
+
+      expect(vel.y).toBe(physics.jumpSpeed);
+      expect(state.onGround).toBe(false);
+      expect(pos.y).toBeGreaterThan(39.0);
+    });
+  });
 });

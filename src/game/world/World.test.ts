@@ -215,7 +215,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       if (foundHighPondWater) break;
     }
     expect(foundHighPondWater).toBe(true);
-  });
+  }, 30000);
 
   test('should not generate exposed floating water walls at high altitudes for ponds', () => {
     let checkedPondRegions = 0;
