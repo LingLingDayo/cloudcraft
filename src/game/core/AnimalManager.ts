@@ -4,6 +4,7 @@ import { Animal } from '../entities/Animal';
 import { Pig } from '../entities/Pig';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { sound } from '@game/systems/Sound';
+import { CHUNK_SIZE_Y } from '@game/world/World';
 
 export class AnimalManager {
   private game: GameManager;
@@ -89,7 +90,7 @@ export class AnimalManager {
     // Search from chunk top down to find the ground
     const x = Math.floor(spawnX);
     const z = Math.floor(spawnZ);
-    let y = 126; // CHUNK_SIZE_Y - 2 or top of world
+    let y = CHUNK_SIZE_Y - 2; // CHUNK_SIZE_Y - 2 or top of world
 
     while (y > 0) {
       const blockId = this.game.world.getBlock(x, y, z);

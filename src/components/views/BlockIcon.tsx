@@ -17,9 +17,49 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, size, className }
   }
 
   const props = getBlockProperties(blockId);
-  const textureFaces = props.textureFaces;
-
   const cubeSize = typeof size === 'number' ? `${size}px` : size;
+
+  if (props.isItem) {
+    const atlasIndex = props.textureFaces?.side ?? props.textureFaces?.top ?? 32;
+    let style: React.CSSProperties;
+    try {
+      const dataURL = getTextureAtlasDataURL();
+      const tx = atlasIndex % 8;
+      const ty = Math.floor(atlasIndex / 8);
+      const px = tx === 0 ? 0 : (tx / 7) * 100;
+      const py = ty === 0 ? 0 : (ty / 7) * 100;
+
+      style = {
+        width: '100%',
+        height: '100%',
+        backgroundImage: `url(${dataURL})`,
+        backgroundSize: '800% 800%',
+        backgroundPosition: `${px}% ${py}%`,
+        backgroundColor: 'transparent',
+        imageRendering: 'pixelated',
+      };
+    } catch (_e) {
+      style = {
+        width: '100%',
+        height: '100%',
+        backgroundColor: props.color || '#e07890',
+        borderRadius: '2px',
+      };
+    }
+
+    return (
+      <div
+        className={`${styles.cubeContainer} ${className || ''}`}
+        style={{
+          ...((cubeSize ? { width: cubeSize, height: cubeSize } : {}) as React.CSSProperties),
+        }}
+      >
+        <div style={style} />
+      </div>
+    );
+  }
+
+  const textureFaces = props.textureFaces;
 
   // Function to get CSS styles for a specific face
   const getFaceStyle = (face: 'top' | 'left' | 'right'): React.CSSProperties => {

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { Block, type BlockProperties } from './Block';
 import type { World } from '../World';
 import { BLOCK_TYPES, getBlockProperties } from '../BlockConfig';
@@ -188,5 +188,21 @@ export class SaplingBlock extends Block {
         }
       }
     }
+  }
+}
+
+export class PureItem extends Block {
+  constructor(properties: BlockProperties) {
+    super({
+      ...properties,
+      isSolid: false,
+      isTransparent: true,
+      isLiquid: false,
+      hardness: -1,
+      isInteractable: false,
+      opacity: 0.0,
+      soundType: 'none',
+      isItem: true,
+    });
   }
 }

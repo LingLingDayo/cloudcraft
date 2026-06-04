@@ -24,6 +24,11 @@ export interface BlockProperties {
   renderInternalCross?: boolean;     // 是否在方块内部渲染交叉的斜对角平面 (例如树叶的高级效果)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
+  isItem?: boolean;            // 是否为纯物品 (不能作为方块放置在世界中)
+  itemType?: 'food' | 'tool' | 'resource' | 'weapon' | 'other'; // 物品类型分类
+  foodProperties?: {
+    healAmount: number;        // 食物回复血量值 (例如 2 代表 1 颗心)
+  };
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
@@ -445,6 +450,11 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     canSpawnOn: false,
+    isItem: true,
+    itemType: 'food',
+    foodProperties: {
+      healAmount: 2,
+    },
   },
 };
 
