@@ -15,7 +15,7 @@ interface SettingsDialogProps {
   onSave?: () => void;
 }
 
-type TabType = 'general' | 'graphics';
+type TabType = 'general' | 'graphics' | 'controls';
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave }) => {
   const { t } = useTranslation();
@@ -82,6 +82,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
   const tabs = [
     { id: 'general' as const, label: t('settings.general') },
     { id: 'graphics' as const, label: t('settings.graphics') },
+    { id: 'controls' as const, label: t('settings.controls') },
   ];
 
   return (
@@ -211,6 +212,131 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
                     onChange={setFov}
                     valueFormatter={(val) => t('pauseMenu.fovValue', { val })}
                   />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'controls' && (
+              <div className={styles.settingsGroup}>
+                <h3 className={`pixel-text-sm ${styles.groupTitle}`}>
+                  {t('settings.controlsTitle')}
+                </h3>
+
+                <div className={styles.controlsGrid}>
+                  {/* Keyboard Section */}
+                  <div className={styles.controlSection}>
+                    <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
+                      {t('controls.keyboard')}
+                    </h4>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.moveForward')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>W</kbd>
+                        <span className={styles.keySeparator}>/</span>
+                        <kbd className={styles.kbd}>↑</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.moveBackward')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>S</kbd>
+                        <span className={styles.keySeparator}>/</span>
+                        <kbd className={styles.kbd}>↓</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.moveLeft')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>A</kbd>
+                        <span className={styles.keySeparator}>/</span>
+                        <kbd className={styles.kbd}>←</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.moveRight')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>D</kbd>
+                        <span className={styles.keySeparator}>/</span>
+                        <kbd className={styles.kbd}>→</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.jump')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>Space</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.sneak')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>Shift</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.openInventory')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>E</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.toggleDebug')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>F3</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.toggleFly')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>F4</kbd>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.hotbar')}</span>
+                      <div className={styles.controlKeys}>
+                        <kbd className={styles.kbd}>1</kbd>
+                        <span className={styles.keySeparator}>-</span>
+                        <kbd className={styles.kbd}>9</kbd>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mouse Section */}
+                  <div className={styles.controlSection}>
+                    <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
+                      {t('controls.mouse')}
+                    </h4>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.mouseMove')}</span>
+                      <div className={styles.controlKeys}>
+                        <span className={styles.mouseAction}>{language === 'zh' ? '移动鼠标' : 'Move Mouse'}</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.leftClick')}</span>
+                      <div className={styles.controlKeys}>
+                        <span className={styles.mouseAction}>{language === 'zh' ? '左键破坏' : 'Left Click (Break)'}</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.controlRow}>
+                      <span className={styles.controlLabel}>{t('controls.rightClick')}</span>
+                      <div className={styles.controlKeys}>
+                        <span className={styles.mouseAction}>{language === 'zh' ? '右键放置' : 'Right Click (Place)'}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
