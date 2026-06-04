@@ -20,6 +20,8 @@ export interface BlockProperties {
   allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
   textureFaces?: { top: number; bottom: number; side: number };
   droppedModelType?: 'block' | 'cross';
+  renderAdjacentSameType?: boolean; // 当相邻方块是相同类型时是否依然渲染邻面 (例如树叶)
+  renderInternalCross?: boolean;     // 是否在方块内部渲染交叉的斜对角平面 (例如树叶的高级效果)
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {

@@ -65,7 +65,7 @@ export class World {
     return this.renderer;
   }
 
-  public get materials(): { solid: THREE.Material; transparent: THREE.Material } {
+  public get materials(): { solid: THREE.Material; transparent: THREE.Material; cutout: THREE.Material } {
     return this.renderer.materials;
   }
 
