@@ -141,7 +141,11 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
   const handleResume = () => {
     const gm = gameManagerRef.current;
     if (gm && gm.controls) {
-      gm.controls.domElement.requestPointerLock();
+      if (gm.controls.isMobile) {
+        setGameState(GameState.PLAYING);
+      } else {
+        gm.controls.domElement.requestPointerLock();
+      }
     }
   };
 
