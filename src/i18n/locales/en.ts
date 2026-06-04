@@ -42,6 +42,7 @@ export const en = {
     done: 'Done',
     saveData: 'Save Management',
     exportSave: 'Export Save File',
+    version: 'Version: {{version}}',
   },
   controls: {
     keyboard: 'Keyboard Controls',

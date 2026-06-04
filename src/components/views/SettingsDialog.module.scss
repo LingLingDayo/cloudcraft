@@ -307,6 +307,17 @@
   font-weight: bold;
 }
 
+.versionInfo {
+  margin-top: auto;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #777777;
+  text-align: center;
+  text-shadow: 1px 1px 0px #fff;
+  user-select: none;
+  padding-top: 16px;
+}
+
 :global(.lang-zh) {
   .kbd {
     font-size: 11px !important;
@@ -316,6 +327,10 @@
   }
   .controlLabel {
     font-size: 13px !important;
+  }
+  .versionInfo {
+    font-size: 10px !important;
+    font-family: 'Press Start 2P', 'Segoe UI', Arial, sans-serif;
   }
 }
 

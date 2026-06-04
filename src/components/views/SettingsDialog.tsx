@@ -117,6 +117,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
               </button>
             ))}
           </div>
+          
+          <div className={styles.versionInfo}>
+            {t('settings.version', { version: '0.1.0' })}
+          </div>
         </div>
 
         {/* Right content page */}
