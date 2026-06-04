@@ -111,7 +111,7 @@ export class InteractionManager {
   }
 
   public onMouseDown = (e: MouseEvent) => {
-    if (!this.game.controls.isLocked) return;
+    if (!this.game.controls.isLocked && !this.game.controls.isMobile) return;
 
     if (e.button === 0) {
       if (this.game.animals && this.game.animals.checkAttack()) {

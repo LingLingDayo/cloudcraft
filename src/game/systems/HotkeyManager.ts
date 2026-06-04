@@ -177,11 +177,37 @@ export class HotkeyManager {
     return this.enabled;
   }
 
+  // For virtual buttons (mobile)
+  private virtualPressedActions: Set<GameAction> = new Set();
+
+  public setActionPressed(action: GameAction, pressed: boolean) {
+    if (pressed) {
+      if (!this.virtualPressedActions.has(action)) {
+        this.virtualPressedActions.add(action);
+        // Trigger callbacks for down
+        const callbacks = this.downCallbacks[action];
+        if (callbacks) {
+          [...callbacks].forEach(cb => cb());
+        }
+      }
+    } else {
+      if (this.virtualPressedActions.has(action)) {
+        this.virtualPressedActions.delete(action);
+        // Trigger callbacks for up
+        const callbacks = this.upCallbacks[action];
+        if (callbacks) {
+          [...callbacks].forEach(cb => cb());
+        }
+      }
+    }
+  }
+
   /**
    * Checks whether the given game action is currently active (any of its bound keys is pressed).
    */
   public isActionPressed(action: GameAction): boolean {
     if (!this.enabled) return false;
+    if (this.virtualPressedActions.has(action)) return true;
     const keys = this.bindings[action];
     if (!keys) return false;
     return keys.some(key => this.pressedKeys.has(key));

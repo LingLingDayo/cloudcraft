@@ -38,6 +38,10 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
   </svg>
 );
 
+import { SaveManager } from '@game/systems/SaveManager';
+import { GameState } from '@type';
+import { SettingsDialog } from './SettingsDialog';
+
 export const HUD: React.FC = () => {
   const { t } = useTranslation();
   const [activeLabel, setActiveLabel] = useState<string>('');
@@ -61,6 +65,144 @@ export const HUD: React.FC = () => {
   const quickMoveItem = useGameStore((state) => state.quickMoveItem);
   const closeChest = useGameStore((state) => state.closeChest);
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
+
+  const setGameState = useGameStore((state) => state.setGameState);
+
+  // Mobile support states
+  const [isMobile, setIsMobile] = useState(false);
+  const [toolbarExpanded, setToolbarExpanded] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeDirections, setActiveDirections] = useState({
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    center: false,
+  });
+
+  const dpadRef = React.useRef<HTMLDivElement>(null);
+
+  // Detect mobile environment
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window) || 
+                     (navigator.maxTouchPoints > 0);
+      setIsMobile(mobile);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Save game handler
+  const handleSave = async () => {
+    if (gameInstance) {
+      const saveData = {
+        world: gameInstance.world.saveWorld(),
+        player: {
+          x: gameInstance.player.position.x,
+          y: gameInstance.player.position.y,
+          z: gameInstance.player.position.z,
+        },
+        hotbar: useGameStore.getState().hotbar,
+        inventory: useGameStore.getState().inventory,
+        activeSlot: useGameStore.getState().activeSlot,
+        gameMode: useGameStore.getState().gameMode,
+      };
+      try {
+        await SaveManager.saveGame('default_world', saveData, t('startMenu.defaultWorldName'));
+      } catch (err) {
+        console.error('Failed to save game data:', err);
+      }
+    }
+  };
+
+  const handleQuit = async () => {
+    await handleSave();
+    setGameState(GameState.MENU);
+  };
+
+  // D-pad Touches
+  const handleDpadTouch = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    if (!dpadRef.current) return;
+
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const rect = dpadRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const tx = touch.clientX;
+    const ty = touch.clientY;
+
+    const dx = tx - cx;
+    const dy = ty - cy;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(-dy, dx); // Cartesion angle (up is positive, right is positive)
+
+    const maxRadius = rect.width / 2;
+    const centerRadius = rect.width * 0.22; // Center jump area
+
+    let up = false;
+    let down = false;
+    let left = false;
+    let right = false;
+    let center = false;
+
+    if (dist < centerRadius) {
+      center = true;
+    } else if (dist <= maxRadius * 1.5) {
+      // UP: angle is between [22.5, 157.5]
+      if (angle >= Math.PI / 8 && angle <= (7 * Math.PI) / 8) {
+        up = true;
+      }
+      // DOWN: angle is between [-157.5, -22.5]
+      if (angle >= (-7 * Math.PI) / 8 && angle <= -Math.PI / 8) {
+        down = true;
+      }
+      // RIGHT: angle is between [-67.5, 67.5]
+      if (angle >= -3 * Math.PI / 8 && angle <= 3 * Math.PI / 8) {
+        right = true;
+      }
+      // LEFT: angle is between [112.5, 180] or [-180, -112.5]
+      if (angle >= (5 * Math.PI) / 8 || angle <= (-5 * Math.PI) / 8) {
+        left = true;
+      }
+    }
+
+    setActiveDirections({ up, down, left, right, center });
+
+    // Sync state to HotkeyManager
+    hotkeyManager.setActionPressed(GameAction.MOVE_FORWARD, up);
+    hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, down);
+    hotkeyManager.setActionPressed(GameAction.MOVE_LEFT, left);
+    hotkeyManager.setActionPressed(GameAction.MOVE_RIGHT, right);
+    hotkeyManager.setActionPressed(GameAction.JUMP, center);
+  };
+
+  const handleDpadTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+
+    setActiveDirections({
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      center: false,
+    });
+
+    hotkeyManager.setActionPressed(GameAction.MOVE_FORWARD, false);
+    hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, false);
+    hotkeyManager.setActionPressed(GameAction.MOVE_LEFT, false);
+    hotkeyManager.setActionPressed(GameAction.MOVE_RIGHT, false);
+    hotkeyManager.setActionPressed(GameAction.JUMP, false);
+  };
 
   const handleQuickMove = (from: 'hotbar' | 'chest', index: number) => {
     quickMoveItem(from, index);
@@ -103,7 +245,7 @@ export const HUD: React.FC = () => {
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [setActiveSlot]);
+  }, [setActiveSlot, gameInstance]);
 
   // Show item label briefly when selected block changes
   useEffect(() => {
@@ -122,7 +264,7 @@ export const HUD: React.FC = () => {
         window.clearTimeout(timeout);
       };
     }
-  }, [selectedBlock]);
+  }, [selectedBlock, t]);
 
   // Release pointer lock when inventory opens or chest is active
   useEffect(() => {
@@ -168,6 +310,85 @@ export const HUD: React.FC = () => {
           </div>
           <div className={styles.devDetails}>
             Ground: {onGround ? 'YES' : 'NO'} | Water: {inWater ? 'YES' : 'NO'}
+          </div>
+        </div>
+      )}
+
+      {/* Collapsible Toolbar for Mobile (Top Right) */}
+      {isMobile && (
+        <div className={`${styles.mobileToolbarContainer} ${toolbarExpanded ? styles.expanded : ''}`}>
+          <button 
+            className={`${styles.toolbarToggleBtn} glass-panel`}
+            onClick={() => setToolbarExpanded(!toolbarExpanded)}
+            title={toolbarExpanded ? "Close Menu" : "Open Menu"}
+          >
+            {toolbarExpanded ? '✕' : '☰'}
+          </button>
+          
+          <div className={styles.toolbarMenu}>
+            <button 
+              className={`${styles.toolbarBtn} glass-panel`} 
+              onClick={() => {
+                setShowSettings(true);
+                setGameState(GameState.PAUSED);
+                setToolbarExpanded(false);
+              }}
+            >
+              ⚙️
+            </button>
+            <button 
+              className={`${styles.toolbarBtn} glass-panel`} 
+              onClick={() => {
+                useGameStore.getState().toggleInventory();
+                setToolbarExpanded(false);
+              }}
+            >
+              🎒
+            </button>
+            <button 
+              className={`${styles.toolbarBtn} glass-panel`} 
+              onClick={() => {
+                handleSave();
+                setToolbarExpanded(false);
+              }}
+            >
+              💾
+            </button>
+            <button 
+              className={`${styles.toolbarBtn} ${styles.danger} glass-panel`} 
+              onClick={handleQuit}
+            >
+              🚪
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile D-pad Control (Bottom Left) */}
+      {isMobile && (
+        <div 
+          className={styles.dpadContainer}
+          onTouchStart={handleDpadTouch}
+          onTouchMove={handleDpadTouch}
+          onTouchEnd={handleDpadTouchEnd}
+          onTouchCancel={handleDpadTouchEnd}
+        >
+          <div className={styles.dpad} ref={dpadRef}>
+            <div className={`${styles.dpadSector} ${styles.up} ${activeDirections.up ? styles.active : ''}`}>
+              <span className={styles.arrowIcon}>▲</span>
+            </div>
+            <div className={`${styles.dpadSector} ${styles.down} ${activeDirections.down ? styles.active : ''}`}>
+              <span className={styles.arrowIcon}>▼</span>
+            </div>
+            <div className={`${styles.dpadSector} ${styles.left} ${activeDirections.left ? styles.active : ''}`}>
+              <span className={styles.arrowIcon}>◀</span>
+            </div>
+            <div className={`${styles.dpadSector} ${styles.right} ${activeDirections.right ? styles.active : ''}`}>
+              <span className={styles.arrowIcon}>▶</span>
+            </div>
+            <div className={`${styles.dpadCenter} ${activeDirections.center ? styles.active : ''}`}>
+              <span className={styles.jumpIcon}>⏏</span>
+            </div>
           </div>
         </div>
       )}
@@ -290,6 +511,17 @@ export const HUD: React.FC = () => {
         </div>
       )}
       <Inventory />
+
+      {/* Settings Dialog directly mapped for Mobile */}
+      {showSettings && (
+        <SettingsDialog 
+          onClose={() => {
+            setShowSettings(false);
+            setGameState(GameState.PLAYING);
+          }} 
+          onSave={handleSave} 
+        />
+      )}
     </div>
   );
 };
