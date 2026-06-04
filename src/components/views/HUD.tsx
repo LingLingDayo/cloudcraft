@@ -6,7 +6,7 @@ import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
 import { useGame } from '../../context/GameContext';
-import { getBlockIconStyle } from './ItemPreviewHelper';
+import { BlockIcon } from './BlockIcon';
 
 const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
   <svg
@@ -195,10 +195,7 @@ export const HUD: React.FC = () => {
                 <span className="hotbar-slot-key">{index + 1}</span>
                 {item && props ? (
                   <>
-                    <div
-                      className="block-preview"
-                      style={getBlockIconStyle(item.type)}
-                    ></div>
+                    <BlockIcon blockId={item.type} size={24} className="block-preview" />
                     {item.count > 0 && gameMode !== 'creative' && (
                       <span className="hotbar-slot-count">{item.count}</span>
                     )}
@@ -256,7 +253,7 @@ export const HUD: React.FC = () => {
                 <div key={`c-${idx}`} className={styles.chestSlot} onClick={() => handleQuickMove('chest', idx)}>
                   {item ? (
                     <>
-                      <div className={styles.itemPreview} style={getBlockIconStyle(item.type)} />
+                      <BlockIcon blockId={item.type} size={16} className={styles.itemPreview} />
                       <span className={styles.itemCount}>{item.count}</span>
                     </>
                   ) : <div className={styles.itemEmpty} />}
@@ -270,7 +267,7 @@ export const HUD: React.FC = () => {
                 <div key={`h-${idx}`} className={styles.hotbarSlot} onClick={() => handleQuickMove('hotbar', idx)}>
                   {item ? (
                     <>
-                      <div className={styles.itemPreview} style={getBlockIconStyle(item.type)} />
+                      <BlockIcon blockId={item.type} size={16} className={styles.itemPreview} />
                       <span className={styles.itemCount}>{item.count}</span>
                     </>
                   ) : <div className={styles.itemEmpty} />}

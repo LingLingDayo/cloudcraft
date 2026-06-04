@@ -5,7 +5,7 @@ import { BLOCK_TYPES, type BlockType, getBlockProperties } from '@game/world/Blo
 import type { HotbarItem } from '@store/types';
 import styles from './Inventory.module.scss';
 import { useGame } from '../../context/GameContext';
-import { getBlockIconStyle } from './ItemPreviewHelper';
+import { BlockIcon } from './BlockIcon';
 
 // Available blocks list
 const ALL_BLOCKS: BlockType[] = [
@@ -316,10 +316,7 @@ export const Inventory: React.FC = () => {
                       onClick={() => handleSlotClick('creative', idx, blockId)}
                       title={props.name}
                     >
-                      <div
-                        className={styles.itemPreview}
-                        style={getBlockIconStyle(blockId)}
-                      />
+                      <BlockIcon blockId={blockId} size={18} className={styles.itemPreview} />
                     </div>
                   );
                 })}
@@ -341,10 +338,7 @@ export const Inventory: React.FC = () => {
                   >
                     {item ? (
                       <>
-                        <div
-                          className={styles.itemPreview}
-                          style={getBlockIconStyle(item.type)}
-                        />
+                        <BlockIcon blockId={item.type} size={18} className={styles.itemPreview} />
                         {item.count > 0 && gameMode !== 'creative' && (
                           <span className={styles.itemCount}>{item.count}</span>
                         )}
@@ -373,10 +367,7 @@ export const Inventory: React.FC = () => {
                 >
                   {item ? (
                     <>
-                      <div
-                        className={styles.itemPreview}
-                        style={getBlockIconStyle(item.type)}
-                      />
+                      <BlockIcon blockId={item.type} size={18} className={styles.itemPreview} />
                       {item.count > 0 && gameMode !== 'creative' && (
                         <span className={styles.itemCount}>{item.count}</span>
                       )}
@@ -404,10 +395,7 @@ export const Inventory: React.FC = () => {
             left: mousePos.x - 18,
           }}
         >
-          <div
-            className={styles.itemPreview}
-            style={getBlockIconStyle(heldItem.type)}
-          />
+          <BlockIcon blockId={heldItem.type} size={22} className={styles.itemPreview} />
           {heldItem.count > 0 && gameMode !== 'creative' && (
             <span className={styles.itemCount}>{heldItem.count}</span>
           )}

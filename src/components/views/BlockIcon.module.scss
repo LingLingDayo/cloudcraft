@@ -1,0 +1,48 @@
+.cubeContainer {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  perspective: none;
+  /* Prevent clicking or dragging individual faces */
+  pointer-events: none;
+}
+
+.cube {
+  --cube-size: 20px; /* Default size, can be overridden by style prop */
+  position: relative;
+  width: var(--cube-size);
+  height: var(--cube-size);
+  transform-style: preserve-3d;
+  /* Standard isometric projection: tilt and rotate */
+  transform: rotateX(-30deg) rotateY(45deg);
+  pointer-events: none;
+  /* Add a slight vertical offset to center the projected isometric cube visually */
+  top: -1px;
+}
+
+.face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  backface-visibility: hidden;
+  box-sizing: border-box;
+}
+
+.faceTop {
+  transform: rotateX(90deg) translateZ(calc(var(--cube-size) / 2));
+  filter: brightness(1.1); /* Top is brightest */
+}
+
+.faceLeft {
+  transform: rotateY(-90deg) translateZ(calc(var(--cube-size) / 2));
+  filter: brightness(0.85); /* Left side is slightly shaded */
+}
+
+.faceRight {
+  transform: translateZ(calc(var(--cube-size) / 2));
+  filter: brightness(0.7); /* Right side is darker */
+}
