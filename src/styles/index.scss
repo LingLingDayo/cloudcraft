@@ -529,7 +529,7 @@ body, html {
 }
 
 /* 中文模式字体与对齐优化，避免 Press Start 2P 导致的字体过小、不对齐 */
-:global(.lang-zh) {
+.lang-zh {
   // 强制设置弹窗内的所有元素不使用 Press Start 2P 字体
   .settings-dialog-container,
   .settings-dialog-container * {
@@ -538,18 +538,13 @@ body, html {
 
   // 原来使用 Press Start 2P 的全部类和元素统一替换为 Outfit 以及系统无衬线字体
   .pixel-text,
-  :global(.pixel-text),
   .btn-primary,
   .btn-secondary,
-  .btn-danger,
-  :global(.btn-primary),
-  :global(.btn-secondary),
-  :global(.btn-danger) {
+  .btn-danger {
     font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
   }
 
-  .pixel-text-sm,
-  :global(.pixel-text-sm) {
+  .pixel-text-sm {
     font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
     font-size: 13px !important;
   }
@@ -557,10 +552,7 @@ body, html {
   // 匹配所有组件（如 Input, Select, Switch, Slider）中可能生成的 label 文本
   label,
   span[class*="label"],
-  div[class*="label"],
-  :global(label),
-  :global(span[class*="label"]),
-  :global(div[class*="label"]) {
+  div[class*="label"] {
     font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
     font-size: 12px !important;
     font-weight: bold !important;
@@ -573,13 +565,7 @@ body, html {
   select,
   span[class*="selectedText"],
   div[class*="option"],
-  div[class*="trigger"],
-  :global(input),
-  :global(button),
-  :global(select),
-  :global(span[class*="selectedText"]),
-  :global(div[class*="option"]),
-  :global(div[class*="trigger"]) {
+  div[class*="trigger"] {
     font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
     font-size: 13px !important;
   }
