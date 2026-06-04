@@ -132,6 +132,7 @@ export const zh = {
     24: '桦树树苗',
     25: '松树树苗',
     26: '丛林树苗',
+    27: '生猪肉',
   },
 };
 export default zh;

@@ -500,9 +500,46 @@ export function generateTextureAtlas(): THREE.Texture {
   // 31: Jungle Sapling
   drawSaplingTexture(31, 'rgb(26, 95, 18)');
 
+  // 32: Raw Porkchop
+  {
+    const sx = (32 % 8) * tileSize;
+    const sy = Math.floor(32 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+
+    // Fleshy red-pink body
+    ctx.fillStyle = 'rgb(224, 120, 144)';
+    ctx.fillRect(sx + 3, sy + 3, 10, 10);
+    ctx.fillRect(sx + 4, sy + 2, 8, 12);
+    ctx.fillRect(sx + 2, sy + 4, 12, 8);
+    
+    // Dark meat borders
+    ctx.fillStyle = 'rgb(180, 80, 100)';
+    ctx.fillRect(sx + 2, sy + 4, 1, 8);
+    ctx.fillRect(sx + 13, sy + 4, 1, 8);
+    ctx.fillRect(sx + 4, sy + 2, 8, 1);
+    ctx.fillRect(sx + 4, sy + 13, 8, 1);
+    ctx.fillRect(sx + 5, sy + 5, 2, 2);
+    ctx.fillRect(sx + 9, sy + 8, 2, 1);
+
+    // Fat marbling corners
+    ctx.fillStyle = 'rgb(245, 200, 210)';
+    ctx.fillRect(sx + 3, sy + 3, 2, 1);
+    ctx.fillRect(sx + 11, sy + 3, 2, 1);
+    ctx.fillRect(sx + 3, sy + 12, 2, 1);
+    ctx.fillRect(sx + 11, sy + 12, 2, 1);
+
+    // White T-bone in the middle
+    ctx.fillStyle = 'rgb(255, 255, 255)';
+    ctx.fillRect(sx + 7, sy + 6, 2, 3);
+    ctx.fillRect(sx + 6, sy + 7, 4, 1);
+    ctx.fillStyle = 'rgb(220, 220, 220)';
+    ctx.fillRect(sx + 7, sy + 9, 2, 1);
+    ctx.fillRect(sx + 8, sy + 7, 1, 2);
+  }
+
   try {
     cachedDataURL = canvas.toDataURL();
-  } catch (e) {
+  } catch (_e) {
     cachedDataURL = '';
   }
 

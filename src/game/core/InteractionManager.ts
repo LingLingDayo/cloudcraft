@@ -113,6 +113,41 @@ export class InteractionManager {
   public onMouseDown = (e: MouseEvent) => {
     if (!this.game.controls.isLocked) return;
 
+    if (e.button === 0) {
+      if (this.game.animals && this.game.animals.checkAttack()) {
+        return;
+      }
+    }
+
+    if (e.button === 2) {
+      const activeSlot = useGameStore.getState().activeSlot;
+      const hotbar = useGameStore.getState().hotbar;
+      const heldItem = hotbar[activeSlot];
+      if (heldItem && heldItem.type === BLOCK_TYPES.PORKCHOP) {
+        if (this.game.player.life < 10) {
+          this.game.player.life = Math.min(10, this.game.player.life + 2);
+          sound.playPickup(); // eating sound fallback
+          
+          const isCreative = useGameStore.getState().gameMode === 'creative';
+          if (!isCreative) {
+            useGameStore.getState().decrementHotbarItem(activeSlot);
+          }
+          
+          useGameStore.getState().setPlayerState(
+            {
+              x: this.game.player.position.x,
+              y: this.game.player.position.y,
+              z: this.game.player.position.z,
+            },
+            this.game.player.state.onGround,
+            this.game.player.state.inWater,
+            this.game.player.life
+          );
+          return;
+        }
+      }
+    }
+
     this.updateTargetedBlock();
 
     if (!this.targetedBlockInfo) return;
