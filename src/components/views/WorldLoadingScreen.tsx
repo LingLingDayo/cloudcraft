@@ -6,36 +6,41 @@ import styles from './WorldLoadingScreen.module.scss';
 // Generate procedural pixelated dirt texture for tiling background
 const generateDirtBackground = (): string => {
   if (typeof document === 'undefined') return '';
-  const canvas = document.createElement('canvas');
-  canvas.width = 16;
-  canvas.height = 16;
-  const ctx = canvas.getContext('2d')!;
-  
-  // Base noise
-  for (let py = 0; py < 16; py += 2) {
-    for (let px = 0; px < 16; px += 2) {
-      const n = (Math.random() - 0.5) * 15;
-      const r = Math.min(255, Math.max(0, 100 + n));
-      const g = Math.min(255, Math.max(0, 72 + n));
-      const b = Math.min(255, Math.max(0, 50 + n));
-      ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
-      ctx.fillRect(px, py, 2, 2);
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    
+    // Base noise
+    for (let py = 0; py < 16; py += 2) {
+      for (let px = 0; px < 16; px += 2) {
+        const n = (Math.random() - 0.5) * 15;
+        const r = Math.min(255, Math.max(0, 100 + n));
+        const g = Math.min(255, Math.max(0, 72 + n));
+        const b = Math.min(255, Math.max(0, 50 + n));
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(px, py, 2, 2);
+      }
     }
+    
+    // Dark spots
+    ctx.fillStyle = 'rgb(75, 52, 34)';
+    for (let i = 0; i < 6; i++) {
+      ctx.fillRect(Math.floor(Math.random() * 8) * 2, Math.floor(Math.random() * 8) * 2, 2, 2);
+    }
+    
+    // Light highlights
+    ctx.fillStyle = 'rgb(120, 88, 62)';
+    for (let i = 0; i < 5; i++) {
+      ctx.fillRect(Math.floor(Math.random() * 8) * 2, Math.floor(Math.random() * 8) * 2, 2, 1);
+    }
+    
+    return canvas.toDataURL();
+  } catch {
+    return '';
   }
-  
-  // Dark spots
-  ctx.fillStyle = 'rgb(75, 52, 34)';
-  for (let i = 0; i < 6; i++) {
-    ctx.fillRect(Math.floor(Math.random() * 8) * 2, Math.floor(Math.random() * 8) * 2, 2, 2);
-  }
-  
-  // Light highlights
-  ctx.fillStyle = 'rgb(120, 88, 62)';
-  for (let i = 0; i < 5; i++) {
-    ctx.fillRect(Math.floor(Math.random() * 8) * 2, Math.floor(Math.random() * 8) * 2, 2, 1);
-  }
-  
-  return canvas.toDataURL();
 };
 
 export const WorldLoadingScreen: React.FC = () => {
@@ -80,27 +85,11 @@ export const WorldLoadingScreen: React.FC = () => {
   // Combine mock progress and store progress
   const displayProgress = stage === 'engine' ? Math.min(29, mockProgress) : progress;
 
-  // Localized texts
-  const titleText = t('worldLoading.title');
   const loadedCount = Object.values(chunkStates).filter(Boolean).length;
   const totalCount = Object.keys(chunkStates).length;
   const stageText = stage === 'engine' 
     ? t('worldLoading.engine')
     : t('worldLoading.chunks', { loaded: loadedCount, total: totalCount });
-
-  // Create loading grid grid coordinates mapping
-  // We assume a 5x5 grid (radius 2) based on standard spawn radius
-  const gridItems = useMemo(() => {
-    const keys = Object.keys(chunkStates);
-    if (keys.length === 0) {
-      // Return 25 empty placeholder slots for engine stage
-      return Array(25).fill(false);
-    }
-    
-    // Sort keys based on coordinates to render from top-left to bottom-right
-    // keys are formatted as "cx,cz"
-    return keys.map((key) => chunkStates[key]);
-  }, [chunkStates]);
 
   if (!isWorldLoading) return null;
 
@@ -112,36 +101,23 @@ export const WorldLoadingScreen: React.FC = () => {
       <div className={styles.overlay} />
       
       <div className={styles.content}>
-        <h1 className="pixel-text">{titleText}</h1>
-        
-        {/* Minecraft 1.14+ Chunk Loading Grid */}
-        <div className={styles.gridContainer}>
-          <div className={styles.gridOuterBorder}>
-            <div className={styles.gridInner}>
-              {gridItems.map((isLoaded, index) => (
-                <div 
-                  key={index} 
-                  className={`${styles.gridCell} ${isLoaded ? styles.loaded : styles.pending}`}
-                />
-              ))}
-            </div>
-          </div>
+        <div className={styles.logoContainer}>
+          <h1 className={`${styles.logoText} pixel-text`}>MINICRAFT</h1>
         </div>
 
-        {/* Progress Bar (Minecraft-like double border outline) */}
-        <div className={styles.progressBarWrapper}>
-          <div className={styles.progressBar}>
+        {/* Loading status bar container */}
+        <div className={styles.progressBarContainer}>
+          <div className={styles.progressBarHeader}>
+            <span className={`${styles.stageText} pixel-text-sm`}>{stageText}</span>
+            <span className={`${styles.progressPercent} pixel-text-sm`}>{displayProgress}%</span>
+          </div>
+          
+          <div className={styles.progressBarOuter}>
             <div 
-              className={styles.progressFill}
+              className={styles.progressBarInner}
               style={{ width: `${displayProgress}%` }}
             />
           </div>
-        </div>
-
-        {/* Info stats */}
-        <div className={styles.metaInfo}>
-          <div className={`${styles.progressPercent} pixel-text`}>{displayProgress}%</div>
-          <div className={styles.stageText}>{stageText}</div>
         </div>
       </div>
     </div>
