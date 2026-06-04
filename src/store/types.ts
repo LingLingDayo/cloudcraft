@@ -8,12 +8,14 @@ export interface GameSlice {
   gameMode: GameMode;
   language: Language;
   autoJump: boolean;
+  miningProgress: number | null;
   setGameState: (state: GameState) => void;
   setRenderDistance: (dist: number) => void;
   setFov: (fov: number) => void;
   setGameMode: (mode: GameMode) => void;
   setLanguage: (lang: Language) => void;
   setAutoJump: (autoJump: boolean) => void;
+  setMiningProgress: (progress: number | null) => void;
 }
 
 export interface PlayerSlice {
@@ -48,7 +50,7 @@ export interface PlayerSlice {
   closeInventory: () => void;
   toggleInventory: () => void;
   setInventory: (inventory: (HotbarItem | null)[]) => void;
-  quickMoveItem: (from: 'hotbar' | 'chest', index: number, onSyncToWorld?: (items: (HotbarItem | null)[]) => void) => void;
+  quickMoveItem: (from: 'hotbar' | 'chest', index: number) => void;
 }
 
 

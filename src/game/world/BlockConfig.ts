@@ -22,6 +22,8 @@ export interface BlockProperties {
   droppedModelType?: 'block' | 'cross';
   renderAdjacentSameType?: boolean; // 当相邻方块是相同类型时是否依然渲染邻面 (例如树叶)
   renderInternalCross?: boolean;     // 是否在方块内部渲染交叉的斜对角平面 (例如树叶的高级效果)
+  isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
+  canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
@@ -352,7 +354,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.OAK_SAPLING]: {
     id: BLOCK_TYPES.OAK_SAPLING,
     name: '橡树树苗',
-    isSolid: true,
+    isSolid: false,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -365,11 +367,13 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     colorHex: 0x4c9436,
     textureFaces: { top: 28, bottom: 28, side: 28 },
     droppedModelType: 'cross',
+    isCollidable: false,
+    canSpawnOn: false,
   },
   [BLOCK_TYPES.BIRCH_SAPLING]: {
     id: BLOCK_TYPES.BIRCH_SAPLING,
     name: '桦树树苗',
-    isSolid: true,
+    isSolid: false,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -382,11 +386,13 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     colorHex: 0x8fc04e,
     textureFaces: { top: 29, bottom: 29, side: 29 },
     droppedModelType: 'cross',
+    isCollidable: false,
+    canSpawnOn: false,
   },
   [BLOCK_TYPES.SPRUCE_SAPLING]: {
     id: BLOCK_TYPES.SPRUCE_SAPLING,
     name: '松树树苗',
-    isSolid: true,
+    isSolid: false,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -399,11 +405,13 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     colorHex: 0x2d5a27,
     textureFaces: { top: 30, bottom: 30, side: 30 },
     droppedModelType: 'cross',
+    isCollidable: false,
+    canSpawnOn: false,
   },
   [BLOCK_TYPES.JUNGLE_SAPLING]: {
     id: BLOCK_TYPES.JUNGLE_SAPLING,
     name: '丛林树苗',
-    isSolid: true,
+    isSolid: false,
     isTransparent: true,
     isLiquid: false,
     hardness: 0,
@@ -416,6 +424,8 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     colorHex: 0x1a5f12,
     textureFaces: { top: 31, bottom: 31, side: 31 },
     droppedModelType: 'cross',
+    isCollidable: false,
+    canSpawnOn: false,
   },
 };
 
@@ -431,7 +441,12 @@ export function setPropertiesResolver(resolver: (blockId: number) => BlockProper
 
 // Helper function to safely fetch properties of any block ID, defaulting to AIR properties
 export function getBlockProperties(blockId: number): BlockProperties {
-  return propertiesResolver(blockId & 0x3F);
+  const props = propertiesResolver(blockId & 0x3F);
+  return {
+    ...props,
+    isCollidable: props.isCollidable ?? props.isSolid,
+    canSpawnOn: props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid)
+  };
 }
 
 

@@ -15,6 +15,7 @@ export const createGameSlice: StateCreator<
   gameMode: GameMode.ADVENTURE,
   language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as Language : 'zh') || 'zh',
   autoJump: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_auto_jump') !== 'false' : true,
+  miningProgress: null,
 
   setGameState: (gameState) => set({ gameState }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
@@ -58,5 +59,6 @@ export const createGameSlice: StateCreator<
     }
     return { autoJump };
   }),
+  setMiningProgress: (miningProgress) => set({ miningProgress }),
 });
 

@@ -35,10 +35,6 @@ export class GameManager {
   // UI update throttling
   private lastUiUpdateTime = 0;
 
-  // Day-Night cycle lights exposed publicly for EnvironmentManager
-  public dirLight!: THREE.DirectionalLight;
-  public hemiLight!: THREE.HemisphereLight;
-
   // Settings
   public renderDistance = 3;
 
@@ -75,26 +71,6 @@ export class GameManager {
     this.scene.fog = new THREE.FogExp2(0x7ec0ee, 0.015);
 
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    
-    this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-    this.hemiLight.position.set(0, 50, 0);
-    this.scene.add(this.hemiLight);
-
-    this.dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    this.dirLight.position.set(20, 40, 20);
-    this.dirLight.castShadow = true;
-    
-    this.dirLight.shadow.mapSize.width = 1024;
-    this.dirLight.shadow.mapSize.height = 1024;
-    this.dirLight.shadow.camera.near = 0.5;
-    this.dirLight.shadow.camera.far = 150;
-    const d = 40;
-    this.dirLight.shadow.camera.left = -d;
-    this.dirLight.shadow.camera.right = d;
-    this.dirLight.shadow.camera.top = d;
-    this.dirLight.shadow.camera.bottom = -d;
-    this.dirLight.shadow.bias = -0.0005;
-    this.scene.add(this.dirLight);
   }
 
   private initGame(seed: string) {
@@ -208,7 +184,6 @@ export class GameManager {
       if (this.droppedItems) this.droppedItems.update(dt);
       this.world.update(dt);
 
-
       const currentMs = performance.now();
       if (currentMs - this.lastUiUpdateTime > 100) {
         this.lastUiUpdateTime = currentMs;
@@ -226,6 +201,13 @@ export class GameManager {
           useGameStore.getState().setDebugMetrics(this.getDebugMetrics());
         }
       }
+    } else {
+      // Background continues when game is paused/menus open
+      if (this.environment) this.environment.update(dt);
+      if (this.player) {
+        this.world.loadArea(this.player.position.x, this.player.position.z, this.renderDistance);
+      }
+      this.world.update(dt);
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -286,7 +268,7 @@ export class GameManager {
     if (this.renderer) this.renderer.dispose();
 
     if (this.environment) {
-      // environment is simple and doesn't need custom dispose resources at the moment, but is structured in case.
+      this.environment.dispose();
     }
     if (this.interaction) this.interaction.dispose();
     if (this.droppedItems) this.droppedItems.dispose();

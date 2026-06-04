@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, getBlockProperties, BLOCK_TYPES } from '@game/world/World';
+import { World, getBlockProperties } from '@game/world/World';
 
 /**
  * 自研体素物理引擎 (Voxel Physics)
@@ -43,19 +43,8 @@ export class VoxelPhysics {
     return getBlockProperties(blockId).isSolid;
   }
 
-  private isSapling(blockId: number): boolean {
-    const cleanId = blockId & 0x3F;
-    return (
-      cleanId === BLOCK_TYPES.OAK_SAPLING ||
-      cleanId === BLOCK_TYPES.BIRCH_SAPLING ||
-      cleanId === BLOCK_TYPES.SPRUCE_SAPLING ||
-      cleanId === BLOCK_TYPES.JUNGLE_SAPLING
-    );
-  }
-
   public isCollidable(blockId: number): boolean {
-    if (this.isSapling(blockId)) return false;
-    return this.isSolid(blockId);
+    return getBlockProperties(blockId).isCollidable ?? getBlockProperties(blockId).isSolid;
   }
 
   // Get bounding box of the player
