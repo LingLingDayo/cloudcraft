@@ -9,6 +9,169 @@ import { isMobileDevice } from '../../utils/device';
 import { clamp } from '../../utils/math';
 import styles from './MobileControls.module.scss';
 
+// Pixel Art Icons
+const PixelGearIcon: React.FC = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 16 16"
+    style={{ imageRendering: 'pixelated' }}
+  >
+    <path
+      d="M7,2h2v2h-2z M7,12h2v2h-2z M2,7h2v2h-2z M12,7h2v2h-2z M3,3h1v1h-1z M4,4h1v1h-1z M12,3h1v1h-1z M11,4h1v1h-1z M3,12h1v1h-1z M4,11h1v1h-1z M12,12h1v1h-1z M11,11h1v1h-1z M6,4h4v1h-4z M4,6h1v4h-1z M11,6h1v4h-1z M6,11h4v1h-4z M5,5h1v1h-1z M10,5h1v1h-1z M5,10h1v1h-1z M10,10h1v1h-1z"
+      fill="#212121"
+    />
+    <path
+      d="M7,6h2v1h-2z M7,9h2v1h-2z M6,7h1v2h-1z M9,7h1v2h-1z"
+      fill="#212121"
+    />
+    <path
+      d="M7,3h2v1h-2z M7,12h2v1h-2z M3,7h1v2h-1z M12,7h1v2h-1z M4,4h1v1h-1z M11,4h1v1h-1z M4,11h1v1h-1z M11,11h1v1h-1z M6,5h4v1h-4z M5,6h6v1h-6z M4,7h2v2h-2z M10,7h2v2h-2z M5,9h6v1h-6z M6,10h4v1h-4z"
+      fill="#aaaaaa"
+    />
+    <path
+      d="M7,3h1v1h-1z M4,4h1v1h-1z M6,5h2v1h-2z M5,6h1v1h-1z M3,7h1v1h-1z M4,7h1v1h-1z M7,6h1v1h-1z M6,7h1v2h-1z"
+      fill="#ffffff"
+    />
+    <path
+      d="M8,3h1v1h-1z M11,4h1v1h-1z M9,5h1v1h-1z M10,6h1v1h-1z M12,8h1v1h-1z M11,8h1v1h-1z M8,9h1v1h-1z M9,7h1v2h-1z M8,10h2v1h-2z M8,12h1v1h-1z M11,11h1v1h-1z M4,11h1v1h-1z"
+      fill="#555555"
+    />
+  </svg>
+);
+
+const PixelChestIcon: React.FC = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 16 16"
+    style={{ imageRendering: 'pixelated' }}
+  >
+    <path
+      d="M2,2h12v1h-12z M2,13h12v1h-12z M2,3h1v10h-1z M13,3h1v10h-1z M3,7h10v1h-10z M7,6h2v3h-2z"
+      fill="#212121"
+    />
+    <path
+      d="M3,3h10v3h-10z M3,6h4v1h-4z M9,6h4v1h-4z"
+      fill="#d97d4b"
+    />
+    <path
+      d="M3,8h4v5h-4z M9,8h4v5h-4z M7,9h2v4h-2z"
+      fill="#a0522d"
+    />
+    <path
+      d="M7,7h2v2h-2z"
+      fill="#ffcc00"
+    />
+    <path
+      d="M8,8h1v1h-1z"
+      fill="#b35d32"
+    />
+  </svg>
+);
+
+const PixelSaveIcon: React.FC = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 16 16"
+    style={{ imageRendering: 'pixelated' }}
+  >
+    <path
+      d="M2,2h11v1h-11z M13,3h1v1h-1z M14,4h1v10h-1z M2,14h12v1h-12z M2,3h1v11h-1z M4,8h8v6h-8z M5,2h5v4h-5z"
+      fill="#212121"
+    />
+    <path
+      d="M3,3h2v4h-2z M10,3h3v1h-3z M10,4h4v3h-4z M3,7h11v1h-11z M3,8h1v6h-1z M12,8h2v6h-2z M4,13h8v1h-8z"
+      fill="#3c5e8a"
+    />
+    <path
+      d="M5,3h5v3h-5z"
+      fill="#c6c6c6"
+    />
+    <path
+      d="M6,3h1v2h-1z"
+      fill="#7e7e7e"
+    />
+    <path
+      d="M5,9h6v4h-6z"
+      fill="#f3f3f3"
+    />
+    <path
+      d="M6,10h4v1h-4z M6,12h4v1h-4z"
+      fill="#ff4d4d"
+    />
+  </svg>
+);
+
+const PixelQuitIcon: React.FC = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 16 16"
+    style={{ imageRendering: 'pixelated' }}
+  >
+    <path
+      d="M3,1h8v1h-8z M11,2h1v13h-1z M3,15h8v1h-8z M3,2h1v13h-1z M5,3h4v4h-4z M9,8h1v2h-1z"
+      fill="#212121"
+    />
+    <path
+      d="M4,2h7v1h-7z M4,3h1v4h-1z M9,3h2v4h-2z M4,7h7v1h-7z M4,8h5v7h-5z M9,10h2v5h-2z M10,8h1v2h-1z"
+      fill="#c48a52"
+    />
+    <path
+      d="M5,4h4v3h-4z"
+      fill="#8bc5ff"
+    />
+    <path
+      d="M5,4h2v1h-2z"
+      fill="#ffffff"
+    />
+    <path
+      d="M9,9h1v1h-1z"
+      fill="#ffcc00"
+    />
+  </svg>
+);
+
+const PixelHamburgerIcon: React.FC = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 16 16"
+    style={{ imageRendering: 'pixelated' }}
+  >
+    <path
+      d="M2,3h12v2h-12z M2,7h12v2h-12z M2,11h12v2h-12z"
+      fill="#212121"
+    />
+    <path
+      d="M3,4h10v1h-10z M3,8h10v1h-10z M3,12h10v1h-10z"
+      fill="#ffffff"
+    />
+  </svg>
+);
+
+const PixelCloseIcon: React.FC = () => (
+  <svg
+    width="24"
+    height="24"
+    viewBox="0 0 16 16"
+    style={{ imageRendering: 'pixelated' }}
+  >
+    <path
+      d="M3,2h3v1h-3z M4,3h3v1h-3z M5,4h3v1h-3z M6,5h4v1h-4z M6,6h1v4h-1z M9,6h1v4h-1z M6,10h4v1h-4z M5,11h3v1h-3z M4,12h3v1h-3z M3,13h3v1h-3z
+         M10,2h3v1h-3z M9,3h3v1h-3z M8,4h3v1h-3z M8,11h3v1h-3z M9,12h3v1h-3z M10,13h3v1h-3z"
+      fill="#212121"
+    />
+    <path
+      d="M4,2h1v1h-1z M5,3h1v1h-1z M6,4h1v1h-1z M7,5h2v1h-2z M7,6h2v4h-2z M7,10h2v1h-2z M6,11h1v1h-1z M5,12h1v1h-1z M4,13h1v1h-1z
+         M11,2h1v1h-1z M10,3h1v1h-1z M9,4h1v1h-1z M9,11h1v1h-1z M10,12h1v1h-1z M11,13h1v1h-1z"
+      fill="#ef4444"
+    />
+  </svg>
+);
+
 export const MobileControls: React.FC = () => {
   const { t } = useTranslation();
   const gameInstance = useGame();
@@ -147,19 +310,20 @@ export const MobileControls: React.FC = () => {
           onClick={() => setToolbarExpanded(!toolbarExpanded)}
           title={toolbarExpanded ? "Close Menu" : "Open Menu"}
         >
-          {toolbarExpanded ? '✕' : '☰'}
+          {toolbarExpanded ? <PixelCloseIcon /> : <PixelHamburgerIcon />}
         </button>
         
         <div className={styles.toolbarMenu}>
           <button 
             className={`${styles.toolbarBtn} glass-panel`} 
             onClick={() => {
-              setIsSettingsOpen(true, 'hud');
+              setIsSettingsOpen(false);
               setGameState(GameState.PAUSED);
               setToolbarExpanded(false);
             }}
+            title={t('settings.title')}
           >
-            ⚙️
+            <PixelGearIcon />
           </button>
           <button 
             className={`${styles.toolbarBtn} glass-panel`} 
@@ -167,8 +331,9 @@ export const MobileControls: React.FC = () => {
               useGameStore.getState().toggleInventory();
               setToolbarExpanded(false);
             }}
+            title={t('controls.openInventory')}
           >
-            🎒
+            <PixelChestIcon />
           </button>
           <button 
             className={`${styles.toolbarBtn} glass-panel`} 
@@ -176,14 +341,16 @@ export const MobileControls: React.FC = () => {
               handleSave();
               setToolbarExpanded(false);
             }}
+            title={t('pauseMenu.save')}
           >
-            💾
+            <PixelSaveIcon />
           </button>
           <button 
             className={`${styles.toolbarBtn} ${styles.danger} glass-panel`} 
             onClick={handleQuit}
+            title={t('pauseMenu.quit')}
           >
-            🚪
+            <PixelQuitIcon />
           </button>
         </div>
       </div>
