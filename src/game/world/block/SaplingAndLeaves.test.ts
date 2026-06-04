@@ -38,6 +38,22 @@ describe('Saplings and Leaves Decay/Growth Systems', () => {
     expect(jungleSapling.name).toBe('丛林树苗');
   });
 
+  test('should register leaf blocks with renderAdjacentSameType and renderInternalCross properties', () => {
+    const leafTypes = [
+      BLOCK_TYPES.LEAF,
+      BLOCK_TYPES.BIRCH_LEAVES,
+      BLOCK_TYPES.SPRUCE_LEAVES,
+      BLOCK_TYPES.JUNGLE_LEAVES
+    ];
+
+    for (const type of leafTypes) {
+      const block = BlockRegistry.get(type);
+      expect(block).toBeDefined();
+      expect(block.properties.renderAdjacentSameType).toBe(true);
+      expect(block.properties.renderInternalCross).toBe(true);
+    }
+  });
+
   test('leaf blocks should not drop leaf blocks when broken, but may drop saplings', () => {
     const leaf = BlockRegistry.get(BLOCK_TYPES.LEAF);
     const drops = leaf.getDrops();

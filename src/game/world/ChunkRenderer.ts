@@ -7,8 +7,8 @@ import type { World } from './World';
 export class ChunkRenderer {
   private world: World;
   private textureAtlas: THREE.Texture;
-  public materials: { solid: THREE.Material; transparent: THREE.Material };
-  private chunkMeshes: Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh }>;
+  public materials: { solid: THREE.Material; transparent: THREE.Material; cutout: THREE.Material };
+  private chunkMeshes: Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }>;
 
   constructor(world: World) {
     this.world = world;
@@ -35,6 +35,16 @@ export class ChunkRenderer {
         side: THREE.DoubleSide,
         depthWrite: false, // Prevents depth buffer issues with water
       }),
+      cutout: new THREE.MeshStandardMaterial({
+        map: this.textureAtlas,
+        roughness: 0.8,
+        metalness: 0.1,
+        transparent: false,
+        alphaTest: 0.5,
+        depthWrite: true,
+        side: THREE.DoubleSide,
+        shadowSide: THREE.DoubleSide,
+      }),
     };
   }
 
@@ -48,9 +58,11 @@ export class ChunkRenderer {
 
     const solidGeom = new THREE.BufferGeometry();
     const transGeom = new THREE.BufferGeometry();
+    const cutoutGeom = new THREE.BufferGeometry();
 
     const solidData = { positions: [] as number[], normals: [] as number[], uvs: [] as number[] };
     const transData = { positions: [] as number[], normals: [] as number[], uvs: [] as number[] };
+    const cutoutData = { positions: [] as number[], normals: [] as number[], uvs: [] as number[] };
 
     const worldStartX = cx * CHUNK_SIZE_X;
     const worldStartZ = cz * CHUNK_SIZE_Z;
@@ -114,8 +126,14 @@ export class ChunkRenderer {
 
           if (blockType === BLOCK_TYPES.AIR) continue;
 
-          const isTrans = getBlockProperties(blockType).opacity < 1.0;
-          const data = isTrans ? transData : solidData;
+          const props = getBlockProperties(blockType);
+          const isLiquid = props.isLiquid;
+          const isTrans = props.opacity < 1.0 || props.isTransparent;
+
+          let data = solidData;
+          if (isTrans) {
+            data = isLiquid ? transData : cutoutData;
+          }
 
           const wx = worldStartX + x;
           const wz = worldStartZ + z;
@@ -125,11 +143,15 @@ export class ChunkRenderer {
             
             // Draw face if:
             // 1. Neighbor is air/transparent
-            // 2. OR neighbor is the same transparent block (stops internal rendering of the same transparent type)
+            // 2. OR neighbor is the same transparent block (stops internal rendering of the same transparent type unless renderAdjacentSameType is true)
             let drawFace = false;
             if (this.world.isTransparent(neighbor)) {
               if (blockType === neighbor) {
-                drawFace = false;
+                if (props.renderAdjacentSameType) {
+                  drawFace = true;
+                } else {
+                  drawFace = false;
+                }
               } else {
                 drawFace = true;
               }
@@ -210,6 +232,65 @@ export class ChunkRenderer {
               );
             }
           }
+
+          // If the block is configured to render internal cross planes
+          if (props.renderInternalCross) {
+            const atlasIndex = props.textureFaces?.side ?? 3;
+            const tx = atlasIndex % 8;
+            const ty = 7 - Math.floor(atlasIndex / 8);
+            
+            const uMin = tx * 0.125;
+            const uMax = (tx + 1) * 0.125;
+            const vMin = ty * 0.125;
+            const vMax = (ty + 1) * 0.125;
+
+            const uv0 = [uMin, vMin];
+            const uv1 = [uMin, vMax];
+            const uv2 = [uMax, vMax];
+            const uv3 = [uMax, vMin];
+
+            // Diagonal Plane 1 Positions
+            const p1_0 = [wx, y, wz];
+            const p1_1 = [wx, y + 1, wz];
+            const p1_2 = [wx + 1, y + 1, wz + 1];
+            const p1_3 = [wx + 1, y, wz + 1];
+
+            cutoutData.positions.push(...p1_0, ...p1_1, ...p1_2);
+            cutoutData.positions.push(...p1_0, ...p1_2, ...p1_3);
+
+            // Diagonal Plane 1 UVs
+            cutoutData.uvs.push(
+              ...uv0, ...uv1, ...uv2,
+              ...uv0, ...uv2, ...uv3
+            );
+
+            // Diagonal Plane 1 Normals
+            const n1 = [-Math.SQRT1_2, 0, Math.SQRT1_2];
+            for (let i = 0; i < 6; i++) {
+              cutoutData.normals.push(...n1);
+            }
+
+            // Diagonal Plane 2 Positions
+            const p2_0 = [wx + 1, y, wz];
+            const p2_1 = [wx + 1, y + 1, wz];
+            const p2_2 = [wx, y + 1, wz + 1];
+            const p2_3 = [wx, y, wz + 1];
+
+            cutoutData.positions.push(...p2_0, ...p2_1, ...p2_2);
+            cutoutData.positions.push(...p2_0, ...p2_2, ...p2_3);
+
+            // Diagonal Plane 2 UVs
+            cutoutData.uvs.push(
+              ...uv0, ...uv1, ...uv2,
+              ...uv0, ...uv2, ...uv3
+            );
+
+            // Diagonal Plane 2 Normals
+            const n2 = [Math.SQRT1_2, 0, Math.SQRT1_2];
+            for (let i = 0; i < 6; i++) {
+              cutoutData.normals.push(...n2);
+            }
+          }
         }
       }
     }
@@ -228,19 +309,30 @@ export class ChunkRenderer {
       transGeom.setAttribute('uv', new THREE.Float32BufferAttribute(transData.uvs, 2));
       transGeom.computeBoundingSphere();
     }
+    // Set cutout geometry arrays
+    if (cutoutData.positions.length > 0) {
+      cutoutGeom.setAttribute('position', new THREE.Float32BufferAttribute(cutoutData.positions, 3));
+      cutoutGeom.setAttribute('normal', new THREE.Float32BufferAttribute(cutoutData.normals, 3));
+      cutoutGeom.setAttribute('uv', new THREE.Float32BufferAttribute(cutoutData.uvs, 2));
+      cutoutGeom.computeBoundingSphere();
+    }
 
     const solidMesh = new THREE.Mesh(solidGeom, this.materials.solid);
     const transMesh = new THREE.Mesh(transGeom, this.materials.transparent);
+    const cutoutMesh = new THREE.Mesh(cutoutGeom, this.materials.cutout);
 
     solidMesh.castShadow = true;
     solidMesh.receiveShadow = true;
+    cutoutMesh.castShadow = true;
+    cutoutMesh.receiveShadow = true;
 
     // Add to group
     this.world.group.add(solidMesh);
     this.world.group.add(transMesh);
+    this.world.group.add(cutoutMesh);
 
     // Save references to meshes
-    this.chunkMeshes.set(key, { solid: solidMesh, transparent: transMesh });
+    this.chunkMeshes.set(key, { solid: solidMesh, transparent: transMesh, cutout: cutoutMesh });
   }
 
   public removeChunkMesh(key: string): void {
@@ -248,13 +340,17 @@ export class ChunkRenderer {
     if (oldMeshes) {
       this.world.group.remove(oldMeshes.solid);
       this.world.group.remove(oldMeshes.transparent);
+      if (oldMeshes.cutout) {
+        this.world.group.remove(oldMeshes.cutout);
+        oldMeshes.cutout.geometry.dispose();
+      }
       oldMeshes.solid.geometry.dispose();
       oldMeshes.transparent.geometry.dispose();
       this.chunkMeshes.delete(key);
     }
   }
 
-  public getChunkMeshes(): Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh }> {
+  public getChunkMeshes(): Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }> {
     return this.chunkMeshes;
   }
 
@@ -266,9 +362,15 @@ export class ChunkRenderer {
     for (const meshes of this.chunkMeshes.values()) {
       meshes.solid.geometry.dispose();
       meshes.transparent.geometry.dispose();
+      if (meshes.cutout) {
+        meshes.cutout.geometry.dispose();
+      }
     }
     this.materials.solid.dispose();
     this.materials.transparent.dispose();
+    if (this.materials.cutout) {
+      this.materials.cutout.dispose();
+    }
     this.textureAtlas.dispose();
   }
 }

@@ -54,7 +54,9 @@ export class BlockRegistry {
       id: BLOCK_TYPES.LEAF, name: '树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d7823', colorHex: 0x2d7823,
-      textureFaces: { top: 6, bottom: 6, side: 6 }
+      textureFaces: { top: 6, bottom: 6, side: 6 },
+      renderAdjacentSameType: true,
+      renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
@@ -68,7 +70,9 @@ export class BlockRegistry {
       id: BLOCK_TYPES.BIRCH_LEAVES, name: '桦树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
-      textureFaces: { top: 18, bottom: 18, side: 18 }
+      textureFaces: { top: 18, bottom: 18, side: 18 },
+      renderAdjacentSameType: true,
+      renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
@@ -82,7 +86,9 @@ export class BlockRegistry {
       id: BLOCK_TYPES.SPRUCE_LEAVES, name: '松树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
-      textureFaces: { top: 21, bottom: 21, side: 21 }
+      textureFaces: { top: 21, bottom: 21, side: 21 },
+      renderAdjacentSameType: true,
+      renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
@@ -150,7 +156,9 @@ export class BlockRegistry {
       id: BLOCK_TYPES.JUNGLE_LEAVES, name: '丛林叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
-      textureFaces: { top: 26, bottom: 26, side: 26 }
+      textureFaces: { top: 26, bottom: 26, side: 26 },
+      renderAdjacentSameType: true,
+      renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
