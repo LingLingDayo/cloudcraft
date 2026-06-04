@@ -17,25 +17,25 @@ const PixelGearIcon: React.FC = () => (
     viewBox="0 0 16 16"
     style={{ imageRendering: 'pixelated' }}
   >
+    {/* Outline / Border */}
     <path
-      d="M7,2h2v2h-2z M7,12h2v2h-2z M2,7h2v2h-2z M12,7h2v2h-2z M3,3h1v1h-1z M4,4h1v1h-1z M12,3h1v1h-1z M11,4h1v1h-1z M3,12h1v1h-1z M4,11h1v1h-1z M12,12h1v1h-1z M11,11h1v1h-1z M6,4h4v1h-4z M4,6h1v4h-1z M11,6h1v4h-1z M6,11h4v1h-4z M5,5h1v1h-1z M10,5h1v1h-1z M5,10h1v1h-1z M10,10h1v1h-1z"
-      fill="#212121"
+      d="M7,0h2v1h-2z M6,1h1v2h-1z M9,1h1v2h-1z M2,2h2v1h-2z M2,3h1v1h-1z M12,2h2v1h-2z M13,3h1v1h-1z M2,13h2v1h-2z M2,12h1v1h-1z M12,13h2v1h-2z M13,12h1v1h-1z M7,15h2v1h-2z M6,13h1v2h-1z M9,13h1v2h-1z M0,7h1v2h-1z M1,6h2v1h-2z M1,9h2v1h-2z M15,7h1v2h-1z M13,6h2v1h-2z M13,9h2v1h-2z M5,2h1v1h-1z M10,2h1v1h-1z M4,3h1v1h-1z M11,3h1v1h-1z M3,4h1v1h-1z M12,4h1v1h-1z M2,5h1v1h-1z M13,5h1v1h-1z M2,10h1v1h-1z M13,10h1v1h-1z M3,11h1v1h-1z M12,11h1v1h-1z M4,12h1v1h-1z M11,12h1v1h-1z M5,13h1v1h-1z M10,13h1v1h-1z M6,6h4v1h-4z M6,9h4v1h-4z M6,7h1v2h-1z M9,7h1v2h-1z"
+      fill="#1a1a1a"
     />
+    {/* Highlights (top-left facing) */}
     <path
-      d="M7,6h2v1h-2z M7,9h2v1h-2z M6,7h1v2h-1z M9,7h1v2h-1z"
-      fill="#212121"
-    />
-    <path
-      d="M7,3h2v1h-2z M7,12h2v1h-2z M3,7h1v2h-1z M12,7h1v2h-1z M4,4h1v1h-1z M11,4h1v1h-1z M4,11h1v1h-1z M11,11h1v1h-1z M6,5h4v1h-4z M5,6h6v1h-6z M4,7h2v2h-2z M10,7h2v2h-2z M5,9h6v1h-6z M6,10h4v1h-4z"
-      fill="#aaaaaa"
-    />
-    <path
-      d="M7,3h1v1h-1z M4,4h1v1h-1z M6,5h2v1h-2z M5,6h1v1h-1z M3,7h1v1h-1z M4,7h1v1h-1z M7,6h1v1h-1z M6,7h1v2h-1z"
+      d="M7,1h1v2h-1z M3,3h1v1h-1z M4,4h1v1h-1z M1,7h1v1h-1z M2,7h1v1h-1z M5,4h2v1h-2z M4,5h2v1h-2z M3,6h2v1h-2z M5,5h2v1h-2z M5,6h1v1h-1z M7,5h1v1h-1z M7,6h1v1h-1z"
       fill="#ffffff"
     />
+    {/* Shadows (bottom-right facing) */}
     <path
-      d="M8,3h1v1h-1z M11,4h1v1h-1z M9,5h1v1h-1z M10,6h1v1h-1z M12,8h1v1h-1z M11,8h1v1h-1z M8,9h1v1h-1z M9,7h1v2h-1z M8,10h2v1h-2z M8,12h1v1h-1z M11,11h1v1h-1z M4,11h1v1h-1z"
-      fill="#555555"
+      d="M8,13h1v2h-1z M12,12h1v1h-1z M11,11h1v1h-1z M14,8h1v1h-1z M13,8h1v1h-1z M9,11h2v1h-2z M10,10h2v1h-2z M11,9h2v1h-2z M9,9h2v1h-2z M10,9h1v1h-1z M8,10h1v1h-1z"
+      fill="#4b5563"
+    />
+    {/* Base Metal */}
+    <path
+      d="M8,1h1v2h-1z M11,3h1v1h-1z M12,3h1v1h-1z M13,7h1v1h-1z M12,8h1v1h-1z M12,11h1v1h-1z M11,12h1v1h-1z M7,13h1v1h-1z M3,12h1v1h-1z M3,11h1v1h-1z M2,8h1v1h-1z M1,8h1v1h-1z M7,3h1v2h-1z M8,3h2v1h-2z M9,4h2v1h-2z M10,5h2v1h-2z M11,7h2v2h-2z M9,10h1v1h-1z M8,9h1v1h-1z M4,7h2v2h-2z M3,8h1v1h-1z M3,9h2v1h-2z"
+      fill="#9ca3af"
     />
   </svg>
 );
@@ -47,25 +47,43 @@ const PixelChestIcon: React.FC = () => (
     viewBox="0 0 16 16"
     style={{ imageRendering: 'pixelated' }}
   >
+    {/* Outer border & Horizontal partition & Lock border */}
     <path
-      d="M2,2h12v1h-12z M2,13h12v1h-12z M2,3h1v10h-1z M13,3h1v10h-1z M3,7h10v1h-10z M7,6h2v3h-2z"
-      fill="#212121"
+      d="M2,2h12v1h-12z M2,13h12v1h-12z M2,3h1v10h-1z M13,3h1v10h-1z M2,6h12v1h-12z M7,5h2v4h-2z"
+      fill="#181818"
+    />
+    {/* Metal Corners */}
+    <path
+      d="M3,3h2v1h-2z M3,4h1v1h-1z M11,3h2v1h-2z M12,4h1v1h-1z M3,12h2v1h-2z M3,11h1v1h-1z M11,12h2v1h-2z M12,11h1v1h-1z"
+      fill="#4b5563"
     />
     <path
-      d="M3,3h10v3h-10z M3,6h4v1h-4z M9,6h4v1h-4z"
-      fill="#d97d4b"
+      d="M3,3h1v1h-1z M12,3h1v1h-1z M3,12h1v1h-1z M12,12h1v1h-1z"
+      fill="#9ca3af"
+    />
+    {/* Lock / Latch */}
+    <path
+      d="M7,6h1v2h-1z"
+      fill="#facc15"
     />
     <path
-      d="M3,8h4v5h-4z M9,8h4v5h-4z M7,9h2v4h-2z"
-      fill="#a0522d"
+      d="M8,6h1v2h-1z"
+      fill="#ca8a04"
     />
+    {/* Wood Planks - Light/Highlight wood */}
     <path
-      d="M7,7h2v2h-2z"
-      fill="#ffcc00"
+      d="M5,3h6v1h-6z M3,4h9v1h-9z"
+      fill="#f59e0b"
     />
+    {/* Wood Planks - Medium wood */}
     <path
-      d="M8,8h1v1h-1z"
-      fill="#b35d32"
+      d="M3,5h10v1h-10z M4,7h9v1h-9z M3,8h4v1h-4z M9,8h4v1h-4z M3,9h4v1h-4z M9,9h4v1h-4z"
+      fill="#b45309"
+    />
+    {/* Wood Planks - Dark wood shadow */}
+    <path
+      d="M3,10h10v2h-10z M5,12h6v1h-6z"
+      fill="#7c2d12"
     />
   </svg>
 );
@@ -77,29 +95,39 @@ const PixelSaveIcon: React.FC = () => (
     viewBox="0 0 16 16"
     style={{ imageRendering: 'pixelated' }}
   >
+    {/* Disk Outline & Components Borders */}
     <path
-      d="M2,2h11v1h-11z M13,3h1v1h-1z M14,4h1v10h-1z M2,14h12v1h-12z M2,3h1v11h-1z M4,8h8v6h-8z M5,2h5v4h-5z"
-      fill="#212121"
+      d="M2,2h10v1h-10z M12,3h1v1h-1z M13,4h1v10h-1z M2,14h12v1h-12z M2,3h1v11h-1z M5,2h5v4h-5z M4,8h8v6h-8z"
+      fill="#181818"
+    />
+    {/* Metal Shutter */}
+    <path
+      d="M5,3h4v1h-4z M5,4h2v1h-2z M5,5h4v1h-4z"
+      fill="#d1d5db"
     />
     <path
-      d="M3,3h2v4h-2z M10,3h3v1h-3z M10,4h4v3h-4z M3,7h11v1h-11z M3,8h1v6h-1z M12,8h2v6h-2z M4,13h8v1h-8z"
-      fill="#3c5e8a"
+      d="M8,4h1v2h-1z"
+      fill="#9ca3af"
     />
+    {/* White Label */}
     <path
-      d="M5,3h5v3h-5z"
-      fill="#c6c6c6"
+      d="M4,9h8v4h-8z"
+      fill="#f3f4f6"
     />
+    {/* Label lines (red) */}
     <path
-      d="M6,3h1v2h-1z"
-      fill="#7e7e7e"
+      d="M5,10h6v1h-6z M5,12h6v1h-6z"
+      fill="#ef4444"
     />
+    {/* Casing Highlight (blue) */}
     <path
-      d="M5,9h6v4h-6z"
-      fill="#f3f3f3"
+      d="M3,3h2v5h-2z M10,3h2v1h-2z M12,4h1v4h-1z M3,8h1v6h-1z"
+      fill="#3b82f6"
     />
+    {/* Casing Shadow (dark blue) */}
     <path
-      d="M6,10h4v1h-4z M6,12h4v1h-4z"
-      fill="#ff4d4d"
+      d="M12,8h1v6h-1z M4,13h8v1h-8z"
+      fill="#1d4ed8"
     />
   </svg>
 );
@@ -111,25 +139,56 @@ const PixelQuitIcon: React.FC = () => (
     viewBox="0 0 16 16"
     style={{ imageRendering: 'pixelated' }}
   >
+    {/* Door outline & Exit Arrow outline */}
     <path
-      d="M3,1h8v1h-8z M11,2h1v13h-1z M3,15h8v1h-8z M3,2h1v13h-1z M5,3h4v4h-4z M9,8h1v2h-1z"
-      fill="#212121"
+      d="M2,1h7v14h-7z M8,8h5v1h-5z M8,10h5v1h-5z M12,7h1v1h-1z M13,6h1v1h-1z M14,7h1v3h-1z M13,10h1v1h-1z M12,9h1v1h-1z"
+      fill="#181818"
+    />
+    {/* Sky Window inside door */}
+    <path
+      d="M4,4h2v2h-2z"
+      fill="#38bdf8"
     />
     <path
-      d="M4,2h7v1h-7z M4,3h1v4h-1z M9,3h2v4h-2z M4,7h7v1h-7z M4,8h5v7h-5z M9,10h2v5h-2z M10,8h1v2h-1z"
-      fill="#c48a52"
-    />
-    <path
-      d="M5,4h4v3h-4z"
-      fill="#8bc5ff"
-    />
-    <path
-      d="M5,4h2v1h-2z"
+      d="M4,4h1v1h-1z"
       fill="#ffffff"
     />
+    {/* Window Frame */}
     <path
-      d="M9,9h1v1h-1z"
-      fill="#ffcc00"
+      d="M3,3h4v1h-4z M3,7h4v1h-4z M3,4h1v3h-1z M6,4h1v3h-1z"
+      fill="#181818"
+    />
+    {/* Door wood panels - Highlight */}
+    <path
+      d="M3,2h5v1h-5z M3,7h4v1h-4z"
+      fill="#f59e0b"
+    />
+    {/* Door wood panels - Medium wood */}
+    <path
+      d="M3,8h4v6h-4z"
+      fill="#b45309"
+    />
+    {/* Door wood panels - Dark wood shadow & Gold handle */}
+    <path
+      d="M7,8h1v6h-1z"
+      fill="#7c2d12"
+    />
+    <path
+      d="M7,8h1v1h-1z"
+      fill="#facc15"
+    />
+    {/* Exit Arrow - Green body */}
+    <path
+      d="M8,9h4v1h-4z"
+      fill="#86efac"
+    />
+    <path
+      d="M8,10h4v1h-4z"
+      fill="#16a34a"
+    />
+    <path
+      d="M12,8h1v1h-1z M13,7h1v3h-1z M12,10h1v1h-1z"
+      fill="#22c55e"
     />
   </svg>
 );
@@ -141,33 +200,25 @@ const PixelHamburgerIcon: React.FC = () => (
     viewBox="0 0 16 16"
     style={{ imageRendering: 'pixelated' }}
   >
+    {/* 3 Horizontal bars borders */}
     <path
-      d="M2,3h12v2h-12z M2,7h12v2h-12z M2,11h12v2h-12z"
-      fill="#212121"
+      d="M2,2h12v3h-12z M2,6h12v3h-12z M2,10h12v3h-12z"
+      fill="#181818"
     />
+    {/* Shiny Metal highlights */}
     <path
-      d="M3,4h10v1h-10z M3,8h10v1h-10z M3,12h10v1h-10z"
-      fill="#ffffff"
+      d="M3,3h2v1h-2z M3,7h2v1h-2z M3,11h2v1h-2z"
+      fill="#f3f4f6"
     />
-  </svg>
-);
-
-const PixelCloseIcon: React.FC = () => (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 16 16"
-    style={{ imageRendering: 'pixelated' }}
-  >
+    {/* Shiny Metal midtones */}
     <path
-      d="M3,2h3v1h-3z M4,3h3v1h-3z M5,4h3v1h-3z M6,5h4v1h-4z M6,6h1v4h-1z M9,6h1v4h-1z M6,10h4v1h-4z M5,11h3v1h-3z M4,12h3v1h-3z M3,13h3v1h-3z
-         M10,2h3v1h-3z M9,3h3v1h-3z M8,4h3v1h-3z M8,11h3v1h-3z M9,12h3v1h-3z M10,13h3v1h-3z"
-      fill="#212121"
+      d="M5,3h6v1h-6z M5,7h6v1h-6z M5,11h6v1h-6z"
+      fill="#9ca3af"
     />
+    {/* Shiny Metal shadows */}
     <path
-      d="M4,2h1v1h-1z M5,3h1v1h-1z M6,4h1v1h-1z M7,5h2v1h-2z M7,6h2v4h-2z M7,10h2v1h-2z M6,11h1v1h-1z M5,12h1v1h-1z M4,13h1v1h-1z
-         M11,2h1v1h-1z M10,3h1v1h-1z M9,4h1v1h-1z M9,11h1v1h-1z M10,12h1v1h-1z M11,13h1v1h-1z"
-      fill="#ef4444"
+      d="M11,3h2v1h-2z M11,7h2v1h-2z M11,11h2v1h-2z"
+      fill="#4b5563"
     />
   </svg>
 );
@@ -310,7 +361,7 @@ export const MobileControls: React.FC = () => {
           onClick={() => setToolbarExpanded(!toolbarExpanded)}
           title={toolbarExpanded ? "Close Menu" : "Open Menu"}
         >
-          {toolbarExpanded ? <PixelCloseIcon /> : <PixelHamburgerIcon />}
+          <PixelHamburgerIcon />
         </button>
         
         <div className={styles.toolbarMenu}>
