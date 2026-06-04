@@ -16,6 +16,8 @@ export const createGameSlice: StateCreator<
   language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as Language : 'zh') || 'zh',
   autoJump: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_auto_jump') !== 'false' : true,
   miningProgress: null,
+  isSettingsOpen: false,
+  settingsSource: null,
 
   // Initial loading states
   isWorldLoading: false,
@@ -24,6 +26,7 @@ export const createGameSlice: StateCreator<
   chunkLoadingStates: {},
 
   setGameState: (gameState) => set({ gameState }),
+  setIsSettingsOpen: (isSettingsOpen, settingsSource = null) => set({ isSettingsOpen, settingsSource }),
   setRenderDistance: (renderDistance) => set({ renderDistance }),
   setFov: (fov) => set({ fov }),
   setGameMode: (gameMode) => set(() => {

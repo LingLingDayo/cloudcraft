@@ -10,6 +10,9 @@ export interface GameSlice {
   autoJump: boolean;
   miningProgress: number | null;
   
+  isSettingsOpen: boolean;
+  settingsSource: 'hud' | 'menu' | null;
+  
   // Loading states
   isWorldLoading: boolean;
   worldLoadingProgress: number;
@@ -23,6 +26,7 @@ export interface GameSlice {
   setLanguage: (lang: Language) => void;
   setAutoJump: (autoJump: boolean) => void;
   setMiningProgress: (progress: number | null) => void;
+  setIsSettingsOpen: (open: boolean, source?: 'hud' | 'menu' | null) => void;
   
   // Loading actions
   setWorldLoading: (loading: boolean) => void;

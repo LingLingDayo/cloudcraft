@@ -4,6 +4,7 @@ import { Button } from '@components/common/Button';
 import { Dialog } from '@components/common/Dialog';
 import { useTranslation } from '../../i18n';
 import { SettingsDialog } from './SettingsDialog';
+import { useGameStore } from '@store/useGameStore';
 import styles from './PauseMenu.module.scss';
 
 export const PauseMenu: React.FC<PauseMenuProps> = ({
@@ -13,7 +14,10 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
 }) => {
   const { t } = useTranslation();
   const [saveStatusKey, setSaveStatusKey] = useState<'save' | 'saved'>('save');
-  const [showSettings, setShowSettings] = useState(false);
+  
+  const isSettingsOpen = useGameStore((state) => state.isSettingsOpen);
+  const setIsSettingsOpen = useGameStore((state) => state.setIsSettingsOpen);
+  const settingsSource = useGameStore((state) => state.settingsSource);
 
   const handleSave = () => {
     onSave();
@@ -23,8 +27,18 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
     }, 1500);
   };
 
-  if (showSettings) {
-    return <SettingsDialog onClose={() => setShowSettings(false)} onSave={onSave} />;
+  if (isSettingsOpen) {
+    return (
+      <SettingsDialog 
+        onClose={() => {
+          setIsSettingsOpen(false);
+          if (settingsSource === 'hud') {
+            onResume();
+          }
+        }} 
+        onSave={onSave} 
+      />
+    );
   }
 
   return (
@@ -40,7 +54,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
             {t('pauseMenu.resume')}
           </Button>
 
-          <Button variant="secondary" onClick={() => setShowSettings(true)}>
+          <Button variant="secondary" onClick={() => setIsSettingsOpen(true, 'menu')}>
             {t('settings.title')}
           </Button>
           
