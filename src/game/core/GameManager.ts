@@ -231,24 +231,30 @@ export class GameManager {
 
   public getDebugMetrics(): DebugMetrics {
     const targeted = this.interaction?.targetedBlockInfo;
+    if (targeted) {
+      const blockId = this.world.getBlock(
+        targeted.target.x,
+        targeted.target.y,
+        targeted.target.z
+      );
+      return {
+        fps: this.fpsCounter.getFPS(),
+        chunksLoaded: this.world.group.children.length / 2,
+        isFlying: this.player.isFlying,
+        targetBlock: {
+          id: blockId,
+          type: this.getBlockName(blockId),
+          x: targeted.target.x,
+          y: targeted.target.y,
+          z: targeted.target.z,
+        },
+      };
+    }
     return {
       fps: this.fpsCounter.getFPS(),
       chunksLoaded: this.world.group.children.length / 2,
       isFlying: this.player.isFlying,
-      targetBlock: targeted
-        ? {
-            type: this.getBlockName(
-              this.world.getBlock(
-                targeted.target.x,
-                targeted.target.y,
-                targeted.target.z
-              )
-            ),
-            x: targeted.target.x,
-            y: targeted.target.y,
-            z: targeted.target.z,
-          }
-        : null,
+      targetBlock: null,
     };
   }
 

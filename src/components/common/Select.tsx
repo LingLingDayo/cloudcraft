@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { sound } from '@game/systems/Sound';
 import type { SelectOption } from '@type';
+import { useTranslation } from '../../i18n';
 import styles from './Select.module.scss';
 
 interface SelectProps {
@@ -11,6 +12,7 @@ interface SelectProps {
   disabled?: boolean;
   labelStyle?: React.CSSProperties;
   containerStyle?: React.CSSProperties;
+  placeholder?: string;
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -21,7 +23,9 @@ export const Select: React.FC<SelectProps> = ({
   disabled = false,
   labelStyle = {},
   containerStyle = {},
+  placeholder,
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +73,7 @@ export const Select: React.FC<SelectProps> = ({
           disabled={disabled}
         >
           <span className={styles.selectedText}>
-            {selectedOption ? selectedOption.label : '请选择...'}
+            {selectedOption ? selectedOption.label : (placeholder || t('common.selectPlaceholder'))}
           </span>
           <span className={styles.arrow}>{isOpen ? '▲' : '▼'}</span>
         </button>

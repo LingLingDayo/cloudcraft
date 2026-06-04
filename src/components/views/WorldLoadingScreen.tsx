@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
+import { useTranslation } from '../../i18n';
 import styles from './WorldLoadingScreen.module.scss';
 
 // Generate procedural pixelated dirt texture for tiling background
@@ -38,12 +39,12 @@ const generateDirtBackground = (): string => {
 };
 
 export const WorldLoadingScreen: React.FC = () => {
+  const { t } = useTranslation();
   const isWorldLoading = useGameStore((state) => state.isWorldLoading);
   const progress = useGameStore((state) => state.worldLoadingProgress);
   const stage = useGameStore((state) => state.worldLoadingStage);
   const chunkStates = useGameStore((state) => state.chunkLoadingStates);
   const setWorldLoading = useGameStore((state) => state.setWorldLoading);
-  const language = useGameStore((state) => state.language);
 
   // Generate dirt pattern once
   const dirtDataUrl = useMemo(() => generateDirtBackground(), []);
@@ -80,10 +81,12 @@ export const WorldLoadingScreen: React.FC = () => {
   const displayProgress = stage === 'engine' ? Math.min(29, mockProgress) : progress;
 
   // Localized texts
-  const titleText = language === 'zh' ? '正在生成世界...' : 'Building Terrain...';
+  const titleText = t('worldLoading.title');
+  const loadedCount = Object.values(chunkStates).filter(Boolean).length;
+  const totalCount = Object.keys(chunkStates).length;
   const stageText = stage === 'engine' 
-    ? (language === 'zh' ? '加载游戏引擎及资源' : 'Loading Engine & Resources')
-    : (language === 'zh' ? `已加载区块: ${Object.values(chunkStates).filter(Boolean).length} / ${Object.keys(chunkStates).length}` : `Loading Chunks: ${Object.values(chunkStates).filter(Boolean).length} / ${Object.keys(chunkStates).length}`);
+    ? t('worldLoading.engine')
+    : t('worldLoading.chunks', { loaded: loadedCount, total: totalCount });
 
   // Create loading grid grid coordinates mapping
   // We assume a 5x5 grid (radius 2) based on standard spawn radius

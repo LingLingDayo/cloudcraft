@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/World';
 import { useGameStore } from '@store/useGameStore';
+import { useTranslation } from '../../i18n';
 import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
@@ -38,6 +39,7 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
 );
 
 export const HUD: React.FC = () => {
+  const { t } = useTranslation();
   const [activeLabel, setActiveLabel] = useState<string>('');
   const gameInstance = useGame();
 
@@ -108,7 +110,7 @@ export const HUD: React.FC = () => {
     const props = getBlockProperties(selectedBlock);
     if (props && selectedBlock !== BLOCK_TYPES.AIR) {
       const frameId = requestAnimationFrame(() => {
-        setActiveLabel(props.name);
+        setActiveLabel(t(`blocks.${selectedBlock}`));
       });
 
       const timeout = window.setTimeout(() => {
@@ -220,29 +222,29 @@ export const HUD: React.FC = () => {
       {debugOverlay && debugMetrics && (
         <div className={`glass-panel ${styles.debugPanel}`}>
           <div className={`pixel-text-sm ${styles.debugTitle}`}>
-            调试控制台 (F3)
+            {t('hud.debugTitle')}
           </div>
           <div>
-            FPS: <span style={{ color: debugMetrics.fps >= 50 ? '#4ade80' : '#fb7185', fontWeight: 'bold' }}>{debugMetrics.fps}</span>
+            {t('hud.fps')}: <span style={{ color: debugMetrics.fps >= 50 ? '#4ade80' : '#fb7185', fontWeight: 'bold' }}>{debugMetrics.fps}</span>
           </div>
           <div>
-            已载入区块: <span className={styles.chunkCount}>{debugMetrics.chunksLoaded}</span>
+            {t('hud.chunksLoaded')}: <span className={styles.chunkCount}>{debugMetrics.chunksLoaded}</span>
           </div>
           <div>
-            创造飞行模式 (F4):{' '}
+            {t('hud.flyMode')}:{' '}
             <span style={{ color: debugMetrics.isFlying ? '#38bdf8' : '#94a3b8', fontWeight: 'bold' }}>
-              {debugMetrics.isFlying ? '开启 (飞行中)' : '关闭'}
+              {debugMetrics.isFlying ? t('hud.flyModeOn') : t('hud.flyModeOff')}
             </span>
           </div>
           <div className={styles.targetBlockSection}>
-            <span className={styles.label}>指向方块:</span>
+            <span className={styles.label}>{t('hud.targetBlock')}:</span>
             {debugMetrics.targetBlock ? (
               <div className={styles.detail}>
-                <div>名称: <span className={styles.blockName}>{debugMetrics.targetBlock.type}</span></div>
-                <div>坐标: <span className={styles.blockCoords}>({debugMetrics.targetBlock.x}, {debugMetrics.targetBlock.y}, {debugMetrics.targetBlock.z})</span></div>
+                <div>{t('hud.targetBlockName')}: <span className={styles.blockName}>{t(`blocks.${debugMetrics.targetBlock.id}`)}</span></div>
+                <div>{t('hud.targetBlockCoords')}: <span className={styles.blockCoords}>({debugMetrics.targetBlock.x}, {debugMetrics.targetBlock.y}, {debugMetrics.targetBlock.z})</span></div>
               </div>
             ) : (
-              <span className={styles.noBlock}>无</span>
+              <span className={styles.noBlock}>{t('hud.none')}</span>
             )}
           </div>
         </div>
@@ -251,13 +253,13 @@ export const HUD: React.FC = () => {
         <div className={styles.chestOverlay}>
           <div className={`${styles.chestWindow} glass-panel`}>
             <div className={styles.chestHeader}>
-              <span className="pixel-text-sm">储物箱 (Chest)</span>
+              <span className="pixel-text-sm">{t('hud.chest')}</span>
               <button className={styles.closeBtn} onClick={() => {
                 closeChest();
                 gameInstance?.controls?.requestLock();
               }}>✕</button>
             </div>
-            <div className={styles.sectionTitle}>箱子物品</div>
+            <div className={styles.sectionTitle}>{t('hud.chestItems')}</div>
             <div className={styles.chestGrid}>
               {chestInventory.map((item, idx) => (
                 <div key={`c-${idx}`} className={styles.chestSlot} onClick={() => handleQuickMove('chest', idx)}>
@@ -271,7 +273,7 @@ export const HUD: React.FC = () => {
               ))}
             </div>
             <div className={styles.divider} />
-            <div className={styles.sectionTitle}>快捷栏</div>
+            <div className={styles.sectionTitle}>{t('hud.hotbar')}</div>
             <div className={styles.hotbarGrid}>
               {hotbar.map((item, idx) => (
                 <div key={`h-${idx}`} className={styles.hotbarSlot} onClick={() => handleQuickMove('hotbar', idx)}>
