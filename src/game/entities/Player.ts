@@ -55,18 +55,9 @@ export class Player {
           if (testY > 0) {
             const topBlockId = world.getBlock(Math.floor(testX), testY, Math.floor(testZ));
             const props = getBlockProperties(topBlockId);
-            // 顶层不是液体（不是水），并且它是 solid 的，同时也不是树叶（LEAF/BIRCH_LEAVES等在BlockConfig.ts里是Solid且透明的，不适合出生）
-            const isSapling = topBlockId === BLOCK_TYPES.OAK_SAPLING ||
-                              topBlockId === BLOCK_TYPES.BIRCH_SAPLING ||
-                              topBlockId === BLOCK_TYPES.SPRUCE_SAPLING ||
-                              topBlockId === BLOCK_TYPES.JUNGLE_SAPLING;
-            const isLeaf = topBlockId === BLOCK_TYPES.LEAF || 
-                          topBlockId === BLOCK_TYPES.BIRCH_LEAVES || 
-                          topBlockId === BLOCK_TYPES.SPRUCE_LEAVES || 
-                          topBlockId === BLOCK_TYPES.JUNGLE_LEAVES ||
-                          isSapling;
+            const canSpawnOn = props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid);
                           
-            if (!props.isLiquid && props.isSolid && !isLeaf) {
+            if (canSpawnOn) {
               startX = testX;
               startZ = testZ;
               startY = testY;

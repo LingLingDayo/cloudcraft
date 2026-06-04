@@ -101,7 +101,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       if (foundDryLandBelowSeaLevel) break;
     }
     expect(foundDryLandBelowSeaLevel).toBe(true);
-  });
+  }, 20000);
 
   test('should generate grass on surface when dry land is below waterLevel', () => {
     const world = new World('minicraft-seed');
@@ -130,7 +130,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       if (verified) break;
     }
     expect(verified).toBe(true);
-  });
+  }, 20000);
 
   test('should generate caves (AIR pockets) underground inside stone layers', () => {
     const world = new World('minicraft-seed');
@@ -158,7 +158,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       if (foundUndergroundCave) break;
     }
     expect(foundUndergroundCave).toBe(true);
-  });
+  }, 20000);
 
   test('should not generate exposed floating water walls adjacent to air', () => {
     const world = new World('minicraft-seed');

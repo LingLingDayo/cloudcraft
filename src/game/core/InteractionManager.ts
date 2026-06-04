@@ -128,7 +128,7 @@ export class InteractionManager {
         const props = getBlockProperties(blockId);
         if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
           this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
-          sound.playBreak();
+          sound.playBreak(props.soundType);
           
           const color = getBlockProperties(blockId).colorHex ?? 0x787878;
           this.game.particles.spawn(
@@ -172,8 +172,9 @@ export class InteractionManager {
           else if (face.z !== 0) blockToPlace = blockToPlace | (2 << 6); // Z axis
         }
 
+        const placeProps = getBlockProperties(blockToPlace);
         this.game.world.setBlock(place.x, place.y, place.z, blockToPlace);
-        sound.playPlace();
+        sound.playPlace(placeProps.soundType);
 
         if (!isCreative) {
           const activeSlot = useGameStore.getState().activeSlot;
@@ -195,9 +196,7 @@ export class InteractionManager {
     if (this.crackMesh) {
       this.crackMesh.visible = false;
     }
-    const circle = document.getElementById('mining-progress-circle');
-    const svg = circle?.parentElement as HTMLElement | null;
-    if (svg) svg.style.display = 'none';
+    useGameStore.getState().setMiningProgress(null);
   }
 
   private updateTargetedBlock() {
@@ -241,7 +240,7 @@ export class InteractionManager {
           const props = getBlockProperties(blockId);
           if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
             this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
-            sound.playBreak();
+            sound.playBreak(props.soundType);
             
             const color = getBlockProperties(blockId).colorHex ?? 0x787878;
             this.game.particles.spawn(
@@ -306,7 +305,7 @@ export class InteractionManager {
 
     if (currentTime - this.lastDigSoundTime > 250) {
       this.lastDigSoundTime = currentTime;
-      sound.playClick();
+      sound.playDig(props.soundType);
     }
 
     if (currentTime - this.lastDigParticleTime > 120) {
@@ -333,19 +332,11 @@ export class InteractionManager {
       this.crackMesh.visible = false;
     }
 
-    const circle = document.getElementById('mining-progress-circle');
-    const svg = circle?.parentElement as HTMLElement | null;
-    if (svg && svg.style.display !== 'block') {
-      svg.style.display = 'block';
-    }
-    if (circle) {
-      const offset = 100 - (progress * 100);
-      circle.setAttribute('stroke-dashoffset', offset.toString());
-    }
+    useGameStore.getState().setMiningProgress(progress);
 
     if (this.miningTime >= this.miningBreakTime) {
       this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
-      sound.playBreak();
+      sound.playBreak(props.soundType);
 
       const color = getBlockProperties(blockId).colorHex ?? 0x787878;
       this.game.particles.spawn(

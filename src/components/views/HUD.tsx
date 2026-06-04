@@ -52,21 +52,23 @@ export const HUD: React.FC = () => {
   const debugOverlay = useGameStore((state) => state.debugOverlay);
   const debugMetrics = useGameStore((state) => state.debugMetrics);
   const gameMode = useGameStore((state) => state.gameMode);
+  const miningProgress = useGameStore((state) => state.miningProgress);
 
   const activeChest = useGameStore((state) => state.activeChest);
   const chestInventory = useGameStore((state) => state.chestInventory);
   const quickMoveItem = useGameStore((state) => state.quickMoveItem);
   const closeChest = useGameStore((state) => state.closeChest);
+  const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
 
   const handleQuickMove = (from: 'hotbar' | 'chest', index: number) => {
-    quickMoveItem(from, index, (nextChest) => {
-      if (activeChest && gameInstance) {
-        const entity = gameInstance.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
-        if (entity && 'inventory' in entity) {
-          (entity as any).inventory = [...nextChest];
-        }
+    quickMoveItem(from, index);
+    const nextChest = useGameStore.getState().chestInventory;
+    if (activeChest && gameInstance) {
+      const entity = gameInstance.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
+      if (entity && 'inventory' in entity) {
+        (entity as any).inventory = [...nextChest];
       }
-    });
+    }
   };
 
 
@@ -120,6 +122,13 @@ export const HUD: React.FC = () => {
     }
   }, [selectedBlock]);
 
+  // Release pointer lock when inventory opens or chest is active
+  useEffect(() => {
+    if (isInventoryOpen || activeChest) {
+      document.exitPointerLock?.();
+    }
+  }, [isInventoryOpen, activeChest]);
+
   // Format coordinates to 1 decimal place
   const fx = position.x.toFixed(1);
   const fy = position.y.toFixed(1);
@@ -129,20 +138,21 @@ export const HUD: React.FC = () => {
     <div className="hud-overlay">
       {/* Target Crosshair */}
       <div className="crosshair">
-        <svg className="mining-progress-svg" viewBox="0 0 36 36">
-          <circle
-            id="mining-progress-circle"
-            className="mining-progress-circle"
-            cx="18"
-            cy="18"
-            r="16"
-            fill="none"
-            stroke="#818cf8"
-            strokeWidth="3.5"
-            strokeDasharray="100"
-            strokeDashoffset="100"
-          />
-        </svg>
+        {miningProgress !== null && (
+          <svg className="mining-progress-svg" viewBox="0 0 36 36" style={{ display: 'block' }}>
+            <circle
+              className="mining-progress-circle"
+              cx="18"
+              cy="18"
+              r="16"
+              fill="none"
+              stroke="#818cf8"
+              strokeWidth="3.5"
+              strokeDasharray="100"
+              strokeDashoffset={100 - (miningProgress * 100)}
+            />
+          </svg>
+        )}
       </div>
 
       {/* Top Left Status Info */}

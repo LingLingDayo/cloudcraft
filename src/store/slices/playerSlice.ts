@@ -139,8 +139,6 @@ export const createPlayerSlice: StateCreator<
   setIsDamaged: (isDamaged) => set({ isDamaged }),
 
   openChest: (x, y, z, items) => {
-    // Release pointer lock to show cursor
-    document.exitPointerLock?.();
     set({
       activeChest: { x, y, z },
       chestInventory: items.map(item => item ? { ...item } : null)
@@ -155,7 +153,6 @@ export const createPlayerSlice: StateCreator<
   },
 
   openInventory: () => {
-    document.exitPointerLock?.();
     set({ isInventoryOpen: true });
   },
 
@@ -164,17 +161,12 @@ export const createPlayerSlice: StateCreator<
   },
 
   toggleInventory: () => set((state) => {
-    if (state.isInventoryOpen) {
-      return { isInventoryOpen: false };
-    } else {
-      document.exitPointerLock?.();
-      return { isInventoryOpen: true };
-    }
+    return { isInventoryOpen: !state.isInventoryOpen };
   }),
 
   setInventory: (inventory) => set({ inventory }),
 
-  quickMoveItem: (from, index, onSyncToWorld) => {
+  quickMoveItem: (from, index) => {
     set((state) => {
       const nextHotbar = [...state.hotbar];
       const nextChest = [...state.chestInventory];
@@ -195,10 +187,6 @@ export const createPlayerSlice: StateCreator<
           nextHotbar[emptyIndex] = { ...item };
           nextChest[index] = null;
         }
-      }
-
-      if (onSyncToWorld) {
-        onSyncToWorld(nextChest);
       }
 
       return {
