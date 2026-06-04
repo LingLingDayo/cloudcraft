@@ -150,4 +150,44 @@ describe('Player', () => {
 
     spyPerformance.mockRestore();
   });
+
+  test('should spawn at the water surface instead of water bottom if top block is water', () => {
+    mockWorld.getBlock = vi.fn((x, y, z) => {
+      const fx = Math.floor(x);
+      const fz = Math.floor(z);
+      if (fx === 8 && fz === 8) {
+        if (y > 20) return BLOCK_TYPES.AIR;
+        if (y === 20) return BLOCK_TYPES.WATER;
+        return BLOCK_TYPES.STONE;
+      }
+      return BLOCK_TYPES.AIR;
+    });
+
+    player.spawn(mockWorld, mockPhysics);
+
+    expect(player.position.y).toBeCloseTo(21.2);
+  });
+
+  test('should search for safe land spawn point near (8.5, 8.5) if center is water', () => {
+    mockWorld.getBlock = vi.fn((x, y, z) => {
+      const fx = Math.floor(x);
+      const fz = Math.floor(z);
+      
+      if (fx === 11 && fz === 8) {
+        if (y > 22) return BLOCK_TYPES.AIR;
+        if (y === 22) return BLOCK_TYPES.GRASS;
+        return BLOCK_TYPES.STONE;
+      }
+      
+      if (y > 20) return BLOCK_TYPES.AIR;
+      if (y === 20) return BLOCK_TYPES.WATER;
+      return BLOCK_TYPES.STONE;
+    });
+
+    player.spawn(mockWorld, mockPhysics);
+
+    expect(player.position.x).toBeCloseTo(11.5);
+    expect(player.position.z).toBeCloseTo(8.5);
+    expect(player.position.y).toBeCloseTo(23.2);
+  });
 });

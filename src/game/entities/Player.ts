@@ -3,7 +3,7 @@ import { World, CHUNK_SIZE_Y } from '@game/world/World';
 import { Physics } from '@game/physics/Physics';
 import { Controls } from '@game/systems/Controls';
 import { sound } from '@game/systems/Sound';
-import { BLOCK_TYPES, type BlockType } from '@game/world/BlockConfig';
+import { BLOCK_TYPES, type BlockType, getBlockProperties } from '@game/world/BlockConfig';
 import { GameAction } from '@game/systems/HotkeyManager';
 import { useGameStore } from '@store/useGameStore';
 
@@ -27,19 +27,70 @@ export class Player {
     this.onTakeDamage = onTakeDamage;
   }
 
-  public spawn(world: World, physics: Physics) {
-    const startX = 8.5;
-    const startZ = 8.5;
-    let startY = CHUNK_SIZE_Y - 2; // CHUNK_SIZE_Y = 64
+  public spawn(world: World, _physics: Physics) {
+    let startX = 8.5;
+    let startZ = 8.5;
+    let startY = CHUNK_SIZE_Y - 2;
 
-    // Trace down to find first solid block
-    while (
-      startY > 0 &&
-      !physics.isSolid(world.getBlock(Math.floor(startX), startY, Math.floor(startZ)))
-    ) {
-      startY--;
+    // 寻找安全的陆地出生点 (不属于水域且是 solid 的地面)
+    let foundSafeSpawn = false;
+    const maxSearchRadius = 16; // 寻找范围：16格以内 (优化查找性能)
+    
+    // 螺旋式搜索安全的出生点
+    outerLoop:
+    for (let r = 0; r <= maxSearchRadius; r++) {
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dz = -r; dz <= r; dz++) {
+          if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
+          
+          const testX = 8.5 + dx;
+          const testZ = 8.5 + dz;
+          
+          // 从上往下找到第一个非空气方块
+          let testY = CHUNK_SIZE_Y - 2;
+          while (testY > 0 && world.getBlock(Math.floor(testX), testY, Math.floor(testZ)) === BLOCK_TYPES.AIR) {
+            testY--;
+          }
+          
+          if (testY > 0) {
+            const topBlockId = world.getBlock(Math.floor(testX), testY, Math.floor(testZ));
+            const props = getBlockProperties(topBlockId);
+            // 顶层不是液体（不是水），并且它是 solid 的，同时也不是树叶（LEAF/BIRCH_LEAVES等在BlockConfig.ts里是Solid且透明的，不适合出生）
+            const isLeaf = topBlockId === BLOCK_TYPES.LEAF || 
+                          topBlockId === BLOCK_TYPES.BIRCH_LEAVES || 
+                          topBlockId === BLOCK_TYPES.SPRUCE_LEAVES || 
+                          topBlockId === BLOCK_TYPES.JUNGLE_LEAVES;
+                          
+            if (!props.isLiquid && props.isSolid && !isLeaf) {
+              startX = testX;
+              startZ = testZ;
+              startY = testY;
+              foundSafeSpawn = true;
+              break outerLoop;
+            }
+          }
+        }
+      }
     }
 
+    // 如果找不到安全的陆地，就退回到默认的 (8.5, 8.5)
+    if (!foundSafeSpawn) {
+      startX = 8.5;
+      startZ = 8.5;
+      startY = CHUNK_SIZE_Y - 2;
+      
+      // 仍然向下寻路，但如果碰到水或者普通 Solid，就停下来（即 props.isSolid || props.isLiquid）
+      while (startY > 0) {
+        const blockId = world.getBlock(Math.floor(startX), startY, Math.floor(startZ));
+        const props = getBlockProperties(blockId);
+        if (props.isSolid || props.isLiquid) {
+          break;
+        }
+        startY--;
+      }
+    }
+
+    // 将玩家定位到该方块之上
     this.position.set(startX, startY + 1.2, startZ);
     this.velocity.set(0, 0, 0);
     this.state.onGround = false;
