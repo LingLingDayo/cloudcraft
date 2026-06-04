@@ -178,11 +178,6 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             onChange={handleImportSave}
           />
         </div>
-
-        {/* Footer */}
-        <div className={`pixel-text-sm ${styles.footer}`}>
-          {t('startMenu.footer')}
-        </div>
       </div>
     </div>
   );
