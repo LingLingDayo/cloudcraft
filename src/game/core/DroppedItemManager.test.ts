@@ -77,4 +77,27 @@ describe('DroppedItemManager', () => {
     expect(item.position.y).toBe(15.5);
     expect(item.position.z).toBe(25.5);
   });
+
+  test('should spawn cross shape dropped item for saplings', () => {
+    const pos = new THREE.Vector3(10.5, 20.5, 30.5);
+    manager.spawnItem(BLOCK_TYPES.OAK_SAPLING, pos);
+
+    const items = (manager as unknown as {
+      droppedItems: {
+        type: number;
+        velocity: THREE.Vector3;
+        position: THREE.Vector3;
+        mesh: THREE.Mesh;
+      }[];
+    }).droppedItems;
+    expect(items).toHaveLength(1);
+
+    const item = items[0];
+    expect(item.type).toBe(BLOCK_TYPES.OAK_SAPLING);
+    
+    // Verify geometry attributes for cross shape (12 vertices)
+    const geom = item.mesh.geometry;
+    const positionAttr = geom.getAttribute('position');
+    expect(positionAttr.count).toBe(12); // 2 planes * 6 vertices per plane
+  });
 });

@@ -117,10 +117,14 @@ export class DroppedItemManager {
 
   public spawnItem(blockType: BlockType, pos: THREE.Vector3 | { x: number; y: number; z: number }, count?: number) {
     void count;
-    const isTrans = getBlockProperties(blockType).opacity < 1.0;
+    const props = getBlockProperties(blockType);
+    const isTrans = props.opacity < 1.0;
     const material = isTrans ? this.game.world.materials.transparent : this.game.world.materials.solid;
     
-    const geometry = this.createBlockItemGeometry(blockType);
+    const geometry = props.droppedModelType === 'cross'
+      ? this.createCrossItemGeometry(blockType)
+      : this.createBlockItemGeometry(blockType);
+      
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -183,6 +187,75 @@ export class DroppedItemManager {
       }
     }
     return colliders;
+  }
+
+  private createCrossItemGeometry(blockType: BlockType): THREE.BufferGeometry {
+    const geom = new THREE.BufferGeometry();
+    const size = 0.25;
+    const h = size / 2;
+
+    const positions: number[] = [
+      // 面 1 (在 Z-Y 平面上，平行于 Z 轴，x = 0)
+      0, -h, -h,
+      0,  h, -h,
+      0,  h,  h,
+      0, -h, -h,
+      0,  h,  h,
+      0, -h,  h,
+
+      // 面 2 (在 X-Y 平面上，平行于 X 轴，z = 0)
+      -h, -h, 0,
+      -h,  h, 0,
+       h,  h, 0,
+      -h, -h, 0,
+       h,  h, 0,
+       h, -h, 0,
+    ];
+
+    const normals: number[] = [
+      // 面 1 的法线
+      1, 0, 0, 1, 0, 0, 1, 0, 0,
+      1, 0, 0, 1, 0, 0, 1, 0, 0,
+
+      // 面 2 的法线
+      0, 0, 1, 0, 0, 1, 0, 0, 1,
+      0, 0, 1, 0, 0, 1, 0, 0, 1,
+    ];
+
+    const props = getBlockProperties(blockType);
+    const atlasIndex = props.textureFaces?.side ?? props.textureFaces?.top ?? 3;
+    const tx = atlasIndex % 8;
+    const ty = 7 - Math.floor(atlasIndex / 8);
+    const uMin = tx * 0.125;
+    const uMax = (tx + 1) * 0.125;
+    const vMin = ty * 0.125;
+    const vMax = (ty + 1) * 0.125;
+
+    const uvs: number[] = [
+      // 面 1 (Z是水平，Y是垂直，Z: -h->uMin, h->uMax; Y: -h->vMin, h->vMax)
+      uMin, vMin,
+      uMin, vMax,
+      uMax, vMax,
+      uMin, vMin,
+      uMax, vMax,
+      uMax, vMin,
+
+      // 面 2 (X是水平，Y是垂直，X: -h->uMin, h->uMax; Y: -h->vMin, h->vMax)
+      uMin, vMin,
+      uMin, vMax,
+      uMax, vMax,
+      uMin, vMin,
+      uMax, vMax,
+      uMax, vMin,
+    ];
+
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geom.computeBoundingSphere();
+    geom.computeBoundingBox();
+
+    return geom;
   }
 
   private createBlockItemGeometry(blockType: BlockType): THREE.BufferGeometry {

@@ -164,28 +164,32 @@ export class BlockRegistry {
       id: BLOCK_TYPES.OAK_SAPLING, name: '橡树树苗', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#4c9436', colorHex: 0x4c9436,
-      textureFaces: { top: 28, bottom: 28, side: 28 }
+      textureFaces: { top: 28, bottom: 28, side: 28 },
+      droppedModelType: 'cross'
     }));
 
     this.register(new SaplingBlock({
       id: BLOCK_TYPES.BIRCH_SAPLING, name: '桦树树苗', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
-      textureFaces: { top: 29, bottom: 29, side: 29 }
+      textureFaces: { top: 29, bottom: 29, side: 29 },
+      droppedModelType: 'cross'
     }));
 
     this.register(new SaplingBlock({
       id: BLOCK_TYPES.SPRUCE_SAPLING, name: '松树树苗', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
-      textureFaces: { top: 30, bottom: 30, side: 30 }
+      textureFaces: { top: 30, bottom: 30, side: 30 },
+      droppedModelType: 'cross'
     }));
 
     this.register(new SaplingBlock({
       id: BLOCK_TYPES.JUNGLE_SAPLING, name: '丛林树苗', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
-      textureFaces: { top: 31, bottom: 31, side: 31 }
+      textureFaces: { top: 31, bottom: 31, side: 31 },
+      droppedModelType: 'cross'
     }));
   }
 
