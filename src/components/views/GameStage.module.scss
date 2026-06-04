@@ -1,0 +1,17 @@
+.damageOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(239, 68, 68, 0.25);
+  box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.8);
+  pointer-events: none;
+  z-index: 6;
+  animation: flash 0.15s ease-out;
+}
+
+@keyframes flash {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

@@ -1,156 +1,47 @@
-import { useRef, useEffect } from 'react';
-import { GameManager } from '@game/core/GameManager';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { StartMenu } from '@components/views/StartMenu';
-import { HUD } from '@components/views/HUD';
-import { PauseMenu } from '@components/views/PauseMenu';
 import { useGameStore } from '@store/useGameStore';
 import styles from './App.module.scss';
-import { GameState, GameMode, type BlockType } from '@type';
-import { GameProvider } from './context/GameContext';
-import { SaveManager } from '@game/systems/SaveManager';
+import { GameState } from '@type';
+
+// Lazy load the 3D game engine and canvas components
+const GameStage = lazy(() => import('@components/views/GameStage'));
 
 function App() {
   const gameState = useGameStore((state) => state.gameState);
   const setGameState = useGameStore((state) => state.setGameState);
-  const selectedBlock = useGameStore((state) => state.selectedBlock);
-  const isDamaged = useGameStore((state) => state.isDamaged);
-  const renderDistance = useGameStore((state) => state.renderDistance);
   const setRenderDistance = useGameStore((state) => state.setRenderDistance);
-  const fov = useGameStore((state) => state.fov);
   const setFov = useGameStore((state) => state.setFov);
-  const gameMode = useGameStore((state) => state.gameMode);
-  const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
-  const activeChest = useGameStore((state) => state.activeChest);
   const language = useGameStore((state) => state.language);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const gameManagerRef = useRef<GameManager | null>(null);
-  const activeParamsRef = useRef<{ seed: string; renderDistance: number; fov: number; loadSave: boolean } | null>(null);
-  const selectedBlockRef = useRef<BlockType>(selectedBlock);
-
-  useEffect(() => {
-    selectedBlockRef.current = selectedBlock;
-  }, [selectedBlock]);
+  // Store game parameters to pass to GameStage
+  const [gameParams, setGameParams] = useState<{ seed: string; loadSave: boolean } | null>(null);
 
   useEffect(() => {
     document.documentElement.className = language === 'zh' ? 'lang-zh' : 'lang-en';
   }, [language]);
 
-  // Initialize GameManager once the canvas is mounted and state is PLAYING
+  // Clean up game parameters when returning to the start menu (unmounting GameStage)
   useEffect(() => {
-    let active = true;
-
-    if (gameState === GameState.PLAYING && canvasRef.current && !gameManagerRef.current) {
-      const params = activeParamsRef.current;
-      const seed = params?.seed || 'minicraft';
-      const initialDistance = params?.renderDistance || 3;
-      const initialFov = params?.fov || 75;
-
-      // Create new GameManager without UI callbacks (handled via Zustand directly)
-      const gm = new GameManager(canvasRef.current, seed);
-
-      // Apply initial settings
-      gm.setRenderDistance(initialDistance);
-      gm.setFov(initialFov);
-      gm.player.selectedBlockType = selectedBlockRef.current;
-
-      gameManagerRef.current = gm;
-
-      // Handle loading saved world
-      if (params?.loadSave) {
-        SaveManager.getSave('default_world')
-          .then((saved) => {
-            if (!active || gameManagerRef.current !== gm) return;
-            if (saved) {
-              try {
-                if (saved.world) {
-                  gm.world.loadWorld(saved.world);
-                }
-                if (saved.player) {
-                  gm.player.position.set(saved.player.x, saved.player.y, saved.player.z);
-                  gm.player.syncCamera();
-                }
-                if (saved.gameMode) {
-                  useGameStore.getState().setGameMode(saved.gameMode);
-                }
-                if (saved.hotbar !== undefined) {
-                  let loadedInventory = saved.inventory ?? Array(54).fill(null);
-                  if (loadedInventory.length < 54) {
-                    loadedInventory = [
-                      ...loadedInventory,
-                      ...Array(54 - loadedInventory.length).fill(null)
-                    ];
-                  }
-                  useGameStore.setState({
-                    hotbar: saved.hotbar,
-                    inventory: loadedInventory,
-                    activeSlot: saved.activeSlot ?? 0,
-                    selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0
-                  });
-                }
-                // Trigger immediate render distance load
-                gm.setRenderDistance(initialDistance);
-              } catch (e) {
-                console.error('Error loading save data', e);
-              }
-            }
-          })
-          .catch((err) => {
-            console.error('Failed to load save:', err);
-          });
-      }
+    if (gameState === GameState.MENU) {
+      setGameParams(null);
     }
-
-    // Clean up game instance when switching back to menu
-    if (gameState === GameState.MENU && gameManagerRef.current) {
-      gameManagerRef.current.dispose();
-      gameManagerRef.current = null;
-    }
-
-    return () => {
-      active = false;
-    };
   }, [gameState]);
 
-  // Synchronize selected block to GameManager
+  // Prefetch the GameStage chunk (which contains Three.js) in the background during idle time
   useEffect(() => {
-    const gm = gameManagerRef.current;
-    if (gm) {
-      gm.player.selectedBlockType = selectedBlock;
-    }
-  }, [selectedBlock]);
+    const prefetch = () => {
+      import('@components/views/GameStage').catch((err) => {
+        console.warn('Background prefetch for GameStage failed:', err);
+      });
+    };
 
-  // Synchronize render distance to GameManager and activeParamsRef
-  useEffect(() => {
-    const gm = gameManagerRef.current;
-    if (gm) {
-      gm.setRenderDistance(renderDistance);
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => prefetch());
+    } else {
+      setTimeout(prefetch, 2000); // Fallback: prefetch after 2 seconds
     }
-    if (activeParamsRef.current) {
-      activeParamsRef.current.renderDistance = renderDistance;
-    }
-  }, [renderDistance]);
-
-  // Synchronize fov to GameManager and activeParamsRef
-  useEffect(() => {
-    const gm = gameManagerRef.current;
-    if (gm) {
-      gm.setFov(fov);
-    }
-    if (activeParamsRef.current) {
-      activeParamsRef.current.fov = fov;
-    }
-  }, [fov]);
-
-  // Synchronize game mode and disable flying if not creative
-  useEffect(() => {
-    const gm = gameManagerRef.current;
-    if (gm) {
-      if (gameMode !== GameMode.CREATIVE) {
-        gm.player.isFlying = false;
-      }
-    }
-  }, [gameMode]);
+  }, []);
 
   // Start game handler
   const handleStartGame = (
@@ -159,86 +50,37 @@ function App() {
     fovVal: number,
     loadSaveVal: boolean
   ) => {
-    // Store variables to apply on canvas mount
-    activeParamsRef.current = {
-      seed: seedVal,
-      renderDistance: distVal,
-      fov: fovVal,
-      loadSave: loadSaveVal,
-    };
     setRenderDistance(distVal);
     setFov(fovVal);
+    setGameParams({
+      seed: seedVal,
+      loadSave: loadSaveVal,
+    });
     setGameState(GameState.PLAYING);
-  };
-
-  // Resume game handler
-  const handleResume = () => {
-    const gm = gameManagerRef.current;
-    if (gm && gm.controls) {
-      // Re-engage pointer lock which automatically toggles state via controls listener
-      gm.controls.domElement.requestPointerLock();
-    }
-  };
-
-  // Save game handler
-  const handleSave = async () => {
-    const gm = gameManagerRef.current;
-    if (gm) {
-      const saveData = {
-        world: gm.world.saveWorld(),
-        player: {
-          x: gm.player.position.x,
-          y: gm.player.position.y,
-          z: gm.player.position.z,
-        },
-        hotbar: useGameStore.getState().hotbar,
-        inventory: useGameStore.getState().inventory,
-        activeSlot: useGameStore.getState().activeSlot,
-        gameMode: useGameStore.getState().gameMode,
-      };
-      try {
-        await SaveManager.saveGame('default_world', saveData, '默认世界');
-      } catch (err) {
-        console.error('Failed to save game data:', err);
-      }
-    }
-  };
-
-  // Quit game handler
-  const handleQuit = async () => {
-    await handleSave();
-    setGameState(GameState.MENU);
   };
 
   return (
     <div className={styles.appContainer}>
       {gameState === GameState.MENU && <StartMenu onStartGame={handleStartGame} />}
 
-      {gameState !== GameState.MENU && (
-        <div className="game-container">
-          <canvas ref={canvasRef} className="game-canvas" />
-
-          {/* Red vignette damage overlay flash */}
-          {isDamaged && (
-            <div className={styles.damageOverlay} />
-          )}
-
-          <GameProvider value={gameManagerRef.current}>
-            <HUD />
-          </GameProvider>
-        </div>
-      )}
-
-      {gameState === GameState.PAUSED && !activeChest && !isInventoryOpen && (
-        <PauseMenu
-          onResume={handleResume}
-          onSave={handleSave}
-          onQuit={handleQuit}
-        />
+      {gameState !== GameState.MENU && gameParams && (
+        <Suspense
+          fallback={
+            <div className={styles.loadingScreen}>
+              <div className={styles.loadingBox}>
+                <div className={styles.loadingTitle}>正在加载世界...</div>
+                <div className={styles.loadingSub}>生成区块并初始化 3D 渲染引擎</div>
+              </div>
+            </div>
+          }
+        >
+          <GameStage seed={gameParams.seed} loadSave={gameParams.loadSave} />
+        </Suspense>
       )}
     </div>
   );
 }
 
 export default App;
+
 

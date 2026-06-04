@@ -4,20 +4,52 @@
   position: relative;
 }
 
-.damageOverlay {
-  position: absolute;
+.loadingScreen {
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(239, 68, 68, 0.25);
-  box-shadow: inset 0 0 80px rgba(239, 68, 68, 0.8);
-  pointer-events: none;
-  z-index: 6;
-  animation: flash 0.15s ease-out;
+  background: linear-gradient(135deg, #0d0e15 0%, #151424 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
 }
 
-@keyframes flash {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.loadingBox {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 32px 48px;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  animation: glowPulse 2s infinite alternate;
 }
+
+.loadingTitle {
+  font-family: 'Press Start 2P', 'Outfit', 'PingFang SC', sans-serif;
+  font-size: 18px;
+  color: #ffff00;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.85);
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+.loadingSub {
+  font-family: 'Outfit', 'PingFang SC', sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.5px;
+}
+
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+  100% {
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6), 0 0 20px 2px rgba(99, 102, 241, 0.15), 0 0 0 1px rgba(129, 140, 248, 0.2);
+  }
+}
+
