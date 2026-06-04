@@ -7,7 +7,8 @@ import {
   ChestBlock,
   LeverBlock,
   LeafBlock,
-  SaplingBlock
+  SaplingBlock,
+  PureItem
 } from './BlockClasses';
 
 export class BlockRegistry {
@@ -200,9 +201,9 @@ export class BlockRegistry {
       droppedModelType: 'cross'
     }));
 
-    this.register(new SimpleSolidBlock({
+    this.register(new PureItem({
       id: BLOCK_TYPES.PORKCHOP, name: '生猪肉', isSolid: false, isTransparent: true, isLiquid: false,
-      hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'none',
+      hardness: -1, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'none',
       color: '#e07890', colorHex: 0xe07890,
       textureFaces: { top: 32, bottom: 32, side: 32 },
       droppedModelType: 'cross'

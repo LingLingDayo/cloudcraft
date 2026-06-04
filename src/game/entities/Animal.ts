@@ -26,6 +26,7 @@ export abstract class Animal {
   // Visuals
   public mesh: THREE.Group;
   protected hurtTimer = 0;
+  protected forwardRotationOffset = Math.PI; // Three.js forward is -Z, offset alignment by 180 degrees
 
   // Speed configs
   protected abstract walkSpeed: number;
@@ -263,7 +264,7 @@ export abstract class Animal {
 
   protected updateRotation(dt: number) {
     if (this.velocity.x !== 0 || this.velocity.z !== 0) {
-      const targetAngle = Math.atan2(this.velocity.x, this.velocity.z);
+      const targetAngle = Math.atan2(this.velocity.x, this.velocity.z) + this.forwardRotationOffset;
       let diff = targetAngle - this.mesh.rotation.y;
       diff = Math.atan2(Math.sin(diff), Math.cos(diff));
       this.mesh.rotation.y += diff * dt * 8.0;

@@ -123,27 +123,32 @@ export class InteractionManager {
       const activeSlot = useGameStore.getState().activeSlot;
       const hotbar = useGameStore.getState().hotbar;
       const heldItem = hotbar[activeSlot];
-      if (heldItem && heldItem.type === BLOCK_TYPES.PORKCHOP) {
-        if (this.game.player.life < 10) {
-          this.game.player.life = Math.min(10, this.game.player.life + 2);
-          sound.playPickup(); // eating sound fallback
-          
-          const isCreative = useGameStore.getState().gameMode === 'creative';
-          if (!isCreative) {
-            useGameStore.getState().decrementHotbarItem(activeSlot);
+      if (heldItem) {
+        const props = getBlockProperties(heldItem.type);
+        if (props.isItem) {
+          if (props.itemType === 'food' && props.foodProperties) {
+            if (this.game.player.life < 10) {
+              this.game.player.life = Math.min(10, this.game.player.life + props.foodProperties.healAmount);
+              sound.playPickup(); // eating sound fallback
+              
+              const isCreative = useGameStore.getState().gameMode === 'creative';
+              if (!isCreative) {
+                useGameStore.getState().decrementHotbarItem(activeSlot);
+              }
+              
+              useGameStore.getState().setPlayerState(
+                {
+                  x: this.game.player.position.x,
+                  y: this.game.player.position.y,
+                  z: this.game.player.position.z,
+                },
+                this.game.player.state.onGround,
+                this.game.player.state.inWater,
+                this.game.player.life
+              );
+            }
           }
-          
-          useGameStore.getState().setPlayerState(
-            {
-              x: this.game.player.position.x,
-              y: this.game.player.position.y,
-              z: this.game.player.position.z,
-            },
-            this.game.player.state.onGround,
-            this.game.player.state.inWater,
-            this.game.player.life
-          );
-          return;
+          return; // Intercept right click for all pure items to prevent placement
         }
       }
     }
@@ -197,8 +202,11 @@ export class InteractionManager {
       const playerBox = this.game.physics.getPlayerBox(this.game.player.position);
       const isCreative = useGameStore.getState().gameMode === 'creative';
 
-      if (this.game.player.selectedBlockType !== BLOCK_TYPES.AIR && !playerBox.intersectsBox(blockBox)) {
-        let blockToPlace: number = this.game.player.selectedBlockType;
+      const selectedBlockType = this.game.player.selectedBlockType;
+      const selectedProps = getBlockProperties(selectedBlockType);
+
+      if (selectedBlockType !== BLOCK_TYPES.AIR && !selectedProps.isItem && !playerBox.intersectsBox(blockBox)) {
+        let blockToPlace: number = selectedBlockType;
         const face = this.targetedBlockInfo.face;
 
         const isLog = blockToPlace === BLOCK_TYPES.WOOD || blockToPlace === BLOCK_TYPES.BIRCH_WOOD || blockToPlace === BLOCK_TYPES.SPRUCE_WOOD;
