@@ -19,6 +19,7 @@ export interface BlockProperties {
   border?: string;            // UI preview border (optional)
   allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
   textureFaces?: { top: number; bottom: number; side: number };
+  droppedModelType?: 'block' | 'cross';
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
@@ -361,6 +362,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     color: '#4c9436',
     colorHex: 0x4c9436,
     textureFaces: { top: 28, bottom: 28, side: 28 },
+    droppedModelType: 'cross',
   },
   [BLOCK_TYPES.BIRCH_SAPLING]: {
     id: BLOCK_TYPES.BIRCH_SAPLING,
@@ -377,6 +379,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     color: '#8fc04e',
     colorHex: 0x8fc04e,
     textureFaces: { top: 29, bottom: 29, side: 29 },
+    droppedModelType: 'cross',
   },
   [BLOCK_TYPES.SPRUCE_SAPLING]: {
     id: BLOCK_TYPES.SPRUCE_SAPLING,
@@ -393,6 +396,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     color: '#2d5a27',
     colorHex: 0x2d5a27,
     textureFaces: { top: 30, bottom: 30, side: 30 },
+    droppedModelType: 'cross',
   },
   [BLOCK_TYPES.JUNGLE_SAPLING]: {
     id: BLOCK_TYPES.JUNGLE_SAPLING,
@@ -409,6 +413,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     color: '#1a5f12',
     colorHex: 0x1a5f12,
     textureFaces: { top: 31, bottom: 31, side: 31 },
+    droppedModelType: 'cross',
   },
 };
 
