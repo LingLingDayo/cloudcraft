@@ -12,6 +12,7 @@ import { useGameStore } from '@store/useGameStore';
 import { EnvironmentManager } from './EnvironmentManager';
 import { InteractionManager } from './InteractionManager';
 import { DroppedItemManager } from './DroppedItemManager';
+import { AnimalManager } from './AnimalManager';
 
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
@@ -27,6 +28,7 @@ export class GameManager {
   public environment!: EnvironmentManager;
   public interaction!: InteractionManager;
   public droppedItems!: DroppedItemManager;
+  public animals!: AnimalManager;
 
   public canvas: HTMLCanvasElement;
   private animationId: number | null = null;
@@ -121,6 +123,7 @@ export class GameManager {
     this.environment = new EnvironmentManager(this);
     this.interaction = new InteractionManager(this);
     this.droppedItems = new DroppedItemManager(this);
+    this.animals = new AnimalManager(this);
   }
 
   public spawnPlayer() {
@@ -182,6 +185,7 @@ export class GameManager {
 
       if (this.interaction) this.interaction.update(dt);
       if (this.droppedItems) this.droppedItems.update(dt);
+      if (this.animals) this.animals.update(dt);
       this.world.update(dt);
 
       const currentMs = performance.now();
@@ -278,5 +282,6 @@ export class GameManager {
     }
     if (this.interaction) this.interaction.dispose();
     if (this.droppedItems) this.droppedItems.dispose();
+    if (this.animals) this.animals.dispose();
   }
 }

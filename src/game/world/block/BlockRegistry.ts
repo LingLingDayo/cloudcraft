@@ -199,6 +199,14 @@ export class BlockRegistry {
       textureFaces: { top: 31, bottom: 31, side: 31 },
       droppedModelType: 'cross'
     }));
+
+    this.register(new SimpleSolidBlock({
+      id: BLOCK_TYPES.PORKCHOP, name: '生猪肉', isSolid: false, isTransparent: true, isLiquid: false,
+      hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'none',
+      color: '#e07890', colorHex: 0xe07890,
+      textureFaces: { top: 32, bottom: 32, side: 32 },
+      droppedModelType: 'cross'
+    }));
   }
 
   public static get(id: number): Block {
