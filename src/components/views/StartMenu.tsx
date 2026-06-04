@@ -55,24 +55,24 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
         
         // Basic validation of save data structure
         if (!parsed || typeof parsed !== 'object' || !parsed.world) {
-          alert(language === 'zh' ? '无效的存档文件：缺少世界 data' : 'Invalid save file: missing world data');
+          alert(t('startMenu.invalidSaveFile'));
           return;
         }
 
         // Save it using SaveManager
-        SaveManager.saveGame('default_world', parsed, language === 'zh' ? '默认世界' : 'Default World')
+        SaveManager.saveGame('default_world', parsed, t('startMenu.defaultWorldName'))
           .then(() => {
             // Update state
             setHasSave(true);
-            alert(language === 'zh' ? '存档导入成功！' : 'Save imported successfully!');
+            alert(t('startMenu.importSuccess'));
           })
           .catch((err) => {
             console.error(err);
-            alert(language === 'zh' ? '导入存档失败' : 'Failed to import save');
+            alert(t('startMenu.importFailed'));
           });
       } catch (err) {
         console.error(err);
-        alert(language === 'zh' ? '解析存档文件失败' : 'Failed to parse save file');
+        alert(t('startMenu.parseFailed'));
       }
     };
     reader.readAsText(file);

@@ -55,7 +55,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
     try {
       const saveData = await SaveManager.getSave('default_world');
       if (!saveData) {
-        alert(language === 'zh' ? '没有找到存档数据！' : 'No save data found!');
+        alert(t('settings.noSaveData'));
         return;
       }
       const saveDataStr = JSON.stringify(saveData);
@@ -70,7 +70,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert(language === 'zh' ? '导出存档失败' : 'Failed to export save');
+      alert(t('settings.exportFailed'));
     }
   };
 
@@ -323,21 +323,21 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
                     <div className={styles.controlRow}>
                       <span className={styles.controlLabel}>{t('controls.mouseMove')}</span>
                       <div className={styles.controlKeys}>
-                        <span className={styles.mouseAction}>{language === 'zh' ? '移动鼠标' : 'Move Mouse'}</span>
+                        <span className={styles.mouseAction}>{t('controls.mouseMoveAction')}</span>
                       </div>
                     </div>
 
                     <div className={styles.controlRow}>
                       <span className={styles.controlLabel}>{t('controls.leftClick')}</span>
                       <div className={styles.controlKeys}>
-                        <span className={styles.mouseAction}>{language === 'zh' ? '左键破坏' : 'Left Click (Break)'}</span>
+                        <span className={styles.mouseAction}>{t('controls.leftClickAction')}</span>
                       </div>
                     </div>
 
                     <div className={styles.controlRow}>
                       <span className={styles.controlLabel}>{t('controls.rightClick')}</span>
                       <div className={styles.controlKeys}>
-                        <span className={styles.mouseAction}>{language === 'zh' ? '右键放置' : 'Right Click (Place)'}</span>
+                        <span className={styles.mouseAction}>{t('controls.rightClickAction')}</span>
                       </div>
                     </div>
                   </div>

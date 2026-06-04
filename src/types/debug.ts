@@ -4,6 +4,7 @@ export interface DebugMetrics {
   isFlying: boolean;
   targetBlock: {
     type: string;
+    id: number;
     x: number;
     y: number;
     z: number;

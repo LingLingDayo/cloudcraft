@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { Dialog } from '@components/common/Dialog';
-import { BLOCK_TYPES, type BlockType, getBlockProperties } from '@game/world/BlockConfig';
+import { BLOCK_TYPES, type BlockType } from '@game/world/BlockConfig';
+import { useTranslation } from '../../i18n';
 import type { HotbarItem } from '@store/types';
 import styles from './Inventory.module.scss';
 import { useGame } from '../../context/GameContext';
@@ -43,6 +44,7 @@ interface HeldItem {
 }
 
 export const Inventory: React.FC = () => {
+  const { t } = useTranslation();
   const gameInstance = useGame();
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
   const closeInventory = useGameStore((state) => state.closeInventory);
@@ -283,7 +285,7 @@ export const Inventory: React.FC = () => {
   return (
     <>
       <Dialog 
-        title={gameMode === 'creative' ? '创造模式物品栏' : '背包'} 
+        title={gameMode === 'creative' ? t('inventory.titleCreative') : t('inventory.titleSurvival')} 
         onClose={handleClose}
         width={412}
       >
@@ -296,14 +298,14 @@ export const Inventory: React.FC = () => {
                 className={`${styles.tabBtn} ${activeTab === 'creative' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('creative')}
               >
-                物品大全
+                {t('inventory.tabAllItems')}
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === 'survival' ? styles.activeTab : ''}`}
                 onClick={() => setActiveTab('survival')}
               >
-                快捷/背包
+                {t('inventory.tabHotbarInventory')}
               </button>
             </div>
           )}
@@ -311,16 +313,15 @@ export const Inventory: React.FC = () => {
           {/* Tab 1: All Items List (Creative Only) */}
           {gameMode === 'creative' && activeTab === 'creative' && (
             <div className={styles.creativeSection}>
-              <p className={styles.hint}>点击生成物品到手中，再放入下方快捷栏</p>
+              <p className={styles.hint}>{t('inventory.hintCreative')}</p>
               <div className={styles.creativeGrid}>
                 {ALL_BLOCKS.map((blockId, idx) => {
-                  const props = getBlockProperties(blockId);
                   return (
                     <div
                       key={blockId}
                       className={styles.itemSlot}
                       onClick={() => handleSlotClick('creative', idx, blockId)}
-                      title={props.name}
+                      title={t(`blocks.${blockId}`)}
                     >
                       <BlockIcon blockId={blockId} size={18} className={styles.itemPreview} />
                     </div>
@@ -333,7 +334,7 @@ export const Inventory: React.FC = () => {
           {/* Tab 2: Survival Style Inventory (Default for Survival, Tab 2 for Creative) */}
           {activeTab === 'survival' && (
             <div className={styles.survivalSection}>
-              <div className={styles.labelRow}>主背包 (Inventory)</div>
+              <div className={styles.labelRow}>{t('inventory.labelInventory')}</div>
               <div className={styles.inventoryGrid}>
                 {inventory.map((item, idx) => (
                   <div
@@ -362,7 +363,7 @@ export const Inventory: React.FC = () => {
           <div className={styles.divider} />
 
           <div className={styles.hotbarSection}>
-            <div className={styles.labelRow}>快捷栏 (Hotbar)</div>
+            <div className={styles.labelRow}>{t('inventory.labelHotbar')}</div>
             <div className={styles.hotbarGrid}>
               {hotbar.map((item, idx) => (
                 <div
@@ -387,7 +388,7 @@ export const Inventory: React.FC = () => {
           </div>
           
           <div className={styles.footerHint}>
-            提示：右键槽位可在背包与快捷栏之间快速移动物品
+            {t('inventory.hintRightClick')}
           </div>
         </div>
       </Dialog>

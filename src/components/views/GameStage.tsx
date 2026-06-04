@@ -7,6 +7,7 @@ import styles from './GameStage.module.scss';
 import { GameState, GameMode, type BlockType } from '@type';
 import { GameProvider } from '../../context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
+import { useTranslation } from '../../i18n';
 
 interface GameStageProps {
   seed: string;
@@ -14,6 +15,7 @@ interface GameStageProps {
 }
 
 export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
+  const { t } = useTranslation();
   const gameState = useGameStore((state) => state.gameState);
   const setGameState = useGameStore((state) => state.setGameState);
   const selectedBlock = useGameStore((state) => state.selectedBlock);
@@ -160,7 +162,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         gameMode: useGameStore.getState().gameMode,
       };
       try {
-        await SaveManager.saveGame('default_world', saveData, '默认世界');
+        await SaveManager.saveGame('default_world', saveData, t('startMenu.defaultWorldName'));
       } catch (err) {
         console.error('Failed to save game data:', err);
       }
@@ -182,6 +184,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         <div className={styles.damageOverlay} />
       )}
 
+      {/* eslint-disable-next-line react-hooks/refs */}
       <GameProvider value={gameManagerRef.current}>
         <HUD />
         {gameState === GameState.PAUSED && !activeChest && !isInventoryOpen && (
