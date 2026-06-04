@@ -357,6 +357,13 @@ export class WorldGenerator {
 
         const finalHeight = Math.max(3, Math.min(CHUNK_SIZE_Y - 2, adjustedHeight));
 
+        // 计算当前列的矿洞最大高度限制（是否允许露天入口）
+        let maxHeightOffset: number = WORLD_CONFIG.caves.maxHeightOffsetDefault;
+        const entranceNoise = this.noise.noise(wx * 0.02, wz * 0.02);
+        if (entranceNoise > 0.35 && finalHeight > WORLD_CONFIG.waterLevel + 5) {
+          maxHeightOffset = WORLD_CONFIG.caves.maxHeightOffsetEntrance;
+        }
+
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
           const index = x + z * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
           
@@ -368,41 +375,52 @@ export class WorldGenerator {
             primaryBiome.fillColumn(chunk, x, z, y, finalHeight, localWaterLevel, depth, this.noise, wx, wz, isDryLand && !isPond);
 
             // 矿洞刻蚀 (Cave carving)
-            // 矿洞仅在 minHeight 以上、地表下 3 格以下（避免破坏草地表面和露天结构）生成
-            if (y >= WORLD_CONFIG.caves.minHeight && y <= finalHeight - WORLD_CONFIG.caves.maxHeightOffset) {
+            // 矿洞仅在 minHeight 以上、地表下限制格以下生成
+            if (y >= WORLD_CONFIG.caves.minHeight && y <= finalHeight - maxHeightOffset) {
+              const warpScale = WORLD_CONFIG.caves.warpScale;
+              const warpStrength = WORLD_CONFIG.caves.warpStrength;
+              const wxWarped = wx + this.noise.noise3d(wx * warpScale, y * warpScale, wz * warpScale) * warpStrength;
+              const yWarped = y + this.noise.noise3d(wx * warpScale + 100, y * warpScale + 100, wz * warpScale + 100) * warpStrength;
+              const wzWarped = wz + this.noise.noise3d(wx * warpScale + 200, y * warpScale + 200, wz * warpScale + 200) * warpStrength;
+
+              const baseThreshold = WORLD_CONFIG.caves.baseThreshold;
+              // 使用极低频 3D 噪波控制局部的粗细变化，形成不规则的“洞室”
+              const chamberNoise = this.noise.noise3d(wx * 0.01, y * 0.015, wz * 0.01);
+              const currentThreshold = baseThreshold + chamberNoise * 0.08;
+
               const n1 = this.noise.noise3d(
-                wx * WORLD_CONFIG.caves.scaleXZ,
-                y * WORLD_CONFIG.caves.scaleY,
-                wz * WORLD_CONFIG.caves.scaleXZ
+                wxWarped * WORLD_CONFIG.caves.scaleXZ,
+                yWarped * WORLD_CONFIG.caves.scaleY,
+                wzWarped * WORLD_CONFIG.caves.scaleXZ
               );
-              if (Math.abs(n1) < WORLD_CONFIG.caves.threshold) {
-                const n2 = this.noise.noise3d(
-                  wx * WORLD_CONFIG.caves.scaleXZ + 100,
-                  y * WORLD_CONFIG.caves.scaleY + 100,
-                  wz * WORLD_CONFIG.caves.scaleXZ + 100
-                );
-                if (Math.abs(n2) < WORLD_CONFIG.caves.threshold) {
-                  // 检查是否靠近 any water域（当 y <= localWaterLevel 时），防止矿洞从侧面穿透水体
-                  let adjacentToWater = false;
-                  if (y <= localWaterLevel) {
-                    const neighbors = [
-                      [wx + 1, wz],
-                      [wx - 1, wz],
-                      [wx, wz + 1],
-                      [wx, wz - 1]
-                    ];
-                    for (const [nx, nz] of neighbors) {
-                      if (this.isWaterArea(nx, nz)) {
-                        adjacentToWater = true;
-                        break;
-                      }
+              const n2 = this.noise.noise3d(
+                wxWarped * WORLD_CONFIG.caves.scaleXZ + 100,
+                yWarped * WORLD_CONFIG.caves.scaleY + 100,
+                wzWarped * WORLD_CONFIG.caves.scaleXZ + 100
+              );
+
+              // 圆周判定：n1*n1 + n2*n2 < currentThreshold*currentThreshold
+              if (n1 * n1 + n2 * n2 < currentThreshold * currentThreshold) {
+                // 检查是否靠近 any water域（当 y <= localWaterLevel 时），防止矿洞从侧面穿透水体
+                let adjacentToWater = false;
+                if (y <= localWaterLevel) {
+                  const neighbors = [
+                    [wx + 1, wz],
+                    [wx - 1, wz],
+                    [wx, wz + 1],
+                    [wx, wz - 1]
+                  ];
+                  for (const [nx, nz] of neighbors) {
+                    if (this.isWaterArea(nx, nz)) {
+                      adjacentToWater = true;
+                      break;
                     }
                   }
+                }
 
-                  if (!adjacentToWater) {
-                    // 雕刻为空气 (Caves are filled with air)
-                    chunk[index] = BLOCK_TYPES.AIR;
-                  }
+                if (!adjacentToWater) {
+                  // 雕刻为空气 (Caves are filled with air)
+                  chunk[index] = BLOCK_TYPES.AIR;
                 }
               }
             }
