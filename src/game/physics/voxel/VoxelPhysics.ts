@@ -113,16 +113,18 @@ export class VoxelPhysics {
 
     // 2. Apply movement forces
     if (isFlying) {
-      const flySpeed = this.settings.walkSpeed * 2.0;
+      const flySpeedMultiplier = isShiftLeft ? 1.5 : 1.0;
+      const flySpeed = this.settings.walkSpeed * 2.0 * flySpeedMultiplier;
       velocity.x = inputDirection.x * flySpeed;
       velocity.z = inputDirection.z * flySpeed;
 
       const verticalMove = (isJumping ? 1 : 0) + (isShiftLeft ? -1 : 0);
-      velocity.y = verticalMove * this.settings.walkSpeed * 1.5;
+      velocity.y = verticalMove * this.settings.walkSpeed * 1.5 * flySpeedMultiplier;
 
       state.onGround = false;
     } else {
-      const speed = state.inWater ? this.settings.swimSpeed : this.settings.walkSpeed;
+      const speedMultiplier = isShiftLeft ? 1.5 : 1.0;
+      const speed = (state.inWater ? this.settings.swimSpeed : this.settings.walkSpeed) * speedMultiplier;
       velocity.x = inputDirection.x * speed;
       velocity.z = inputDirection.z * speed;
 
@@ -308,7 +310,7 @@ export class VoxelPhysics {
       }
 
       // 自动跳跃 (Auto Jump)
-      if (triggerAutoJump && autoJump && !isShiftLeft) {
+      if (triggerAutoJump && autoJump) {
         const baseDirY = Math.floor(position.y);
         let shouldAutoJump = false;
 
