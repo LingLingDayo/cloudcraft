@@ -7,6 +7,13 @@ export class ItemRegistry {
   private static blockToItemMap = new Map<BlockType, ItemType>();
   private static itemToBlockMap = new Map<ItemType, BlockType>();
   private static defaultItem: Item;
+  private static initialized = false;
+
+  private static ensureInitialized() {
+    if (!this.initialized) {
+      this.init();
+    }
+  }
 
   public static register(item: Item) {
     this.items.set(item.id, item);
@@ -17,6 +24,9 @@ export class ItemRegistry {
   }
 
   public static init() {
+    if (this.initialized) return;
+    this.initialized = true;
+
     // 1. Register Food items (Pure Items)
     this.register(new FoodItem({
       id: ItemType.PORKCHOP,
@@ -121,37 +131,42 @@ export class ItemRegistry {
   }
 
   public static get(id: ItemType): Item {
+    // 确保已按需初始化，规避循环依赖导致的未初始化状态
+    this.ensureInitialized();
     return this.items.get(id) || this.defaultItem;
   }
 
   public static getItemTypeFromBlockType(blockType: BlockType): ItemType | null {
+    this.ensureInitialized();
     if (blockType === BLOCK_TYPES.AIR) return null;
     return this.blockToItemMap.get(blockType) ?? null;
   }
 
   public static getBlockTypeFromItemType(itemType: ItemType): BlockType {
+    this.ensureInitialized();
     return this.itemToBlockMap.get(itemType) ?? BLOCK_TYPES.AIR;
   }
 
   public static getAllItems(): Item[] {
+    this.ensureInitialized();
     return Array.from(this.items.values());
   }
 
   /** 按分类获取所有物品 */
   public static getByCategory(category: import('./Item').ItemCategory): Item[] {
+    this.ensureInitialized();
     return Array.from(this.items.values()).filter(i => i.category === category);
   }
 
   /** 获取所有可放置方块物品 */
   public static getPlaceableItems(): BlockItem[] {
+    this.ensureInitialized();
     return this.getByCategory('block') as BlockItem[];
   }
 
   /** 获取所有食物物品 */
   public static getFoodItems(): FoodItem[] {
+    this.ensureInitialized();
     return this.getByCategory('food') as FoodItem[];
   }
 }
-
-// Automatically initialize the ItemRegistry
-ItemRegistry.init();

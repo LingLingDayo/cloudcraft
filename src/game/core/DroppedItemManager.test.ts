@@ -101,9 +101,8 @@ describe('DroppedItemManager', () => {
     // Verify geometry attributes for cross shape
     const geom = item.mesh.geometry;
     const positionAttr = geom.getAttribute('position');
-    // Cross shape: 2 planes, each double-sided (front+back) = 4 faces * 2 triangles * 3 vertices = ...
-    // The actual merged geometry produces 36 vertices
-    expect(positionAttr.count).toBe(36);
+    // Cross shape: 2 planes = 2 faces * 2 triangles * 3 vertices = 12 vertices
+    expect(positionAttr.count).toBe(12);
   });
 
   test('should not collide with non-collidable blocks (e.g. dandelion)', () => {
