@@ -4,6 +4,7 @@ import { WorldLoadingScreen } from '@components/views/WorldLoadingScreen';
 import { useGameStore } from '@store/useGameStore';
 import styles from './App.module.scss';
 import { GameState } from '@type';
+import { isMobileDevice } from './utils/device';
 
 // Lazy load the 3D game engine and canvas components
 const GameStage = lazy(() => import('@components/views/GameStage'));
@@ -38,21 +39,24 @@ function App() {
     document.addEventListener('gesturestart', handleGestureStart, { passive: false });
 
     // Silent fullscreen attempt on mount (may fail silently due to lack of user gesture, which is expected)
-    interface FullscreenHTMLElement extends HTMLElement {
-      webkitRequestFullscreen?: () => Promise<void>;
-      mozRequestFullScreen?: () => Promise<void>;
-      msRequestFullscreen?: () => Promise<void>;
-    }
-    const docEl = document.documentElement as FullscreenHTMLElement;
-    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-    if (requestFS) {
-      try {
-        const result = requestFS.call(docEl);
-        if (result && typeof result.catch === 'function') {
-          result.catch(() => { /* Silent catch */ });
+    // Avoid triggering fullscreen in mobile dev environments
+    if (!(import.meta.env.DEV && isMobileDevice())) {
+      interface FullscreenHTMLElement extends HTMLElement {
+        webkitRequestFullscreen?: () => Promise<void>;
+        mozRequestFullScreen?: () => Promise<void>;
+        msRequestFullscreen?: () => Promise<void>;
+      }
+      const docEl = document.documentElement as FullscreenHTMLElement;
+      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      if (requestFS) {
+        try {
+          const result = requestFS.call(docEl);
+          if (result && typeof result.catch === 'function') {
+            result.catch(() => { /* Silent catch */ });
+          }
+        } catch {
+          /* Silent catch */
         }
-      } catch {
-        /* Silent catch */
       }
     }
 
