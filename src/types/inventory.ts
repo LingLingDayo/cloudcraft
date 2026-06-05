@@ -1,6 +1,6 @@
-import { BlockType } from './block';
+import { ItemType } from './item';
 
 export interface HotbarItem {
-  type: BlockType;
+  type: ItemType;
   count: number;
 }

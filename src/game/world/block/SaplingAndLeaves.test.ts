@@ -3,6 +3,7 @@ import { vi, describe, test, expect } from 'vitest';
 import { World } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { BlockRegistry } from './BlockRegistry';
+import { ItemType } from '@type';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -70,13 +71,13 @@ describe('Saplings and Leaves Decay/Growth Systems', () => {
     const leaf = BlockRegistry.get(BLOCK_TYPES.LEAF);
     const drops = leaf.getDrops();
     
-    // It should never drop itself
-    const dropsSelf = drops.some((d: any) => d.type === BLOCK_TYPES.LEAF);
+    // It should never drop itself (now using ItemType strings)
+    const dropsSelf = drops.some((d: any) => d.type === ItemType.LEAF);
     expect(dropsSelf).toBe(false);
 
-    // It should either drop nothing or drop a sapling
+    // It should either drop nothing or drop a sapling (ItemType string)
     if (drops.length > 0) {
-      expect(drops[0].type).toBe(BLOCK_TYPES.OAK_SAPLING);
+      expect(drops[0].type).toBe(ItemType.OAK_SAPLING);
       expect(drops[0].count).toBe(1);
     }
   });

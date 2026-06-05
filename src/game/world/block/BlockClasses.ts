@@ -5,7 +5,8 @@ import type { World } from '../World';
 import { BLOCK_TYPES, getBlockProperties } from '../BlockConfig';
 import { ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 import { sound } from '@game/systems/Sound';
-import type { BlockType } from '@type';
+import { ItemType } from '@type';
+import { ItemRegistry } from '../../item/ItemRegistry';
 
 
 export class AirBlock extends Block {
@@ -134,21 +135,21 @@ export class LeafBlock extends Block {
     super(properties);
   }
 
-  public getDrops(): { type: BlockType; count: number }[] {
+  public getDrops(): { type: ItemType; count: number }[] {
     const drops = [];
     const rand = Math.random();
     if (rand < 0.1) {
-      let saplingType: BlockType = BLOCK_TYPES.OAK_SAPLING;
-      if (this.id === BLOCK_TYPES.BIRCH_LEAVES) saplingType = BLOCK_TYPES.BIRCH_SAPLING;
-      else if (this.id === BLOCK_TYPES.SPRUCE_LEAVES) saplingType = BLOCK_TYPES.SPRUCE_SAPLING;
-      else if (this.id === BLOCK_TYPES.JUNGLE_LEAVES) saplingType = BLOCK_TYPES.JUNGLE_SAPLING;
+      let saplingItem: ItemType = ItemType.OAK_SAPLING;
+      if (this.id === BLOCK_TYPES.BIRCH_LEAVES) saplingItem = ItemType.BIRCH_SAPLING;
+      else if (this.id === BLOCK_TYPES.SPRUCE_LEAVES) saplingItem = ItemType.SPRUCE_SAPLING;
+      else if (this.id === BLOCK_TYPES.JUNGLE_LEAVES) saplingItem = ItemType.JUNGLE_SAPLING;
 
-      drops.push({ type: saplingType, count: 1 });
+      drops.push({ type: saplingItem, count: 1 });
     }
 
     // Oak leaves have a 5% chance of dropping an apple when broken
     if (this.id === BLOCK_TYPES.LEAF && Math.random() < 0.05) {
-      drops.push({ type: BLOCK_TYPES.APPLE, count: 1 });
+      drops.push({ type: ItemType.APPLE, count: 1 });
     }
     return drops;
   }
@@ -171,7 +172,10 @@ export class SaplingBlock extends Block {
       // Pop off immediately
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
-        world.game.droppedItems.spawnItem(this.id, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
+        if (itemType) {
+          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        }
       }
     } else {
       world.registerSapling(x, y, z, this.id);
@@ -189,25 +193,14 @@ export class SaplingBlock extends Block {
       if (!props.allowVegetationBase) {
         world.setBlock(x, y, z, BLOCK_TYPES.AIR);
         if (world.game && world.game.droppedItems) {
-          world.game.droppedItems.spawnItem(this.id, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+          const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
+          if (itemType) {
+            world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+          }
         }
       }
     }
   }
 }
 
-export class PureItem extends Block {
-  constructor(properties: BlockProperties) {
-    super({
-      ...properties,
-      isSolid: false,
-      isTransparent: true,
-      isLiquid: false,
-      hardness: -1,
-      isInteractable: false,
-      opacity: 0.0,
-      soundType: 'none',
-      isItem: true,
-    });
-  }
-}
+

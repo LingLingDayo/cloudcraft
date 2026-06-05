@@ -1,7 +1,22 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, PlayerSlice } from '../types';
 import { BLOCK_TYPES } from '@game/world/World';
-import { GameMode } from '@type';
+import { GameMode, ItemType } from '@type';
+import { ItemRegistry } from '@game/item/ItemRegistry';
+import type { HotbarItem } from '../types';
+
+/** 创意模式默认热键栏配置，统一维护避免两处重复 */
+export const CREATIVE_DEFAULT_HOTBAR: HotbarItem[] = [
+  { type: ItemType.GRASS, count: 1 },
+  { type: ItemType.DIRT, count: 1 },
+  { type: ItemType.STONE, count: 1 },
+  { type: ItemType.WOOD, count: 1 },
+  { type: ItemType.LEAF, count: 1 },
+  { type: ItemType.GLASS, count: 1 },
+  { type: ItemType.WATER, count: 1 },
+  { type: ItemType.SAND, count: 1 },
+  { type: ItemType.DIAMOND, count: 1 },
+];
 
 export const createPlayerSlice: StateCreator<
   GameStoreState,
@@ -10,6 +25,7 @@ export const createPlayerSlice: StateCreator<
   PlayerSlice
 > = (set) => ({
   selectedBlock: BLOCK_TYPES.AIR,
+  selectedItem: null,
   activeSlot: 0,
   hotbar: Array(9).fill(null),
   life: 10,
@@ -24,15 +40,32 @@ export const createPlayerSlice: StateCreator<
   inventory: Array(54).fill(null),
 
 
-  setSelectedBlock: (selectedBlock) => set({ selectedBlock }),
+  setSelectedBlock: (selectedBlock) => set((state) => {
+    const itemType = ItemRegistry.getItemTypeFromBlockType(selectedBlock);
+    return {
+      selectedBlock,
+      selectedItem: itemType ?? state.selectedItem,
+    };
+  }),
+
+  setSelectedItem: (selectedItem) => set(() => {
+    const blockType = selectedItem
+      ? ItemRegistry.getBlockTypeFromItemType(selectedItem)
+      : BLOCK_TYPES.AIR;
+    return {
+      selectedItem,
+      selectedBlock: blockType,
+    };
+  }),
   
   setActiveSlot: (activeSlot) => set((state) => {
     const item = state.hotbar[activeSlot];
-    const selectedBlock = item ? item.type : BLOCK_TYPES.AIR;
-    return { activeSlot, selectedBlock };
+    const selectedItem = item ? item.type : null;
+    const selectedBlock = item ? ItemRegistry.getBlockTypeFromItemType(item.type) : BLOCK_TYPES.AIR;
+    return { activeSlot, selectedBlock, selectedItem };
   }),
 
-  addToHotbar: (blockType, count = 1) => {
+  addToHotbar: (itemType, count = 1) => {
     let success = false;
     set((state) => {
       if (state.gameMode === GameMode.CREATIVE) {
@@ -43,14 +76,14 @@ export const createPlayerSlice: StateCreator<
       const nextInventory = [...(state.inventory || Array(54).fill(null))];
       
       // 1. Try to find in hotbar
-      const existingHotbarIndex = nextHotbar.findIndex(item => item && item.type === blockType);
+      const existingHotbarIndex = nextHotbar.findIndex(item => item && item.type === itemType);
       if (existingHotbarIndex !== -1) {
         const item = nextHotbar[existingHotbarIndex]!;
         nextHotbar[existingHotbarIndex] = { ...item, count: item.count + count };
         success = true;
       } else {
         // 2. Try to find in inventory
-        const existingInvIndex = nextInventory.findIndex(item => item && item.type === blockType);
+        const existingInvIndex = nextInventory.findIndex(item => item && item.type === itemType);
         if (existingInvIndex !== -1) {
           const item = nextInventory[existingInvIndex]!;
           nextInventory[existingInvIndex] = { ...item, count: item.count + count };
@@ -59,13 +92,13 @@ export const createPlayerSlice: StateCreator<
           // 3. Try empty space in hotbar
           const emptyHotbarIndex = nextHotbar.findIndex(item => item === null);
           if (emptyHotbarIndex !== -1) {
-            nextHotbar[emptyHotbarIndex] = { type: blockType, count };
+            nextHotbar[emptyHotbarIndex] = { type: itemType, count };
             success = true;
           } else {
             // 4. Try empty space in inventory
             const emptyInvIndex = nextInventory.findIndex(item => item === null);
             if (emptyInvIndex !== -1) {
-              nextInventory[emptyInvIndex] = { type: blockType, count };
+              nextInventory[emptyInvIndex] = { type: itemType, count };
               success = true;
             }
           }
@@ -74,8 +107,9 @@ export const createPlayerSlice: StateCreator<
 
       if (success) {
         const activeItem = nextHotbar[state.activeSlot];
-        const selectedBlock = activeItem ? activeItem.type : BLOCK_TYPES.AIR;
-        return { hotbar: nextHotbar, inventory: nextInventory, selectedBlock };
+        const selectedItem = activeItem ? activeItem.type : null;
+        const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
+        return { hotbar: nextHotbar, inventory: nextInventory, selectedBlock, selectedItem };
       }
       return {};
     });
@@ -95,8 +129,9 @@ export const createPlayerSlice: StateCreator<
         nextHotbar[slotIndex] = null;
       }
       const activeItem = nextHotbar[state.activeSlot];
-      const selectedBlock = activeItem ? activeItem.type : BLOCK_TYPES.AIR;
-      return { hotbar: nextHotbar, selectedBlock };
+      const selectedItem = activeItem ? activeItem.type : null;
+      const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
+      return { hotbar: nextHotbar, selectedBlock, selectedItem };
     }
     return {};
   }),
@@ -104,19 +139,10 @@ export const createPlayerSlice: StateCreator<
   resetHotbar: (mode) => set(() => {
     if (mode === GameMode.CREATIVE) {
       return {
-        hotbar: [
-          { type: BLOCK_TYPES.GRASS, count: 1 },
-          { type: BLOCK_TYPES.DIRT, count: 1 },
-          { type: BLOCK_TYPES.STONE, count: 1 },
-          { type: BLOCK_TYPES.WOOD, count: 1 },
-          { type: BLOCK_TYPES.LEAF, count: 1 },
-          { type: BLOCK_TYPES.GLASS, count: 1 },
-          { type: BLOCK_TYPES.WATER, count: 1 },
-          { type: BLOCK_TYPES.SAND, count: 1 },
-          { type: BLOCK_TYPES.DIAMOND, count: 1 },
-        ],
+        hotbar: [...CREATIVE_DEFAULT_HOTBAR],
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.GRASS,
+        selectedItem: ItemType.GRASS,
         inventory: Array(54).fill(null),
       };
     } else {
@@ -124,6 +150,7 @@ export const createPlayerSlice: StateCreator<
         hotbar: Array(9).fill(null),
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.AIR,
+        selectedItem: null,
         inventory: Array(54).fill(null),
       };
     }

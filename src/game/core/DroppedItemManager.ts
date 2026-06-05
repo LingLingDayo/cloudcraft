@@ -1,21 +1,25 @@
 import * as THREE from 'three';
 import { GameManager } from './GameManager';
 import { getBlockProperties } from '@game/world/World';
-import { type BlockType } from '@game/world/BlockConfig';
 import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
+import { ItemType } from '@type';
+import { ItemRegistry } from '@game/item/ItemRegistry';
+import { BlockItem } from '@game/item/Item';
 
 export class DroppedItemManager {
   private game: GameManager;
   private droppedItems: {
     id: string;
-    type: BlockType;
+    type: ItemType;
     position: THREE.Vector3;
     velocity: THREE.Vector3;
     mesh: THREE.Mesh;
     onGround: boolean;
     spawnTime: number;
   }[] = [];
+  /** 几何体缓存：同一 ItemType 复用同一个 BufferGeometry */
+  private geometryCache = new Map<ItemType, THREE.BufferGeometry>();
 
   constructor(game: GameManager) {
     this.game = game;
@@ -115,15 +119,18 @@ export class DroppedItemManager {
     }
   }
 
-  public spawnItem(blockType: BlockType, pos: THREE.Vector3 | { x: number; y: number; z: number }, count?: number) {
+  public spawnItem(itemType: ItemType, pos: THREE.Vector3 | { x: number; y: number; z: number }, count?: number) {
     void count;
-    const props = getBlockProperties(blockType);
-    const isTrans = props.opacity < 1.0;
+    const item = ItemRegistry.get(itemType);
+    let isTrans = true;
+    if (item instanceof BlockItem) {
+      const blockProps = getBlockProperties(item.blockId);
+      isTrans = blockProps.opacity < 1.0;
+    }
+    
     const material = isTrans ? this.game.world.materials.transparent : this.game.world.materials.solid;
     
-    const geometry = props.droppedModelType === 'cross'
-      ? this.createCrossItemGeometry(blockType)
-      : this.createBlockItemGeometry(blockType);
+    const geometry = this.getOrCreateGeometry(itemType, item);
       
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
@@ -137,13 +144,25 @@ export class DroppedItemManager {
 
     this.droppedItems.push({
       id: Math.random().toString(36).substring(2, 9),
-      type: blockType,
+      type: itemType,
       position: spawnPos,
       velocity,
       mesh,
       onGround: false,
       spawnTime: performance.now(),
     });
+  }
+
+  /** 从缓存获取或新建并缓存几何体 */
+  private getOrCreateGeometry(itemType: ItemType, item: ReturnType<typeof ItemRegistry.get>): THREE.BufferGeometry {
+    if (this.geometryCache.has(itemType)) {
+      return this.geometryCache.get(itemType)!;
+    }
+    const geom = item.droppedModelType === 'cross'
+      ? this.createCrossItemGeometry(itemType)
+      : this.createBlockItemGeometry(itemType);
+    this.geometryCache.set(itemType, geom);
+    return geom;
   }
 
   private getDroppedItemBox(pos: THREE.Vector3): THREE.Box3 {
@@ -189,7 +208,7 @@ export class DroppedItemManager {
     return colliders;
   }
 
-  private createCrossItemGeometry(blockType: BlockType): THREE.BufferGeometry {
+  private createCrossItemGeometry(itemType: ItemType): THREE.BufferGeometry {
     const geom = new THREE.BufferGeometry();
     const size = 0.25;
     const h = size / 2;
@@ -222,8 +241,8 @@ export class DroppedItemManager {
       0, 0, 1, 0, 0, 1, 0, 0, 1,
     ];
 
-    const props = getBlockProperties(blockType);
-    const atlasIndex = props.textureFaces?.side ?? props.textureFaces?.top ?? 3;
+    const item = ItemRegistry.get(itemType);
+    const atlasIndex = item.textureFaces?.side ?? item.textureFaces?.top ?? 3;
     const tx = atlasIndex % 8;
     const ty = 7 - Math.floor(atlasIndex / 8);
     const uMin = tx * 0.125;
@@ -258,7 +277,7 @@ export class DroppedItemManager {
     return geom;
   }
 
-  private createBlockItemGeometry(blockType: BlockType): THREE.BufferGeometry {
+  private createBlockItemGeometry(itemType: ItemType): THREE.BufferGeometry {
     const geom = new THREE.BufferGeometry();
     const size = 0.25;
     const h = size / 2;
@@ -276,6 +295,8 @@ export class DroppedItemManager {
     const normals: number[] = [];
     const uvs: number[] = [];
 
+    const item = ItemRegistry.get(itemType);
+
     for (const face of faces) {
       const corners = face.corners;
       const v0 = corners[0];
@@ -290,7 +311,7 @@ export class DroppedItemManager {
         normals.push(...face.dir);
       }
 
-      const atlasIndex = getBlockProperties(blockType).textureFaces?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3;
+      const atlasIndex = item.textureFaces?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3;
       const tx = atlasIndex % 8;
       const ty = 7 - Math.floor(atlasIndex / 8);
       const uMin = tx * 0.125;
@@ -326,5 +347,8 @@ export class DroppedItemManager {
       });
       this.droppedItems = [];
     }
+    // 清理几何体缓存
+    this.geometryCache.forEach((geom) => geom.dispose());
+    this.geometryCache.clear();
   }
 }

@@ -4,6 +4,8 @@ import { BLOCK_TYPES, getBlockProperties } from '@game/world/World';
 import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
 import { BlockRegistry } from '../world/block/BlockRegistry';
+import { ItemRegistry } from '@game/item/ItemRegistry';
+import { FoodItem } from '@game/item/Item';
 
 
 
@@ -124,33 +126,40 @@ export class InteractionManager {
       const hotbar = useGameStore.getState().hotbar;
       const heldItem = hotbar[activeSlot];
       if (heldItem) {
-        const props = getBlockProperties(heldItem.type);
-        if (props.isItem) {
-          if (props.itemType === 'food' && props.foodProperties) {
-            if (this.game.player.hunger < 20) {
-              const hungerAmount = props.foodProperties.hungerAmount ?? (props.foodProperties.healAmount * 2);
-              this.game.player.hunger = Math.min(20, this.game.player.hunger + hungerAmount);
-              sound.playPickup(); // eating sound fallback
-              
-              const isCreative = useGameStore.getState().gameMode === 'creative';
-              if (!isCreative) {
-                useGameStore.getState().decrementHotbarItem(activeSlot);
-              }
-              
-              useGameStore.getState().setPlayerState(
-                {
-                  x: this.game.player.position.x,
-                  y: this.game.player.position.y,
-                  z: this.game.player.position.z,
-                },
-                this.game.player.state.onGround,
-                this.game.player.state.inWater,
-                this.game.player.life,
-                this.game.player.hunger
-              );
+        const item = ItemRegistry.get(heldItem.type);
+        if (item instanceof FoodItem) {
+          const effect = item.onUse(this.game.player);
+          if (effect) {
+            // 统一应用副作用，单一数据源
+            if (effect.hungerDelta) {
+              this.game.player.hunger = Math.min(20, this.game.player.hunger + effect.hungerDelta);
             }
+            if (effect.healDelta) {
+              this.game.player.life = Math.min(10, this.game.player.life + effect.healDelta);
+            }
+            sound.playPickup(); // eating sound fallback
+
+            const isCreative = useGameStore.getState().gameMode === 'creative';
+            if (!isCreative) {
+              useGameStore.getState().decrementHotbarItem(activeSlot);
+            }
+
+            useGameStore.getState().setPlayerState(
+              {
+                x: this.game.player.position.x,
+                y: this.game.player.position.y,
+                z: this.game.player.position.z,
+              },
+              this.game.player.state.onGround,
+              this.game.player.state.inWater,
+              this.game.player.life,
+              this.game.player.hunger
+            );
           }
-          return; // Intercept right click for all pure items to prevent placement
+          return; // Intercept right click for all food items to prevent placement
+        } else if (!item.isBlockItem) {
+          // Intercept right click for all other pure items to prevent placement
+          return;
         }
       }
     }
@@ -205,9 +214,8 @@ export class InteractionManager {
       const isCreative = useGameStore.getState().gameMode === 'creative';
 
       const selectedBlockType = this.game.player.selectedBlockType;
-      const selectedProps = getBlockProperties(selectedBlockType);
 
-      if (selectedBlockType !== BLOCK_TYPES.AIR && !selectedProps.isItem && !playerBox.intersectsBox(blockBox)) {
+      if (selectedBlockType !== BLOCK_TYPES.AIR && !playerBox.intersectsBox(blockBox)) {
         let blockToPlace: number = selectedBlockType;
         const face = this.targetedBlockInfo.face;
 

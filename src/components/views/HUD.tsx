@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { BLOCK_TYPES, getBlockProperties } from '@game/world/World';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
+import { ItemRegistry } from '@game/item/ItemRegistry';
 import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
@@ -102,7 +101,7 @@ export const HUD: React.FC = () => {
   const [activeLabel, setActiveLabel] = useState<string>('');
   const gameInstance = useGame();
 
-  const selectedBlock = useGameStore((state) => state.selectedBlock);
+  const selectedItem = useGameStore((state) => state.selectedItem);
   const hotbar = useGameStore((state) => state.hotbar);
   const activeSlot = useGameStore((state) => state.activeSlot);
   const setActiveSlot = useGameStore((state) => state.setActiveSlot);
@@ -132,7 +131,7 @@ export const HUD: React.FC = () => {
     if (activeChest && gameInstance) {
       const entity = gameInstance.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
       if (entity && 'inventory' in entity) {
-        (entity as any).inventory = [...nextChest];
+        (entity as { inventory: typeof nextChest }).inventory = [...nextChest];
       }
     }
   };
@@ -169,12 +168,13 @@ export const HUD: React.FC = () => {
     };
   }, [setActiveSlot, gameInstance]);
 
-  // Show item label briefly when selected block changes
+  // Show item label briefly when selected item changes
   useEffect(() => {
-    const props = getBlockProperties(selectedBlock);
-    if (props && selectedBlock !== BLOCK_TYPES.AIR) {
+    const state = useGameStore.getState();
+    const activeItem = state.hotbar[state.activeSlot];
+    if (activeItem && selectedItem) {
       const frameId = requestAnimationFrame(() => {
-        setActiveLabel(t(`blocks.${selectedBlock}`));
+        setActiveLabel(t(`blocks.${selectedItem}`));
       });
 
       const timeout = window.setTimeout(() => {
@@ -186,7 +186,7 @@ export const HUD: React.FC = () => {
         window.clearTimeout(timeout);
       };
     }
-  }, [selectedBlock, t]);
+  }, [selectedItem, t]);
 
   // Release pointer lock when inventory opens or chest is active
   useEffect(() => {
@@ -272,8 +272,8 @@ export const HUD: React.FC = () => {
             const isActive = index === activeSlot;
             const item = hotbar[index];
             
-            // Helper to get display info for a block type
-            const props = item ? getBlockProperties(item.type) : null;
+            // Helper to get display info for an item type
+            const props = item ? ItemRegistry.get(item.type) : null;
             
             return (
               <div

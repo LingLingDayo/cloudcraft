@@ -25,12 +25,6 @@ export interface BlockProperties {
   isCrossModel?: boolean;            // 是否作为交叉的斜对角平面模型渲染 (而非普通的立方体方块)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
-  isItem?: boolean;            // 是否为纯物品 (不能作为方块放置在世界中)
-  itemType?: 'food' | 'tool' | 'resource' | 'weapon' | 'other'; // 物品类型分类
-  foodProperties?: {
-    healAmount: number;        // 食物回复血量值 (例如 2 代表 1 颗心)
-    hungerAmount?: number;     // 饥饿度回复值 (例如 4 代表 2 个鸡腿)
-  };
 }
 
 export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
@@ -437,56 +431,6 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     isCollidable: false,
     isCrossModel: true,
     canSpawnOn: false,
-  },
-  [BLOCK_TYPES.PORKCHOP]: {
-    id: BLOCK_TYPES.PORKCHOP,
-    name: '生猪肉',
-    isSolid: false,
-    isTransparent: true,
-    isLiquid: false,
-    hardness: 0,
-    affectedByGravity: false,
-    lightLevel: 0,
-    isInteractable: false,
-    opacity: 0.5,
-    soundType: 'none',
-    color: '#e07890',
-    colorHex: 0xe07890,
-    textureFaces: { top: 32, bottom: 32, side: 32 },
-    droppedModelType: 'cross',
-    isCollidable: false,
-    canSpawnOn: false,
-    isItem: true,
-    itemType: 'food',
-    foodProperties: {
-      healAmount: 2,
-      hungerAmount: 3,
-    },
-  },
-  [BLOCK_TYPES.APPLE]: {
-    id: BLOCK_TYPES.APPLE,
-    name: '苹果',
-    isSolid: false,
-    isTransparent: true,
-    isLiquid: false,
-    hardness: -1,
-    affectedByGravity: false,
-    lightLevel: 0,
-    isInteractable: false,
-    opacity: 0.5,
-    soundType: 'none',
-    color: '#ff2222',
-    colorHex: 0xff2222,
-    textureFaces: { top: 33, bottom: 33, side: 33 },
-    droppedModelType: 'cross',
-    isCollidable: false,
-    canSpawnOn: false,
-    isItem: true,
-    itemType: 'food',
-    foodProperties: {
-      healAmount: 2,
-      hungerAmount: 4,
-    },
   },
 };
 
