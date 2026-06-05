@@ -16,6 +16,7 @@ export const createGameSlice: StateCreator<
   gameMode: GameMode.ADVENTURE,
   language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as Language : 'zh') || 'zh',
   autoJump: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_auto_jump') !== 'false' : true,
+  dpadSize: typeof localStorage !== 'undefined' ? Number(localStorage.getItem('minicraft_dpad_size') || 180) : 180,
   miningProgress: null,
   isSettingsOpen: false,
   settingsSource: null,
@@ -60,6 +61,12 @@ export const createGameSlice: StateCreator<
       localStorage.setItem('minicraft_auto_jump', String(autoJump));
     }
     return { autoJump };
+  }),
+  setDpadSize: (dpadSize) => set(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('minicraft_dpad_size', String(dpadSize));
+    }
+    return { dpadSize };
   }),
   setMiningProgress: (miningProgress) => set({ miningProgress }),
 

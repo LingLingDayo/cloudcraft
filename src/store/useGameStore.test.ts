@@ -26,6 +26,7 @@ describe('useGameStore', () => {
       inventory: Array(54).fill(null),
       language: 'zh',
       autoJump: true,
+      dpadSize: 180,
       isWorldLoading: false,
       worldLoadingProgress: 0,
       worldLoadingStage: 'engine',
@@ -54,6 +55,7 @@ describe('useGameStore', () => {
     expect(state.inventory).toEqual(Array(54).fill(null));
     expect(state.language).toBe('zh');
     expect(state.autoJump).toBe(true);
+    expect(state.dpadSize).toBe(180);
     expect(state.isWorldLoading).toBe(false);
     expect(state.worldLoadingProgress).toBe(0);
     expect(state.worldLoadingStage).toBe('engine');
@@ -240,6 +242,14 @@ describe('useGameStore', () => {
 
     useGameStore.getState().setAutoJump(true);
     expect(useGameStore.getState().autoJump).toBe(true);
+  });
+
+  test('should set dpad size via setDpadSize', () => {
+    useGameStore.getState().setDpadSize(200);
+    expect(useGameStore.getState().dpadSize).toBe(200);
+
+    useGameStore.getState().setDpadSize(150);
+    expect(useGameStore.getState().dpadSize).toBe(150);
   });
 
   test('should handle loading states and progress correctly', () => {

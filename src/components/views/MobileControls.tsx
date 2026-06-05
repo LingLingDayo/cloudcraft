@@ -229,6 +229,7 @@ export const MobileControls: React.FC = () => {
 
   const setGameState = useGameStore((state) => state.setGameState);
   const setIsSettingsOpen = useGameStore((state) => state.setIsSettingsOpen);
+  const dpadSize = useGameStore((state) => state.dpadSize);
 
   const [isMobile, setIsMobile] = useState(false);
   const [toolbarExpanded, setToolbarExpanded] = useState(false);
@@ -405,7 +406,13 @@ export const MobileControls: React.FC = () => {
         onTouchEnd={handleDpadTouchEnd}
         onTouchCancel={handleDpadTouchEnd}
       >
-        <div className={styles.dpad} ref={dpadRef}>
+        <div 
+          className={styles.dpad} 
+          ref={dpadRef}
+          style={{
+            '--dpad-size': `${dpadSize}px`
+          } as React.CSSProperties}
+        >
           <div className={styles.dpadEmpty} />
           <div className={`${styles.dpadBtn} ${styles.up} ${activeDirections.up ? styles.active : ''}`}>
             <span className={styles.arrowIcon}>▲</span>

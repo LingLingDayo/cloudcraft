@@ -8,6 +8,7 @@ import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
 import { SaveManager } from '@game/systems/SaveManager';
+import { isMobileDevice } from '../../utils/device';
 import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {
@@ -34,6 +35,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
   const setLanguage = useGameStore((state) => state.setLanguage);
   const autoJump = useGameStore((state) => state.autoJump);
   const setAutoJump = useGameStore((state) => state.setAutoJump);
+  const dpadSize = useGameStore((state) => state.dpadSize);
+  const setDpadSize = useGameStore((state) => state.setDpadSize);
 
   const [playerName, setPlayerName] = useState<string>(() => {
     return localStorage.getItem('minicraft_player_name') || 'Steve';
@@ -227,6 +230,26 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
                 </h3>
 
                 <div className={styles.controlsGrid}>
+                  {/* Mobile Section */}
+                  {isMobileDevice() && (
+                    <div className={styles.controlSection} style={{ marginBottom: '12px' }}>
+                      <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
+                        {t('settings.mobileControls')}
+                      </h4>
+                      <div className={styles.optionItem}>
+                        <Slider
+                          label={t('settings.dpadSize')}
+                          min={120}
+                          max={240}
+                          step={10}
+                          value={dpadSize}
+                          onChange={setDpadSize}
+                          valueFormatter={(val) => t('settings.dpadSizeValue', { val })}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Keyboard Section */}
                   <div className={styles.controlSection}>
                     <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
