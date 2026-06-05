@@ -40,33 +40,53 @@ describe('useBackToClose hook', () => {
     pushStateSpy.mockRestore();
   });
 
-  it('should call onClose when history popstate occurs and the state does not match', () => {
+  it('should not call onClose and should push state again to history when popstate occurs', () => {
     const onClose = vi.fn();
+    const pushStateSpy = vi.spyOn(window.history, 'pushState');
     const { unmount } = render(<TestComponent onClose={onClose} enabled={true} />);
 
-    // Simulate clicking back button
-    // In actual browser, going back triggers popstate. In JSDOM, we can trigger the event.
-    // We mock going back: we set history state to null and dispatch popstate.
+    // Initial push on mount
+    expect(pushStateSpy).toHaveBeenCalledTimes(1);
+
+    // Simulate clicking back button (triggers popstate)
     window.history.replaceState(null, '');
     const popEvent = new PopStateEvent('popstate', { state: null });
     window.dispatchEvent(popEvent);
 
-    expect(onClose).toHaveBeenCalledTimes(1);
+    // onClose should not be called
+    expect(onClose).not.toHaveBeenCalled();
 
-    // Unmounting after popstate should NOT trigger history.back()
-    const backSpy = vi.spyOn(window.history, 'back');
+    // Should pushState again to intercept the back action next time
+    expect(pushStateSpy).toHaveBeenCalledTimes(2);
+
+    pushStateSpy.mockRestore();
     unmount();
-    expect(backSpy).not.toHaveBeenCalled();
-    backSpy.mockRestore();
   });
 
-  it('should call history.back() on unmount if manually closed (not popped by system)', () => {
+  it('should call history.back() on unmount if manually closed', () => {
     const onClose = vi.fn();
     const backSpy = vi.spyOn(window.history, 'back');
 
     const { unmount } = render(<TestComponent onClose={onClose} enabled={true} />);
 
-    // Simulate manual unmount (which happens when dialog is closed by user)
+    unmount();
+
+    expect(backSpy).toHaveBeenCalledTimes(1);
+    backSpy.mockRestore();
+  });
+
+  it('should call history.back() on unmount even after popstate occurred and was intercepted', () => {
+    const onClose = vi.fn();
+    const backSpy = vi.spyOn(window.history, 'back');
+
+    const { unmount } = render(<TestComponent onClose={onClose} enabled={true} />);
+
+    // Simulate clicking back button
+    window.history.replaceState(null, '');
+    const popEvent = new PopStateEvent('popstate', { state: null });
+    window.dispatchEvent(popEvent);
+
+    // Unmounting should still trigger history.back() because the state was pushed back
     unmount();
 
     expect(backSpy).toHaveBeenCalledTimes(1);
