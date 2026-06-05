@@ -428,8 +428,33 @@ export class WorldGenerator {
             // 只在海洋/湖泊区域（或陆地小水潭）填充水，陆地区域低于海平面也保持空气
             chunk[index] = BLOCK_TYPES.WATER;
           } else {
-            // Air
-            chunk[index] = BLOCK_TYPES.AIR;
+            // 陆地表面及上方的植被生成
+            if (y === finalHeight + 1 && localWaterLevel <= finalHeight) {
+              const groundType = chunk[x + z * CHUNK_SIZE_X + finalHeight * CHUNK_SIZE_X * CHUNK_SIZE_Z];
+              const groundProps = getBlockProperties(groundType);
+              if (groundProps.allowVegetationBase) {
+                chunk[index] = primaryBiome.getVegetationType(wx, wz, this.noise);
+              } else {
+                chunk[index] = BLOCK_TYPES.AIR;
+              }
+            } else if (y === finalHeight + 2) {
+              const belowType = chunk[x + z * CHUNK_SIZE_X + (finalHeight + 1) * CHUNK_SIZE_X * CHUNK_SIZE_Z];
+              if (belowType === BLOCK_TYPES.SUNFLOWER_BOTTOM) {
+                chunk[index] = BLOCK_TYPES.SUNFLOWER_TOP;
+              } else if (belowType === BLOCK_TYPES.ROSE_BUSH_BOTTOM) {
+                chunk[index] = BLOCK_TYPES.ROSE_BUSH_TOP;
+              } else if (belowType === BLOCK_TYPES.PEONY_BOTTOM) {
+                chunk[index] = BLOCK_TYPES.PEONY_TOP;
+              } else if (belowType === BLOCK_TYPES.LILAC_BOTTOM) {
+                chunk[index] = BLOCK_TYPES.LILAC_TOP;
+              } else if (belowType === BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM) {
+                chunk[index] = BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP;
+              } else {
+                chunk[index] = BLOCK_TYPES.AIR;
+              }
+            } else {
+              chunk[index] = BLOCK_TYPES.AIR;
+            }
           }
         }
       }

@@ -70,4 +70,13 @@ export class DesertBiome implements Biome {
       }
     }
   }
+
+  public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
+    const r = noise.pseudoRandom2d(wx, wz);
+    // 3% 概率生成枯萎灌木
+    if (r < 0.03) {
+      return BLOCK_TYPES.DEAD_BUSH;
+    }
+    return BLOCK_TYPES.AIR;
+  }
 }

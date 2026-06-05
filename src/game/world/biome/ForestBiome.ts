@@ -76,4 +76,37 @@ export class ForestBiome implements Biome {
       growTree(chunk, tx, ty, tz, BLOCK_TYPES.BIRCH_WOOD, BLOCK_TYPES.BIRCH_LEAVES, treeHeight, TreeStyle.BIRCH);
     }
   }
+
+  public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
+    const r = noise.pseudoRandom2d(wx, wz);
+    // 14% 概率生成植被
+    if (r < 0.14) {
+      if (r < 0.098) {
+        return BLOCK_TYPES.TALL_GRASS;
+      } else if (r < 0.119) {
+        // 15% 概率生成单格花朵
+        const flowers = [
+          BLOCK_TYPES.DANDELION,
+          BLOCK_TYPES.POPPY,
+          BLOCK_TYPES.BLUE_ORCHID,
+          BLOCK_TYPES.ALLIUM,
+          BLOCK_TYPES.OXEYE_DAISY
+        ];
+        const idx = Math.floor((r - 0.098) * 238) % flowers.length;
+        return flowers[idx];
+      } else {
+        // 15% 概率生成双格高植物
+        const tallPlants = [
+          BLOCK_TYPES.SUNFLOWER_BOTTOM,
+          BLOCK_TYPES.ROSE_BUSH_BOTTOM,
+          BLOCK_TYPES.PEONY_BOTTOM,
+          BLOCK_TYPES.LILAC_BOTTOM,
+          BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM
+        ];
+        const idx = Math.floor((r - 0.119) * 238) % tallPlants.length;
+        return tallPlants[idx];
+      }
+    }
+    return BLOCK_TYPES.AIR;
+  }
 }

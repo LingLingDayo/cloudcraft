@@ -576,6 +576,290 @@ export function generateTextureAtlas(): THREE.Texture {
     ctx.fillRect(sx + 9, sy + 2, 1, 1);
   }
 
+  // Helper to draw simple flowers
+  const drawFlowerTexture = (index: number, stemColor: string, petalColor: string, centerColor?: string) => {
+    const sx = (index % 8) * tileSize;
+    const sy = Math.floor(index / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+
+    // Stem
+    ctx.fillStyle = stemColor;
+    ctx.fillRect(sx + 7, sy + 6, 2, 10);
+    ctx.fillRect(sx + 5, sy + 9, 2, 1);
+    ctx.fillRect(sx + 9, sy + 7, 2, 1);
+
+    // Leaves
+    ctx.fillRect(sx + 4, sy + 10, 2, 1);
+    ctx.fillRect(sx + 10, sy + 8, 2, 1);
+
+    // Petals
+    ctx.fillStyle = petalColor;
+    ctx.fillRect(sx + 5, sy + 2, 6, 4);
+    ctx.fillRect(sx + 6, sy + 1, 4, 6);
+
+    if (centerColor) {
+      ctx.fillStyle = centerColor;
+      ctx.fillRect(sx + 7, sy + 3, 2, 2);
+    }
+  };
+
+  // 34: Dandelion
+  drawFlowerTexture(34, 'rgb(95, 150, 45)', 'rgb(245, 210, 20)', 'rgb(255, 235, 80)');
+
+  // 35: Poppy
+  drawFlowerTexture(35, 'rgb(75, 130, 35)', 'rgb(215, 25, 25)', 'rgb(25, 25, 25)');
+
+  // 36: Blue Orchid
+  {
+    const sx = (36 % 8) * tileSize;
+    const sy = Math.floor(36 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(85, 140, 40)';
+    ctx.fillRect(sx + 7, sy + 5, 2, 11);
+    ctx.fillRect(sx + 5, sy + 9, 2, 1);
+    ctx.fillRect(sx + 9, sy + 11, 2, 1);
+
+    ctx.fillStyle = 'rgb(40, 185, 245)';
+    ctx.fillRect(sx + 5, sy + 3, 2, 2);
+    ctx.fillRect(sx + 9, sy + 4, 2, 2);
+    ctx.fillRect(sx + 7, sy + 1, 2, 3);
+    ctx.fillStyle = 'rgb(220, 245, 255)';
+    ctx.fillRect(sx + 7, sy + 2, 1, 1);
+  }
+
+  // 37: Allium
+  {
+    const sx = (37 % 8) * tileSize;
+    const sy = Math.floor(37 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(90, 145, 45)';
+    ctx.fillRect(sx + 7, sy + 6, 2, 10);
+    ctx.fillRect(sx + 5, sy + 11, 2, 1);
+
+    ctx.fillStyle = 'rgb(205, 95, 215)';
+    ctx.fillRect(sx + 5, sy + 1, 6, 5);
+    ctx.fillRect(sx + 6, sy + 0, 4, 7);
+    ctx.fillStyle = 'rgb(235, 145, 245)';
+    ctx.fillRect(sx + 6, sy + 2, 1, 1);
+    ctx.fillRect(sx + 9, sy + 4, 1, 1);
+    ctx.fillRect(sx + 8, sy + 1, 1, 1);
+  }
+
+  // 38: Oxeye Daisy
+  drawFlowerTexture(38, 'rgb(85, 145, 40)', 'rgb(240, 240, 240)', 'rgb(245, 195, 20)');
+
+  // 39: Tall Grass
+  {
+    const sx = (39 % 8) * tileSize;
+    const sy = Math.floor(39 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(110, 180, 50)';
+    // Main blades
+    ctx.fillRect(sx + 4, sy + 10, 2, 6);
+    ctx.fillRect(sx + 6, sy + 6, 2, 10);
+    ctx.fillRect(sx + 8, sy + 3, 2, 13);
+    ctx.fillRect(sx + 10, sy + 8, 2, 8);
+    // Outer random blades
+    ctx.fillStyle = 'rgb(130, 200, 60)';
+    ctx.fillRect(sx + 2, sy + 12, 2, 4);
+    ctx.fillRect(sx + 12, sy + 11, 2, 5);
+    ctx.fillRect(sx + 5, sy + 8, 1, 2);
+    ctx.fillRect(sx + 9, sy + 2, 1, 2);
+    ctx.fillRect(sx + 11, sy + 6, 1, 2);
+  }
+
+  // 40: Fern
+  {
+    const sx = (40 % 8) * tileSize;
+    const sy = Math.floor(40 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(30, 110, 20)';
+    ctx.fillRect(sx + 7, sy + 2, 2, 14); // Stem
+    // Symmetric leaflets
+    ctx.fillRect(sx + 5, sy + 5, 6, 2);
+    ctx.fillRect(sx + 3, sy + 8, 10, 2);
+    ctx.fillRect(sx + 1, sy + 11, 14, 2);
+    ctx.fillStyle = 'rgb(55, 155, 40)';
+    ctx.fillRect(sx + 6, sy + 3, 4, 2);
+    ctx.fillRect(sx + 4, sy + 7, 8, 2);
+    ctx.fillRect(sx + 2, sy + 10, 12, 2);
+    ctx.fillRect(sx + 0, sy + 13, 16, 2);
+  }
+
+  // 41: Dead Bush
+  {
+    const sx = (41 % 8) * tileSize;
+    const sy = Math.floor(41 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(125, 95, 60)';
+    // Branchy structure
+    ctx.fillRect(sx + 7, sy + 10, 2, 6);
+    ctx.fillRect(sx + 5, sy + 6, 2, 5);
+    ctx.fillRect(sx + 9, sy + 5, 2, 7);
+    ctx.fillRect(sx + 3, sy + 8, 2, 4);
+    ctx.fillRect(sx + 11, sy + 4, 2, 5);
+    ctx.fillStyle = 'rgb(100, 75, 45)';
+    ctx.fillRect(sx + 2, sy + 12, 3, 1);
+    ctx.fillRect(sx + 11, sy + 9, 3, 1);
+    ctx.fillRect(sx + 4, sy + 5, 1, 2);
+    ctx.fillRect(sx + 10, sy + 3, 1, 2);
+  }
+
+  // 42: Sunflower Bottom
+  {
+    const sx = (42 % 8) * tileSize;
+    const sy = Math.floor(42 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(90, 155, 40)';
+    ctx.fillRect(sx + 7, sy, 2, 16); // Stem
+    // Large leaves
+    ctx.fillRect(sx + 4, sy + 6, 3, 2);
+    ctx.fillRect(sx + 9, sy + 9, 3, 2);
+    ctx.fillRect(sx + 3, sy + 12, 4, 2);
+  }
+
+  // 43: Sunflower Top
+  {
+    const sx = (43 % 8) * tileSize;
+    const sy = Math.floor(43 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(90, 155, 40)';
+    ctx.fillRect(sx + 7, sy + 6, 2, 10); // Stem
+    // Sunflower face
+    ctx.fillStyle = 'rgb(245, 205, 20)';
+    ctx.fillRect(sx + 3, sy + 2, 10, 10);
+    ctx.fillRect(sx + 4, sy + 1, 8, 12);
+    ctx.fillRect(sx + 2, sy + 3, 12, 8);
+    // Center dark seeds
+    ctx.fillStyle = 'rgb(75, 50, 20)';
+    ctx.fillRect(sx + 6, sy + 5, 4, 4);
+    ctx.fillRect(sx + 7, sy + 4, 2, 6);
+    ctx.fillRect(sx + 5, sy + 6, 6, 2);
+  }
+
+  // 44: Rose Bush Bottom
+  {
+    const sx = (44 % 8) * tileSize;
+    const sy = Math.floor(44 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(45, 110, 25)';
+    ctx.fillRect(sx + 3, sy + 2, 10, 14);
+    ctx.fillRect(sx + 4, sy + 0, 8, 16);
+    ctx.fillRect(sx + 1, sy + 6, 14, 10);
+    // Little roses
+    ctx.fillStyle = 'rgb(215, 20, 20)';
+    ctx.fillRect(sx + 4, sy + 8, 2, 2);
+    ctx.fillRect(sx + 10, sy + 5, 2, 2);
+  }
+
+  // 45: Rose Bush Top
+  {
+    const sx = (45 % 8) * tileSize;
+    const sy = Math.floor(45 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(45, 110, 25)';
+    ctx.fillRect(sx + 2, sy + 4, 12, 12);
+    ctx.fillRect(sx + 4, sy + 1, 8, 15);
+    // Rose clusters
+    ctx.fillStyle = 'rgb(215, 20, 20)';
+    ctx.fillRect(sx + 5, sy + 3, 3, 3);
+    ctx.fillRect(sx + 9, sy + 7, 3, 3);
+    ctx.fillRect(sx + 3, sy + 10, 2, 2);
+    ctx.fillRect(sx + 11, sy + 2, 2, 2);
+  }
+
+  // 46: Peony Bottom
+  {
+    const sx = (46 % 8) * tileSize;
+    const sy = Math.floor(46 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(50, 120, 30)';
+    ctx.fillRect(sx + 3, sy + 4, 10, 12);
+    ctx.fillRect(sx + 4, sy + 1, 8, 15);
+    ctx.fillRect(sx + 2, sy + 8, 12, 8);
+  }
+
+  // 47: Peony Top
+  {
+    const sx = (47 % 8) * tileSize;
+    const sy = Math.floor(47 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(50, 120, 30)';
+    ctx.fillRect(sx + 2, sy + 4, 12, 12);
+    ctx.fillRect(sx + 4, sy + 1, 8, 15);
+    // Large pink blooms
+    ctx.fillStyle = 'rgb(245, 135, 180)';
+    ctx.fillRect(sx + 5, sy + 2, 4, 4);
+    ctx.fillRect(sx + 9, sy + 8, 4, 4);
+    ctx.fillStyle = 'rgb(255, 200, 220)';
+    ctx.fillRect(sx + 6, sy + 3, 2, 2);
+    ctx.fillRect(sx + 10, sy + 9, 2, 2);
+  }
+
+  // 48: Lilac Bottom
+  {
+    const sx = (48 % 8) * tileSize;
+    const sy = Math.floor(48 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(55, 125, 35)';
+    ctx.fillRect(sx + 3, sy + 4, 10, 12);
+    ctx.fillRect(sx + 4, sy + 1, 8, 15);
+  }
+
+  // 49: Lilac Top
+  {
+    const sx = (49 % 8) * tileSize;
+    const sy = Math.floor(49 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(55, 125, 35)';
+    ctx.fillRect(sx + 2, sy + 5, 12, 11);
+    ctx.fillRect(sx + 4, sy + 2, 8, 14);
+    // Purple plumes
+    ctx.fillStyle = 'rgb(180, 120, 225)';
+    ctx.fillRect(sx + 5, sy + 1, 4, 6);
+    ctx.fillRect(sx + 4, sy + 3, 6, 8);
+    ctx.fillRect(sx + 8, sy + 5, 4, 5);
+    ctx.fillStyle = 'rgb(225, 175, 255)';
+    ctx.fillRect(sx + 6, sy + 2, 2, 2);
+    ctx.fillRect(sx + 5, sy + 5, 2, 2);
+    ctx.fillRect(sx + 9, sy + 7, 2, 2);
+  }
+
+  // 50: Double Tall Grass Bottom
+  {
+    const sx = (50 % 8) * tileSize;
+    const sy = Math.floor(50 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(105, 175, 45)';
+    // Thick tall grass blades starting at bottom
+    ctx.fillRect(sx + 5, sy + 0, 3, 16);
+    ctx.fillRect(sx + 2, sy + 8, 2, 8);
+    ctx.fillRect(sx + 11, sy + 6, 3, 10);
+    ctx.fillStyle = 'rgb(125, 195, 55)';
+    ctx.fillRect(sx + 4, sy + 4, 2, 12);
+    ctx.fillRect(sx + 9, sy + 3, 2, 13);
+  }
+
+  // 51: Double Tall Grass Top
+  {
+    const sx = (51 % 8) * tileSize;
+    const sy = Math.floor(51 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(105, 175, 45)';
+    // Blades narrowing and swaying
+    ctx.fillRect(sx + 6, sy + 8, 2, 8);
+    ctx.fillRect(sx + 3, sy + 11, 2, 5);
+    ctx.fillRect(sx + 12, sy + 12, 2, 4);
+    // Diagonal swaying tips
+    ctx.fillRect(sx + 8, sy + 4, 2, 4);
+    ctx.fillRect(sx + 10, sy + 2, 2, 3);
+    ctx.fillRect(sx + 12, sy + 1, 2, 2);
+    ctx.fillStyle = 'rgb(125, 195, 55)';
+    ctx.fillRect(sx + 5, sy + 6, 2, 10);
+    ctx.fillRect(sx + 3, sy + 4, 2, 3);
+    ctx.fillRect(sx + 1, sy + 2, 2, 3);
+  }
+
   try {
     cachedDataURL = canvas.toDataURL();
   } catch (_e) {

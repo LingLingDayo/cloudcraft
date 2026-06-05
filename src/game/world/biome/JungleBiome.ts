@@ -66,4 +66,19 @@ export class JungleBiome implements Biome {
 
     growTree(chunk, tx, ty, tz, BLOCK_TYPES.JUNGLE_WOOD, BLOCK_TYPES.JUNGLE_LEAVES, treeHeight, TreeStyle.JUNGLE);
   }
+
+  public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
+    const r = noise.pseudoRandom2d(wx, wz);
+    // 18% 概率生成植被
+    if (r < 0.18) {
+      if (r < 0.09) {
+        return BLOCK_TYPES.FERN;
+      } else if (r < 0.162) {
+        return BLOCK_TYPES.TALL_GRASS;
+      } else {
+        return BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM;
+      }
+    }
+    return BLOCK_TYPES.AIR;
+  }
 }

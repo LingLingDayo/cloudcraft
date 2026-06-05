@@ -65,4 +65,23 @@ export class PlainsBiome implements Biome {
     const treeHeight = 4 + Math.floor(absHeight * 2); // 4 to 5
     growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, TreeStyle.OAK);
   }
+
+  public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
+    const r = noise.pseudoRandom2d(wx, wz);
+    // 16% 概率生成植被
+    if (r < 0.16) {
+      if (r < 0.136) {
+        return BLOCK_TYPES.TALL_GRASS;
+      } else if (r < 0.152) {
+        return BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM;
+      } else if (r < 0.1568) {
+        const flowers = [BLOCK_TYPES.DANDELION, BLOCK_TYPES.POPPY, BLOCK_TYPES.OXEYE_DAISY];
+        const idx = Math.floor((r - 0.152) * 625) % flowers.length;
+        return flowers[idx];
+      } else {
+        return BLOCK_TYPES.SUNFLOWER_BOTTOM;
+      }
+    }
+    return BLOCK_TYPES.AIR;
+  }
 }
