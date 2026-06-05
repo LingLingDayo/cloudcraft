@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
 import { useGame } from '../../context/GameContext';
@@ -57,8 +57,8 @@ export const Minimap: React.FC = () => {
   const cachedBlockColorsRef = useRef<string[][]>([]);
   const lastBlockCoordsRef = useRef<{ x: number; z: number }>({ x: -9999, z: -9999 });
   
-  const [coordsText, setCoordsText] = useState('X: 0 Y: 0 Z: 0');
-  const [facingText, setFacingText] = useState('N');
+  const coordsRef = useRef<HTMLDivElement | null>(null);
+  const facingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!showMinimap || !gameInstance || !canvasRef.current) return;
@@ -90,9 +90,8 @@ export const Minimap: React.FC = () => {
       return 'NW';
     };
 
-    const updateLoop = () => {
+    const tick = () => {
       if (!gameInstance.player || !gameInstance.world) {
-        animId = requestAnimationFrame(updateLoop);
         return;
       }
 
@@ -242,8 +241,10 @@ export const Minimap: React.FC = () => {
       
       ctx.restore();
 
-      // Update HUD coordinate labels
-      setCoordsText(`X: ${px.toFixed(1)} Y: ${py.toFixed(1)} Z: ${pz.toFixed(1)}`);
+      // Update HUD coordinate labels directly
+      if (coordsRef.current) {
+        coordsRef.current.textContent = `X: ${px.toFixed(1)} Y: ${py.toFixed(1)} Z: ${pz.toFixed(1)}`;
+      }
       
       const cardinal = getCardinalDirection(angle);
       let facingStr: string;
@@ -253,10 +254,18 @@ export const Minimap: React.FC = () => {
       else if (cardinal === 'W') facingStr = `${cardinal} (Facing -X)`;
       else facingStr = cardinal;
       
-      setFacingText(facingStr);
+      if (facingRef.current) {
+        facingRef.current.textContent = facingStr;
+      }
+    };
 
+    const updateLoop = () => {
+      tick();
       animId = requestAnimationFrame(updateLoop);
     };
+
+    // Run first frame immediately to avoid flickering/blank canvas on mount
+    tick();
 
     animId = requestAnimationFrame(updateLoop);
     return () => cancelAnimationFrame(animId);
@@ -275,8 +284,8 @@ export const Minimap: React.FC = () => {
         <div className={`${styles.compassDir} ${styles.dirW}`}>W</div>
       </div>
       <div className={styles.minimapInfo}>
-        <div className={styles.coords}>{coordsText}</div>
-        <div className={styles.facing}>{facingText}</div>
+        <div ref={coordsRef} className={styles.coords} />
+        <div ref={facingRef} className={styles.facing} />
       </div>
     </div>
   );
