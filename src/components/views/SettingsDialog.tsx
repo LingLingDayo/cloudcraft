@@ -10,6 +10,7 @@ import { Select } from '@components/common/Select';
 import { SaveManager } from '@game/systems/SaveManager';
 import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from '../../utils/device';
 import { useBackToClose } from '../../hooks/useBackToClose';
+import { getSystemSettings, saveSystemSetting } from '../../utils/settings';
 import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {
@@ -107,12 +108,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const setShowMinimap = useGameStore((state) => state.setShowMinimap);
 
   const [playerName, setPlayerName] = useState<string>(() => {
-    return localStorage.getItem('minicraft_player_name') || 'Steve';
+    return getSystemSettings().playerName;
   });
 
   const handlePlayerNameChange = (name: string) => {
     setPlayerName(name);
-    localStorage.setItem('minicraft_player_name', name);
+    saveSystemSetting('playerName', name);
   };
 
   const handleExport = async () => {

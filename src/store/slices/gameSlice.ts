@@ -1,78 +1,74 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, GameSlice } from '../types';
-import { GameState, GameMode, type Language, ItemType } from '@type';
+import { GameState, GameMode, ItemType } from '@type';
 import { CREATIVE_DEFAULT_HOTBAR } from './playerSlice';
+import { getSystemSettings, saveSystemSetting } from '../../utils/settings';
 
 export const createGameSlice: StateCreator<
   GameStoreState,
   [],
   [],
   GameSlice
-> = (set) => ({
-  gameState: GameState.MENU,
-  renderDistance: 3,
-  fov: 75,
-  gameMode: GameMode.ADVENTURE,
-  language: (typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_language') as Language : 'zh') || 'zh',
-  autoJump: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_auto_jump') !== 'false' : true,
-  dpadSize: typeof localStorage !== 'undefined' ? Number(localStorage.getItem('minicraft_dpad_size') || 180) : 180,
-  miningProgress: null,
-  showMinimap: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_show_minimap') !== 'false' : true,
-  isSettingsOpen: false,
-  settingsSource: null,
+> = (set) => {
+  const settings = getSystemSettings();
 
-  // Initial loading states
-  isWorldLoading: false,
-  worldLoadingProgress: 0,
-  worldLoadingStage: 'engine',
-  chunkLoadingStates: {},
+  return {
+    gameState: GameState.MENU,
+    renderDistance: 3,
+    fov: 75,
+    gameMode: GameMode.ADVENTURE,
+    language: settings.language,
+    autoJump: settings.autoJump,
+    dpadSize: settings.dpadSize,
+    miningProgress: null,
+    showMinimap: settings.showMinimap,
+    isSettingsOpen: false,
+    settingsSource: null,
 
-  setGameState: (gameState) => set({ gameState }),
-  setIsSettingsOpen: (isSettingsOpen, settingsSource = null) => set({ isSettingsOpen, settingsSource }),
-  setRenderDistance: (renderDistance) => set({ renderDistance }),
-  setFov: (fov) => set({ fov }),
-  setGameMode: (gameMode) => set(() => {
-    if (gameMode === GameMode.CREATIVE) {
-      return {
-        gameMode,
-        hotbar: [...CREATIVE_DEFAULT_HOTBAR],
-        activeSlot: 0,
-        selectedItem: ItemType.GRASS,
-      };
-    } else {
-      return {
-        gameMode,
-        hotbar: Array(9).fill(null),
-        activeSlot: 0,
-        selectedItem: null,
-      };
-    }
-  }),
-  setLanguage: (language) => set(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('minicraft_language', language);
-    }
-    return { language };
-  }),
-  setAutoJump: (autoJump) => set(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('minicraft_auto_jump', String(autoJump));
-    }
-    return { autoJump };
-  }),
-  setDpadSize: (dpadSize) => set(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('minicraft_dpad_size', String(dpadSize));
-    }
-    return { dpadSize };
-  }),
-  setMiningProgress: (miningProgress) => set({ miningProgress }),
-  setShowMinimap: (showMinimap) => set(() => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('minicraft_show_minimap', String(showMinimap));
-    }
-    return { showMinimap };
-  }),
+    // Initial loading states
+    isWorldLoading: false,
+    worldLoadingProgress: 0,
+    worldLoadingStage: 'engine',
+    chunkLoadingStates: {},
+
+    setGameState: (gameState) => set({ gameState }),
+    setIsSettingsOpen: (isSettingsOpen, settingsSource = null) => set({ isSettingsOpen, settingsSource }),
+    setRenderDistance: (renderDistance) => set({ renderDistance }),
+    setFov: (fov) => set({ fov }),
+    setGameMode: (gameMode) => set(() => {
+      if (gameMode === GameMode.CREATIVE) {
+        return {
+          gameMode,
+          hotbar: [...CREATIVE_DEFAULT_HOTBAR],
+          activeSlot: 0,
+          selectedItem: ItemType.GRASS,
+        };
+      } else {
+        return {
+          gameMode,
+          hotbar: Array(9).fill(null),
+          activeSlot: 0,
+          selectedItem: null,
+        };
+      }
+    }),
+    setLanguage: (language) => set(() => {
+      saveSystemSetting('language', language);
+      return { language };
+    }),
+    setAutoJump: (autoJump) => set(() => {
+      saveSystemSetting('autoJump', autoJump);
+      return { autoJump };
+    }),
+    setDpadSize: (dpadSize) => set(() => {
+      saveSystemSetting('dpadSize', dpadSize);
+      return { dpadSize };
+    }),
+    setMiningProgress: (miningProgress) => set({ miningProgress }),
+    setShowMinimap: (showMinimap) => set(() => {
+      saveSystemSetting('showMinimap', showMinimap);
+      return { showMinimap };
+    }),
 
   // Loading actions implementation
   setWorldLoading: (isWorldLoading) => set({ isWorldLoading }),
@@ -108,5 +104,6 @@ export const createGameSlice: StateCreator<
       worldLoadingProgress: keys.length > 0 ? 30 : 0
     };
   }),
-});
+  };
+};
 
