@@ -5,7 +5,9 @@ import { sound } from '@game/systems/Sound';
 import { useGameStore } from '@store/useGameStore';
 import { BlockRegistry } from '../world/block/BlockRegistry';
 import { ItemRegistry } from '@game/item/ItemRegistry';
-import { FoodItem } from '@game/item/Item';
+import { BlockItem } from '@game/item/Item';
+import type { BlockPlaceContext, ItemUseContext, ItemUseResult } from '@game/item/Item';
+import { GameMode } from '@type';
 
 
 
@@ -112,6 +114,112 @@ export class InteractionManager {
     this.updateMining(dt);
   }
 
+  // ─── 右键交互：Item 多态分发 ──────────────────────────────
+
+  /** 构建物品直接使用上下文 */
+  private buildItemUseContext(): ItemUseContext {
+    return {
+      player: {
+        life: this.game.player.life,
+        hunger: this.game.player.hunger,
+      },
+      gameMode: useGameStore.getState().gameMode as GameMode,
+    };
+  }
+
+  /** 构建方块放置上下文 */
+  private buildBlockPlaceContext(): BlockPlaceContext | null {
+    if (!this.targetedBlockInfo) return null;
+    const { place, face } = this.targetedBlockInfo;
+
+    return {
+      world: this.game.world,
+      targetPos: this.targetedBlockInfo.target,
+      placePos: place,
+      face,
+      playerBox: this.game.physics.getPlayerBox(this.game.player.position),
+      gameMode: useGameStore.getState().gameMode as GameMode,
+    };
+  }
+
+  /** 应用物品使用结果（恢复饥饿/生命、播放音效、扣减物品、同步 Store） */
+  private applyItemUseResult(result: ItemUseResult) {
+    if (!result.consumed) return;
+
+    if (result.hungerDelta) {
+      this.game.player.hunger = Math.min(20, this.game.player.hunger + result.hungerDelta);
+    }
+    if (result.healDelta) {
+      this.game.player.life = Math.min(10, this.game.player.life + result.healDelta);
+    }
+
+    sound.playPickup();
+
+    const isCreative = useGameStore.getState().gameMode === 'creative';
+    if (!isCreative) {
+      const activeSlot = useGameStore.getState().activeSlot;
+      useGameStore.getState().decrementHotbarItem(activeSlot);
+    }
+
+    useGameStore.getState().setPlayerState(
+      {
+        x: this.game.player.position.x,
+        y: this.game.player.position.y,
+        z: this.game.player.position.z,
+      },
+      this.game.player.state.onGround,
+      this.game.player.state.inWater,
+      this.game.player.life,
+      this.game.player.hunger
+    );
+  }
+
+  /** 处理右键点击的完整流程 */
+  private handleRightClick() {
+    const storeState = useGameStore.getState();
+    const heldSlotItem = storeState.hotbar[storeState.activeSlot];
+    const item = heldSlotItem ? ItemRegistry.get(heldSlotItem.type) : null;
+
+    // 1. 尝试与目标方块交互（箱子、拉杆等）
+    if (this.targetedBlockInfo) {
+      const { target } = this.targetedBlockInfo;
+      const targetId = this.game.world.getBlock(target.x, target.y, target.z);
+      const block = BlockRegistry.get(targetId);
+      if (block.isInteractable) {
+        const handled = block.onInteract(this.game.world, target.x, target.y, target.z, this.game.player);
+        if (handled) return;
+      }
+    }
+
+    if (!item) return;
+
+    // 2. 尝试对方块使用物品（放置方块、种植种子等）
+    if (this.targetedBlockInfo) {
+      const blockCtx = this.buildBlockPlaceContext();
+      if (blockCtx && item.onUseOnBlock(blockCtx)) {
+        // 播放放置音效
+        if (item instanceof BlockItem) {
+          sound.playPlace(item.getPlaceSoundType());
+        }
+        // 扣减物品（非创造模式）
+        const isCreative = storeState.gameMode === 'creative';
+        if (!isCreative) {
+          storeState.decrementHotbarItem(storeState.activeSlot);
+        }
+        return;
+      }
+    }
+
+    // 3. 尝试直接使用物品（食用食物、饮用药水等）
+    const useCtx = this.buildItemUseContext();
+    const result = item.onUse(useCtx);
+    if (result) {
+      this.applyItemUseResult(result);
+    }
+  }
+
+  // ─── 鼠标事件处理 ─────────────────────────────────────────
+
   public onMouseDown = (e: MouseEvent) => {
     if (!this.game.controls.isLocked && !this.game.controls.isMobile) return;
 
@@ -122,46 +230,9 @@ export class InteractionManager {
     }
 
     if (e.button === 2) {
-      const activeSlot = useGameStore.getState().activeSlot;
-      const hotbar = useGameStore.getState().hotbar;
-      const heldItem = hotbar[activeSlot];
-      if (heldItem) {
-        const item = ItemRegistry.get(heldItem.type);
-        if (item instanceof FoodItem) {
-          const effect = item.onUse(this.game.player);
-          if (effect) {
-            // 统一应用副作用，单一数据源
-            if (effect.hungerDelta) {
-              this.game.player.hunger = Math.min(20, this.game.player.hunger + effect.hungerDelta);
-            }
-            if (effect.healDelta) {
-              this.game.player.life = Math.min(10, this.game.player.life + effect.healDelta);
-            }
-            sound.playPickup(); // eating sound fallback
-
-            const isCreative = useGameStore.getState().gameMode === 'creative';
-            if (!isCreative) {
-              useGameStore.getState().decrementHotbarItem(activeSlot);
-            }
-
-            useGameStore.getState().setPlayerState(
-              {
-                x: this.game.player.position.x,
-                y: this.game.player.position.y,
-                z: this.game.player.position.z,
-              },
-              this.game.player.state.onGround,
-              this.game.player.state.inWater,
-              this.game.player.life,
-              this.game.player.hunger
-            );
-          }
-          return; // Intercept right click for all food items to prevent placement
-        } else if (!item.isBlockItem) {
-          // Intercept right click for all other pure items to prevent placement
-          return;
-        }
-      }
+      this.updateTargetedBlock();
+      this.handleRightClick();
+      return;
     }
 
     this.updateTargetedBlock();
@@ -190,48 +261,6 @@ export class InteractionManager {
           this.lastCreativeBreakTime = performance.now();
           this.lastCreativeBreakPos.copy(target);
           this.updateTargetedBlock();
-        }
-      }
-    } else if (e.button === 2) {
-      // Right Click: Place Block or Interact
-      const { target, place } = this.targetedBlockInfo;
-
-      const targetId = this.game.world.getBlock(target.x, target.y, target.z);
-      const block = BlockRegistry.get(targetId);
-      if (block.isInteractable) {
-        const handled = block.onInteract(this.game.world, target.x, target.y, target.z, this.game.player);
-        if (handled) {
-          return; // Intercept block placement
-        }
-      }
-      
-      const blockBox = new THREE.Box3(
-        place,
-        new THREE.Vector3(place.x + 1, place.y + 1, place.z + 1)
-      );
-
-      const playerBox = this.game.physics.getPlayerBox(this.game.player.position);
-      const isCreative = useGameStore.getState().gameMode === 'creative';
-
-      const selectedBlockType = this.game.player.selectedBlockType;
-
-      if (selectedBlockType !== BLOCK_TYPES.AIR && !playerBox.intersectsBox(blockBox)) {
-        let blockToPlace: number = selectedBlockType;
-        const face = this.targetedBlockInfo.face;
-
-        const isLog = blockToPlace === BLOCK_TYPES.WOOD || blockToPlace === BLOCK_TYPES.BIRCH_WOOD || blockToPlace === BLOCK_TYPES.SPRUCE_WOOD;
-        if (isLog) {
-          if (face.x !== 0) blockToPlace = blockToPlace | (1 << 6); // X axis
-          else if (face.z !== 0) blockToPlace = blockToPlace | (2 << 6); // Z axis
-        }
-
-        const placeProps = getBlockProperties(blockToPlace);
-        this.game.world.setBlock(place.x, place.y, place.z, blockToPlace);
-        sound.playPlace(placeProps.soundType);
-
-        if (!isCreative) {
-          const activeSlot = useGameStore.getState().activeSlot;
-          useGameStore.getState().decrementHotbarItem(activeSlot);
         }
       }
     }

@@ -136,6 +136,21 @@ export class ItemRegistry {
   public static getAllItems(): Item[] {
     return Array.from(this.items.values());
   }
+
+  /** 按分类获取所有物品 */
+  public static getByCategory(category: import('./Item').ItemCategory): Item[] {
+    return Array.from(this.items.values()).filter(i => i.category === category);
+  }
+
+  /** 获取所有可放置方块物品 */
+  public static getPlaceableItems(): BlockItem[] {
+    return this.getByCategory('block') as BlockItem[];
+  }
+
+  /** 获取所有食物物品 */
+  public static getFoodItems(): FoodItem[] {
+    return this.getByCategory('food') as FoodItem[];
+  }
 }
 
 // Automatically initialize the ItemRegistry

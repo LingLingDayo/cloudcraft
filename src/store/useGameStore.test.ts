@@ -1,6 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useGameStore } from './useGameStore';
-import { BLOCK_TYPES } from '@game/world/World';
 import { GameState, GameMode, type DebugMetrics, ItemType } from '@type';
 
 describe('useGameStore', () => {
@@ -8,7 +7,7 @@ describe('useGameStore', () => {
     // 重置状态
     useGameStore.setState({
       gameState: GameState.MENU,
-      selectedBlock: BLOCK_TYPES.AIR,
+      selectedItem: null,
       activeSlot: 0,
       hotbar: Array(9).fill(null),
       life: 10,
@@ -38,7 +37,7 @@ describe('useGameStore', () => {
   test('should have initial state', () => {
     const state = useGameStore.getState();
     expect(state.gameState).toBe(GameState.MENU);
-    expect(state.selectedBlock).toBe(BLOCK_TYPES.AIR);
+    expect(state.selectedItem).toBeNull();
     expect(state.activeSlot).toBe(0);
     expect(state.hotbar).toEqual(Array(9).fill(null));
     expect(state.life).toBe(10);
@@ -76,17 +75,15 @@ describe('useGameStore', () => {
     useGameStore.getState().setGameMode(GameMode.CREATIVE);
     expect(useGameStore.getState().gameMode).toBe(GameMode.CREATIVE);
     expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.GRASS, count: 1 });
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.GRASS);
     expect(useGameStore.getState().selectedItem).toBe(ItemType.GRASS);
 
     useGameStore.getState().setGameMode(GameMode.ADVENTURE);
     expect(useGameStore.getState().gameMode).toBe(GameMode.ADVENTURE);
     expect(useGameStore.getState().hotbar[0]).toBeNull();
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
     expect(useGameStore.getState().selectedItem).toBeNull();
   });
 
-  test('should set active slot and update selected block', () => {
+  test('should set active slot and update selected item', () => {
     useGameStore.setState({
       hotbar: [
         null,
@@ -97,11 +94,11 @@ describe('useGameStore', () => {
     
     useGameStore.getState().setActiveSlot(1);
     expect(useGameStore.getState().activeSlot).toBe(1);
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.DIRT);
+    expect(useGameStore.getState().selectedItem).toBe(ItemType.DIRT);
 
     useGameStore.getState().setActiveSlot(0);
     expect(useGameStore.getState().activeSlot).toBe(0);
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
+    expect(useGameStore.getState().selectedItem).toBeNull();
   });
 
   test('should add items to hotbar in adventure mode', () => {
@@ -113,7 +110,8 @@ describe('useGameStore', () => {
     expect(success2).toBe(true);
     expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.STONE, count: 5 });
 
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.STONE);
+    // Active slot 0 now has STONE
+    expect(useGameStore.getState().selectedItem).toBe(ItemType.STONE);
   });
 
   test('should decrement hotbar item and clear slot', () => {
@@ -122,21 +120,21 @@ describe('useGameStore', () => {
         { type: ItemType.WOOD, count: 2 },
         null, null, null, null, null, null, null, null
       ],
-      selectedBlock: BLOCK_TYPES.WOOD
+      selectedItem: ItemType.WOOD
     });
 
     useGameStore.getState().decrementHotbarItem(0);
     expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.WOOD, count: 1 });
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.WOOD);
+    expect(useGameStore.getState().selectedItem).toBe(ItemType.WOOD);
 
     useGameStore.getState().decrementHotbarItem(0);
     expect(useGameStore.getState().hotbar[0]).toBeNull();
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
+    expect(useGameStore.getState().selectedItem).toBeNull();
   });
 
-  test('should set selected block via setSelectedBlock', () => {
-    useGameStore.getState().setSelectedBlock(BLOCK_TYPES.DIRT);
-    expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.DIRT);
+  test('should set selected item via setSelectedItem', () => {
+    useGameStore.getState().setSelectedItem(ItemType.DIRT);
+    expect(useGameStore.getState().selectedItem).toBe(ItemType.DIRT);
   });
 
   test('should set life via setLife', () => {

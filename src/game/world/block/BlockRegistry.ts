@@ -1,5 +1,6 @@
 import { Block } from './Block';
-import { BLOCK_TYPES, setPropertiesResolver, BLOCK_PROPERTIES } from '../BlockConfig';
+import { BLOCK_TYPES, setPropertiesResolver, type BlockType } from '../BlockConfig';
+import type { BlockProperties } from '../BlockConfig';
 import {
   AirBlock,
   SimpleSolidBlock,
@@ -12,6 +13,30 @@ import {
   DoublePlantBottomBlock,
   DoublePlantTopBlock
 } from './BlockClasses';
+
+/** 花朵/植被通用属性工厂 */
+function flowerProps(id: BlockType, name: string, texture: number, opts?: Partial<BlockProperties>): BlockProperties {
+  return {
+    id, name, isSolid: true, isTransparent: true, isLiquid: false,
+    hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+    droppedModelType: 'cross', isCollidable: false, isCrossModel: true,
+    crossScaleW: 0.6, crossScaleH: 0.65, enableCrossOffset: true, canSpawnOn: false,
+    textureFaces: { top: texture, bottom: texture, side: texture },
+    ...opts,
+  };
+}
+
+/** 双层植物通用属性工厂 */
+function doublePlantProps(id: BlockType, name: string, translationKey: string, texture: number, opts?: Partial<BlockProperties>): BlockProperties {
+  return {
+    id, name, translationKey, isSolid: true, isTransparent: true, isLiquid: false,
+    hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
+    droppedModelType: 'cross', isCollidable: false, isCrossModel: true,
+    crossScaleW: 0.85, crossScaleH: 1.0, enableCrossOffset: true, canSpawnOn: false,
+    textureFaces: { top: texture, bottom: texture, side: texture },
+    ...opts,
+  };
+}
 
 export class BlockRegistry {
   private static blocks = new Map<number, Block>();
@@ -58,8 +83,7 @@ export class BlockRegistry {
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d7823', colorHex: 0x2d7823,
       textureFaces: { top: 6, bottom: 6, side: 6 },
-      renderAdjacentSameType: true,
-      renderInternalCross: true
+      renderAdjacentSameType: true, renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
@@ -74,8 +98,7 @@ export class BlockRegistry {
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
       textureFaces: { top: 18, bottom: 18, side: 18 },
-      renderAdjacentSameType: true,
-      renderInternalCross: true
+      renderAdjacentSameType: true, renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
@@ -90,8 +113,7 @@ export class BlockRegistry {
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
       textureFaces: { top: 21, bottom: 21, side: 21 },
-      renderAdjacentSameType: true,
-      renderInternalCross: true
+      renderAdjacentSameType: true, renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
@@ -160,8 +182,7 @@ export class BlockRegistry {
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
       textureFaces: { top: 26, bottom: 26, side: 26 },
-      renderAdjacentSameType: true,
-      renderInternalCross: true
+      renderAdjacentSameType: true, renderInternalCross: true
     }));
 
     this.register(new SimpleSolidBlock({
@@ -176,12 +197,7 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#4c9436', colorHex: 0x4c9436,
       textureFaces: { top: 28, bottom: 28, side: 28 },
-      droppedModelType: 'cross',
-      isCollidable: false,
-      isCrossModel: true,
-      crossScaleW: 0.6,
-      crossScaleH: 0.7,
-      enableCrossOffset: true
+      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true
     }));
 
     this.register(new SaplingBlock({
@@ -189,12 +205,7 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
       textureFaces: { top: 29, bottom: 29, side: 29 },
-      droppedModelType: 'cross',
-      isCollidable: false,
-      isCrossModel: true,
-      crossScaleW: 0.6,
-      crossScaleH: 0.7,
-      enableCrossOffset: true
+      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true
     }));
 
     this.register(new SaplingBlock({
@@ -202,12 +213,7 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
       textureFaces: { top: 30, bottom: 30, side: 30 },
-      droppedModelType: 'cross',
-      isCollidable: false,
-      isCrossModel: true,
-      crossScaleW: 0.6,
-      crossScaleH: 0.7,
-      enableCrossOffset: true
+      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true
     }));
 
     this.register(new SaplingBlock({
@@ -215,39 +221,34 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
       textureFaces: { top: 31, bottom: 31, side: 31 },
-      droppedModelType: 'cross',
-      isCollidable: false,
-      isCrossModel: true,
-      crossScaleW: 0.6,
-      crossScaleH: 0.7,
-      enableCrossOffset: true
+      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true
     }));
 
-    // Flowers
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DANDELION]));
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.POPPY]));
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.BLUE_ORCHID]));
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.ALLIUM]));
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.OXEYE_DAISY]));
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.TALL_GRASS]));
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.FERN]));
-    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DEAD_BUSH]));
+    // ─── Flowers (使用 flowerProps 工厂) ────────────────────
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.DANDELION, '蒲公英', 34, { color: '#ffeb3b', colorHex: 0xffeb3b })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.POPPY, '玫瑰', 35, { color: '#f44336', colorHex: 0xf44336 })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.BLUE_ORCHID, '兰花', 36, { color: '#2196f3', colorHex: 0x2196f3 })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.ALLIUM, '绒球葱', 37, { color: '#e040fb', colorHex: 0xe040fb })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.OXEYE_DAISY, '雏菊', 38, { color: '#eeeeee', colorHex: 0xeeeeee })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.TALL_GRASS, '草丛', 39, { color: '#4caf50', colorHex: 0x4caf50, crossScaleW: 0.85, crossScaleH: 0.85 })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.FERN, '蕨', 40, { color: '#388e3c', colorHex: 0x388e3c, crossScaleW: 0.85, crossScaleH: 0.85 })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.DEAD_BUSH, '枯萎的灌木', 41, { color: '#a08060', colorHex: 0xa08060, crossScaleW: 0.75, crossScaleH: 0.75 })));
 
-    // Double height plants
-    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.SUNFLOWER_BOTTOM], BLOCK_TYPES.SUNFLOWER_TOP));
-    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.SUNFLOWER_TOP], BLOCK_TYPES.SUNFLOWER_BOTTOM));
+    // ─── Double height plants (使用 doublePlantProps 工厂) ──
+    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_BOTTOM, '向日葵(底)', 'sunflower', 42, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.SUNFLOWER_TOP));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_TOP, '向日葵(顶)', 'sunflower', 43, { color: '#ffeb3b', colorHex: 0xffeb3b }), BLOCK_TYPES.SUNFLOWER_BOTTOM));
 
-    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.ROSE_BUSH_BOTTOM], BLOCK_TYPES.ROSE_BUSH_TOP));
-    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.ROSE_BUSH_TOP], BLOCK_TYPES.ROSE_BUSH_BOTTOM));
+    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_BOTTOM, '玫瑰丛(底)', 'rose_bush', 44, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.ROSE_BUSH_TOP));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_TOP, '玫瑰丛(顶)', 'rose_bush', 45, { color: '#f44336', colorHex: 0xf44336 }), BLOCK_TYPES.ROSE_BUSH_BOTTOM));
 
-    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.PEONY_BOTTOM], BLOCK_TYPES.PEONY_TOP));
-    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.PEONY_TOP], BLOCK_TYPES.PEONY_BOTTOM));
+    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.PEONY_BOTTOM, '牡丹(底)', 'peony', 46, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.PEONY_TOP));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.PEONY_TOP, '牡丹(顶)', 'peony', 47, { color: '#f8bbd0', colorHex: 0xf8bbd0 }), BLOCK_TYPES.PEONY_BOTTOM));
 
-    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.LILAC_BOTTOM], BLOCK_TYPES.LILAC_TOP));
-    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.LILAC_TOP], BLOCK_TYPES.LILAC_BOTTOM));
+    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.LILAC_BOTTOM, '丁香(底)', 'lilac', 48, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.LILAC_TOP));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.LILAC_TOP, '丁香(顶)', 'lilac', 49, { color: '#d1c4e9', colorHex: 0xd1c4e9 }), BLOCK_TYPES.LILAC_BOTTOM));
 
-    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM], BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP));
-    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP], BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM));
+    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM, '双格高草(底)', 'double_tall_grass', 50, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP, '双格高草(顶)', 'double_tall_grass', 51, { color: '#81c784', colorHex: 0x81c784 }), BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM));
   }
 
   public static get(id: number): Block {
@@ -262,4 +263,3 @@ export class BlockRegistry {
 // Ensure the static init is executed
 BlockRegistry.init();
 setPropertiesResolver((id) => BlockRegistry.getBlockProperties(id));
-

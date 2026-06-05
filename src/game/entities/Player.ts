@@ -3,9 +3,10 @@ import { World, WORLD_HEIGHT } from '@game/world/World';
 import { Physics } from '@game/physics/Physics';
 import { Controls } from '@game/systems/Controls';
 import { sound } from '@game/systems/Sound';
-import { BLOCK_TYPES, type BlockType, getBlockProperties } from '@game/world/BlockConfig';
+import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { GameAction } from '@game/systems/HotkeyManager';
 import { useGameStore } from '@store/useGameStore';
+import type { ItemType } from '@type';
 
 export class Player {
   public position = new THREE.Vector3(8.5, 40, 8.5);
@@ -15,7 +16,7 @@ export class Player {
   public isFlying = false;
   public life = 10;
   public hunger = 20;
-  public selectedBlockType: BlockType = BLOCK_TYPES.GRASS;
+  public selectedItemType: ItemType | null = null;
 
   private camera: THREE.PerspectiveCamera;
   private onTakeDamage?: () => void;
