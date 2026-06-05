@@ -190,6 +190,7 @@ export const MobileControls: React.FC = () => {
         inventory: useGameStore.getState().inventory,
         activeSlot: useGameStore.getState().activeSlot,
         gameMode: useGameStore.getState().gameMode,
+        version: SaveManager.GAME_VERSION,
       };
       try {
         await SaveManager.saveGame('default_world', saveData, t('startMenu.defaultWorldName'));

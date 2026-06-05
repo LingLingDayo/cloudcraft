@@ -164,6 +164,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         inventory: useGameStore.getState().inventory,
         activeSlot: useGameStore.getState().activeSlot,
         gameMode: useGameStore.getState().gameMode,
+        version: SaveManager.GAME_VERSION,
       };
       try {
         await SaveManager.saveGame('default_world', saveData, t('startMenu.defaultWorldName'));
