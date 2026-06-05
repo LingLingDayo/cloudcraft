@@ -41,6 +41,61 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
 );
 
 
+const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 9 9"
+    style={{ imageRendering: 'pixelated' }}
+    className={styles.pixelHunger}
+  >
+    {/* Black Outline */}
+    <path
+      d="M4,0h3v1h-3z M3,1h1v1h-1z M7,1h1v1h-1z M2,2h1v1h-1z M8,2h1v1h-1z M2,3h1v1h-1z M8,3h1v1h-1z M3,4h1v1h-1z M7,4h1v1h-1z M4,5h1v1h-1z M6,5h1v1h-1z M3,6h1v1h-1z M5,6h1v1h-1z M1,7h2v1h-2z M4,7h1v1h-1z M0,8h2v1h-2z M3,8h1v1h-1z"
+      fill="#000000"
+    />
+    {filled === 2 ? (
+      <>
+        {/* Bone (White) */}
+        <path
+          d="M5,5h1v1h-1z M4,6h1v1h-1z M2,7h2v1h-2z M1,8h2v1h-2z"
+          fill="#e0e0e0"
+        />
+        {/* Meat Shadow (Dark Brown) */}
+        <path
+          d="M3,2h2v1h-2z M3,3h2v1h-2z M4,4h2v1h-2z"
+          fill="#703811"
+        />
+        {/* Meat Main (Brown) */}
+        <path
+          d="M4,1h3v1h-3z M5,2h3v1h-3z M5,3h3v1h-3z M6,4h1v1h-1z"
+          fill="#ab6026"
+        />
+      </>
+    ) : filled === 1 ? (
+      <>
+        {/* Empty part (Grey) */}
+        <path
+          d="M4,1h1v1h-1z M3,2h3v1h-3z M3,3h3v1h-3z M4,4h2v1h-2z M5,5h1v1h-1z M4,6h1v1h-1z M2,7h2v1h-2z M1,8h2v1h-2z"
+          fill="#434343"
+        />
+        {/* Half Meat (Brown) */}
+        <path
+          d="M5,1h2v1h-2z M6,2h2v1h-2z M6,3h2v1h-2z M6,4h1v1h-1z"
+          fill="#ab6026"
+        />
+      </>
+    ) : (
+      /* Entirely Empty (Grey) */
+      <path
+        d="M4,1h3v1h-3z M3,2h5v1h-5z M3,3h5v1h-5z M4,4h3v1h-3z M5,5h1v1h-1z M4,6h1v1h-1z M2,7h2v1h-2z M1,8h2v1h-2z"
+        fill="#434343"
+      />
+    )}
+  </svg>
+);
+
+
 
 export const HUD: React.FC = () => {
   const { t } = useTranslation();
@@ -52,6 +107,7 @@ export const HUD: React.FC = () => {
   const activeSlot = useGameStore((state) => state.activeSlot);
   const setActiveSlot = useGameStore((state) => state.setActiveSlot);
   const life = useGameStore((state) => state.life);
+  const hunger = useGameStore((state) => state.hunger);
   const position = useGameStore((state) => state.position);
   const onGround = useGameStore((state) => state.onGround);
   const inWater = useGameStore((state) => state.inWater);
@@ -187,13 +243,24 @@ export const HUD: React.FC = () => {
         {/* Selected Block Label */}
         {activeLabel && <div className="hotbar-label pixel-text-sm">{activeLabel}</div>}
 
-        {/* Hotbar Stats (Hearts) */}
+        {/* Hotbar Stats (Hearts & Hunger) */}
         {gameMode !== 'creative' && (
           <div className="hud-hotbar-stats">
             <div className="hud-hearts">
               {Array.from({ length: 10 }).map((_, i) => (
                 <PixelHeart key={i} filled={i < life} />
               ))}
+            </div>
+            <div className="hud-hunger">
+              {Array.from({ length: 10 }).map((_, i) => {
+                let filled = 0;
+                if (hunger >= i * 2 + 2) {
+                  filled = 2;
+                } else if (hunger === i * 2 + 1) {
+                  filled = 1;
+                }
+                return <PixelHunger key={i} filled={filled} />;
+              })}
             </div>
           </div>
         )}

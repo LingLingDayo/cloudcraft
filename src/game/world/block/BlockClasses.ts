@@ -135,7 +135,7 @@ export class LeafBlock extends Block {
   }
 
   public getDrops(): { type: BlockType; count: number }[] {
-    // 树叶挖掘后不掉落树叶本身，但有 10% 概率掉落对应的树苗
+    const drops = [];
     const rand = Math.random();
     if (rand < 0.1) {
       let saplingType: BlockType = BLOCK_TYPES.OAK_SAPLING;
@@ -143,9 +143,14 @@ export class LeafBlock extends Block {
       else if (this.id === BLOCK_TYPES.SPRUCE_LEAVES) saplingType = BLOCK_TYPES.SPRUCE_SAPLING;
       else if (this.id === BLOCK_TYPES.JUNGLE_LEAVES) saplingType = BLOCK_TYPES.JUNGLE_SAPLING;
 
-      return [{ type: saplingType, count: 1 }];
+      drops.push({ type: saplingType, count: 1 });
     }
-    return [];
+
+    // Oak leaves have a 5% chance of dropping an apple when broken
+    if (this.id === BLOCK_TYPES.LEAF && Math.random() < 0.05) {
+      drops.push({ type: BLOCK_TYPES.APPLE, count: 1 });
+    }
+    return drops;
   }
 
   public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, _ny: number, _nz: number): void {

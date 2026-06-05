@@ -12,6 +12,7 @@ describe('useGameStore', () => {
       activeSlot: 0,
       hotbar: Array(9).fill(null),
       life: 10,
+      hunger: 20,
       position: { x: 8.5, y: 40, z: 8.5 },
       onGround: false,
       inWater: false,
@@ -39,6 +40,7 @@ describe('useGameStore', () => {
     expect(state.activeSlot).toBe(0);
     expect(state.hotbar).toEqual(Array(9).fill(null));
     expect(state.life).toBe(10);
+    expect(state.hunger).toBe(20);
     expect(state.position).toEqual({ x: 8.5, y: 40, z: 8.5 });
     expect(state.onGround).toBe(false);
     expect(state.inWater).toBe(false);
@@ -139,20 +141,22 @@ describe('useGameStore', () => {
   test('should set player state via setPlayerState', () => {
     const position = { x: 12, y: 45.5, z: -3.2 };
     
-    // Test without updating life
+    // Test without updating life/hunger
     useGameStore.getState().setPlayerState(position, true, false);
     let state = useGameStore.getState();
     expect(state.position).toEqual(position);
     expect(state.onGround).toBe(true);
     expect(state.inWater).toBe(false);
     expect(state.life).toBe(10); // Remains unchanged
+    expect(state.hunger).toBe(20); // Remains unchanged
 
-    // Test with updating life
-    useGameStore.getState().setPlayerState(position, false, true, 5);
+    // Test with updating life and hunger
+    useGameStore.getState().setPlayerState(position, false, true, 5, 15);
     state = useGameStore.getState();
     expect(state.onGround).toBe(false);
     expect(state.inWater).toBe(true);
     expect(state.life).toBe(5);
+    expect(state.hunger).toBe(15);
   });
 
   test('should set debug overlay visibility via setDebugOverlay', () => {

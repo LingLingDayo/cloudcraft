@@ -127,8 +127,9 @@ export class InteractionManager {
         const props = getBlockProperties(heldItem.type);
         if (props.isItem) {
           if (props.itemType === 'food' && props.foodProperties) {
-            if (this.game.player.life < 10) {
-              this.game.player.life = Math.min(10, this.game.player.life + props.foodProperties.healAmount);
+            if (this.game.player.hunger < 20) {
+              const hungerAmount = props.foodProperties.hungerAmount ?? (props.foodProperties.healAmount * 2);
+              this.game.player.hunger = Math.min(20, this.game.player.hunger + hungerAmount);
               sound.playPickup(); // eating sound fallback
               
               const isCreative = useGameStore.getState().gameMode === 'creative';
@@ -144,7 +145,8 @@ export class InteractionManager {
                 },
                 this.game.player.state.onGround,
                 this.game.player.state.inWater,
-                this.game.player.life
+                this.game.player.life,
+                this.game.player.hunger
               );
             }
           }

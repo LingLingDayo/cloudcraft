@@ -29,6 +29,7 @@ export interface BlockProperties {
   itemType?: 'food' | 'tool' | 'resource' | 'weapon' | 'other'; // 物品类型分类
   foodProperties?: {
     healAmount: number;        // 食物回复血量值 (例如 2 代表 1 颗心)
+    hungerAmount?: number;     // 饥饿度回复值 (例如 4 代表 2 个鸡腿)
   };
 }
 
@@ -459,6 +460,32 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     itemType: 'food',
     foodProperties: {
       healAmount: 2,
+      hungerAmount: 3,
+    },
+  },
+  [BLOCK_TYPES.APPLE]: {
+    id: BLOCK_TYPES.APPLE,
+    name: '苹果',
+    isSolid: false,
+    isTransparent: true,
+    isLiquid: false,
+    hardness: -1,
+    affectedByGravity: false,
+    lightLevel: 0,
+    isInteractable: false,
+    opacity: 0.5,
+    soundType: 'none',
+    color: '#ff2222',
+    colorHex: 0xff2222,
+    textureFaces: { top: 33, bottom: 33, side: 33 },
+    droppedModelType: 'cross',
+    isCollidable: false,
+    canSpawnOn: false,
+    isItem: true,
+    itemType: 'food',
+    foodProperties: {
+      healAmount: 2,
+      hungerAmount: 4,
     },
   },
 };
