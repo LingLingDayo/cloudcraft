@@ -244,6 +244,6 @@ export class Player {
 
   public syncCamera() {
     this.camera.position.copy(this.position);
-    this.camera.position.y += 1.6;
+    this.camera.position.y += 1.67;
   }
 }
