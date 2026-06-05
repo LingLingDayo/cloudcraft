@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { writeFileSync, existsSync } from 'fs';
+import { writeFileSync, existsSync, rmSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -27,6 +27,12 @@ try {
   const distDir = path.resolve(rootDir, 'dist');
   if (!existsSync(distDir)) {
     throw new Error('未找到打包生成的 dist 目录！');
+  }
+
+  const gitDir = path.resolve(distDir, '.git');
+  if (existsSync(gitDir)) {
+    console.log('正在清理旧的临时 Git 仓库...');
+    rmSync(gitDir, { recursive: true, force: true });
   }
 
   console.log('正在初始化临时 Git 仓库并推送...');
