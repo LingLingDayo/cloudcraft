@@ -638,7 +638,7 @@ export function generateTextureAtlas(): THREE.Texture {
     ".....RrrR.......",
     "....RrdbRr......",
     "....RrrRrr......",
-    ".....RrrR.......",
+      ".....RrrR.......",
     "......dd........",
     ".......g........",
     "......lG........",
