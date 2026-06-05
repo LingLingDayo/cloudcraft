@@ -9,11 +9,13 @@ import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
 import { SaveManager } from '@game/systems/SaveManager';
 import { isMobileDevice } from '../../utils/device';
+import { useBackToClose } from '../../hooks/useBackToClose';
 import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {
   onClose: () => void;
   onSave?: () => void;
+  closeOnBack?: boolean;
 }
 
 type TabType = 'general' | 'graphics' | 'controls';
@@ -33,7 +35,12 @@ interface FullscreenDocument extends Document {
   msFullscreenElement?: Element;
 }
 
-export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave }) => {
+export const SettingsDialog: React.FC<SettingsDialogProps> = ({ 
+  onClose, 
+  onSave,
+  closeOnBack = true
+}) => {
+  useBackToClose({ onClose, enabled: closeOnBack });
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('general');
 
