@@ -244,7 +244,9 @@ export class DroppedItemManager {
     ];
 
     const item = ItemRegistry.get(itemType);
-    const atlasIndex = item.textureFaces?.side ?? item.textureFaces?.top ?? 3;
+    const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+    const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
+    const atlasIndex = textureFaces?.side ?? textureFaces?.top ?? 3;
     const tx = atlasIndex % 8;
     const ty = 7 - Math.floor(atlasIndex / 8);
     const uMin = tx * 0.125;
@@ -298,6 +300,8 @@ export class DroppedItemManager {
     const uvs: number[] = [];
 
     const item = ItemRegistry.get(itemType);
+    const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+    const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
 
     for (const face of faces) {
       const corners = face.corners;
@@ -313,7 +317,7 @@ export class DroppedItemManager {
         normals.push(...face.dir);
       }
 
-      const atlasIndex = item.textureFaces?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3;
+      const atlasIndex = textureFaces?.[face.uvFace as 'top' | 'bottom' | 'side'] ?? 3;
       const tx = atlasIndex % 8;
       const ty = 7 - Math.floor(atlasIndex / 8);
       const uMin = tx * 0.125;
