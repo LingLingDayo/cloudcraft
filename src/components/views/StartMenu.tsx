@@ -92,6 +92,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             inventory: Array.isArray(parsed.inventory) ? parsed.inventory : Array(54).fill(null),
             activeSlot: typeof parsed.activeSlot === 'number' ? parsed.activeSlot : 0,
             gameMode: parsed.gameMode || GameMode.ADVENTURE,
+            version: parsed.version || SaveManager.GAME_VERSION,
           };
         } else if ('seed' in parsed || 'modified' in parsed || 'entities' in parsed) {
           // Raw world data format
@@ -107,6 +108,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             inventory: Array(54).fill(null),
             activeSlot: 0,
             gameMode: GameMode.ADVENTURE,
+            version: SaveManager.GAME_VERSION,
           };
         } else {
           alert(t('startMenu.invalidSaveFile'));

@@ -1,4 +1,4 @@
-import { GameMode } from '@type';
+import { GameMode, type HotbarItem } from '@type';
 
 export interface SaveMetadata {
   id: string;
@@ -7,18 +7,21 @@ export interface SaveMetadata {
   updatedAt: number;
   gameMode: string;
   seed: string;
+  version: string;
 }
 
 export interface SaveData {
   world: string;
   player: { x: number; y: number; z: number };
-  hotbar: any[];
-  inventory: any[];
+  hotbar: (HotbarItem | null)[];
+  inventory: (HotbarItem | null)[];
   activeSlot: number;
   gameMode: GameMode;
+  version: string;
 }
 
 export class SaveManager {
+  public static GAME_VERSION = '0.1.0';
   private static INDEX_KEY = 'minicraft_saves_index';
   private static SAVE_PREFIX = 'minicraft_save_';
 
@@ -96,6 +99,7 @@ export class SaveManager {
           ...index[existingIdx],
           updatedAt: now,
           gameMode: data.gameMode,
+          version: data.version,
         };
       } else {
         index.push({
@@ -105,6 +109,7 @@ export class SaveManager {
           updatedAt: now,
           gameMode: data.gameMode,
           seed: 'minicraft',
+          version: data.version,
         });
       }
       localStorage.setItem(this.INDEX_KEY, JSON.stringify(index));
@@ -127,10 +132,12 @@ export class SaveManager {
       updatedAt: now,
       gameMode: data.gameMode,
       seed: 'minicraft',
+      version: data.version,
     };
 
     metadata.updatedAt = now;
     metadata.gameMode = data.gameMode;
+    metadata.version = data.version;
     if (displayName) {
       metadata.displayName = displayName;
     }
