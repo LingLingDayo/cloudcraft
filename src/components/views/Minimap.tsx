@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
@@ -12,14 +13,16 @@ import styles from './Minimap.module.scss';
 const getBlockSafe = (world: World, x: number, y: number, z: number): number => {
   if (y < 0 || y >= 500) return BLOCK_TYPES.AIR;
   const cx = Math.floor(x / 16);
+  const cy = Math.floor(y / 16);
   const cz = Math.floor(z / 16);
-  const key = `${cx},${cz}`;
+  const key = `${cx},${cy},${cz}`;
   const chunk = world.chunks.get(key);
   if (!chunk) return BLOCK_TYPES.AIR;
   
   const lx = ((x % 16) + 16) % 16;
+  const ly = ((y % 16) + 16) % 16;
   const lz = ((z % 16) + 16) % 16;
-  const index = lx + lz * 16 + y * 16 * 16;
+  const index = lx + lz * 16 + ly * 16 * 16;
   return chunk[index];
 };
 
@@ -217,6 +220,32 @@ export const Minimap: React.FC = () => {
           ctx.fill();
           ctx.stroke();
         }
+      }
+
+      // Draw active animals (pigs) on the minimap
+      if (gameInstance.animals && (gameInstance.animals as any).animals) {
+        const activeAnimals = (gameInstance.animals as any).animals;
+        activeAnimals.forEach((animal: any) => {
+          const adx = animal.position.x - px;
+          const adz = animal.position.z - pz;
+          const dist = Math.hypot(adx, adz);
+          const mapCenter = (mapSize * pixelSize) / 2;
+
+          if (dist <= mapRadius) {
+            const acx = mapCenter + adx * pixelSize;
+            const acy = mapCenter + adz * pixelSize;
+            
+            ctx.save();
+            ctx.fillStyle = '#ffb6c1'; // Minecraft classic pig pink
+            ctx.strokeStyle = '#d77c8e';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(acx, acy, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+        });
       }
 
       // Draw player arrow in the center
