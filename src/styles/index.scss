@@ -401,8 +401,6 @@ body, html {
           }
           
           &.mobile-inventory-btn {
-            margin-left: 4px;
-            
             svg {
               width: 18px !important; /* Scale down inventory chest icon */
               height: 18px !important;
@@ -502,18 +500,7 @@ body, html {
           background: rgba(255, 255, 255, 0.15);
         }
 
-        &.mobile-inventory-btn {
-          margin-left: 8px;
-          background: rgba(100, 100, 100, 0.85);
 
-          &:hover {
-            background: rgba(255, 255, 255, 0.2);
-          }
-
-          &:active {
-            background: rgba(255, 255, 255, 0.35);
-          }
-        }
 
         &.active {
           background: rgba(139, 139, 139, 0.85);
