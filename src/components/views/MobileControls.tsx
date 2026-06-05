@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
 import { useGame } from '../../context/GameContext';
@@ -231,7 +231,7 @@ export const MobileControls: React.FC = () => {
   const setIsSettingsOpen = useGameStore((state) => state.setIsSettingsOpen);
   const dpadSize = useGameStore((state) => state.dpadSize);
 
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile] = useState(() => isMobileDevice());
   const [toolbarExpanded, setToolbarExpanded] = useState(false);
   const [activeDirections, setActiveDirections] = useState({
     up: false,
@@ -242,16 +242,6 @@ export const MobileControls: React.FC = () => {
   });
 
   const dpadRef = useRef<HTMLDivElement>(null);
-
-  // 监听窗口大小变化以更新移动端环境状态
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(isMobileDevice());
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // 如果不是移动端，则不渲染任何控制 UI
   if (!isMobile) return null;

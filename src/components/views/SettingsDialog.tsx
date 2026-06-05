@@ -82,6 +82,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   }, []);
 
   const toggleFullscreen = (checked: boolean) => {
+    if (import.meta.env.DEV && checked) {
+      console.warn('[DEV] Fullscreen toggle ignored in development environment.');
+      return;
+    }
     const docEl = document.documentElement as FullscreenHTMLElement;
     if (checked) {
       if (docEl.requestFullscreen) {

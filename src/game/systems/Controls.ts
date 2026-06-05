@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { hotkeyManager, GameAction } from './HotkeyManager';
+import { isMobileDevice } from '../../utils/device';
 
 export class Controls {
   public domElement: HTMLElement;
@@ -18,10 +19,7 @@ export class Controls {
   }
 
   public get isMobile(): boolean {
-    if (typeof window === 'undefined') return false;
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-           ('ontouchstart' in window) || 
-           (navigator.maxTouchPoints > 0);
+    return isMobileDevice();
   }
 
   public mouseSensitivity = 0.0022;

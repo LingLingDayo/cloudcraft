@@ -7,7 +7,6 @@ import { Input } from '@components/common/Input';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
 import { SaveManager, type SaveData } from '@game/systems/SaveManager';
-import { isMobileDevice } from '../../utils/device';
 import styles from './StartMenu.module.scss';
 
 const SLIDER_CONTAINER_STYLE = { flex: 1 };
@@ -138,9 +137,9 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   };
 
   const handleStart = (loadSave: boolean, customSeed?: string) => {
-    // Attempt to enter fullscreen on mobile devices (requires user activation)
-    // Avoid triggering fullscreen in mobile dev environments
-    if (!(import.meta.env.DEV && isMobileDevice())) {
+    // Attempt to enter fullscreen (requires user activation)
+    // Avoid triggering fullscreen in dev environments
+    if (!import.meta.env.DEV) {
       interface FullscreenHTMLElement extends HTMLElement {
         webkitRequestFullscreen?: () => Promise<void>;
         mozRequestFullScreen?: () => Promise<void>;

@@ -122,9 +122,9 @@
   }
 }
 
-// Mobile responsiveness to prevent D-pad overlap
-@media (max-width: 768px) {
-  .minimapContainer {
+// Mobile layout adjustments to prevent D-pad overlap (applied via class name based on browser UA)
+.isMobile {
+  &.minimapContainer {
     top: 10px;
     left: 10px;
     gap: 4px;

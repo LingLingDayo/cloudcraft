@@ -101,18 +101,8 @@ const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => (
 export const HUD: React.FC = () => {
   const { t } = useTranslation();
   const [activeLabel, setActiveLabel] = useState<string>('');
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile] = useState(() => isMobileDevice());
   const gameInstance = useGame();
-
-  // Listen to window resize to determine if mobile device
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(isMobileDevice());
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const selectedItem = useGameStore((state) => state.selectedItem);
   const hotbar = useGameStore((state) => state.hotbar);
