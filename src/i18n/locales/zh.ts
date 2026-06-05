@@ -177,6 +177,7 @@ export const zh = {
     jungle_sapling: '丛林树苗',
     porkchop: '生猪肉',
     apple: '苹果',
+    seed: '种子',
   },
 };
 export default zh;

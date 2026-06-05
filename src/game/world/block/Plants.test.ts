@@ -3,6 +3,7 @@ import { vi, describe, test, expect } from 'vitest';
 import { World } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { BlockRegistry } from './BlockRegistry';
+import { ItemRegistry } from '../../item/ItemRegistry';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -121,5 +122,50 @@ describe('Plant and Flower System', () => {
     // Verify both halves of plant are gone
     expect(world.getBlock(10, 10, 10)).toBe(BLOCK_TYPES.AIR);
     expect(world.getBlock(10, 11, 10)).toBe(BLOCK_TYPES.AIR);
+  });
+
+  test('tall grass and double tall grass drops seed or nothing', () => {
+    const tallGrass = BlockRegistry.get(BLOCK_TYPES.TALL_GRASS);
+    const doubleTallGrassBottom = BlockRegistry.get(BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM);
+    const doubleTallGrassTop = BlockRegistry.get(BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP);
+
+    const checkDrops = (block: any) => {
+      let seedCount = 0;
+      let emptyCount = 0;
+      for (let i = 0; i < 200; i++) {
+        const drops = block.getDrops();
+        if (drops.length === 0) {
+          emptyCount++;
+        } else {
+          expect(drops.length).toBe(1);
+          expect(drops[0].type).toBe('seed');
+          expect(drops[0].count).toBe(1);
+          seedCount++;
+        }
+      }
+      expect(seedCount).toBeGreaterThan(0);
+      expect(emptyCount).toBeGreaterThan(0);
+    };
+
+    checkDrops(tallGrass);
+    checkDrops(doubleTallGrassBottom);
+    checkDrops(doubleTallGrassTop);
+  });
+
+  test('seed item registry and food properties', () => {
+    const seedItem = ItemRegistry.get('seed' as any);
+    expect(seedItem).toBeDefined();
+    expect(seedItem.name).toBe('种子');
+    expect((seedItem as any).hungerAmount).toBe(0.5);
+    expect((seedItem as any).healAmount).toBe(0);
+
+    const playerWithHunger = { hunger: 18, life: 10 };
+    expect(seedItem.canUse(playerWithHunger)).toBe(true);
+
+    const playerFull = { hunger: 20, life: 10 };
+    expect(seedItem.canUse(playerFull)).toBe(false);
+
+    const effect = seedItem.onUse(playerWithHunger);
+    expect(effect).toEqual({ hungerDelta: 0.5, healDelta: 0 });
   });
 });
