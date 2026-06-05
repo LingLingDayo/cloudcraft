@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, CHUNK_SIZE_Y } from '@game/world/World';
+import { World, WORLD_HEIGHT } from '@game/world/World';
 import { Physics } from '@game/physics/Physics';
 import { Controls } from '@game/systems/Controls';
 import { sound } from '@game/systems/Sound';
@@ -34,7 +34,7 @@ export class Player {
   public spawn(world: World, _physics: Physics) {
     let startX = 8.5;
     let startZ = 8.5;
-    let startY = CHUNK_SIZE_Y - 2;
+    let startY = WORLD_HEIGHT - 2;
 
     // 寻找安全的陆地出生点 (不属于水域且是 solid 的地面)
     let foundSafeSpawn = false;
@@ -51,7 +51,7 @@ export class Player {
           const testZ = 8.5 + dz;
           
           // 从上往下找到第一个非空气方块
-          let testY = CHUNK_SIZE_Y - 2;
+          let testY = WORLD_HEIGHT - 2;
           while (testY > 0 && world.getBlock(Math.floor(testX), testY, Math.floor(testZ)) === BLOCK_TYPES.AIR) {
             testY--;
           }
@@ -77,7 +77,7 @@ export class Player {
     if (!foundSafeSpawn) {
       startX = 8.5;
       startZ = 8.5;
-      startY = CHUNK_SIZE_Y - 2;
+      startY = WORLD_HEIGHT - 2;
       
       // 仍然向下寻路，但如果碰到水或者普通 Solid，就停下来（即 props.isSolid || props.isLiquid）
       while (startY > 0) {

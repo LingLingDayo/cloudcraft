@@ -63,6 +63,6 @@ describe('Block Orientation Bitwise Mesh Generation', () => {
     expect(getBlockProperties(world.getBlock(10, 10, 10)).isSolid).toBe(true);
 
     // Call updateChunkMesh to verify mesh reconstruction succeeds
-    expect(() => world.updateChunkMesh(0, 0)).not.toThrow();
+    expect(() => world.updateChunkMesh(0, 0, 0)).not.toThrow();
   });
 });

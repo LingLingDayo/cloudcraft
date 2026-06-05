@@ -1,5 +1,5 @@
 import { vi, describe, test, expect } from 'vitest';
-import { World, CHUNK_SIZE_Y } from './World';
+import { World, WORLD_HEIGHT } from './World';
 import { BLOCK_TYPES } from './BlockConfig';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
@@ -86,7 +86,7 @@ describe('World Serialization by Modified Blocks Tracking', () => {
 describe('World Cave and Dry Land Ocean Mask Generation', () => {
   test('should generate dry land below waterLevel when oceanNoise is above threshold', () => {
     const world = new World('minicraft-seed');
-    world.loadArea(0, 0, 2);
+    world.loadArea(0, 150, 0, 2);
     
     let foundDryLandBelowSeaLevel = false;
     for (let x = -32; x < 32; x += 2) {
@@ -105,13 +105,13 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
 
   test('should generate grass on surface when dry land is below waterLevel', () => {
     const world = new World('minicraft-seed');
-    world.loadArea(0, 0, 2);
+    world.loadArea(0, 150, 0, 2);
     
     let verified = false;
     for (let x = -32; x < 32; x++) {
       for (let z = -32; z < 32; z++) {
         // Find surface height
-        let y = CHUNK_SIZE_Y - 2;
+        let y = WORLD_HEIGHT - 2;
         while (y > 0 && world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
           y--;
         }
@@ -134,7 +134,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
 
   test('should generate caves (AIR pockets) underground inside stone layers', () => {
     const world = new World('minicraft-seed');
-    world.loadArea(0, 0, 2);
+    world.loadArea(0, 150, 0, 2);
 
     let foundUndergroundCave = false;
     for (let x = -32; x < 32; x++) {
@@ -162,7 +162,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
 
   test('should not generate exposed floating water walls adjacent to air', () => {
     const world = new World('minicraft-seed');
-    world.loadArea(0, 0, 3); // Load a 3x3 chunk area
+    world.loadArea(0, 150, 0, 3); // Load a 3x3 chunk area
 
     let exposedWaterCount = 0;
     
@@ -198,7 +198,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     // Search different regions to find a high-altitude pond (since probability is 3%)
     for (let offset = 0; offset < 2000; offset += 96) {
       const world = new World('minicraft-seed');
-      world.loadArea(offset, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
+      world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
       
       for (let x = offset - 32; x < offset + 32; x++) {
         for (let z = offset - 32; z < offset + 32; z++) {
@@ -224,7 +224,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     for (let offset = 0; offset < 2000; offset += 96) {
       const world = new World('minicraft-seed');
       // Load a 5x5 chunk area (80x80 blocks) centered around offset
-      world.loadArea(offset, offset, 2);
+      world.loadArea(offset, 150, offset, 2);
       
       let hasHighWater = false;
       // Scan coordinate range inside the loaded region
@@ -233,7 +233,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       
       for (let x = checkMin; x < checkMax; x++) {
         for (let z = checkMin; z < checkMax; z++) {
-          for (let y = 151; y < CHUNK_SIZE_Y - 2; y++) {
+          for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
             if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
               hasHighWater = true;
               

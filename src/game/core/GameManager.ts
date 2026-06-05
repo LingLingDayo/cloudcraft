@@ -117,7 +117,7 @@ export class GameManager {
     this.player.spawn(this.world, this.physics);
 
     // Load chunks around spawn asynchronously to allow React to render the loading progress
-    this.world.loadArea(this.player.position.x, this.player.position.z, 2, false);
+    this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, 2, false);
 
     // Initialize Sub-managers
     this.environment = new EnvironmentManager(this);
@@ -128,7 +128,7 @@ export class GameManager {
 
   public spawnPlayer() {
     this.player.spawn(this.world, this.physics);
-    this.world.loadArea(this.player.position.x, this.player.position.z, 2, true);
+    this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, 2, true);
   }
 
   private initListeners() {
@@ -185,7 +185,7 @@ export class GameManager {
       if (this.environment) this.environment.update(dt);
       
       this.player.update(dt, this.physics, this.controls, this.world);
-      this.world.loadArea(this.player.position.x, this.player.position.z, this.renderDistance);
+      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, this.renderDistance);
 
       if (this.interaction) this.interaction.update(dt);
       if (this.droppedItems) this.droppedItems.update(dt);
@@ -214,7 +214,7 @@ export class GameManager {
       // Background continues when game is paused/menus open
       if (this.environment) this.environment.update(dt);
       if (this.player) {
-        this.world.loadArea(this.player.position.x, this.player.position.z, this.renderDistance);
+        this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, this.renderDistance);
       }
       this.world.update(dt);
     }
@@ -225,7 +225,7 @@ export class GameManager {
   public setRenderDistance(dist: number) {
     this.renderDistance = dist;
     if (this.world && this.player) {
-      this.world.loadArea(this.player.position.x, this.player.position.z, this.renderDistance);
+      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, this.renderDistance);
     }
   }
 
