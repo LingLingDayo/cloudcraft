@@ -6,7 +6,7 @@ import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
-import { SaveManager } from '@game/systems/SaveManager';
+import { SaveManager, type SaveData } from '@game/systems/SaveManager';
 import { isMobileDevice } from '../../utils/device';
 import styles from './StartMenu.module.scss';
 
@@ -54,18 +54,74 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
         const content = e.target?.result as string;
         const parsed = JSON.parse(content);
         
-        // Basic validation of save data structure
-        if (!parsed || typeof parsed !== 'object' || !parsed.world) {
+        if (!parsed || typeof parsed !== 'object') {
+          alert(t('startMenu.invalidSaveFile'));
+          return;
+        }
+
+        let worldDataStr = '';
+        let finalSaveData: Omit<SaveData, 'createdAt'>;
+        let importedSeed = seed;
+
+        if ('world' in parsed) {
+          // Full save file format
+          const rawWorld = parsed.world;
+          if (typeof rawWorld === 'string') {
+            worldDataStr = rawWorld;
+          } else if (typeof rawWorld === 'object' && rawWorld !== null) {
+            worldDataStr = JSON.stringify(rawWorld);
+          } else {
+            alert(t('startMenu.invalidSaveFile'));
+            return;
+          }
+
+          // Try to extract seed from worldDataStr
+          try {
+            const worldObj = JSON.parse(worldDataStr);
+            if (worldObj && worldObj.seed) {
+              importedSeed = String(worldObj.seed);
+            }
+          } catch (err) {
+            console.warn('Failed to parse seed from world data string:', err);
+          }
+
+          finalSaveData = {
+            world: worldDataStr,
+            player: parsed.player || { x: 0, y: 0, z: 0 },
+            hotbar: Array.isArray(parsed.hotbar) ? parsed.hotbar : Array(9).fill(null),
+            inventory: Array.isArray(parsed.inventory) ? parsed.inventory : Array(54).fill(null),
+            activeSlot: typeof parsed.activeSlot === 'number' ? parsed.activeSlot : 0,
+            gameMode: parsed.gameMode || GameMode.ADVENTURE,
+          };
+        } else if ('seed' in parsed || 'modified' in parsed || 'entities' in parsed) {
+          // Raw world data format
+          worldDataStr = JSON.stringify(parsed);
+          if (parsed.seed) {
+            importedSeed = String(parsed.seed);
+          }
+
+          finalSaveData = {
+            world: worldDataStr,
+            player: { x: 0, y: 0, z: 0 },
+            hotbar: Array(9).fill(null),
+            inventory: Array(54).fill(null),
+            activeSlot: 0,
+            gameMode: GameMode.ADVENTURE,
+          };
+        } else {
           alert(t('startMenu.invalidSaveFile'));
           return;
         }
 
         // Save it using SaveManager
-        SaveManager.saveGame('default_world', parsed, t('startMenu.defaultWorldName'))
+        SaveManager.saveGame('default_world', finalSaveData, t('startMenu.defaultWorldName'))
           .then(() => {
             // Update state
             setHasSave(true);
+            setSeed(importedSeed);
             alert(t('startMenu.importSuccess'));
+            // Automatically start the game with the imported save and correct seed
+            handleStart(true, importedSeed);
           })
           .catch((err) => {
             console.error(err);
@@ -81,7 +137,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
     event.target.value = '';
   };
 
-  const handleStart = (loadSave: boolean) => {
+  const handleStart = (loadSave: boolean, customSeed?: string) => {
     // Attempt to enter fullscreen on mobile devices (requires user activation)
     // Avoid triggering fullscreen in mobile dev environments
     if (!(import.meta.env.DEV && isMobileDevice())) {
@@ -104,7 +160,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
       }
     }
 
-    onStartGame(seed, renderDistance, fov, loadSave);
+    onStartGame(customSeed !== undefined ? customSeed : seed, renderDistance, fov, loadSave);
   };
 
   return (
