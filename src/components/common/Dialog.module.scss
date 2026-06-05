@@ -26,6 +26,20 @@
   max-width: 90%;
   image-rendering: pixelated;
   font-family: monospace;
+
+  @media (max-width: 768px), (max-height: 480px) {
+    --design-w: 440px;
+    --design-h: 400px;
+    --safe-ratio: 0.92;
+    --scale-w: calc((100vw * var(--safe-ratio)) / var(--design-w));
+    --scale-h: calc((100vh * var(--safe-ratio)) / var(--design-h));
+    --dynamic-scale: min(var(--scale-w), var(--scale-h), 1);
+
+    transform: scale(var(--dynamic-scale)) translate3d(0, 0, 0);
+    transform-origin: center center;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
 .dialogHeader {
