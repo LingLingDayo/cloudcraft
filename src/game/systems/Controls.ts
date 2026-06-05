@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { hotkeyManager, GameAction } from './HotkeyManager';
 import { isMobileDevice } from '../../utils/device';
+import { useGameStore } from '@store/useGameStore';
+import { ItemRegistry } from '@game/item/ItemRegistry';
+
 
 export class Controls {
   public domElement: HTMLElement;
@@ -41,6 +44,7 @@ export class Controls {
   private touchStartTime = 0;
   private touchSensitivity = 0.005;
   private miningTimeout: number | null = null;
+  private longPressButtonTriggered: number | null = null;
 
   constructor(camera: THREE.Camera, domElement: HTMLElement) {
     this.camera = camera;
@@ -137,11 +141,19 @@ export class Controls {
     this.startTouchY = touch.clientY;
     this.isMoved = false;
     this.touchStartTime = performance.now();
+    this.longPressButtonTriggered = null;
 
-    // Start a 200ms timer. If no big movement occurs, trigger digging action (mousedown button 0)
+    // Start a 200ms timer. If no big movement occurs, trigger digging or eating action
     this.miningTimeout = window.setTimeout(() => {
       if (!this.isMoved && this.activeTouchId === touch.identifier) {
-        this.triggerMouseEvent('mousedown', 0);
+        const store = useGameStore.getState();
+        const heldItem = store.hotbar[store.activeSlot];
+        const item = heldItem ? ItemRegistry.get(heldItem.type) : null;
+        const isFood = item && item.category === 'food';
+        
+        const button = isFood ? 2 : 0;
+        this.longPressButtonTriggered = button;
+        this.triggerMouseEvent('mousedown', button);
       }
     }, 200);
   };
@@ -206,12 +218,22 @@ export class Controls {
               this.triggerMouseEvent('mouseup', 2);
             }, 50);
           } else {
-            // Long Press End: End mining (Left Release)
-            this.triggerMouseEvent('mouseup', 0);
+            // Long Press End: Release whatever button was triggered
+            if (this.longPressButtonTriggered !== null) {
+              this.triggerMouseEvent('mouseup', this.longPressButtonTriggered);
+              this.longPressButtonTriggered = null;
+            } else {
+              this.triggerMouseEvent('mouseup', 0);
+            }
           }
         } else {
-          // If swipe ends, clear mining status just in case
-          this.triggerMouseEvent('mouseup', 0);
+          // If swipe ends, clear status just in case
+          if (this.longPressButtonTriggered !== null) {
+            this.triggerMouseEvent('mouseup', this.longPressButtonTriggered);
+            this.longPressButtonTriggered = null;
+          } else {
+            this.triggerMouseEvent('mouseup', 0);
+          }
         }
 
         this.activeTouchId = null;
