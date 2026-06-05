@@ -259,7 +259,7 @@ export const HUD: React.FC = () => {
                 let filled = 0;
                 if (hunger >= i * 2 + 2) {
                   filled = 2;
-                } else if (hunger === i * 2 + 1) {
+                } else if (hunger >= i * 2 + 1) {
                   filled = 1;
                 }
                 return <PixelHunger key={i} filled={filled} />;

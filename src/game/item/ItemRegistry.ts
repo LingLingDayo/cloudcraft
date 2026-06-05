@@ -40,6 +40,17 @@ export class ItemRegistry {
       droppedModelType: 'cross'
     }));
 
+    this.register(new FoodItem({
+      id: ItemType.SEED,
+      name: '种子',
+      healAmount: 0,
+      hungerAmount: 0.5,
+      textureFaces: { top: 52, bottom: 52, side: 52 },
+      color: '#dbb874',
+      colorHex: 0xdbb874,
+      droppedModelType: 'cross'
+    }));
+
     // 2. Register BlockItems for all block types automatically
     const blocksList = [
       { id: BLOCK_TYPES.GRASS, itemId: ItemType.GRASS },

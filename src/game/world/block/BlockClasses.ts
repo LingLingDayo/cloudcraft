@@ -209,15 +209,25 @@ export class FlowerBlock extends Block {
     super(properties);
   }
 
+  public override getDrops(): { type: ItemType; count: number }[] {
+    if (this.id === BLOCK_TYPES.TALL_GRASS) {
+      // 10% chance to drop seed
+      return Math.random() < 0.1 ? [{ type: ItemType.SEED, count: 1 }] : [];
+    }
+    return super.getDrops();
+  }
+
   public onPlaced(world: World, x: number, y: number, z: number): void {
     const belowType = world.getBlock(x, y - 1, z);
     const props = getBlockProperties(belowType);
     if (!props.allowVegetationBase) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
-        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
-        if (itemType) {
-          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        const drops = this.getDrops();
+        for (const drop of drops) {
+          if (drop.count > 0) {
+            world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+          }
         }
       }
     }
@@ -230,9 +240,11 @@ export class FlowerBlock extends Block {
       if (!props.allowVegetationBase) {
         world.setBlock(x, y, z, BLOCK_TYPES.AIR);
         if (world.game && world.game.droppedItems) {
-          const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
-          if (itemType) {
-            world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+          const drops = this.getDrops();
+          for (const drop of drops) {
+            if (drop.count > 0) {
+              world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+            }
           }
         }
       }
@@ -248,6 +260,14 @@ export class DoublePlantBottomBlock extends Block {
     this.topBlockId = topBlockId;
   }
 
+  public override getDrops(): { type: ItemType; count: number }[] {
+    if (this.id === BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM) {
+      // 10% chance to drop seed
+      return Math.random() < 0.1 ? [{ type: ItemType.SEED, count: 1 }] : [];
+    }
+    return super.getDrops();
+  }
+
   public onPlaced(world: World, x: number, y: number, z: number): void {
     const belowType = world.getBlock(x, y - 1, z);
     const belowProps = getBlockProperties(belowType);
@@ -256,9 +276,11 @@ export class DoublePlantBottomBlock extends Block {
     if (!belowProps.allowVegetationBase || aboveType !== BLOCK_TYPES.AIR) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
-        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
-        if (itemType) {
-          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        const drops = this.getDrops();
+        for (const drop of drops) {
+          if (drop.count > 0) {
+            world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+          }
         }
       }
     } else {
@@ -273,9 +295,11 @@ export class DoublePlantBottomBlock extends Block {
     if (!belowProps.allowVegetationBase) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
-        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
-        if (itemType) {
-          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        const drops = this.getDrops();
+        for (const drop of drops) {
+          if (drop.count > 0) {
+            world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+          }
         }
       }
       return;
@@ -311,6 +335,10 @@ export class DoublePlantTopBlock extends Block {
   }
 
   public getDrops(): { type: ItemType; count: number }[] {
+    if (this.bottomBlockId === BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM) {
+      // 10% chance to drop seed
+      return Math.random() < 0.1 ? [{ type: ItemType.SEED, count: 1 }] : [];
+    }
     const itemType = ItemRegistry.getItemTypeFromBlockType(this.bottomBlockId);
     if (itemType) {
       return [{ type: itemType, count: 1 }];

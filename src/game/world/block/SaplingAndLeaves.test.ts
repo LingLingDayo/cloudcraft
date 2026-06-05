@@ -75,10 +75,10 @@ describe('Saplings and Leaves Decay/Growth Systems', () => {
     const dropsSelf = drops.some((d: any) => d.type === ItemType.LEAF);
     expect(dropsSelf).toBe(false);
 
-    // It should either drop nothing or drop a sapling (ItemType string)
-    if (drops.length > 0) {
-      expect(drops[0].type).toBe(ItemType.OAK_SAPLING);
-      expect(drops[0].count).toBe(1);
+    // It should either drop nothing or drop a sapling/apple
+    for (const drop of drops) {
+      expect([ItemType.OAK_SAPLING as string, ItemType.APPLE as string]).toContain(drop.type);
+      expect(drop.count).toBe(1);
     }
   });
 

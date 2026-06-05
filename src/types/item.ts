@@ -43,6 +43,7 @@ export const ItemType = {
   // Pure Items
   PORKCHOP: 'porkchop',
   APPLE: 'apple',
+  SEED: 'seed',
 } as const;
 
 export type ItemType = typeof ItemType[keyof typeof ItemType];

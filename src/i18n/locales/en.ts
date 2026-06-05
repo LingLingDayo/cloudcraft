@@ -177,6 +177,7 @@ export const en = {
     jungle_sapling: 'Jungle Sapling',
     porkchop: 'Raw Porkchop',
     apple: 'Apple',
+    seed: 'Seed',
   },
 };
 export default en;
