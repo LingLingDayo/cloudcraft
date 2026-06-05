@@ -1,4 +1,5 @@
 import React from 'react';
+import { useBackToClose } from '../../hooks/useBackToClose';
 import styles from './Dialog.module.scss';
 
 interface DialogProps {
@@ -7,6 +8,7 @@ interface DialogProps {
   children: React.ReactNode;
   width?: string | number;
   height?: string | number;
+  closeOnBack?: boolean;
 }
 
 export const Dialog: React.FC<DialogProps> = ({ 
@@ -14,8 +16,10 @@ export const Dialog: React.FC<DialogProps> = ({
   onClose, 
   children, 
   width, 
-  height 
+  height,
+  closeOnBack = true
 }) => {
+  useBackToClose({ onClose, enabled: closeOnBack });
   const style: React.CSSProperties = {
     ...(width !== undefined ? { width } : {}),
     ...(height !== undefined ? { height } : {}),
