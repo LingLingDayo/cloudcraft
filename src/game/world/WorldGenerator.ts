@@ -1,9 +1,16 @@
 import { ImprovedNoise } from './Noise';
-import { BLOCK_TYPES, getBlockProperties } from './BlockConfig';
+import { BLOCK_TYPES } from './BlockConfig';
 import { getBiomeAt } from './biome/BiomeRegistry';
 import { type Biome, TreeStyle } from './biome/Biome';
-import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z, WORLD_HEIGHT } from './World';
+import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
 import { WORLD_CONFIG } from './WorldConfig';
+import { ChunkPipeline } from './pipeline/ChunkPipeline';
+import type { ChunkPipelineContext } from './pipeline/ChunkPipelineTypes';
+import { TerrainHeightMapStage } from './pipeline/stages/TerrainHeightMapStage';
+import { BaseTerrainFillerStage } from './pipeline/stages/BaseTerrainFillerStage';
+import { CaveCarverStage } from './pipeline/stages/CaveCarverStage';
+import { SurfaceDecorationStage } from './pipeline/stages/SurfaceDecorationStage';
+import { TreeDecorationStage } from './pipeline/stages/TreeDecorationStage';
 
 export class WorldGenerator {
   private noise: ImprovedNoise;
@@ -20,7 +27,7 @@ export class WorldGenerator {
     return this.noise;
   }
 
-  private getRiverValue(wx: number, wz: number): { t: number; bedHeight: number; dRiver: number } {
+  public getRiverValue(wx: number, wz: number): { t: number; bedHeight: number; dRiver: number } {
     // 增加坐标扭曲 (Domain Warping)，使河流具有弯曲多变的形状
     const warpX = this.noise.noise(wx * 0.01, wz * 0.01) * 15;
     const warpZ = this.noise.noise(wx * 0.01 + 50, wz * 0.01 + 50) * 15;
@@ -77,7 +84,7 @@ export class WorldGenerator {
     return this.getPondValue(wx, wz, 0).isPond;
   }
 
-  private getPondValue(
+  public getPondValue(
     wx: number,
     wz: number,
     surfaceHeight: number
@@ -170,7 +177,7 @@ export class WorldGenerator {
     return { isPond: false, bedHeight: surfaceHeight + 10, centerT: 0, waterLevel: WORLD_CONFIG.waterLevel };
   }
 
-  private getWaterLevelAt(wx: number, wz: number): number {
+  public getWaterLevelAt(wx: number, wz: number): number {
     const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
     if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
       return WORLD_CONFIG.waterLevel;
@@ -186,7 +193,7 @@ export class WorldGenerator {
     return 0;
   }
 
-  private isWaterArea(wx: number, wz: number): boolean {
+  public isWaterArea(wx: number, wz: number): boolean {
     const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
     if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
       return true;
@@ -262,529 +269,28 @@ export class WorldGenerator {
     const worldStartY = cy * CHUNK_SIZE_Y;
     const worldStartZ = cz * CHUNK_SIZE_Z;
 
-    // Generate terrain
-    for (let x = 0; x < CHUNK_SIZE_X; x++) {
-      for (let z = 0; z < CHUNK_SIZE_Z; z++) {
-        const wx = worldStartX + x;
-        const wz = worldStartZ + z;
+    const pipeline = new ChunkPipeline();
+    pipeline.addStage(new TerrainHeightMapStage());
+    pipeline.addStage(new BaseTerrainFillerStage());
+    pipeline.addStage(new CaveCarverStage());
+    pipeline.addStage(new SurfaceDecorationStage());
+    pipeline.addStage(new TreeDecorationStage());
 
-        // 使用 3x3 邻域插值计算平滑高度与主生态
-        const { height: interpolatedHeight, primaryBiome } = this.getInterpolatedHeightAndBiome(wx, wz);
-        
-        // 计算海洋掩码 (Ocean/Land mask)
-        const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
-        const waterLevel = WORLD_CONFIG.waterLevel;
-        
-        let adjustedHeight = interpolatedHeight;
-        let isDryLand = true;
+    const context: ChunkPipelineContext = {
+      cx,
+      cy,
+      cz,
+      worldStartX,
+      worldStartY,
+      worldStartZ,
+      chunk,
+      noise: this.noise,
+      terrainMap: [],
+      biomeMap: [],
+      generator: this
+    };
 
-        if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
-          // 海洋区域
-          isDryLand = false;
-          const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - oceanNoise) / WORLD_CONFIG.ocean.transitionWidth);
-          // 在海洋深处，基础高度为 12 左右，并带有一些轻微的海底噪波起伏
-          const oceanBaseHeight = WORLD_CONFIG.ocean.baseHeight + this.noise.noise(wx * 0.02, wz * 0.02) * 3;
-          adjustedHeight = Math.round((1 - oceanFactor) * interpolatedHeight + oceanFactor * oceanBaseHeight);
-        } else {
-          // 陆地区域。通过海岸线平滑拉高，防止海陆分界线处出现悬空的水墙
-          const distToShore = oceanNoise - WORLD_CONFIG.ocean.threshold;
-          if (distToShore < WORLD_CONFIG.ocean.shoreWidth) {
-            const t = distToShore / WORLD_CONFIG.ocean.shoreWidth;
-            const minShoreHeight = waterLevel + 1; // 至少比海平面高出 1 格
-            if (adjustedHeight < minShoreHeight) {
-              adjustedHeight = Math.round(t * adjustedHeight + (1 - t) * minShoreHeight);
-            }
-          }
-        }
-
-        // ==================== 新增河流与水潭生成逻辑 ====================
-        const { t: riverT, bedHeight: riverBedHeight, dRiver } = this.getRiverValue(wx, wz);
-        
-        // 河谷压平逻辑：在靠近河流时，逐渐将高于目标高度的陆地压平至 valleyTargetHeight 左右
-        const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
-        const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
-        
-        if (dRiver < valleyEnd && adjustedHeight > WORLD_CONFIG.river.valleyTargetHeight) {
-          const tVal = 1.0 - (dRiver - valleyStart) / WORLD_CONFIG.river.valleyInfluenceWidth;
-          const clampedT = Math.max(0, Math.min(1, tVal));
-          const flattenWeight = clampedT * clampedT * (3 - 2 * clampedT); // 三次 smoothstep 平滑
-          
-          const valleyTarget = WORLD_CONFIG.river.valleyTargetHeight;
-          adjustedHeight = Math.round(adjustedHeight * (1 - flattenWeight) + valleyTarget * flattenWeight);
-        }
-        
-        if (riverT > 0) {
-          // 使用三次 smoothstep 对 riverT 进行平滑，使河岸及河床的横断面呈平滑 S 型曲线
-          const smoothedRiverT = riverT * riverT * (3 - 2 * riverT);
-          if (adjustedHeight > riverBedHeight) {
-            adjustedHeight = Math.round(adjustedHeight * (1 - smoothedRiverT) + riverBedHeight * smoothedRiverT);
-          }
-
-          if (riverT > 0.35) {
-            isDryLand = false;
-          } else if (isDryLand) {
-            // 只有当该位置本身是陆地（非海洋）时，才需要对河流岸边进行拉高，防止悬空水墙
-            const u = riverT / 0.35; // 从 0 (远离河流) 到 1 (河流分界线)
-            const minShoreHeight = waterLevel; // 至少与水面齐平
-            if (adjustedHeight < minShoreHeight) {
-              adjustedHeight = Math.round(u * minShoreHeight + (1 - u) * adjustedHeight);
-            }
-          }
-        }
-
-        // ==================== 新增陆地小水潭生成逻辑 ====================
-        let isPond = false;
-        let pondWaterLevel: number = waterLevel;
-        const surfaceHeightForPond = adjustedHeight;
-        if (isDryLand) {
-          const { isPond: pondActive, bedHeight: pondBedHeight, centerT: pondCenterT, waterLevel: pLevel } = this.getPondValue(wx, wz, surfaceHeightForPond);
-          if (pondCenterT > 0) {
-            if (adjustedHeight > pondBedHeight) {
-              adjustedHeight = Math.round(adjustedHeight * (1 - pondCenterT) + pondBedHeight * pondCenterT);
-            }
-            if (pondActive) {
-              isPond = true;
-              isDryLand = false; // 水体中心不能是干燥陆地，防止堤岸保护逻辑将自身误填平
-              pondWaterLevel = pLevel;
-            }
-          }
-        }
-        
-        let localWaterLevel: number = waterLevel;
-        if (isPond) {
-          localWaterLevel = pondWaterLevel;
-        }
-        // ==========================================================
-
-        // 陆地区域邻域水面保护：检测其水平相邻块的水域水位，如果相邻有水域且当前陆地高度低于该水域水位，
-        // 则将当前陆地拉高至该水位作为堤岸，防止水体水平外露
-        if (isDryLand) {
-          const neighbors = [
-            [wx + 1, wz],
-            [wx - 1, wz],
-            [wx, wz + 1],
-            [wx, wz - 1]
-          ];
-          let maxAdjacentWaterLevel = 0;
-          for (const [nx, nz] of neighbors) {
-            const wLevel = this.getWaterLevelAt(nx, nz);
-            if (wLevel > maxAdjacentWaterLevel) {
-              maxAdjacentWaterLevel = wLevel;
-            }
-          }
-          if (maxAdjacentWaterLevel > 0 && adjustedHeight < maxAdjacentWaterLevel) {
-            adjustedHeight = maxAdjacentWaterLevel;
-          }
-        }
-
-        const finalHeight = Math.max(3, Math.min(WORLD_HEIGHT - 2, adjustedHeight));
-
-        // 计算当前列的矿洞最大高度限制（是否允许露天入口）
-        let maxHeightOffset: number = WORLD_CONFIG.caves.maxHeightOffsetDefault;
-        const entranceNoise = this.noise.noise(wx * 0.02, wz * 0.02);
-        if (entranceNoise > 0.35 && finalHeight > WORLD_CONFIG.waterLevel + 5) {
-          maxHeightOffset = WORLD_CONFIG.caves.maxHeightOffsetEntrance;
-        }
-
-        for (let ly = 0; ly < CHUNK_SIZE_Y; ly++) {
-          const y = worldStartY + ly;
-          const index = x + z * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-          
-          if (y === 0) {
-            // Bedrock layer
-            chunk[index] = BLOCK_TYPES.STONE;
-          } else if (y <= finalHeight) {
-            const depth = finalHeight - y + 1;
-            primaryBiome.fillColumn(chunk, x, z, y, finalHeight, localWaterLevel, depth, this.noise, wx, wz, isDryLand && !isPond);
-
-            // 矿洞刻蚀 (Cave carving)
-            // 矿洞仅在 minHeight 以上、地表下限制格以下生成
-            if (y >= WORLD_CONFIG.caves.minHeight && y <= finalHeight - maxHeightOffset) {
-              const warpScale = WORLD_CONFIG.caves.warpScale;
-              const warpStrength = WORLD_CONFIG.caves.warpStrength;
-              const wxWarped = wx + this.noise.noise3d(wx * warpScale, y * warpScale, wz * warpScale) * warpStrength;
-              const yWarped = y + this.noise.noise3d(wx * warpScale + 100, y * warpScale + 100, wz * warpScale + 100) * warpStrength;
-              const wzWarped = wz + this.noise.noise3d(wx * warpScale + 200, y * warpScale + 200, wz * warpScale + 200) * warpStrength;
-
-              const baseThreshold = WORLD_CONFIG.caves.baseThreshold;
-              // 使用极低频 3D 噪波控制局部的粗细变化，形成不规则的“洞室”
-              const chamberNoise = this.noise.noise3d(wx * 0.01, y * 0.015, wz * 0.01);
-              const currentThreshold = baseThreshold + chamberNoise * 0.08;
-
-              const n1 = this.noise.noise3d(
-                wxWarped * WORLD_CONFIG.caves.scaleXZ,
-                yWarped * WORLD_CONFIG.caves.scaleY,
-                wzWarped * WORLD_CONFIG.caves.scaleXZ
-              );
-              const n2 = this.noise.noise3d(
-                wxWarped * WORLD_CONFIG.caves.scaleXZ + 100,
-                yWarped * WORLD_CONFIG.caves.scaleY + 100,
-                wzWarped * WORLD_CONFIG.caves.scaleXZ + 100
-              );
-
-              // 圆周判定：n1*n1 + n2*n2 < currentThreshold*currentThreshold
-              if (n1 * n1 + n2 * n2 < currentThreshold * currentThreshold) {
-                // 检查是否靠近 any water域（当 y <= localWaterLevel 时），防止矿洞从侧面穿透水体
-                let adjacentToWater = false;
-                if (y <= localWaterLevel) {
-                  const neighbors = [
-                    [wx + 1, wz],
-                    [wx - 1, wz],
-                    [wx, wz + 1],
-                    [wx, wz - 1]
-                  ];
-                  for (const [nx, nz] of neighbors) {
-                    if (this.isWaterArea(nx, nz)) {
-                      adjacentToWater = true;
-                      break;
-                    }
-                  }
-                }
-
-                if (!adjacentToWater) {
-                  // 雕刻为空气 (Caves are filled with air)
-                  chunk[index] = BLOCK_TYPES.AIR;
-                }
-              }
-            }
-          } else if (y <= localWaterLevel && (!isDryLand || isPond)) {
-            // 只在海洋/湖泊区域（或陆地小水潭）填充水，陆地区域低于海平面也保持空气
-            chunk[index] = BLOCK_TYPES.WATER;
-          } else {
-            // 陆地表面及上方的植被生成
-            if (y === finalHeight + 1 && localWaterLevel <= finalHeight) {
-              const groundType = this.getGroundBlockType(primaryBiome, finalHeight, localWaterLevel, isDryLand && !isPond, wx, wz);
-              const groundProps = getBlockProperties(groundType);
-              if (groundProps.allowVegetationBase) {
-                chunk[index] = primaryBiome.getVegetationType(wx, wz, this.noise);
-              } else {
-                chunk[index] = BLOCK_TYPES.AIR;
-              }
-            } else if (y === finalHeight + 2) {
-              const belowType = primaryBiome.getVegetationType(wx, wz, this.noise);
-              if (belowType === BLOCK_TYPES.SUNFLOWER_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.SUNFLOWER_TOP;
-              } else if (belowType === BLOCK_TYPES.ROSE_BUSH_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.ROSE_BUSH_TOP;
-              } else if (belowType === BLOCK_TYPES.PEONY_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.PEONY_TOP;
-              } else if (belowType === BLOCK_TYPES.LILAC_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.LILAC_TOP;
-              } else if (belowType === BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP;
-              } else {
-                chunk[index] = BLOCK_TYPES.AIR;
-              }
-            } else {
-              chunk[index] = BLOCK_TYPES.AIR;
-            }
-          }
-        }
-      }
-    }
-
-    // Grow trees that overlap with this chunk
-    for (let ndx = -1; ndx <= 1; ndx++) {
-      for (let ndz = -1; ndz <= 1; ndz++) {
-        const ncx = cx + ndx;
-        const ncz = cz + ndz;
-        const nWorldStartX = ncx * CHUNK_SIZE_X;
-        const nWorldStartZ = ncz * CHUNK_SIZE_Z;
-
-        const chunkRandom = this.noise.pseudoRandom2d(ncx, ncz);
-        const numTrees = Math.floor(chunkRandom * 12) % 3 + 1; // 1 to 3 decoration attempts
-        
-        for (let t = 0; t < numTrees; t++) {
-          const tx = 2 + Math.floor(this.noise.pseudoRandom2d(ncx * 10 + t, ncz * 10 + t) * (CHUNK_SIZE_X - 4));
-          const tz = 2 + Math.floor(this.noise.pseudoRandom2d(ncx * 20 + t, ncz * 20 + t) * (CHUNK_SIZE_Z - 4));
-          
-          const wx = nWorldStartX + tx;
-          const wz = nWorldStartZ + tz;
-          const biome = getBiomeAt(wx, wz, this.noise);
-
-          const prob = biome.getTreeProbability(chunkRandom);
-          const spawnRand = this.noise.pseudoRandom2d(wx * 7 + t, wz * 13 + t);
-          if (spawnRand < prob) {
-            // Find surface height
-            const { height: interpolatedHeight } = this.getInterpolatedHeightAndBiome(wx, wz);
-            
-            let adjustedHeight = interpolatedHeight;
-            let isDryLand = true;
-
-            const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
-            const waterLevel = WORLD_CONFIG.waterLevel;
-
-            if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
-              isDryLand = false;
-              const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - oceanNoise) / WORLD_CONFIG.ocean.transitionWidth);
-              const oceanBaseHeight = WORLD_CONFIG.ocean.baseHeight + this.noise.noise(wx * 0.02, wz * 0.02) * 3;
-              adjustedHeight = Math.round((1 - oceanFactor) * interpolatedHeight + oceanFactor * oceanBaseHeight);
-            } else {
-              const distToShore = oceanNoise - WORLD_CONFIG.ocean.threshold;
-              if (distToShore < WORLD_CONFIG.ocean.shoreWidth) {
-                const t = distToShore / WORLD_CONFIG.ocean.shoreWidth;
-                const minShoreHeight = waterLevel + 1;
-                if (adjustedHeight < minShoreHeight) {
-                  adjustedHeight = Math.round(t * adjustedHeight + (1 - t) * minShoreHeight);
-                }
-              }
-            }
-
-            const { t: riverT, bedHeight: riverBedHeight, dRiver } = this.getRiverValue(wx, wz);
-            const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
-            const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
-            
-            if (dRiver < valleyEnd && adjustedHeight > WORLD_CONFIG.river.valleyTargetHeight) {
-              const tVal = 1.0 - (dRiver - valleyStart) / WORLD_CONFIG.river.valleyInfluenceWidth;
-              const clampedT = Math.max(0, Math.min(1, tVal));
-              const flattenWeight = clampedT * clampedT * (3 - 2 * clampedT);
-              const valleyTarget = WORLD_CONFIG.river.valleyTargetHeight;
-              adjustedHeight = Math.round(adjustedHeight * (1 - flattenWeight) + valleyTarget * flattenWeight);
-            }
-
-            if (riverT > 0) {
-              const smoothedRiverT = riverT * riverT * (3 - 2 * riverT);
-              if (adjustedHeight > riverBedHeight) {
-                adjustedHeight = Math.round(adjustedHeight * (1 - smoothedRiverT) + riverBedHeight * smoothedRiverT);
-              }
-              if (riverT > 0.35) {
-                isDryLand = false;
-              } else if (isDryLand) {
-                const u = riverT / 0.35;
-                const minShoreHeight = waterLevel;
-                if (adjustedHeight < minShoreHeight) {
-                  adjustedHeight = Math.round(u * minShoreHeight + (1 - u) * adjustedHeight);
-                }
-              }
-            }
-
-            let isPond = false;
-            let pondWaterLevel: number = waterLevel;
-            const surfaceHeightForPond = adjustedHeight;
-            if (isDryLand) {
-              const { isPond: pondActive, bedHeight: pondBedHeight, centerT: pondCenterT, waterLevel: pLevel } = this.getPondValue(wx, wz, surfaceHeightForPond);
-              if (pondCenterT > 0) {
-                if (adjustedHeight > pondBedHeight) {
-                  adjustedHeight = Math.round(adjustedHeight * (1 - pondCenterT) + pondBedHeight * pondCenterT);
-                }
-                if (pondActive) {
-                  isPond = true;
-                  isDryLand = false;
-                  pondWaterLevel = pLevel;
-                }
-              }
-            }
-            let localWaterLevel: number = waterLevel;
-            if (isPond) {
-              localWaterLevel = pondWaterLevel;
-            }
-
-            if (isDryLand) {
-              const neighbors = [
-                [wx + 1, wz], [wx - 1, wz],
-                [wx, wz + 1], [wx, wz - 1]
-              ];
-              let maxAdjacentWaterLevel = 0;
-              for (const [nx, nz] of neighbors) {
-                const wLevel = this.getWaterLevelAt(nx, nz);
-                if (wLevel > maxAdjacentWaterLevel) {
-                  maxAdjacentWaterLevel = wLevel;
-                }
-              }
-              if (maxAdjacentWaterLevel > 0 && adjustedHeight < maxAdjacentWaterLevel) {
-                adjustedHeight = maxAdjacentWaterLevel;
-              }
-            }
-
-            const finalHeight = Math.max(3, Math.min(WORLD_HEIGHT - 2, adjustedHeight));
-            const ty = finalHeight;
-
-            // Check if valid ground
-            const groundType = this.getGroundBlockType(biome, finalHeight, localWaterLevel, isDryLand && !isPond, wx, wz);
-            const isValidGround = getBlockProperties(groundType).allowVegetationBase === true;
-
-            if (isValidGround && ty > waterLevel - 2) {
-              const localGrowTree = (
-                _chunk: Uint8Array,
-                ltx: number,
-                lty: number,
-                ltz: number,
-                trunkBlock: number,
-                leafBlock: number,
-                height: number,
-                style: TreeStyle
-              ) => {
-                const gBaseX = nWorldStartX + ltx;
-                const gBaseY = lty;
-                const gBaseZ = nWorldStartZ + ltz;
-
-                const setLocalBlock = (gx: number, gy: number, gz: number, type: number) => {
-                  const lcx = gx - worldStartX;
-                  const lcy = gy - worldStartY;
-                  const lcz = gz - worldStartZ;
-                  if (
-                    lcx >= 0 && lcx < CHUNK_SIZE_X &&
-                    lcy >= 0 && lcy < CHUNK_SIZE_Y &&
-                    lcz >= 0 && lcz < CHUNK_SIZE_Z
-                  ) {
-                    const idx = lcx + lcz * CHUNK_SIZE_X + lcy * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-                    chunk[idx] = type;
-                  }
-                };
-
-                // Change grass below to dirt
-                setLocalBlock(gBaseX, gBaseY, gBaseZ, BLOCK_TYPES.DIRT);
-
-                if (style === ('cactus' as unknown as TreeStyle)) {
-                  for (let h = 1; h <= height; h++) {
-                    setLocalBlock(gBaseX, gBaseY + h, gBaseZ, trunkBlock);
-                  }
-                  return;
-                }
-
-                // Grow trunk
-                for (let h = 1; h <= height; h++) {
-                  setLocalBlock(gBaseX, gBaseY + h, gBaseZ, trunkBlock);
-                }
-
-                // Grow canopy
-                const leafCenterY = gBaseY + height;
-                if (style === TreeStyle.OAK || style === TreeStyle.BIRCH) {
-                  const startY = style === TreeStyle.BIRCH ? -3 : -2;
-                  for (let ly = startY; ly <= 1; ly++) {
-                    const radius = ly === 1 ? 1 : 2;
-                    for (let lx = -radius; lx <= radius; lx++) {
-                      for (let lz = -radius; lz <= radius; lz++) {
-                        if (lx === 0 && lz === 0 && ly <= 0) continue;
-                        if (style === TreeStyle.BIRCH && ly === startY && Math.abs(lx) === radius && Math.abs(lz) === radius) {
-                          continue;
-                        }
-
-                        const wlx = gBaseX + lx;
-                        const wlz = gBaseZ + lz;
-                        const wly = leafCenterY + ly;
-
-                        const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-                        if (isOuter && !(lx === 0 && lz === 0)) {
-                          const leafRand = this.noise.pseudoRandom2d(wlx * 17 + gBaseX, wlz * 23 + gBaseZ + wly);
-                          if (leafRand < 0.20) {
-                            continue;
-                          }
-                        }
-
-                        const lcx = wlx - worldStartX;
-                        const lcy = wly - worldStartY;
-                        const lcz = wlz - worldStartZ;
-                        if (
-                          lcx >= 0 && lcx < CHUNK_SIZE_X &&
-                          lcy >= 0 && lcy < CHUNK_SIZE_Y &&
-                          lcz >= 0 && lcz < CHUNK_SIZE_Z
-                        ) {
-                          const idx = lcx + lcz * CHUNK_SIZE_X + lcy * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-                          if (chunk[idx] === BLOCK_TYPES.AIR) {
-                            chunk[idx] = leafBlock;
-                          }
-                        }
-                      }
-                    }
-                  }
-                } else if (style === TreeStyle.SPRUCE) {
-                  for (let ly = -4; ly <= 1; ly++) {
-                    let radius = 1;
-                    if (ly === 1) radius = 0;
-                    else if (ly === 0) radius = 1;
-                    else if (ly === -1) radius = 2;
-                    else if (ly === -2) radius = 1;
-                    else if (ly === -3) radius = 2;
-                    else if (ly === -4) radius = 2;
-
-                    for (let lx = -radius; lx <= radius; lx++) {
-                      for (let lz = -radius; lz <= radius; lz++) {
-                        if (lx === 0 && lz === 0 && ly <= 0) continue;
-                        if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) continue;
-
-                        const wlx = gBaseX + lx;
-                        const wlz = gBaseZ + lz;
-                        const wly = leafCenterY + ly;
-
-                        const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-                        if (isOuter && !(lx === 0 && lz === 0)) {
-                          const leafRand = this.noise.pseudoRandom2d(wlx * 17 + gBaseX, wlz * 23 + gBaseZ + wly);
-                          if (leafRand < 0.20) {
-                            continue;
-                          }
-                        }
-
-                        const lcx = wlx - worldStartX;
-                        const lcy = wly - worldStartY;
-                        const lcz = wlz - worldStartZ;
-                        if (
-                          lcx >= 0 && lcx < CHUNK_SIZE_X &&
-                          lcy >= 0 && lcy < CHUNK_SIZE_Y &&
-                          lcz >= 0 && lcz < CHUNK_SIZE_Z
-                        ) {
-                          const idx = lcx + lcz * CHUNK_SIZE_X + lcy * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-                          if (chunk[idx] === BLOCK_TYPES.AIR) {
-                            chunk[idx] = leafBlock;
-                          }
-                        }
-                      }
-                    }
-                  }
-                } else if (style === TreeStyle.JUNGLE) {
-                  for (let ly = -3; ly <= 1; ly++) {
-                    const radius = ly === 1 ? 1 : (ly === -3 ? 1 : 2);
-                    for (let lx = -radius; lx <= radius; lx++) {
-                      for (let lz = -radius; lz <= radius; lz++) {
-                        if (lx === 0 && lz === 0 && ly <= 0) continue;
-                        if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) continue;
-
-                        const wlx = gBaseX + lx;
-                        const wlz = gBaseZ + lz;
-                        const wly = leafCenterY + ly;
-
-                        const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-                        if (isOuter && !(lx === 0 && lz === 0)) {
-                          const leafRand = this.noise.pseudoRandom2d(wlx * 17 + gBaseX, wlz * 23 + gBaseZ + wly);
-                          if (leafRand < 0.10) {
-                            continue;
-                          }
-                        }
-
-                        const lcx = wlx - worldStartX;
-                        const lcy = wly - worldStartY;
-                        const lcz = wlz - worldStartZ;
-                        if (
-                          lcx >= 0 && lcx < CHUNK_SIZE_X &&
-                          lcy >= 0 && lcy < CHUNK_SIZE_Y &&
-                          lcz >= 0 && lcz < CHUNK_SIZE_Z
-                        ) {
-                          const idx = lcx + lcz * CHUNK_SIZE_X + lcy * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-                          if (chunk[idx] === BLOCK_TYPES.AIR) {
-                            chunk[idx] = leafBlock;
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              };
-
-              biome.growDecorations(
-                chunk,
-                tx,
-                ty,
-                tz,
-                chunkRandom,
-                t,
-                localGrowTree
-              );
-            }
-          }
-        }
-      }
-    }
-
+    pipeline.execute(context);
     return chunk;
   }
 

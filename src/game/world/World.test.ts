@@ -294,5 +294,44 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     expect(checkedPondRegions).toBeGreaterThan(0);
     expect(exposedWaterCount).toBe(0);
   }, 30000);
+
+  test('should never generate floating vegetation (vegetation block on top of AIR)', () => {
+    const world = new World('minicraft-seed');
+    world.loadArea(0, 150, 0, 2);
+
+    let floatingCount = 0;
+    const vegTypes = new Set<number>([
+      BLOCK_TYPES.TALL_GRASS,
+      BLOCK_TYPES.DANDELION,
+      BLOCK_TYPES.POPPY,
+      BLOCK_TYPES.OXEYE_DAISY,
+      BLOCK_TYPES.SUNFLOWER_BOTTOM,
+      BLOCK_TYPES.SUNFLOWER_TOP,
+      BLOCK_TYPES.ROSE_BUSH_BOTTOM,
+      BLOCK_TYPES.ROSE_BUSH_TOP,
+      BLOCK_TYPES.PEONY_BOTTOM,
+      BLOCK_TYPES.PEONY_TOP,
+      BLOCK_TYPES.LILAC_BOTTOM,
+      BLOCK_TYPES.LILAC_TOP,
+      BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM,
+      BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP
+    ]);
+
+    for (let x = -32; x < 32; x++) {
+      for (let z = -32; z < 32; z++) {
+        for (let y = 10; y < 250; y++) {
+          const block = world.getBlock(x, y, z);
+          if (vegTypes.has(block)) {
+            const below = world.getBlock(x, y - 1, z);
+            if (below === BLOCK_TYPES.AIR) {
+              floatingCount++;
+            }
+          }
+        }
+      }
+    }
+
+    expect(floatingCount).toBe(0);
+  }, 20000);
 });
 
