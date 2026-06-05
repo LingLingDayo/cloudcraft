@@ -251,11 +251,31 @@ export class ChunkRenderer {
             const uv2 = [uMax, vMax];
             const uv3 = [uMax, vMin];
 
+            let dx = 0;
+            let dz = 0;
+            let hw = 0.5;
+            let h = 1.0;
+
+            if (props.isCrossModel) {
+              if (props.enableCrossOffset) {
+                // Deterministic pseudo-random offset based on integer column coordinates
+                const sinX = Math.sin(wx * 12.9898 + wz * 78.233) * 43758.5453123;
+                const sinZ = Math.sin(wx * 26.543 + wz * 19.854) * 43758.5453123;
+                dx = (sinX - Math.floor(sinX)) * 0.3 - 0.15; // -0.15 to 0.15 block offset
+                dz = (sinZ - Math.floor(sinZ)) * 0.3 - 0.15; // -0.15 to 0.15 block offset
+              }
+              hw = 0.5 * (props.crossScaleW ?? 1.0);
+              h = props.crossScaleH ?? 1.0;
+            }
+
+            const cx = wx + 0.5;
+            const cz = wz + 0.5;
+
             // Diagonal Plane 1 Positions
-            const p1_0 = [wx, y, wz];
-            const p1_1 = [wx, y + 1, wz];
-            const p1_2 = [wx + 1, y + 1, wz + 1];
-            const p1_3 = [wx + 1, y, wz + 1];
+            const p1_0 = [cx - hw + dx, y, cz - hw + dz];
+            const p1_1 = [cx - hw + dx, y + h, cz - hw + dz];
+            const p1_2 = [cx + hw + dx, y + h, cz + hw + dz];
+            const p1_3 = [cx + hw + dx, y, cz + hw + dz];
 
             cutoutData.positions.push(...p1_0, ...p1_1, ...p1_2);
             cutoutData.positions.push(...p1_0, ...p1_2, ...p1_3);
@@ -273,10 +293,10 @@ export class ChunkRenderer {
             }
 
             // Diagonal Plane 2 Positions
-            const p2_0 = [wx + 1, y, wz];
-            const p2_1 = [wx + 1, y + 1, wz];
-            const p2_2 = [wx, y + 1, wz + 1];
-            const p2_3 = [wx, y, wz + 1];
+            const p2_0 = [cx + hw + dx, y, cz - hw + dz];
+            const p2_1 = [cx + hw + dx, y + h, cz - hw + dz];
+            const p2_2 = [cx - hw + dx, y + h, cz + hw + dz];
+            const p2_3 = [cx - hw + dx, y, cz + hw + dz];
 
             cutoutData.positions.push(...p2_0, ...p2_1, ...p2_2);
             cutoutData.positions.push(...p2_0, ...p2_2, ...p2_3);

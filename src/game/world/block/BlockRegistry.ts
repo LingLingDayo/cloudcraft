@@ -178,7 +178,10 @@ export class BlockRegistry {
       textureFaces: { top: 28, bottom: 28, side: 28 },
       droppedModelType: 'cross',
       isCollidable: false,
-      isCrossModel: true
+      isCrossModel: true,
+      crossScaleW: 0.6,
+      crossScaleH: 0.7,
+      enableCrossOffset: true
     }));
 
     this.register(new SaplingBlock({
@@ -188,7 +191,10 @@ export class BlockRegistry {
       textureFaces: { top: 29, bottom: 29, side: 29 },
       droppedModelType: 'cross',
       isCollidable: false,
-      isCrossModel: true
+      isCrossModel: true,
+      crossScaleW: 0.6,
+      crossScaleH: 0.7,
+      enableCrossOffset: true
     }));
 
     this.register(new SaplingBlock({
@@ -198,7 +204,10 @@ export class BlockRegistry {
       textureFaces: { top: 30, bottom: 30, side: 30 },
       droppedModelType: 'cross',
       isCollidable: false,
-      isCrossModel: true
+      isCrossModel: true,
+      crossScaleW: 0.6,
+      crossScaleH: 0.7,
+      enableCrossOffset: true
     }));
 
     this.register(new SaplingBlock({
@@ -208,7 +217,10 @@ export class BlockRegistry {
       textureFaces: { top: 31, bottom: 31, side: 31 },
       droppedModelType: 'cross',
       isCollidable: false,
-      isCrossModel: true
+      isCrossModel: true,
+      crossScaleW: 0.6,
+      crossScaleH: 0.7,
+      enableCrossOffset: true
     }));
 
     // Flowers
