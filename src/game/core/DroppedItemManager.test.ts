@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { DroppedItemManager } from './DroppedItemManager';
-import { ItemType } from '@type';
+import { ItemType, BLOCK_TYPES } from '@type';
 import type { GameManager } from './GameManager';
 
 describe('DroppedItemManager', () => {
@@ -19,6 +19,9 @@ describe('DroppedItemManager', () => {
           solid: new THREE.MeshBasicMaterial(),
           transparent: new THREE.MeshBasicMaterial(),
         },
+      },
+      player: {
+        position: new THREE.Vector3(999, 999, 999), // Keep far away to avoid pickup
       },
     } as unknown as GameManager;
 
@@ -99,5 +102,38 @@ describe('DroppedItemManager', () => {
     const geom = item.mesh.geometry;
     const positionAttr = geom.getAttribute('position');
     expect(positionAttr.count).toBe(12); // 2 planes * 6 vertices per plane
+  });
+
+  test('should not collide with non-collidable blocks (e.g. dandelion)', () => {
+    const pos = new THREE.Vector3(10.5, 20.5, 30.5);
+    manager.spawnItem(ItemType.STONE, pos);
+
+    const items = (manager as unknown as {
+      droppedItems: {
+        type: ItemType;
+        velocity: THREE.Vector3;
+        position: THREE.Vector3;
+        onGround: boolean;
+      }[];
+    }).droppedItems;
+    expect(items).toHaveLength(1);
+    const item = items[0];
+
+    // Mock world getBlock to return dandelion at y=20 (underneath the item which starts at y=20.5)
+    mockGame.world.getBlock = vi.fn().mockImplementation((_x, y) => {
+      if (y === 20) {
+        return BLOCK_TYPES.DANDELION;
+      }
+      return BLOCK_TYPES.AIR;
+    });
+
+    item.velocity.y = -10;
+    const oldPosY = item.position.y;
+    manager.update(0.1);
+
+    // Dandelion has isSolid = true but isCollidable = false.
+    // The item should fall straight through it instead of stopping.
+    expect(item.position.y).toBeLessThan(oldPosY);
+    expect(item.onGround).toBe(false);
   });
 });
