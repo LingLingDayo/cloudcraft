@@ -1,7 +1,8 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, GameSlice } from '../types';
 import { BLOCK_TYPES } from '@game/world/BlockConfig';
-import { GameState, GameMode, type Language } from '@type';
+import { GameState, GameMode, type Language, ItemType } from '@type';
+import { CREATIVE_DEFAULT_HOTBAR } from './playerSlice';
 
 export const createGameSlice: StateCreator<
   GameStoreState,
@@ -33,19 +34,10 @@ export const createGameSlice: StateCreator<
     if (gameMode === GameMode.CREATIVE) {
       return {
         gameMode,
-        hotbar: [
-          { type: BLOCK_TYPES.GRASS, count: 1 },
-          { type: BLOCK_TYPES.DIRT, count: 1 },
-          { type: BLOCK_TYPES.STONE, count: 1 },
-          { type: BLOCK_TYPES.WOOD, count: 1 },
-          { type: BLOCK_TYPES.LEAF, count: 1 },
-          { type: BLOCK_TYPES.GLASS, count: 1 },
-          { type: BLOCK_TYPES.WATER, count: 1 },
-          { type: BLOCK_TYPES.SAND, count: 1 },
-          { type: BLOCK_TYPES.DIAMOND, count: 1 },
-        ],
+        hotbar: [...CREATIVE_DEFAULT_HOTBAR],
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.GRASS,
+        selectedItem: ItemType.GRASS,
       };
     } else {
       return {
@@ -53,6 +45,7 @@ export const createGameSlice: StateCreator<
         hotbar: Array(9).fill(null),
         activeSlot: 0,
         selectedBlock: BLOCK_TYPES.AIR,
+        selectedItem: null,
       };
     }
   }),

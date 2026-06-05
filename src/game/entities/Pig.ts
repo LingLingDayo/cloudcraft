@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { Animal } from './Animal';
 import { World } from '@game/world/World';
-import { BLOCK_TYPES } from '@game/world/BlockConfig';
+import { ItemType } from '@type';
 
 export class Pig extends Animal {
   public width = 0.9;
@@ -249,7 +249,7 @@ export class Pig extends Animal {
           (Math.random() - 0.5) * 0.3
         );
         const spawnPos = dropPos.clone().add(offset);
-        this.world.game.droppedItems.spawnItem(BLOCK_TYPES.PORKCHOP, spawnPos, 1);
+        this.world.game.droppedItems.spawnItem(ItemType.PORKCHOP, spawnPos, 1);
         
         // Add velocity away from death point
         const items = (this.world.game.droppedItems as any).droppedItems;

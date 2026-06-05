@@ -1,45 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { Dialog } from '@components/common/Dialog';
-import { BLOCK_TYPES, type BlockType } from '@game/world/BlockConfig';
+import { BLOCK_TYPES } from '@game/world/BlockConfig';
 import { useTranslation } from '../../i18n';
 import type { HotbarItem } from '@store/types';
 import styles from './Inventory.module.scss';
 import { useGame } from '../../context/GameContext';
 import { BlockIcon } from './BlockIcon';
+import { ItemType } from '@type';
+import { ItemRegistry } from '@game/item/ItemRegistry';
 
-// Available blocks list
-const ALL_BLOCKS: BlockType[] = [
-  BLOCK_TYPES.GRASS,
-  BLOCK_TYPES.DIRT,
-  BLOCK_TYPES.STONE,
-  BLOCK_TYPES.WOOD,
-  BLOCK_TYPES.LEAF,
-  BLOCK_TYPES.BRICK,
-  BLOCK_TYPES.GLASS,
-  BLOCK_TYPES.WATER,
-  BLOCK_TYPES.SAND,
-  BLOCK_TYPES.COAL,
-  BLOCK_TYPES.IRON,
-  BLOCK_TYPES.DIAMOND,
-  BLOCK_TYPES.CHEST,
-  BLOCK_TYPES.LEVER,
-  BLOCK_TYPES.BIRCH_WOOD,
-  BLOCK_TYPES.BIRCH_LEAVES,
-  BLOCK_TYPES.SPRUCE_WOOD,
-  BLOCK_TYPES.SPRUCE_LEAVES,
-  BLOCK_TYPES.JUNGLE_WOOD,
-  BLOCK_TYPES.JUNGLE_LEAVES,
-  BLOCK_TYPES.OAK_SAPLING,
-  BLOCK_TYPES.BIRCH_SAPLING,
-  BLOCK_TYPES.SPRUCE_SAPLING,
-  BLOCK_TYPES.JUNGLE_SAPLING,
-  BLOCK_TYPES.PORKCHOP,
-  BLOCK_TYPES.APPLE,
-];
+// Available items list for creative mode
+const ALL_ITEMS: ItemType[] = Object.values(ItemType);
 
 interface HeldItem {
-  type: BlockType;
+  type: ItemType;
   count: number;
   source: 'hotbar' | 'inventory' | 'creative';
   sourceIndex: number;
@@ -119,11 +94,13 @@ export const Inventory: React.FC = () => {
 
     // Update Zustand store
     const activeItem = nextHotbar[currentStore.activeSlot];
-    const selectedBlock = activeItem ? activeItem.type : BLOCK_TYPES.AIR;
+    const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
+    const selectedItem = activeItem ? activeItem.type : null;
     useGameStore.setState({
       hotbar: nextHotbar,
       inventory: nextInventory,
       selectedBlock,
+      selectedItem,
     });
   };
 
@@ -143,11 +120,13 @@ export const Inventory: React.FC = () => {
     nextInventory: (HotbarItem | null)[]
   ) => {
     const activeItem = nextHotbar[activeSlot];
-    const selectedBlock = activeItem ? activeItem.type : BLOCK_TYPES.AIR;
+    const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
+    const selectedItem = activeItem ? activeItem.type : null;
     useGameStore.setState({
       hotbar: nextHotbar,
       inventory: nextInventory,
       selectedBlock,
+      selectedItem,
     });
   };
 
@@ -155,7 +134,7 @@ export const Inventory: React.FC = () => {
   const handleSlotClick = (
     zone: 'hotbar' | 'inventory' | 'creative',
     index: number,
-    blockId?: BlockType
+    blockId?: ItemType
   ) => {
     const nextHotbar = [...hotbar];
     const nextInventory = [...inventory];
@@ -317,15 +296,15 @@ export const Inventory: React.FC = () => {
             <div className={styles.creativeSection}>
               <p className={styles.hint}>{t('inventory.hintCreative')}</p>
               <div className={styles.creativeGrid}>
-                {ALL_BLOCKS.map((blockId, idx) => {
+                {ALL_ITEMS.map((itemId, idx) => {
                   return (
                     <div
-                      key={blockId}
+                      key={itemId}
                       className={styles.itemSlot}
-                      onClick={() => handleSlotClick('creative', idx, blockId)}
-                      title={t(`blocks.${blockId}`)}
+                      onClick={() => handleSlotClick('creative', idx, itemId)}
+                      title={t(`blocks.${itemId}`)}
                     >
-                      <BlockIcon blockId={blockId} size={18} className={styles.itemPreview} />
+                      <BlockIcon itemId={itemId} size={18} className={styles.itemPreview} />
                     </div>
                   );
                 })}

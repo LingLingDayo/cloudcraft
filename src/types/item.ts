@@ -1,0 +1,35 @@
+export const ItemType = {
+  // Block Items
+  GRASS: 'grass',
+  DIRT: 'dirt',
+  STONE: 'stone',
+  WOOD: 'wood',
+  LEAF: 'leaf',
+  BRICK: 'brick',
+  GLASS: 'glass',
+  WATER: 'water',
+  SAND: 'sand',
+  COAL: 'coal',
+  IRON: 'iron',
+  DIAMOND: 'diamond',
+  CHEST: 'chest',
+  LEVER: 'lever',
+  BIRCH_WOOD: 'birch_wood',
+  BIRCH_LEAVES: 'birch_leaves',
+  SPRUCE_WOOD: 'spruce_wood',
+  SPRUCE_LEAVES: 'spruce_leaves',
+  CACTUS: 'cactus',
+  JUNGLE_WOOD: 'jungle_wood',
+  JUNGLE_LEAVES: 'jungle_leaves',
+  SANDSTONE: 'sandstone',
+  OAK_SAPLING: 'oak_sapling',
+  BIRCH_SAPLING: 'birch_sapling',
+  SPRUCE_SAPLING: 'spruce_sapling',
+  JUNGLE_SAPLING: 'jungle_sapling',
+
+  // Pure Items
+  PORKCHOP: 'porkchop',
+  APPLE: 'apple',
+} as const;
+
+export type ItemType = typeof ItemType[keyof typeof ItemType];

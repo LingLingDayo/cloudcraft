@@ -9,6 +9,8 @@ import { WorldSerializer } from './WorldSerializer';
 import { TreeStyle } from './biome/Biome';
 import { sound } from '@game/systems/Sound';
 import type { BlockType } from '@type';
+import { ItemType } from '@type';
+import { ItemRegistry } from '@game/item/ItemRegistry';
 import { useGameStore } from '@store/useGameStore';
 
 export { BLOCK_TYPES, getBlockProperties };
@@ -441,10 +443,13 @@ export class World {
                 else if (cleanType === BLOCK_TYPES.JUNGLE_LEAVES) saplingType = BLOCK_TYPES.JUNGLE_SAPLING;
 
                 if (this.game && this.game.droppedItems) {
-                  this.game.droppedItems.spawnItem(
-                    saplingType,
-                    new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5)
-                  );
+                  const itemType = ItemRegistry.getItemTypeFromBlockType(saplingType);
+                  if (itemType) {
+                    this.game.droppedItems.spawnItem(
+                      itemType,
+                      new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5)
+                    );
+                  }
                 }
               }
 
@@ -452,7 +457,7 @@ export class World {
               if (cleanType === BLOCK_TYPES.LEAF && Math.random() < 0.05) {
                 if (this.game && this.game.droppedItems) {
                   this.game.droppedItems.spawnItem(
-                    BLOCK_TYPES.APPLE,
+                    ItemType.APPLE,
                     new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5)
                   );
                 }

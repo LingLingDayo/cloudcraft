@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useGameStore } from './useGameStore';
 import { BLOCK_TYPES } from '@game/world/World';
-import { GameState, GameMode, type DebugMetrics } from '@type';
+import { GameState, GameMode, type DebugMetrics, ItemType } from '@type';
 
 describe('useGameStore', () => {
   beforeEach(() => {
@@ -71,20 +71,22 @@ describe('useGameStore', () => {
   test('should set game mode via setGameMode and auto reset hotbar', () => {
     useGameStore.getState().setGameMode(GameMode.CREATIVE);
     expect(useGameStore.getState().gameMode).toBe(GameMode.CREATIVE);
-    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.GRASS, count: 1 });
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.GRASS, count: 1 });
     expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.GRASS);
+    expect(useGameStore.getState().selectedItem).toBe(ItemType.GRASS);
 
     useGameStore.getState().setGameMode(GameMode.ADVENTURE);
     expect(useGameStore.getState().gameMode).toBe(GameMode.ADVENTURE);
     expect(useGameStore.getState().hotbar[0]).toBeNull();
     expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.AIR);
+    expect(useGameStore.getState().selectedItem).toBeNull();
   });
 
   test('should set active slot and update selected block', () => {
     useGameStore.setState({
       hotbar: [
         null,
-        { type: BLOCK_TYPES.DIRT, count: 5 },
+        { type: ItemType.DIRT, count: 5 },
         null, null, null, null, null, null, null
       ]
     });
@@ -99,13 +101,13 @@ describe('useGameStore', () => {
   });
 
   test('should add items to hotbar in adventure mode', () => {
-    const success = useGameStore.getState().addToHotbar(BLOCK_TYPES.STONE, 3);
+    const success = useGameStore.getState().addToHotbar(ItemType.STONE, 3);
     expect(success).toBe(true);
-    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 3 });
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.STONE, count: 3 });
 
-    const success2 = useGameStore.getState().addToHotbar(BLOCK_TYPES.STONE, 2);
+    const success2 = useGameStore.getState().addToHotbar(ItemType.STONE, 2);
     expect(success2).toBe(true);
-    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 5 });
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.STONE, count: 5 });
 
     expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.STONE);
   });
@@ -113,14 +115,14 @@ describe('useGameStore', () => {
   test('should decrement hotbar item and clear slot', () => {
     useGameStore.setState({
       hotbar: [
-        { type: BLOCK_TYPES.WOOD, count: 2 },
+        { type: ItemType.WOOD, count: 2 },
         null, null, null, null, null, null, null, null
       ],
       selectedBlock: BLOCK_TYPES.WOOD
     });
 
     useGameStore.getState().decrementHotbarItem(0);
-    expect(useGameStore.getState().hotbar[0]).toEqual({ type: BLOCK_TYPES.WOOD, count: 1 });
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.WOOD, count: 1 });
     expect(useGameStore.getState().selectedBlock).toBe(BLOCK_TYPES.WOOD);
 
     useGameStore.getState().decrementHotbarItem(0);
@@ -207,21 +209,21 @@ describe('useGameStore', () => {
     expect(useGameStore.getState().isInventoryOpen).toBe(false);
 
     const testInv = Array(54).fill(null);
-    testInv[0] = { type: BLOCK_TYPES.STONE, count: 64 };
+    testInv[0] = { type: ItemType.STONE, count: 64 };
     useGameStore.getState().setInventory(testInv);
-    expect(useGameStore.getState().inventory[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 64 });
+    expect(useGameStore.getState().inventory[0]).toEqual({ type: ItemType.STONE, count: 64 });
   });
 
   test('should add items to inventory if hotbar is full in adventure mode', () => {
     // Fill hotbar
     useGameStore.setState({
-      hotbar: Array(9).fill({ type: BLOCK_TYPES.DIRT, count: 64 }),
+      hotbar: Array(9).fill({ type: ItemType.DIRT, count: 64 }),
     });
 
-    const success = useGameStore.getState().addToHotbar(BLOCK_TYPES.STONE, 10);
+    const success = useGameStore.getState().addToHotbar(ItemType.STONE, 10);
     expect(success).toBe(true);
     // Should be in inventory
-    expect(useGameStore.getState().inventory[0]).toEqual({ type: BLOCK_TYPES.STONE, count: 10 });
+    expect(useGameStore.getState().inventory[0]).toEqual({ type: ItemType.STONE, count: 10 });
   });
 
   test('should set language via setLanguage', () => {

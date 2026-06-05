@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { DroppedItemManager } from './DroppedItemManager';
-import { BLOCK_TYPES } from '@game/world/BlockConfig';
+import { ItemType } from '@type';
 import type { GameManager } from './GameManager';
 
 describe('DroppedItemManager', () => {
@@ -27,12 +27,12 @@ describe('DroppedItemManager', () => {
 
   test('should spawn dropped item with zero initial velocity', () => {
     const pos = new THREE.Vector3(10.5, 20.5, 30.5);
-    manager.spawnItem(BLOCK_TYPES.GRASS, pos);
+    manager.spawnItem(ItemType.GRASS, pos);
 
     // Retrieve the spawned item
     const items = (manager as unknown as {
       droppedItems: {
-        type: number;
+        type: ItemType;
         velocity: THREE.Vector3;
         position: THREE.Vector3;
       }[];
@@ -40,7 +40,7 @@ describe('DroppedItemManager', () => {
     expect(items).toHaveLength(1);
 
     const item = items[0];
-    expect(item.type).toBe(BLOCK_TYPES.GRASS);
+    expect(item.type).toBe(ItemType.GRASS);
     
     // Initial velocity should be exactly zero
     expect(item.velocity.x).toBe(0);
@@ -55,11 +55,11 @@ describe('DroppedItemManager', () => {
 
   test('should support plain position objects', () => {
     const plainPos = { x: 5.5, y: 15.5, z: 25.5 };
-    manager.spawnItem(BLOCK_TYPES.STONE, plainPos);
+    manager.spawnItem(ItemType.STONE, plainPos);
 
     const items = (manager as unknown as {
       droppedItems: {
-        type: number;
+        type: ItemType;
         velocity: THREE.Vector3;
         position: THREE.Vector3;
       }[];
@@ -67,7 +67,7 @@ describe('DroppedItemManager', () => {
     expect(items).toHaveLength(1);
 
     const item = items[0];
-    expect(item.type).toBe(BLOCK_TYPES.STONE);
+    expect(item.type).toBe(ItemType.STONE);
     
     expect(item.velocity.x).toBe(0);
     expect(item.velocity.y).toBe(0);
@@ -80,11 +80,11 @@ describe('DroppedItemManager', () => {
 
   test('should spawn cross shape dropped item for saplings', () => {
     const pos = new THREE.Vector3(10.5, 20.5, 30.5);
-    manager.spawnItem(BLOCK_TYPES.OAK_SAPLING, pos);
+    manager.spawnItem(ItemType.OAK_SAPLING, pos);
 
     const items = (manager as unknown as {
       droppedItems: {
-        type: number;
+        type: ItemType;
         velocity: THREE.Vector3;
         position: THREE.Vector3;
         mesh: THREE.Mesh;
@@ -93,7 +93,7 @@ describe('DroppedItemManager', () => {
     expect(items).toHaveLength(1);
 
     const item = items[0];
-    expect(item.type).toBe(BLOCK_TYPES.OAK_SAPLING);
+    expect(item.type).toBe(ItemType.OAK_SAPLING);
     
     // Verify geometry attributes for cross shape (12 vertices)
     const geom = item.mesh.geometry;

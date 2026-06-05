@@ -2,6 +2,7 @@
 import { vi, describe, test, expect } from 'vitest';
 import { World } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
+import { ItemType } from '@type';
 import { BlockRegistry } from './BlockRegistry';
 import { ChestBlockEntity } from './BlockEntity';
 
@@ -67,7 +68,7 @@ describe('Block Registry and Entity System', () => {
     
     // Add item to chest
     const chestEntity = entity as ChestBlockEntity;
-    chestEntity.inventory[0] = { type: BLOCK_TYPES.DIAMOND, count: 64 };
+    chestEntity.inventory[0] = { type: ItemType.DIAMOND, count: 64 };
     
     // Destroy chest (set to AIR)
     world.setBlock(10, 10, 10, BLOCK_TYPES.AIR);
@@ -83,7 +84,7 @@ describe('Block Registry and Entity System', () => {
     
     const entity = world.blockEntities.getEntity(5, 5, 5) as ChestBlockEntity;
     expect(entity).not.toBeNull();
-    entity.inventory[4] = { type: BLOCK_TYPES.IRON, count: 16 };
+    entity.inventory[4] = { type: ItemType.IRON, count: 16 };
     
     // Save world
     const saveStr = world.saveWorld();
@@ -98,7 +99,7 @@ describe('Block Registry and Entity System', () => {
     // Verify chest inventory restoration
     const loadedEntity = loadedWorld.blockEntities.getEntity(5, 5, 5) as ChestBlockEntity;
     expect(loadedEntity).not.toBeNull();
-    expect(loadedEntity.inventory[4]).toEqual({ type: BLOCK_TYPES.IRON, count: 16 });
+    expect(loadedEntity.inventory[4]).toEqual({ type: ItemType.IRON, count: 16 });
   });
 
   test('should simulate sand gravity block falling when below block is AIR', () => {

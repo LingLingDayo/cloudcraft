@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import type { World } from '../World';
 import type { BlockEntity } from './BlockEntity';
-import { BlockType, SoundType } from '@type';
+import { BlockType, SoundType, ItemType } from '@type';
 import type { BlockProperties } from '../BlockConfig';
+import { ItemRegistry } from '../../item/ItemRegistry';
 export type { BlockProperties };
 
 
@@ -71,8 +72,9 @@ export abstract class Block {
   /**
    * 获取该方块破坏后的掉落物
    */
-  public getDrops(): { type: BlockType; count: number }[] {
-    return [{ type: this.id, count: 1 }];
+  public getDrops(): { type: ItemType; count: number }[] {
+    const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
+    return itemType ? [{ type: itemType, count: 1 }] : [];
   }
 }
 

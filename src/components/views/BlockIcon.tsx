@@ -1,26 +1,31 @@
 import React from 'react';
 import { getBlockProperties } from '@game/world/BlockConfig';
 import { getTextureAtlasDataURL } from '@game/world/TextureAtlas';
-import { BLOCK_TYPES } from '@game/world/World';
+import { ItemType } from '@type';
+import { ItemRegistry } from '@game/item/ItemRegistry';
+import { BlockItem } from '@game/item/Item';
 import styles from './BlockIcon.module.scss';
 
 interface BlockIconProps {
-  blockId: number;
+  blockId?: ItemType;
+  itemId?: ItemType;
   size?: number | string;
   className?: string;
 }
 
-export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, size, className }) => {
-  // If it's air, render nothing
-  if (blockId === BLOCK_TYPES.AIR) {
+export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, itemId, size, className }) => {
+  const id = itemId ?? blockId;
+  if (!id) {
     return null;
   }
 
-  const props = getBlockProperties(blockId);
+  const item = ItemRegistry.get(id);
   const cubeSize = typeof size === 'number' ? `${size}px` : size;
 
-  if (props.isItem || props.isCrossModel) {
-    const atlasIndex = props.textureFaces?.side ?? props.textureFaces?.top ?? 32;
+  // Render as a 2D flat icon if it is not a placeable block item,
+  // or if it uses a custom cross model (like saplings).
+  if (!(item instanceof BlockItem) || item.droppedModelType === 'cross') {
+    const atlasIndex = item.textureFaces?.side ?? item.textureFaces?.top ?? 32;
     let style: React.CSSProperties;
     try {
       const dataURL = getTextureAtlasDataURL();
@@ -42,7 +47,7 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, size, className }
       style = {
         width: '100%',
         height: '100%',
-        backgroundColor: props.color || '#e07890',
+        backgroundColor: item.color || '#e07890',
         borderRadius: '2px',
       };
     }
@@ -59,17 +64,16 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, size, className }
     );
   }
 
-  const textureFaces = props.textureFaces;
+  // Render as a 3D isometric block for standard BlockItems
+  const blockProps = getBlockProperties(item.blockId);
+  const textureFaces = item.textureFaces;
 
-  // Function to get CSS styles for a specific face
   const getFaceStyle = (face: 'top' | 'left' | 'right'): React.CSSProperties => {
-    // Determine which atlas index to use for the face
     let atlasIndex: number | undefined;
     if (textureFaces) {
       if (face === 'top') {
         atlasIndex = textureFaces.top ?? textureFaces.side;
       } else {
-        // In Minecraft, left and right sides of the inventory block use the side texture
         atlasIndex = textureFaces.side;
       }
     }
@@ -87,17 +91,16 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, size, className }
           backgroundSize: '800% 800%',
           backgroundPosition: `${px}% ${py}%`,
           backgroundColor: 'transparent',
-          border: props.border || 'none',
+          border: blockProps.border || 'none',
         };
       } catch (_e) {
-        // Fallback to solid color if texture retrieval fails
+        // Fallback to solid color
       }
     }
 
-    // Fallback to color properties
     return {
-      backgroundColor: props.color || '#a1a1aa',
-      border: props.border || 'none',
+      backgroundColor: blockProps.color || '#a1a1aa',
+      border: blockProps.border || 'none',
     };
   };
 

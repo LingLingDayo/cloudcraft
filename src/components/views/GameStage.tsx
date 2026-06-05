@@ -5,6 +5,7 @@ import { PauseMenu } from './PauseMenu';
 import { useGameStore } from '@store/useGameStore';
 import styles from './GameStage.module.scss';
 import { GameState, GameMode, type BlockType } from '@type';
+import { ItemRegistry } from '@game/item/ItemRegistry';
 import { GameProvider } from '../../context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
 import { useTranslation } from '../../i18n';
@@ -78,7 +79,8 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
                     hotbar: saved.hotbar,
                     inventory: loadedInventory,
                     activeSlot: saved.activeSlot ?? 0,
-                    selectedBlock: saved.hotbar[saved.activeSlot ?? 0]?.type ?? 0
+                    selectedBlock: saved.hotbar[saved.activeSlot ?? 0] ? ItemRegistry.getBlockTypeFromItemType(saved.hotbar[saved.activeSlot ?? 0]!.type) : 0,
+                    selectedItem: saved.hotbar[saved.activeSlot ?? 0]?.type ?? null
                   });
                 }
                 // Trigger immediate render distance load

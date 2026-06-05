@@ -1,4 +1,4 @@
-import type { GameState, DebugMetrics, GameMode, Language, HotbarItem, BlockType } from '@type';
+import type { GameState, DebugMetrics, GameMode, Language, HotbarItem, BlockType, ItemType } from '@type';
 export type { HotbarItem } from '@type';
 
 export interface GameSlice {
@@ -38,6 +38,7 @@ export interface GameSlice {
 
 export interface PlayerSlice {
   selectedBlock: BlockType;
+  selectedItem: ItemType | null;
   activeSlot: number;
   hotbar: (HotbarItem | null)[];
   life: number;
@@ -51,8 +52,9 @@ export interface PlayerSlice {
   isInventoryOpen: boolean;
   inventory: (HotbarItem | null)[];
   setSelectedBlock: (block: BlockType) => void;
+  setSelectedItem: (item: ItemType | null) => void;
   setActiveSlot: (slot: number) => void;
-  addToHotbar: (blockType: BlockType, count?: number) => boolean;
+  addToHotbar: (itemType: ItemType, count?: number) => boolean;
   decrementHotbarItem: (slotIndex: number) => void;
   resetHotbar: (mode: GameMode) => void;
   setLife: (life: number) => void;
