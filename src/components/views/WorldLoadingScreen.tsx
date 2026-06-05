@@ -85,11 +85,55 @@ export const WorldLoadingScreen: React.FC = () => {
   // Combine mock progress and store progress
   const displayProgress = stage === 'engine' ? Math.min(29, mockProgress) : progress;
 
-  const loadedCount = Object.values(chunkStates).filter(Boolean).length;
-  const totalCount = Object.keys(chunkStates).length;
+  const { loaded2DCount, total2DCount } = useMemo(() => {
+    const keys = Object.keys(chunkStates);
+    if (keys.length === 0) {
+      return { loaded2DCount: 0, total2DCount: 0 };
+    }
+
+    const chunk2DMap = new Map<string, { loaded: number; total: number }>();
+    Object.entries(chunkStates).forEach(([key, loaded]) => {
+      const parts = key.split(',');
+      if (parts.length < 3) return;
+      const cx = parts[0];
+      const cz = parts[2];
+      const key2D = `${cx},${cz}`;
+      
+      let info = chunk2DMap.get(key2D);
+      if (!info) {
+        info = { loaded: 0, total: 0 };
+        chunk2DMap.set(key2D, info);
+      }
+      info.total++;
+      if (loaded) {
+        info.loaded++;
+      }
+    });
+
+    const total2DCount = chunk2DMap.size;
+    if (total2DCount === 0) {
+      return { loaded2DCount: 0, total2DCount: 0 };
+    }
+
+    let ratioSum = 0;
+    let allLoaded = true;
+    chunk2DMap.forEach((info) => {
+      ratioSum += info.loaded / info.total;
+      if (info.loaded < info.total) {
+        allLoaded = false;
+      }
+    });
+
+    const loaded2DCount = allLoaded 
+      ? total2DCount 
+      : Math.min(total2DCount - 1, Math.floor(ratioSum));
+
+    return { loaded2DCount, total2DCount };
+  }, [chunkStates]);
+
   const stageText = stage === 'engine' 
     ? t('worldLoading.engine')
-    : t('worldLoading.chunks', { loaded: loadedCount, total: totalCount });
+    : t('worldLoading.chunks', { loaded: loaded2DCount, total: total2DCount });
 
   if (!isWorldLoading) return null;
 
