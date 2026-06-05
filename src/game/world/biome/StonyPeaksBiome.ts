@@ -45,4 +45,8 @@ export class StonyPeaksBiome implements Biome {
   public growDecorations(): void {
     // 空实现，不长树木和其它植物
   }
+
+  public getVegetationType(_wx: number, _wz: number, _noise: ImprovedNoise): number {
+    return BLOCK_TYPES.AIR;
+  }
 }

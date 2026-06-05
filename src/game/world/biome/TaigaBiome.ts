@@ -66,4 +66,17 @@ export class TaigaBiome implements Biome {
     // 只生成松木/云杉
     growTree(chunk, tx, ty, tz, BLOCK_TYPES.SPRUCE_WOOD, BLOCK_TYPES.SPRUCE_LEAVES, treeHeight, TreeStyle.SPRUCE);
   }
+
+  public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
+    const r = noise.pseudoRandom2d(wx, wz);
+    // 8% 概率生成植被
+    if (r < 0.08) {
+      if (r < 0.048) {
+        return BLOCK_TYPES.FERN;
+      } else {
+        return BLOCK_TYPES.TALL_GRASS;
+      }
+    }
+    return BLOCK_TYPES.AIR;
+  }
 }
