@@ -45,6 +45,7 @@ export const en = {
     title: 'Game Settings',
     general: 'General Settings',
     graphics: 'Graphics Settings',
+    fullscreen: 'Fullscreen',
     controls: 'Controls',
     controlsTitle: 'Keys & Mouse Controls',
     done: 'Done',

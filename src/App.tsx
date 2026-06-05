@@ -23,10 +23,52 @@ function App() {
     document.documentElement.className = language === 'zh' ? 'lang-zh' : 'lang-en';
   }, [language]);
 
+  // Prevent zoom and pinch gesture on mobile devices, and attempt silent fullscreen
+  useEffect(() => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    const handleGestureStart = (e: Event) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('gesturestart', handleGestureStart, { passive: false });
+
+    // Silent fullscreen attempt on mount (may fail silently due to lack of user gesture, which is expected)
+    interface FullscreenHTMLElement extends HTMLElement {
+      webkitRequestFullscreen?: () => Promise<void>;
+      mozRequestFullScreen?: () => Promise<void>;
+      msRequestFullscreen?: () => Promise<void>;
+    }
+    const docEl = document.documentElement as FullscreenHTMLElement;
+    const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+    if (requestFS) {
+      try {
+        const result = requestFS.call(docEl);
+        if (result && typeof result.catch === 'function') {
+          result.catch(() => { /* Silent catch */ });
+        }
+      } catch {
+        /* Silent catch */
+      }
+    }
+
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('gesturestart', handleGestureStart);
+    };
+  }, []);
+
   // Clean up game parameters when returning to the start menu (unmounting GameStage)
   useEffect(() => {
     if (gameState === GameState.MENU) {
-      setGameParams(null);
+      // Defer state update to avoid cascading synchronous renders warning
+      setTimeout(() => {
+        setGameParams(null);
+      }, 0);
     }
   }, [gameState]);
 

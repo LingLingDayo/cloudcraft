@@ -18,9 +18,87 @@ interface SettingsDialogProps {
 
 type TabType = 'general' | 'graphics' | 'controls';
 
+interface FullscreenHTMLElement extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void>;
+  mozRequestFullScreen?: () => Promise<void>;
+  msRequestFullscreen?: () => Promise<void>;
+}
+
+interface FullscreenDocument extends Document {
+  webkitExitFullscreen?: () => Promise<void>;
+  mozCancelFullScreen?: () => Promise<void>;
+  msExitFullscreen?: () => Promise<void>;
+  webkitFullscreenElement?: Element;
+  mozFullScreenElement?: Element;
+  msFullscreenElement?: Element;
+}
+
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('general');
+
+  // Fullscreen state and event listeners to keep state in sync
+  const [isFullscreen, setIsFullscreen] = useState(() => {
+    const doc = document as FullscreenDocument;
+    return !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+  });
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      const doc = document as FullscreenDocument;
+      setIsFullscreen(
+        !!(
+          doc.fullscreenElement ||
+          doc.webkitFullscreenElement ||
+          doc.mozFullScreenElement ||
+          doc.msFullscreenElement
+        )
+      );
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = (checked: boolean) => {
+    const docEl = document.documentElement as FullscreenHTMLElement;
+    if (checked) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch((err: unknown) => console.warn('Failed to enter fullscreen:', err));
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } else {
+      const doc = document as FullscreenDocument;
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch((err: unknown) => console.warn('Failed to exit fullscreen:', err));
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
+    }
+  };
 
   // Load state and setters from store
   const renderDistance = useGameStore((state) => state.renderDistance);
@@ -191,6 +269,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
                 <h3 className={`pixel-text-sm ${styles.groupTitle}`}>
                   {t('settings.graphics')}
                 </h3>
+
+                <div className={styles.optionItem}>
+                  <Switch
+                    label={t('settings.fullscreen')}
+                    checked={isFullscreen}
+                    onChange={toggleFullscreen}
+                  />
+                </div>
 
                 <div className={styles.optionItem}>
                   <Switch

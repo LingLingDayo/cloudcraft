@@ -81,6 +81,25 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   };
 
   const handleStart = (loadSave: boolean) => {
+    // Attempt to enter fullscreen on mobile devices (requires user activation)
+    interface FullscreenHTMLElement extends HTMLElement {
+      webkitRequestFullscreen?: () => Promise<void>;
+      mozRequestFullScreen?: () => Promise<void>;
+      msRequestFullscreen?: () => Promise<void>;
+    }
+    const docEl = document.documentElement as FullscreenHTMLElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch((err: unknown) => {
+        console.warn('Failed to enter fullscreen:', err);
+      });
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen();
+    } else if (docEl.mozRequestFullScreen) {
+      docEl.mozRequestFullScreen();
+    } else if (docEl.msRequestFullscreen) {
+      docEl.msRequestFullscreen();
+    }
+
     onStartGame(seed, renderDistance, fov, loadSave);
   };
 

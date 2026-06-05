@@ -121,3 +121,46 @@
     font-weight: bold;
   }
 }
+
+// Mobile responsiveness to prevent D-pad overlap
+@media (max-width: 768px) {
+  .minimapContainer {
+    top: 10px;
+    left: 10px;
+    gap: 4px;
+  }
+
+  .minimapWrapper {
+    width: 80px;
+    height: 80px;
+    border-width: 2.5px;
+    
+    &::after {
+      box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.4), inset -1px -1px 0px rgba(0, 0, 0, 0.6);
+    }
+  }
+
+  .minimapInfo {
+    display: none; // Hide coordinates to save vertical space on mobile devices
+  }
+
+  .compassDir {
+    font-size: 6px;
+  }
+
+  .dirN {
+    top: 2px;
+  }
+
+  .dirS {
+    bottom: 2px;
+  }
+
+  .dirE {
+    right: 4px;
+  }
+
+  .dirW {
+    left: 4px;
+  }
+}
