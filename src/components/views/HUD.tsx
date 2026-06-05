@@ -10,6 +10,7 @@ import { BlockIcon } from './BlockIcon';
 import { MobileControls, PixelChestIcon } from './MobileControls';
 import { formatCoordinate } from '../../utils/helpers';
 import { isMobileDevice } from '../../utils/device';
+import { Minimap } from './Minimap';
 
 const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
   <svg
@@ -394,6 +395,7 @@ export const HUD: React.FC = () => {
           </div>
         </div>
       )}
+      <Minimap />
       <Inventory />
       <MobileControls />
 

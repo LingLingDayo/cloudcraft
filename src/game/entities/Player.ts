@@ -9,6 +9,7 @@ import { useGameStore } from '@store/useGameStore';
 
 export class Player {
   public position = new THREE.Vector3(8.5, 40, 8.5);
+  public spawnPoint = new THREE.Vector3(8.5, 40, 8.5);
   public velocity = new THREE.Vector3();
   public state = { onGround: false, inWater: false };
   public isFlying = false;
@@ -91,6 +92,7 @@ export class Player {
 
     // 将玩家定位到该方块之上
     this.position.set(startX, startY + 1.2, startZ);
+    this.spawnPoint.set(startX, startY, startZ);
     this.velocity.set(0, 0, 0);
     this.state.onGround = false;
     this.syncCamera();

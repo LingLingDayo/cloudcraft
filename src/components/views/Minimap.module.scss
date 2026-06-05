@@ -1,0 +1,123 @@
+.minimapContainer {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.minimapWrapper {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 4px solid #3c3c3c;
+  box-sizing: content-box;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 0 8px rgba(0, 0, 0, 0.6),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+  background: rgba(15, 20, 35, 0.6);
+  image-rendering: pixelated;
+  
+  // Retro inner bevel
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 50%;
+    box-shadow: inset 2px 2px 0px rgba(255, 255, 255, 0.4), inset -2px -2px 0px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+  }
+}
+
+.minimapCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  image-rendering: pixelated;
+}
+
+// Compass directions overlaying the circular border
+.compassDir {
+  position: absolute;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 1px 1px 0px #000000;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.dirN {
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dirS {
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dirE {
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.dirW {
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.minimapInfo {
+  background: rgba(15, 20, 35, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #cbd5e1;
+  text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  
+  .coords {
+    white-space: nowrap;
+    color: #e2e8f0;
+  }
+
+  .facing {
+    color: #38bdf8;
+  }
+}
+
+// Language adaptivity for zh
+:global(.lang-zh) {
+  .compassDir {
+    font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+    font-size: 10px !important;
+  }
+  .minimapInfo {
+    font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+    font-size: 11px !important;
+    font-weight: bold;
+  }
+}

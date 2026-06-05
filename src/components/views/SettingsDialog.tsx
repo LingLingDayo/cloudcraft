@@ -37,6 +37,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
   const setAutoJump = useGameStore((state) => state.setAutoJump);
   const dpadSize = useGameStore((state) => state.dpadSize);
   const setDpadSize = useGameStore((state) => state.setDpadSize);
+  const showMinimap = useGameStore((state) => state.showMinimap);
+  const setShowMinimap = useGameStore((state) => state.setShowMinimap);
 
   const [playerName, setPlayerName] = useState<string>(() => {
     return localStorage.getItem('minicraft_player_name') || 'Steve';
@@ -195,6 +197,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({ onClose, onSave 
                     label={t('pauseMenu.debugOverlay')}
                     checked={debugOverlay}
                     onChange={(checked) => setDebugOverlay(checked)}
+                  />
+                </div>
+
+                <div className={styles.optionItem}>
+                  <Switch
+                    label={t('hud.minimap')}
+                    checked={showMinimap}
+                    onChange={(checked) => setShowMinimap(checked)}
                   />
                 </div>
 
