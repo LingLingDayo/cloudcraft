@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
 import { ItemRegistry } from '@game/item/ItemRegistry';
+import { getBlockProperties } from '@game/world/BlockConfig';
 import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
@@ -336,7 +337,7 @@ export const HUD: React.FC = () => {
             <span className={styles.label}>{t('hud.targetBlock')}:</span>
             {debugMetrics.targetBlock ? (
               <div className={styles.detail}>
-                <div>{t('hud.targetBlockName')}: <span className={styles.blockName}>{t(`blocks.${debugMetrics.targetBlock.id}`)}</span></div>
+                  <div>{t('hud.targetBlockName')}: <span className={styles.blockName}>{t(`blocks.${getBlockProperties(debugMetrics.targetBlock.id).translationKey}`)}</span></div>
                 <div>{t('hud.targetBlockCoords')}: <span className={styles.blockCoords}>({debugMetrics.targetBlock.x}, {debugMetrics.targetBlock.y}, {debugMetrics.targetBlock.z})</span></div>
               </div>
             ) : (

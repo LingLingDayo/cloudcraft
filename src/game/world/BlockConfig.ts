@@ -4,6 +4,7 @@ export { BlockType, BLOCK_TYPES };
 export interface BlockProperties {
   id: BlockType;
   name: string;
+  translationKey?: string;    // 统一的本地化翻译 Key
   isSolid: boolean;           // 是否为实体，供物理碰撞检测使用 (如玩家是否可以穿过)
   isTransparent: boolean;     // 是否为透明/透光方块 (光线穿过、网格绘制时是否剔除邻面)
   isLiquid: boolean;          // 是否为液体 (如水、岩浆等)
@@ -634,6 +635,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.SUNFLOWER_BOTTOM]: {
     id: BLOCK_TYPES.SUNFLOWER_BOTTOM,
     name: '向日葵(底)',
+    translationKey: 'sunflower',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -657,6 +659,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.SUNFLOWER_TOP]: {
     id: BLOCK_TYPES.SUNFLOWER_TOP,
     name: '向日葵(顶)',
+    translationKey: 'sunflower',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -680,6 +683,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.ROSE_BUSH_BOTTOM]: {
     id: BLOCK_TYPES.ROSE_BUSH_BOTTOM,
     name: '玫瑰丛(底)',
+    translationKey: 'rose_bush',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -703,6 +707,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.ROSE_BUSH_TOP]: {
     id: BLOCK_TYPES.ROSE_BUSH_TOP,
     name: '玫瑰丛(顶)',
+    translationKey: 'rose_bush',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -726,6 +731,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.PEONY_BOTTOM]: {
     id: BLOCK_TYPES.PEONY_BOTTOM,
     name: '牡丹(底)',
+    translationKey: 'peony',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -749,6 +755,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.PEONY_TOP]: {
     id: BLOCK_TYPES.PEONY_TOP,
     name: '牡丹(顶)',
+    translationKey: 'peony',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -772,6 +779,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.LILAC_BOTTOM]: {
     id: BLOCK_TYPES.LILAC_BOTTOM,
     name: '丁香(底)',
+    translationKey: 'lilac',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -795,6 +803,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.LILAC_TOP]: {
     id: BLOCK_TYPES.LILAC_TOP,
     name: '丁香(顶)',
+    translationKey: 'lilac',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -818,6 +827,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM]: {
     id: BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM,
     name: '双格高草(底)',
+    translationKey: 'double_tall_grass',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -841,6 +851,7 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
   [BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP]: {
     id: BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP,
     name: '双格高草(顶)',
+    translationKey: 'double_tall_grass',
     isSolid: true,
     isTransparent: true,
     isLiquid: false,
@@ -874,11 +885,31 @@ export function setPropertiesResolver(resolver: (blockId: number) => BlockProper
   propertiesResolver = resolver;
 }
 
+let blockTypeKeysCache: Record<number, string> | null = null;
+
+function getCachedBlockTypeKey(blockType: number): string {
+  if (!blockTypeKeysCache) {
+    blockTypeKeysCache = {};
+    Object.entries(BLOCK_TYPES).forEach(([key, value]) => {
+      blockTypeKeysCache![value as number] = key.toLowerCase();
+    });
+  }
+  return blockTypeKeysCache[blockType] || 'air';
+}
+
 // Helper function to safely fetch properties of any block ID, defaulting to AIR properties
-export function getBlockProperties(blockId: number): BlockProperties {
+export function getBlockProperties(blockId: number): BlockProperties & { translationKey: string } {
   const props = propertiesResolver(blockId & 0x3F);
+  
+  // Resolve translationKey: priority is explicit translationKey -> uppercase BLOCK_TYPES constant key lowercased -> 'air'
+  let translationKey = props.translationKey;
+  if (!translationKey) {
+    translationKey = getCachedBlockTypeKey(props.id);
+  }
+
   return {
     ...props,
+    translationKey,
     isCollidable: props.isCollidable ?? props.isSolid,
     canSpawnOn: props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid)
   };

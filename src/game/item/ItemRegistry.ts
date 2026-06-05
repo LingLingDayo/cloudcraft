@@ -1,6 +1,6 @@
 import { Item, BlockItem, FoodItem } from './Item';
 import { ItemType, BlockType, BLOCK_TYPES } from '@type';
-import { BLOCK_PROPERTIES } from '@game/world/BlockConfig';
+import { getBlockProperties } from '@game/world/BlockConfig';
 
 export class ItemRegistry {
   private static items = new Map<ItemType, Item>();
@@ -95,7 +95,7 @@ export class ItemRegistry {
     ];
 
     for (const b of blocksList) {
-      const props = BLOCK_PROPERTIES[b.id];
+      const props = getBlockProperties(b.id);
       if (props) {
         this.register(new BlockItem({
           id: b.itemId,
