@@ -7,6 +7,7 @@ import { Input } from '@components/common/Input';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
 import { SaveManager } from '@game/systems/SaveManager';
+import { isMobileDevice } from '../../utils/device';
 import styles from './StartMenu.module.scss';
 
 const SLIDER_CONTAINER_STYLE = { flex: 1 };
@@ -82,22 +83,25 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
 
   const handleStart = (loadSave: boolean) => {
     // Attempt to enter fullscreen on mobile devices (requires user activation)
-    interface FullscreenHTMLElement extends HTMLElement {
-      webkitRequestFullscreen?: () => Promise<void>;
-      mozRequestFullScreen?: () => Promise<void>;
-      msRequestFullscreen?: () => Promise<void>;
-    }
-    const docEl = document.documentElement as FullscreenHTMLElement;
-    if (docEl.requestFullscreen) {
-      docEl.requestFullscreen().catch((err: unknown) => {
-        console.warn('Failed to enter fullscreen:', err);
-      });
-    } else if (docEl.webkitRequestFullscreen) {
-      docEl.webkitRequestFullscreen();
-    } else if (docEl.mozRequestFullScreen) {
-      docEl.mozRequestFullScreen();
-    } else if (docEl.msRequestFullscreen) {
-      docEl.msRequestFullscreen();
+    // Avoid triggering fullscreen in mobile dev environments
+    if (!(import.meta.env.DEV && isMobileDevice())) {
+      interface FullscreenHTMLElement extends HTMLElement {
+        webkitRequestFullscreen?: () => Promise<void>;
+        mozRequestFullScreen?: () => Promise<void>;
+        msRequestFullscreen?: () => Promise<void>;
+      }
+      const docEl = document.documentElement as FullscreenHTMLElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch((err: unknown) => {
+          console.warn('Failed to enter fullscreen:', err);
+        });
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
     }
 
     onStartGame(seed, renderDistance, fov, loadSave);
