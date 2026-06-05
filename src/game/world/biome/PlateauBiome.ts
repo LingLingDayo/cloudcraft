@@ -75,4 +75,17 @@ export class PlateauBiome implements Biome {
       growTree(chunk, tx, ty, tz, BLOCK_TYPES.BIRCH_WOOD, BLOCK_TYPES.BIRCH_LEAVES, treeHeight, TreeStyle.BIRCH);
     }
   }
+
+  public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
+    const r = noise.pseudoRandom2d(wx, wz);
+    // 4% 概率生成植被
+    if (r < 0.04) {
+      if (r < 0.02) {
+        return BLOCK_TYPES.DEAD_BUSH;
+      } else {
+        return BLOCK_TYPES.TALL_GRASS;
+      }
+    }
+    return BLOCK_TYPES.AIR;
+  }
 }

@@ -56,6 +56,9 @@ export interface Biome {
     treeIndex: number,
     growTree: GrowTreeFn
   ): void;
+
+  // Decide what vegetation (flower/grass) grows at the given coordinates
+  getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number;
 }
 
 export function getOreType(
