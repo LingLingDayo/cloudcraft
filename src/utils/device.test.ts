@@ -1,5 +1,5 @@
 import { describe, test, expect, afterEach, beforeEach, vi, type Mock } from 'vitest';
-import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from './device';
+import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock, setDevModeForTesting } from './device';
 
 describe('isMobileDevice', () => {
   const originalUserAgent = navigator.userAgent;
@@ -76,6 +76,7 @@ describe('fullscreen and orientation lock helpers', () => {
     exitFullscreenMock = vi.fn().mockResolvedValue(undefined);
     lockMock = vi.fn().mockResolvedValue(undefined);
     unlockMock = vi.fn().mockResolvedValue(undefined);
+    setDevModeForTesting(false);
 
     // Mock document element methods
     Object.defineProperty(document.documentElement, 'requestFullscreen', {
@@ -154,5 +155,34 @@ describe('fullscreen and orientation lock helpers', () => {
     expect(unlockMock).toHaveBeenCalledTimes(1);
     expect(exitFullscreenMock).toHaveBeenCalledTimes(1);
   });
+
+  test('should bypass requestFullscreenAndLandscape in development mode', async () => {
+    setDevModeForTesting(true);
+    // Mock mobile device
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    });
+
+    await requestFullscreenAndLandscape(document.documentElement);
+
+    expect(lockMock).not.toHaveBeenCalled();
+    expect(requestFullscreenMock).not.toHaveBeenCalled();
+  });
+
+  test('should bypass exitFullscreenAndUnlock in development mode', async () => {
+    setDevModeForTesting(true);
+    // Mock mobile device
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    });
+
+    await exitFullscreenAndUnlock();
+
+    expect(unlockMock).not.toHaveBeenCalled();
+    expect(exitFullscreenMock).not.toHaveBeenCalled();
+  });
 });
+
 

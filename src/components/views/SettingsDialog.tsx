@@ -76,7 +76,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   }, []);
 
   const toggleFullscreen = (checked: boolean) => {
-    if (import.meta.env.DEV && checked && !isMobileDevice()) {
+    if (import.meta.env.DEV) {
       console.warn('[DEV] Fullscreen toggle ignored in development environment.');
       return;
     }
@@ -86,6 +86,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       exitFullscreenAndUnlock().catch((err: unknown) => console.warn('Failed to exit fullscreen:', err));
     }
   };
+
 
   // Load state and setters from store
   const renderDistance = useGameStore((state) => state.renderDistance);
