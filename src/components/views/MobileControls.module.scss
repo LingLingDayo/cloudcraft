@@ -7,55 +7,59 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 6px;
   pointer-events: auto;
 
   .toolbarToggleBtn {
     width: 44px;
     height: 44px;
     border-radius: 0;
-    border: 3px solid #000000;
-    background: rgba(128, 128, 128, 0.6);
-    box-shadow: inset -2px -2px 0px #373737, inset 2px 2px 0px #e0e0e0;
+    border: 2px solid #000000;
+    background: #c6c6c6;
+    box-shadow: 
+      inset 2px 2px 0px #ffffff,
+      inset -2px -2px 0px #555555;
     color: #ffffff;
     text-shadow: 2px 2px 0px #000;
-    font-size: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    transition: transform 0.15s, background 0.15s;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 
     &:active {
-      transform: scale(0.95);
-      background: rgba(200, 200, 200, 0.8);
-      box-shadow: inset 2px 2px 0px #373737, inset -2px -2px 0px #e0e0e0;
+      background: #8e8e8e;
+      box-shadow: 
+        inset -2px -2px 0px #ffffff,
+        inset 2px 2px 0px #555555;
+      
+      svg {
+        transform: translate(1px, 1px);
+      }
     }
   }
 
   .toolbarMenu {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     opacity: 0;
-    transform: translateY(-10px);
     pointer-events: none;
-    transition: all 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
     max-height: 0;
     overflow: hidden;
   }
 
   &.expanded {
     .toolbarToggleBtn {
-      background: rgba(60, 60, 60, 0.85);
-      box-shadow: inset 2px 2px 0px #212121, inset -2px -2px 0px #888888;
+      background: #8e8e8e;
+      box-shadow: 
+        inset -2px -2px 0px #ffffff,
+        inset 2px 2px 0px #555555;
     }
 
     .toolbarMenu {
       opacity: 1;
-      transform: translateY(0);
       pointer-events: auto;
       max-height: 300px;
       overflow: visible;
@@ -67,31 +71,46 @@
   width: 44px;
   height: 44px;
   border-radius: 0;
-  border: 3px solid #000000;
-  background: rgba(128, 128, 128, 0.6);
-  box-shadow: inset -2px -2px 0px #373737, inset 2px 2px 0px #e0e0e0;
+  border: 2px solid #000000;
+  background: #c6c6c6;
+  box-shadow: 
+    inset 2px 2px 0px #ffffff,
+    inset -2px -2px 0px #555555;
   color: #ffffff;
   text-shadow: 2px 2px 0px #000;
-  font-size: 18px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.15s, background 0.15s;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 
   &:active {
-    transform: scale(0.95);
-    background: rgba(200, 200, 200, 0.8);
-    box-shadow: inset 2px 2px 0px #373737, inset -2px -2px 0px #e0e0e0;
+    background: #8e8e8e;
+    box-shadow: 
+      inset -2px -2px 0px #ffffff,
+      inset 2px 2px 0px #555555;
+
+    svg {
+      transform: translate(1px, 1px);
+    }
   }
 
   &.danger {
-    color: #f87171;
+    background: #a82e2e;
+    box-shadow: 
+      inset 2px 2px 0px #df5c5c,
+      inset -2px -2px 0px #5c1414;
+
     &:active {
-      background: rgba(239, 68, 68, 0.6);
-      box-shadow: inset -2px -2px 0px #7f1d1d, inset 2px 2px 0px #fca5a5;
+      background: #802020;
+      box-shadow: 
+        inset -2px -2px 0px #df5c5c,
+        inset 2px 2px 0px #5c1414;
+
+      svg {
+        transform: translate(1px, 1px);
+      }
     }
   }
 }
