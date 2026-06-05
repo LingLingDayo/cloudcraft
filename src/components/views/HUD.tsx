@@ -7,8 +7,9 @@ import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
 import { useGame } from '../../context/GameContext';
 import { BlockIcon } from './BlockIcon';
-import { MobileControls } from './MobileControls';
+import { MobileControls, PixelChestIcon } from './MobileControls';
 import { formatCoordinate } from '../../utils/helpers';
+import { isMobileDevice } from '../../utils/device';
 
 const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
   <svg
@@ -99,7 +100,18 @@ const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => (
 export const HUD: React.FC = () => {
   const { t } = useTranslation();
   const [activeLabel, setActiveLabel] = useState<string>('');
+  const [isMobile, setIsMobile] = useState(false);
   const gameInstance = useGame();
+
+  // Listen to window resize to determine if mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(isMobileDevice());
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const selectedItem = useGameStore((state) => state.selectedItem);
   const hotbar = useGameStore((state) => state.hotbar);
@@ -239,7 +251,7 @@ export const HUD: React.FC = () => {
 
 
       {/* Hotbar & Status Bar Wrapper */}
-      <div className="hotbar-wrapper">
+      <div className={`hotbar-wrapper ${isMobile ? 'is-mobile' : ''}`}>
         {/* Selected Block Label */}
         {activeLabel && <div className="hotbar-label pixel-text-sm">{activeLabel}</div>}
 
@@ -293,6 +305,22 @@ export const HUD: React.FC = () => {
               </div>
             );
           })}
+          {isMobile && (
+            <div
+              className="hotbar-slot mobile-inventory-btn"
+              onClick={() => {
+                const state = useGameStore.getState();
+                if (state.activeChest) {
+                  state.closeChest();
+                } else {
+                  state.toggleInventory();
+                }
+              }}
+              title={t('controls.openInventory')}
+            >
+              <PixelChestIcon />
+            </div>
+          )}
         </div>
       </div>
       {/* Top Right Debug Dashboard (F3) */}

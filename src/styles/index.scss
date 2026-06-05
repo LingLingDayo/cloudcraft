@@ -353,6 +353,12 @@ body, html {
     align-items: center;
     pointer-events: none;
 
+    &.is-mobile {
+      .hud-hotbar-stats {
+        width: 496px;
+      }
+    }
+
     .hotbar-label {
       background: transparent;
       padding: 0;
@@ -428,6 +434,19 @@ body, html {
 
         &:hover {
           background: rgba(255, 255, 255, 0.15);
+        }
+
+        &.mobile-inventory-btn {
+          margin-left: 8px;
+          background: rgba(100, 100, 100, 0.85);
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.2);
+          }
+
+          &:active {
+            background: rgba(255, 255, 255, 0.35);
+          }
         }
 
         &.active {
