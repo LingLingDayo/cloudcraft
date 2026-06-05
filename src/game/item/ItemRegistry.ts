@@ -68,6 +68,19 @@ export class ItemRegistry {
       { id: BLOCK_TYPES.BIRCH_SAPLING, itemId: ItemType.BIRCH_SAPLING },
       { id: BLOCK_TYPES.SPRUCE_SAPLING, itemId: ItemType.SPRUCE_SAPLING },
       { id: BLOCK_TYPES.JUNGLE_SAPLING, itemId: ItemType.JUNGLE_SAPLING },
+      { id: BLOCK_TYPES.DANDELION, itemId: ItemType.DANDELION },
+      { id: BLOCK_TYPES.POPPY, itemId: ItemType.POPPY },
+      { id: BLOCK_TYPES.BLUE_ORCHID, itemId: ItemType.BLUE_ORCHID },
+      { id: BLOCK_TYPES.ALLIUM, itemId: ItemType.ALLIUM },
+      { id: BLOCK_TYPES.OXEYE_DAISY, itemId: ItemType.OXEYE_DAISY },
+      { id: BLOCK_TYPES.TALL_GRASS, itemId: ItemType.TALL_GRASS },
+      { id: BLOCK_TYPES.FERN, itemId: ItemType.FERN },
+      { id: BLOCK_TYPES.DEAD_BUSH, itemId: ItemType.DEAD_BUSH },
+      { id: BLOCK_TYPES.SUNFLOWER_BOTTOM, itemId: ItemType.SUNFLOWER },
+      { id: BLOCK_TYPES.ROSE_BUSH_BOTTOM, itemId: ItemType.ROSE_BUSH },
+      { id: BLOCK_TYPES.PEONY_BOTTOM, itemId: ItemType.PEONY },
+      { id: BLOCK_TYPES.LILAC_BOTTOM, itemId: ItemType.LILAC },
+      { id: BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM, itemId: ItemType.DOUBLE_TALL_GRASS },
     ];
 
     for (const b of blocksList) {

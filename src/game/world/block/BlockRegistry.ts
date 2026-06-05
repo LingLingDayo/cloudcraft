@@ -1,5 +1,5 @@
 import { Block } from './Block';
-import { BLOCK_TYPES, setPropertiesResolver } from '../BlockConfig';
+import { BLOCK_TYPES, setPropertiesResolver, BLOCK_PROPERTIES } from '../BlockConfig';
 import {
   AirBlock,
   SimpleSolidBlock,
@@ -7,7 +7,10 @@ import {
   ChestBlock,
   LeverBlock,
   LeafBlock,
-  SaplingBlock
+  SaplingBlock,
+  FlowerBlock,
+  DoublePlantBottomBlock,
+  DoublePlantTopBlock
 } from './BlockClasses';
 
 export class BlockRegistry {
@@ -207,6 +210,32 @@ export class BlockRegistry {
       isCollidable: false,
       isCrossModel: true
     }));
+
+    // Flowers
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DANDELION]));
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.POPPY]));
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.BLUE_ORCHID]));
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.ALLIUM]));
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.OXEYE_DAISY]));
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.TALL_GRASS]));
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.FERN]));
+    this.register(new FlowerBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DEAD_BUSH]));
+
+    // Double height plants
+    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.SUNFLOWER_BOTTOM], BLOCK_TYPES.SUNFLOWER_TOP));
+    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.SUNFLOWER_TOP], BLOCK_TYPES.SUNFLOWER_BOTTOM));
+
+    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.ROSE_BUSH_BOTTOM], BLOCK_TYPES.ROSE_BUSH_TOP));
+    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.ROSE_BUSH_TOP], BLOCK_TYPES.ROSE_BUSH_BOTTOM));
+
+    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.PEONY_BOTTOM], BLOCK_TYPES.PEONY_TOP));
+    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.PEONY_TOP], BLOCK_TYPES.PEONY_BOTTOM));
+
+    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.LILAC_BOTTOM], BLOCK_TYPES.LILAC_TOP));
+    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.LILAC_TOP], BLOCK_TYPES.LILAC_BOTTOM));
+
+    this.register(new DoublePlantBottomBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM], BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP));
+    this.register(new DoublePlantTopBlock(BLOCK_PROPERTIES[BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP], BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM));
   }
 
   public static get(id: number): Block {

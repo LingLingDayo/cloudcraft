@@ -2,7 +2,8 @@
  
 import { Block, type BlockProperties } from './Block';
 import type { World } from '../World';
-import { BLOCK_TYPES, getBlockProperties } from '../BlockConfig';
+import { BLOCK_TYPES, BlockType } from '@type';
+import { getBlockProperties } from '../BlockConfig';
 import { ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 import { sound } from '@game/systems/Sound';
 import { ItemType } from '@type';
@@ -200,6 +201,121 @@ export class SaplingBlock extends Block {
         }
       }
     }
+  }
+}
+
+export class FlowerBlock extends Block {
+  constructor(properties: BlockProperties) {
+    super(properties);
+  }
+
+  public onPlaced(world: World, x: number, y: number, z: number): void {
+    const belowType = world.getBlock(x, y - 1, z);
+    const props = getBlockProperties(belowType);
+    if (!props.allowVegetationBase) {
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+      if (world.game && world.game.droppedItems) {
+        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
+        if (itemType) {
+          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        }
+      }
+    }
+  }
+
+  public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, ny: number, _nz: number): void {
+    if (ny === y - 1) {
+      const belowType = world.getBlock(x, y - 1, z);
+      const props = getBlockProperties(belowType);
+      if (!props.allowVegetationBase) {
+        world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+        if (world.game && world.game.droppedItems) {
+          const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
+          if (itemType) {
+            world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+          }
+        }
+      }
+    }
+  }
+}
+
+export class DoublePlantBottomBlock extends Block {
+  private topBlockId: BlockType;
+
+  constructor(properties: BlockProperties, topBlockId: BlockType) {
+    super(properties);
+    this.topBlockId = topBlockId;
+  }
+
+  public onPlaced(world: World, x: number, y: number, z: number): void {
+    const belowType = world.getBlock(x, y - 1, z);
+    const belowProps = getBlockProperties(belowType);
+    const aboveType = world.getBlock(x, y + 1, z);
+
+    if (!belowProps.allowVegetationBase || aboveType !== BLOCK_TYPES.AIR) {
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+      if (world.game && world.game.droppedItems) {
+        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
+        if (itemType) {
+          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        }
+      }
+    } else {
+      world.setBlock(x, y + 1, z, this.topBlockId);
+    }
+  }
+
+  public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, _ny: number, _nz: number): void {
+    const belowType = world.getBlock(x, y - 1, z);
+    const belowProps = getBlockProperties(belowType);
+    
+    if (!belowProps.allowVegetationBase) {
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+      if (world.game && world.game.droppedItems) {
+        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
+        if (itemType) {
+          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        }
+      }
+      return;
+    }
+
+    const aboveType = world.getBlock(x, y + 1, z);
+    if (aboveType !== this.topBlockId) {
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+    }
+  }
+}
+
+export class DoublePlantTopBlock extends Block {
+  private bottomBlockId: BlockType;
+
+  constructor(properties: BlockProperties, bottomBlockId: BlockType) {
+    super(properties);
+    this.bottomBlockId = bottomBlockId;
+  }
+
+  public onPlaced(world: World, x: number, y: number, z: number): void {
+    const belowType = world.getBlock(x, y - 1, z);
+    if (belowType !== this.bottomBlockId) {
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+    }
+  }
+
+  public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, _ny: number, _nz: number): void {
+    const belowType = world.getBlock(x, y - 1, z);
+    if (belowType !== this.bottomBlockId) {
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+    }
+  }
+
+  public getDrops(): { type: ItemType; count: number }[] {
+    const itemType = ItemRegistry.getItemTypeFromBlockType(this.bottomBlockId);
+    if (itemType) {
+      return [{ type: itemType, count: 1 }];
+    }
+    return [];
   }
 }
 
