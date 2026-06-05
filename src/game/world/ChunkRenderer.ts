@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BLOCK_TYPES, getBlockProperties } from './BlockConfig';
 import { generateTextureAtlas } from './TextureAtlas';
-import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
+import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z, WORLD_HEIGHT } from './World';
 import type { World } from './World';
 
 export class ChunkRenderer {
@@ -48,8 +48,8 @@ export class ChunkRenderer {
     };
   }
 
-  public updateChunkMesh(cx: number, cz: number, chunks: Map<string, Uint8Array>): void {
-    const key = `${cx},${cz}`;
+  public updateChunkMesh(cx: number, cy: number, cz: number, chunks: Map<string, Uint8Array>): void {
+    const key = `${cx},${cy},${cz}`;
     const chunk = chunks.get(key);
     if (!chunk) return; // Don't build empty/unloaded chunks
 
@@ -65,44 +65,59 @@ export class ChunkRenderer {
     const cutoutData = { positions: [] as number[], normals: [] as number[], uvs: [] as number[] };
 
     const worldStartX = cx * CHUNK_SIZE_X;
+    const worldStartY = cy * CHUNK_SIZE_Y;
     const worldStartZ = cz * CHUNK_SIZE_Z;
 
-    const eastChunk = chunks.get(`${cx + 1},${cz}`);
-    const westChunk = chunks.get(`${cx - 1},${cz}`);
-    const southChunk = chunks.get(`${cx},${cz + 1}`);
-    const northChunk = chunks.get(`${cx},${cz - 1}`);
-
     const getNeighbor = (lx: number, ly: number, lz: number, dir: number[]): number => {
-      const ny = ly + dir[1];
-      if (ny < 0 || ny >= CHUNK_SIZE_Y) return BLOCK_TYPES.AIR;
-
       const nx = lx + dir[0];
+      const ny = ly + dir[1];
       const nz = lz + dir[2];
 
-      if (nx >= 0 && nx < CHUNK_SIZE_X && nz >= 0 && nz < CHUNK_SIZE_Z) {
+      const globalY = worldStartY + ny;
+      if (globalY < 0 || globalY >= WORLD_HEIGHT) return BLOCK_TYPES.AIR;
+
+      if (
+        nx >= 0 && nx < CHUNK_SIZE_X &&
+        ny >= 0 && ny < CHUNK_SIZE_Y &&
+        nz >= 0 && nz < CHUNK_SIZE_Z
+      ) {
         return chunk[nx + nz * CHUNK_SIZE_X + ny * CHUNK_SIZE_X * CHUNK_SIZE_Z];
       }
 
-      let neighborChunk: Uint8Array | undefined;
+      let ncx = cx;
+      let ncy = cy;
+      let ncz = cz;
       let nlx = nx;
+      let nly = ny;
       let nlz = nz;
 
       if (nx < 0) {
-        neighborChunk = westChunk;
+        ncx = cx - 1;
         nlx = CHUNK_SIZE_X - 1;
       } else if (nx >= CHUNK_SIZE_X) {
-        neighborChunk = eastChunk;
+        ncx = cx + 1;
         nlx = 0;
-      } else if (nz < 0) {
-        neighborChunk = northChunk;
+      }
+
+      if (ny < 0) {
+        ncy = cy - 1;
+        nly = CHUNK_SIZE_Y - 1;
+      } else if (ny >= CHUNK_SIZE_Y) {
+        ncy = cy + 1;
+        nly = 0;
+      }
+
+      if (nz < 0) {
+        ncz = cz - 1;
         nlz = CHUNK_SIZE_Z - 1;
       } else if (nz >= CHUNK_SIZE_Z) {
-        neighborChunk = southChunk;
+        ncz = cz + 1;
         nlz = 0;
       }
 
+      const neighborChunk = chunks.get(`${ncx},${ncy},${ncz}`);
       if (!neighborChunk) return BLOCK_TYPES.AIR;
-      return neighborChunk[nlx + nlz * CHUNK_SIZE_X + ny * CHUNK_SIZE_X * CHUNK_SIZE_Z];
+      return neighborChunk[nlx + nlz * CHUNK_SIZE_X + nly * CHUNK_SIZE_X * CHUNK_SIZE_Z];
     };
 
     // Face definition helper variables
@@ -161,10 +176,10 @@ export class ChunkRenderer {
               if (drawFace) {
                 // Add vertices
                 const corners = face.corners;
-                const v0 = [wx + corners[0][0], y + corners[0][1], wz + corners[0][2]];
-                const v1 = [wx + corners[1][0], y + corners[1][1], wz + corners[1][2]];
-                const v2 = [wx + corners[2][0], y + corners[2][1], wz + corners[2][2]];
-                const v3 = [wx + corners[3][0], y + corners[3][1], wz + corners[3][2]];
+                const v0 = [wx + corners[0][0], worldStartY + y + corners[0][1], wz + corners[0][2]];
+                const v1 = [wx + corners[1][0], worldStartY + y + corners[1][1], wz + corners[1][2]];
+                const v2 = [wx + corners[2][0], worldStartY + y + corners[2][1], wz + corners[2][2]];
+                const v3 = [wx + corners[3][0], worldStartY + y + corners[3][1], wz + corners[3][2]];
 
                 // Triangle 1
                 data.positions.push(...v0, ...v1, ...v2);
@@ -268,14 +283,14 @@ export class ChunkRenderer {
               h = props.crossScaleH ?? 1.0;
             }
 
-            const cx = wx + 0.5;
-            const cz = wz + 0.5;
+            const blockCenterX = wx + 0.5;
+            const blockCenterZ = wz + 0.5;
 
             // Diagonal Plane 1 Positions
-            const p1_0 = [cx - hw + dx, y, cz - hw + dz];
-            const p1_1 = [cx - hw + dx, y + h, cz - hw + dz];
-            const p1_2 = [cx + hw + dx, y + h, cz + hw + dz];
-            const p1_3 = [cx + hw + dx, y, cz + hw + dz];
+            const p1_0 = [blockCenterX - hw + dx, worldStartY + y, blockCenterZ - hw + dz];
+            const p1_1 = [blockCenterX - hw + dx, worldStartY + y + h, blockCenterZ - hw + dz];
+            const p1_2 = [blockCenterX + hw + dx, worldStartY + y + h, blockCenterZ + hw + dz];
+            const p1_3 = [blockCenterX + hw + dx, worldStartY + y, blockCenterZ + hw + dz];
 
             cutoutData.positions.push(...p1_0, ...p1_1, ...p1_2);
             cutoutData.positions.push(...p1_0, ...p1_2, ...p1_3);
@@ -293,10 +308,10 @@ export class ChunkRenderer {
             }
 
             // Diagonal Plane 2 Positions
-            const p2_0 = [cx + hw + dx, y, cz - hw + dz];
-            const p2_1 = [cx + hw + dx, y + h, cz - hw + dz];
-            const p2_2 = [cx - hw + dx, y + h, cz + hw + dz];
-            const p2_3 = [cx - hw + dx, y, cz + hw + dz];
+            const p2_0 = [blockCenterX + hw + dx, worldStartY + y, blockCenterZ - hw + dz];
+            const p2_1 = [blockCenterX + hw + dx, worldStartY + y + h, blockCenterZ - hw + dz];
+            const p2_2 = [blockCenterX - hw + dx, worldStartY + y + h, blockCenterZ + hw + dz];
+            const p2_3 = [blockCenterX - hw + dx, worldStartY + y, blockCenterZ + hw + dz];
 
             cutoutData.positions.push(...p2_0, ...p2_1, ...p2_2);
             cutoutData.positions.push(...p2_0, ...p2_2, ...p2_3);

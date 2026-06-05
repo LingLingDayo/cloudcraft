@@ -26,7 +26,7 @@ export class DesertBiome implements Biome {
     wz: number,
     _isDryLand: boolean
   ): void {
-    const index = lx + lz * 16 + y * 256;
+    const index = lx + lz * 16 + (y % 16) * 256;
     if (y === 0) {
       chunk[index] = BLOCK_TYPES.STONE; // 基岩
     } else if (y <= finalHeight) {

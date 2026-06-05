@@ -25,7 +25,7 @@ export class JungleBiome implements Biome {
     wz: number,
     isDryLand: boolean
   ): void {
-    const index = lx + lz * 16 + y * 256;
+    const index = lx + lz * 16 + (y % 16) * 256;
     if (y === finalHeight) {
       if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;

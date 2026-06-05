@@ -17,7 +17,8 @@ export { BLOCK_TYPES, getBlockProperties };
 
 export const CHUNK_SIZE_X = 16;
 export const CHUNK_SIZE_Z = 16;
-export const CHUNK_SIZE_Y = 500;
+export const CHUNK_SIZE_Y = 16;
+export const WORLD_HEIGHT = 512;
 
 export class World {
   public game: any;
@@ -73,58 +74,63 @@ export class World {
   }
 
   // Get chunk coordinates from world coordinates
-  public getChunkKey(x: number, z: number): string {
+  public getChunkKey(x: number, y: number, z: number): string {
     const cx = Math.floor(x / CHUNK_SIZE_X);
+    const cy = Math.floor(y / CHUNK_SIZE_Y);
     const cz = Math.floor(z / CHUNK_SIZE_Z);
-    return `${cx},${cz}`;
+    return `${cx},${cy},${cz}`;
   }
 
   // Get block at global x, y, z
   public getBlock(x: number, y: number, z: number): number {
-    if (y < 0 || y >= CHUNK_SIZE_Y) return BLOCK_TYPES.AIR;
+    if (y < 0 || y >= WORLD_HEIGHT) return BLOCK_TYPES.AIR;
 
     const cx = Math.floor(x / CHUNK_SIZE_X);
+    const cy = Math.floor(y / CHUNK_SIZE_Y);
     const cz = Math.floor(z / CHUNK_SIZE_Z);
-    const key = `${cx},${cz}`;
+    const key = `${cx},${cy},${cz}`;
 
     let chunk = this.chunks.get(key);
     if (!chunk) {
-      chunk = this.generator.generateChunkData(cx, cz);
+      chunk = this.generator.generateChunkData(cx, cy, cz);
       this.applyChunkModifications(key, chunk);
       this.chunks.set(key, chunk);
     }
 
     const lx = ((x % CHUNK_SIZE_X) + CHUNK_SIZE_X) % CHUNK_SIZE_X;
+    const ly = ((y % CHUNK_SIZE_Y) + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
     const lz = ((z % CHUNK_SIZE_Z) + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
-    const index = lx + lz * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+    const index = lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
 
     return chunk[index];
   }
 
   // Set block at global x, y, z
   public setBlock(x: number, y: number, z: number, type: number) {
-    if (y < 0 || y >= CHUNK_SIZE_Y) return;
+    if (y < 0 || y >= WORLD_HEIGHT) return;
 
     const cx = Math.floor(x / CHUNK_SIZE_X);
+    const cy = Math.floor(y / CHUNK_SIZE_Y);
     const cz = Math.floor(z / CHUNK_SIZE_Z);
-    const key = `${cx},${cz}`;
+    const key = `${cx},${cy},${cz}`;
 
     let chunk = this.chunks.get(key);
     if (!chunk) {
-      chunk = this.generator.generateChunkData(cx, cz);
+      chunk = this.generator.generateChunkData(cx, cy, cz);
       this.applyChunkModifications(key, chunk);
       this.chunks.set(key, chunk);
     }
 
     const lx = ((x % CHUNK_SIZE_X) + CHUNK_SIZE_X) % CHUNK_SIZE_X;
+    const ly = ((y % CHUNK_SIZE_Y) + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
     const lz = ((z % CHUNK_SIZE_Z) + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
-    const index = lx + lz * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+    const index = lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
 
     const oldType = chunk[index];
     if (oldType === type) return;
 
     // Track modification
-    const posKey = `${lx},${y},${lz}`;
+    const posKey = `${lx},${ly},${lz}`;
     let chunkOriginal = this.originalBlocks.get(key);
     if (!chunkOriginal) {
       chunkOriginal = new Map();
@@ -134,7 +140,7 @@ export class World {
     if (!chunkOriginal.has(posKey)) {
       const chunkModified = this.modifiedBlocks.get(key);
       if (chunkModified && chunkModified.has(posKey)) {
-        const originalChunk = this.generator.generateChunkData(cx, cz);
+        const originalChunk = this.generator.generateChunkData(cx, cy, cz);
         const originalType = originalChunk[index];
         chunkOriginal.set(posKey, originalType);
       } else {
@@ -180,22 +186,24 @@ export class World {
     this.notifyNeighborsOfStateChange(x, y, z);
 
     // Rebuild this chunk's mesh
-    this.updateChunkMesh(cx, cz);
+    this.updateChunkMesh(cx, cy, cz);
 
     // If block is on the edge of the chunk, update neighbor chunks too
-    if (lx === 0) this.updateChunkMesh(cx - 1, cz);
-    if (lx === CHUNK_SIZE_X - 1) this.updateChunkMesh(cx + 1, cz);
-    if (lz === 0) this.updateChunkMesh(cx, cz - 1);
-    if (lz === CHUNK_SIZE_Z - 1) this.updateChunkMesh(cx, cz + 1);
+    if (lx === 0) this.updateChunkMesh(cx - 1, cy, cz);
+    if (lx === CHUNK_SIZE_X - 1) this.updateChunkMesh(cx + 1, cy, cz);
+    if (ly === 0) this.updateChunkMesh(cx, cy - 1, cz);
+    if (ly === CHUNK_SIZE_Y - 1) this.updateChunkMesh(cx, cy + 1, cz);
+    if (lz === 0) this.updateChunkMesh(cx, cy, cz - 1);
+    if (lz === CHUNK_SIZE_Z - 1) this.updateChunkMesh(cx, cy, cz + 1);
   }
 
-  public updateChunkMesh(cx: number, cz: number) {
-    this.renderer.updateChunkMesh(cx, cz, this.chunks);
+  public updateChunkMesh(cx: number, cy: number, cz: number) {
+    this.renderer.updateChunkMesh(cx, cy, cz, this.chunks);
     
     // Update chunk loading progress in store
     const store = useGameStore.getState();
     if (store.isWorldLoading) {
-      const key = `${cx},${cz}`;
+      const key = `${cx},${cy},${cz}`;
       if (store.chunkLoadingStates[key] === false) {
         store.setChunkLoadingState(key, true);
       }
@@ -203,13 +211,15 @@ export class World {
   }
 
   // Load an area around a central chunk (generate if not existing, create meshes)
-  public loadArea(centerX: number, centerZ: number, radius: number, sync = false) {
+  public loadArea(centerX: number, centerY: number, centerZ: number, radius: number, sync = false) {
     const shouldSync = sync || !this.game;
     const ccx = Math.floor(centerX / CHUNK_SIZE_X);
+    const ccy = Math.floor(centerY / CHUNK_SIZE_Y);
     const ccz = Math.floor(centerZ / CHUNK_SIZE_Z);
 
     const activeKeys = new Set<string>();
     const neededGeneration: string[] = [];
+    const verticalRadius = 6; // Load 6 chunks up and down (covers 192 blocks)
 
     // Initialize loading progress for this area if we are in world loading screen and asynchronous
     if (!shouldSync) {
@@ -217,13 +227,18 @@ export class World {
       if (store.isWorldLoading) {
         const keys: string[] = [];
         for (let dx = -radius; dx <= radius; dx++) {
-          for (let dz = -radius; dz <= radius; dz++) {
-            const cx = ccx + dx;
-            const cz = ccz + dz;
-            keys.push(`${cx},${cz}`);
+          for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+            for (let dz = -radius; dz <= radius; dz++) {
+              const cx = ccx + dx;
+              const cy = ccy + dy;
+              const cz = ccz + dz;
+              if (cy >= 0 && cy < WORLD_HEIGHT / CHUNK_SIZE_Y) {
+                keys.push(`${cx},${cy},${cz}`);
+              }
+            }
           }
         }
-        // Only initialize if the keys list is different (avoids resetting progress to 0% mid-load if loadArea is called multiple times with same keys)
+        // Only initialize if the keys list is different
         const currentKeys = Object.keys(store.chunkLoadingStates);
         const keysMatch = keys.length === currentKeys.length && keys.every(k => currentKeys.includes(k));
         if (!keysMatch) {
@@ -240,21 +255,26 @@ export class World {
     }
 
     for (let dx = -radius; dx <= radius; dx++) {
-      for (let dz = -radius; dz <= radius; dz++) {
-        const cx = ccx + dx;
-        const cz = ccz + dz;
-        const key = `${cx},${cz}`;
-        activeKeys.add(key);
+      for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+        for (let dz = -radius; dz <= radius; dz++) {
+          const cx = ccx + dx;
+          const cy = ccy + dy;
+          const cz = ccz + dz;
+          if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
 
-        if (shouldSync) {
-          if (!this.chunks.has(key)) {
-            const chunk = this.generator.generateChunkData(cx, cz);
-            this.applyChunkModifications(key, chunk);
-            this.chunks.set(key, chunk);
-          }
-        } else {
-          if (!this.chunks.has(key)) {
-            neededGeneration.push(key);
+          const key = `${cx},${cy},${cz}`;
+          activeKeys.add(key);
+
+          if (shouldSync) {
+            if (!this.chunks.has(key)) {
+              const chunk = this.generator.generateChunkData(cx, cy, cz);
+              this.applyChunkModifications(key, chunk);
+              this.chunks.set(key, chunk);
+            }
+          } else {
+            if (!this.chunks.has(key)) {
+              neededGeneration.push(key);
+            }
           }
         }
       }
@@ -262,12 +282,17 @@ export class World {
 
     if (shouldSync) {
       for (let dx = -radius; dx <= radius; dx++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          const cx = ccx + dx;
-          const cz = ccz + dz;
-          const key = `${cx},${cz}`;
-          if (!this.renderer.hasChunkMesh(key)) {
-            this.updateChunkMesh(cx, cz);
+        for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+          for (let dz = -radius; dz <= radius; dz++) {
+            const cx = ccx + dx;
+            const cy = ccy + dy;
+            const cz = ccz + dz;
+            if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
+
+            const key = `${cx},${cy},${cz}`;
+            if (!this.renderer.hasChunkMesh(key)) {
+              this.updateChunkMesh(cx, cy, cz);
+            }
           }
         }
       }
@@ -276,22 +301,28 @@ export class World {
     } else {
       const neededMesh: string[] = [];
       for (let dx = -radius; dx <= radius; dx++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          const cx = ccx + dx;
-          const cz = ccz + dz;
-          const key = `${cx},${cz}`;
-          if (!this.renderer.hasChunkMesh(key) && this.chunks.has(key)) {
-            neededMesh.push(key);
+        for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+          for (let dz = -radius; dz <= radius; dz++) {
+            const cx = ccx + dx;
+            const cy = ccy + dy;
+            const cz = ccz + dz;
+            if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
+
+            const key = `${cx},${cy},${cz}`;
+            if (!this.renderer.hasChunkMesh(key) && this.chunks.has(key)) {
+              neededMesh.push(key);
+            }
           }
         }
       }
 
       // Sort both queues by distance to player (closer chunks loaded first)
       const getDistanceSq = (key: string) => {
-        const [cx, cz] = key.split(',').map(Number);
+        const [cx, cy, cz] = key.split(',').map(Number);
         const dcx = cx - ccx;
+        const dcy = cy - ccy;
         const dcz = cz - ccz;
-        return dcx * dcx + dcz * dcz;
+        return dcx * dcx + dcy * dcy + dcz * dcz;
       };
 
       neededGeneration.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
@@ -341,32 +372,35 @@ export class World {
     const BUDGET_MS = 8; // Max time budget in ms per frame for loading chunks
 
     const playerX = this.game.player.position.x;
+    const playerY = this.game.player.position.y;
     const playerZ = this.game.player.position.z;
     const ccx = Math.floor(playerX / CHUNK_SIZE_X);
+    const ccy = Math.floor(playerY / CHUNK_SIZE_Y);
     const ccz = Math.floor(playerZ / CHUNK_SIZE_Z);
 
     const getDistanceSq = (key: string) => {
-      const [cx, cz] = key.split(',').map(Number);
+      const [cx, cy, cz] = key.split(',').map(Number);
       const dcx = cx - ccx;
+      const dcy = cy - ccy;
       const dcz = cz - ccz;
-      return dcx * dcx + dcz * dcz;
+      return dcx * dcx + dcy * dcy + dcz * dcz;
     };
 
     while (performance.now() - startTime < BUDGET_MS) {
       if (this.pendingMeshQueue.length > 0) {
         const key = this.pendingMeshQueue.shift();
         if (key) {
-          const [cx, cz] = key.split(',').map(Number);
+          const [cx, cy, cz] = key.split(',').map(Number);
           if (this.chunks.has(key)) {
-            this.updateChunkMesh(cx, cz);
+            this.updateChunkMesh(cx, cy, cz);
           }
         }
       } else if (this.pendingGenerationQueue.length > 0) {
         const key = this.pendingGenerationQueue.shift();
         if (key) {
-          const [cx, cz] = key.split(',').map(Number);
+          const [cx, cy, cz] = key.split(',').map(Number);
           if (!this.chunks.has(key)) {
-            const chunk = this.generator.generateChunkData(cx, cz);
+            const chunk = this.generator.generateChunkData(cx, cy, cz);
             this.applyChunkModifications(key, chunk);
             this.chunks.set(key, chunk);
 
