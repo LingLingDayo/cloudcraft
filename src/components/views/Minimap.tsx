@@ -4,14 +4,14 @@ import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
 import { useGame } from '../../context/GameContext';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
-import { World } from '@game/world/World';
+import { World, WORLD_HEIGHT } from '@game/world/World';
 import * as THREE from 'three';
 import { isMobileDevice } from '../../utils/device';
 import styles from './Minimap.module.scss';
 
 // Safe block getter to avoid generating chunk data on the UI thread
 const getBlockSafe = (world: World, x: number, y: number, z: number): number => {
-  if (y < 0 || y >= 500) return BLOCK_TYPES.AIR;
+  if (y < 0 || y >= WORLD_HEIGHT) return BLOCK_TYPES.AIR;
   const cx = Math.floor(x / 16);
   const cy = Math.floor(y / 16);
   const cz = Math.floor(z / 16);
@@ -121,7 +121,7 @@ export const Minimap: React.FC = () => {
             const wz = bz + dz;
             
             // Search down from above player to find the first block
-            const startY = Math.min(499, by + 15);
+            const startY = Math.min(WORLD_HEIGHT - 1, by + 15);
             const minSeqY = Math.max(0, by - 30);
             let topBlockId: number = BLOCK_TYPES.AIR;
             let topBlockY = 0;

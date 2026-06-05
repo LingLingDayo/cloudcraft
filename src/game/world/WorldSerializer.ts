@@ -41,11 +41,39 @@ export class WorldSerializer {
       // Restore modified blocks
       if (saved.modified) {
         for (const [chunkKey, chunkData] of Object.entries(saved.modified)) {
-          const modifiedMap = new Map<string, number>();
-          for (const [posKey, type] of Object.entries(chunkData as Record<string, number>)) {
-            modifiedMap.set(posKey, type);
+          const keyParts = chunkKey.split(',');
+          const isLegacy2D = keyParts.length === 2;
+          
+          if (isLegacy2D) {
+            const cx = parseInt(keyParts[0], 10);
+            const cz = parseInt(keyParts[1], 10);
+            for (const [posKey, type] of Object.entries(chunkData as Record<string, number>)) {
+              const posParts = posKey.split(',');
+              if (posParts.length === 3) {
+                const lx = parseInt(posParts[0], 10);
+                const y = parseInt(posParts[1], 10);
+                const lz = parseInt(posParts[2], 10);
+                
+                const cy = Math.floor(y / 16);
+                const ly = ((y % 16) + 16) % 16;
+                const newChunkKey = `${cx},${cy},${cz}`;
+                const newPosKey = `${lx},${ly},${lz}`;
+                
+                let modifiedMap = world.modifiedBlocks.get(newChunkKey);
+                if (!modifiedMap) {
+                  modifiedMap = new Map<string, number>();
+                  world.modifiedBlocks.set(newChunkKey, modifiedMap);
+                }
+                modifiedMap.set(newPosKey, type);
+              }
+            }
+          } else {
+            const modifiedMap = new Map<string, number>();
+            for (const [posKey, type] of Object.entries(chunkData as Record<string, number>)) {
+              modifiedMap.set(posKey, type);
+            }
+            world.modifiedBlocks.set(chunkKey, modifiedMap);
           }
-          world.modifiedBlocks.set(chunkKey, modifiedMap);
         }
       }
 
