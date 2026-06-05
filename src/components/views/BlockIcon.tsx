@@ -22,10 +22,14 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, itemId, size, cla
   const item = ItemRegistry.get(id);
   const cubeSize = typeof size === 'number' ? `${size}px` : size;
 
+  // Resolve properties if it's a BlockItem to get complete configuration (including textureFaces)
+  const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+  const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
+
   // Render as a 2D flat icon if it is not a placeable block item,
   // or if it uses a custom cross model (like saplings).
   if (!(item instanceof BlockItem) || item.droppedModelType === 'cross') {
-    const atlasIndex = item.textureFaces?.side ?? item.textureFaces?.top ?? 32;
+    const atlasIndex = textureFaces?.side ?? textureFaces?.top ?? 32;
     let style: React.CSSProperties;
     try {
       const dataURL = getTextureAtlasDataURL();
@@ -65,8 +69,7 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, itemId, size, cla
   }
 
   // Render as a 3D isometric block for standard BlockItems
-  const blockProps = getBlockProperties(item.blockId);
-  const textureFaces = item.textureFaces;
+  const activeBlockProps = blockProps!;
 
   const getFaceStyle = (face: 'top' | 'left' | 'right'): React.CSSProperties => {
     let atlasIndex: number | undefined;
@@ -91,7 +94,7 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, itemId, size, cla
           backgroundSize: '800% 800%',
           backgroundPosition: `${px}% ${py}%`,
           backgroundColor: 'transparent',
-          border: blockProps.border || 'none',
+          border: activeBlockProps.border || 'none',
         };
       } catch (_e) {
         // Fallback to solid color
@@ -99,8 +102,8 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, itemId, size, cla
     }
 
     return {
-      backgroundColor: blockProps.color || '#a1a1aa',
-      border: blockProps.border || 'none',
+      backgroundColor: activeBlockProps.color || '#a1a1aa',
+      border: activeBlockProps.border || 'none',
     };
   };
 
