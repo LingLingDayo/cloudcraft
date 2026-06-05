@@ -189,7 +189,9 @@ export class DroppedItemManager {
       for (let y = minY; y <= maxY; y++) {
         for (let z = minZ; z <= maxZ; z++) {
           const id = this.game.world.getBlock(x, y, z);
-          if (getBlockProperties(id).isSolid) {
+          const props = getBlockProperties(id);
+          const isCollidable = props.isCollidable ?? props.isSolid;
+          if (isCollidable) {
             const isIntersect = (
               box.min.x + eps < x + 1 &&
               box.max.x - eps > x &&
