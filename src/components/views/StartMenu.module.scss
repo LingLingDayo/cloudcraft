@@ -1,3 +1,5 @@
+@use '@styles/mixins' as *;
+
 .menuBg {
   width: 100vw;
   height: 100vh;
@@ -41,19 +43,7 @@
     inset -4px -4px 0px #1a1a1a,
     0 12px 30px rgba(0, 0, 0, 0.7);
 
-  @media (max-width: 768px), (max-height: 560px) {
-    --design-w: 560px;
-    --design-h: 520px;
-    --safe-ratio: 0.92;
-    --scale-w: calc((100vw * var(--safe-ratio)) / var(--design-w));
-    --scale-h: calc((100vh * var(--safe-ratio)) / var(--design-h));
-    --dynamic-scale: min(var(--scale-w), var(--scale-h), 1);
-
-    transform: scale(var(--dynamic-scale)) translate3d(0, 0, 0);
-    transform-origin: center center;
-    backface-visibility: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
+  @include fit-scale(560px, 520px, 0.92, 768px, 560px);
 }
 
 .titleContainer {
