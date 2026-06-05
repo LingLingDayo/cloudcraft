@@ -1,5 +1,5 @@
-import { describe, test, expect, afterEach } from 'vitest';
-import { isMobileDevice } from './device';
+import { describe, test, expect, afterEach, beforeEach, vi, type Mock } from 'vitest';
+import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from './device';
 
 describe('isMobileDevice', () => {
   const originalUserAgent = navigator.userAgent;
@@ -63,3 +63,96 @@ describe('isMobileDevice', () => {
     expect(isMobileDevice()).toBe(false);
   });
 });
+
+describe('fullscreen and orientation lock helpers', () => {
+  let requestFullscreenMock: Mock;
+  let exitFullscreenMock: Mock;
+  let lockMock: Mock;
+  let unlockMock: Mock;
+  const originalUserAgent = navigator.userAgent;
+
+  beforeEach(() => {
+    requestFullscreenMock = vi.fn().mockResolvedValue(undefined);
+    exitFullscreenMock = vi.fn().mockResolvedValue(undefined);
+    lockMock = vi.fn().mockResolvedValue(undefined);
+    unlockMock = vi.fn().mockResolvedValue(undefined);
+
+    // Mock document element methods
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      value: requestFullscreenMock,
+      configurable: true,
+      writable: true,
+    });
+
+    // Mock document methods
+    Object.defineProperty(document, 'exitFullscreen', {
+      value: exitFullscreenMock,
+      configurable: true,
+      writable: true,
+    });
+
+    // Mock screen orientation
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, 'screen', {
+        value: {
+          orientation: {
+            lock: lockMock,
+            unlock: unlockMock,
+          },
+        },
+        configurable: true,
+        writable: true,
+      });
+    }
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: originalUserAgent,
+      configurable: true,
+    });
+    vi.restoreAllMocks();
+  });
+
+  test('should lock orientation and request fullscreen for mobile device', async () => {
+    // Mock mobile device
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    });
+
+    await requestFullscreenAndLandscape(document.documentElement);
+
+    // Should lock to landscape before & after fullscreen
+    expect(lockMock).toHaveBeenCalledWith('landscape');
+    expect(lockMock).toHaveBeenCalledTimes(2);
+    expect(requestFullscreenMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('should not lock orientation for desktop device', async () => {
+    // Mock desktop device
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+      configurable: true,
+    });
+
+    await requestFullscreenAndLandscape(document.documentElement);
+
+    expect(lockMock).not.toHaveBeenCalled();
+    expect(requestFullscreenMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('should unlock orientation and exit fullscreen on exit', async () => {
+    // Mock mobile device
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    });
+
+    await exitFullscreenAndUnlock();
+
+    expect(unlockMock).toHaveBeenCalledTimes(1);
+    expect(exitFullscreenMock).toHaveBeenCalledTimes(1);
+  });
+});
+

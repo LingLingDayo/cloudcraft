@@ -8,7 +8,7 @@ import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
 import { SaveManager } from '@game/systems/SaveManager';
-import { isMobileDevice } from '../../utils/device';
+import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from '../../utils/device';
 import { useBackToClose } from '../../hooks/useBackToClose';
 import styles from './SettingsDialog.module.scss';
 
@@ -19,12 +19,6 @@ interface SettingsDialogProps {
 }
 
 type TabType = 'general' | 'graphics' | 'controls';
-
-interface FullscreenHTMLElement extends HTMLElement {
-  webkitRequestFullscreen?: () => Promise<void>;
-  mozRequestFullScreen?: () => Promise<void>;
-  msRequestFullscreen?: () => Promise<void>;
-}
 
 interface FullscreenDocument extends Document {
   webkitExitFullscreen?: () => Promise<void>;
@@ -82,32 +76,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   }, []);
 
   const toggleFullscreen = (checked: boolean) => {
-    if (import.meta.env.DEV && checked) {
+    if (import.meta.env.DEV && checked && !isMobileDevice()) {
       console.warn('[DEV] Fullscreen toggle ignored in development environment.');
       return;
     }
-    const docEl = document.documentElement as FullscreenHTMLElement;
     if (checked) {
-      if (docEl.requestFullscreen) {
-        docEl.requestFullscreen().catch((err: unknown) => console.warn('Failed to enter fullscreen:', err));
-      } else if (docEl.webkitRequestFullscreen) {
-        docEl.webkitRequestFullscreen();
-      } else if (docEl.mozRequestFullScreen) {
-        docEl.mozRequestFullScreen();
-      } else if (docEl.msRequestFullscreen) {
-        docEl.msRequestFullscreen();
-      }
+      requestFullscreenAndLandscape().catch((err: unknown) => console.warn('Failed to enter fullscreen:', err));
     } else {
-      const doc = document as FullscreenDocument;
-      if (doc.exitFullscreen) {
-        doc.exitFullscreen().catch((err: unknown) => console.warn('Failed to exit fullscreen:', err));
-      } else if (doc.webkitExitFullscreen) {
-        doc.webkitExitFullscreen();
-      } else if (doc.mozCancelFullScreen) {
-        doc.mozCancelFullScreen();
-      } else if (doc.msExitFullscreen) {
-        doc.msExitFullscreen();
-      }
+      exitFullscreenAndUnlock().catch((err: unknown) => console.warn('Failed to exit fullscreen:', err));
     }
   };
 

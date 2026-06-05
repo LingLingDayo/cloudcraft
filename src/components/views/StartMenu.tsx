@@ -7,6 +7,7 @@ import { Input } from '@components/common/Input';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '../../i18n';
 import { SaveManager, type SaveData } from '@game/systems/SaveManager';
+import { isMobileDevice, requestFullscreenAndLandscape } from '../../utils/device';
 import styles from './StartMenu.module.scss';
 
 const SLIDER_CONTAINER_STYLE = { flex: 1 };
@@ -138,25 +139,11 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
 
   const handleStart = (loadSave: boolean, customSeed?: string) => {
     // Attempt to enter fullscreen (requires user activation)
-    // Avoid triggering fullscreen in dev environments
-    if (!import.meta.env.DEV) {
-      interface FullscreenHTMLElement extends HTMLElement {
-        webkitRequestFullscreen?: () => Promise<void>;
-        mozRequestFullScreen?: () => Promise<void>;
-        msRequestFullscreen?: () => Promise<void>;
-      }
-      const docEl = document.documentElement as FullscreenHTMLElement;
-      if (docEl.requestFullscreen) {
-        docEl.requestFullscreen().catch((err: unknown) => {
-          console.warn('Failed to enter fullscreen:', err);
-        });
-      } else if (docEl.webkitRequestFullscreen) {
-        docEl.webkitRequestFullscreen();
-      } else if (docEl.mozRequestFullScreen) {
-        docEl.mozRequestFullScreen();
-      } else if (docEl.msRequestFullscreen) {
-        docEl.msRequestFullscreen();
-      }
+    // Avoid triggering fullscreen in dev environments unless it is a mobile device
+    if (!import.meta.env.DEV || isMobileDevice()) {
+      requestFullscreenAndLandscape().catch((err: unknown) => {
+        console.warn('Failed to enter fullscreen and landscape:', err);
+      });
     }
 
     onStartGame(customSeed !== undefined ? customSeed : seed, renderDistance, fov, loadSave);
