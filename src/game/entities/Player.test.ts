@@ -57,6 +57,31 @@ describe('Player', () => {
     expect(player.isFlying).toBe(false);
   });
 
+  test('should initialize hunger to 20', () => {
+    expect(player.hunger).toBe(20);
+  });
+
+  test('should decrease hunger when updating player in adventure mode with movement', () => {
+    useGameStore.setState({ gameMode: 'adventure' });
+    player.hunger = 20;
+    player.state.onGround = true;
+
+    // Simulate movement
+    const spyDirection = vi.spyOn(mockControls, 'getMovementDirection');
+    spyDirection.mockImplementation(() => new THREE.Vector3(1, 0, 0));
+
+    // Simulate sprinting (Shift key is pressed)
+    mockIsActionPressed.mockReturnValue(true);
+
+    // Update player to trigger exhaustion over time (sprinting on ground)
+    for (let i = 0; i < 300; i++) {
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+    }
+
+    expect(player.hunger).toBeLessThan(20);
+    spyDirection.mockRestore();
+  });
+
   test('should reset isFlying if gameMode changes to adventure', () => {
     player.isFlying = true;
     useGameStore.setState({ gameMode: 'adventure' });

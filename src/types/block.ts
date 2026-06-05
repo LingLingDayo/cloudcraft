@@ -27,6 +27,7 @@ export const BlockType = {
   SPRUCE_SAPLING: 25,
   JUNGLE_SAPLING: 26,
   PORKCHOP: 27,
+  APPLE: 28,
 } as const;
 export type BlockType = typeof BlockType[keyof typeof BlockType];
 

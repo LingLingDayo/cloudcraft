@@ -203,7 +203,8 @@ export class GameManager {
           },
           this.player.state.onGround,
           this.player.state.inWater,
-          this.player.life
+          this.player.life,
+          this.player.hunger
         );
         if (this.debugOverlayVisible) {
           useGameStore.getState().setDebugMetrics(this.getDebugMetrics());

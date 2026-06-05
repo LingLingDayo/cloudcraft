@@ -133,6 +133,7 @@ export const en = {
     25: 'Spruce Sapling',
     26: 'Jungle Sapling',
     27: 'Raw Porkchop',
+    28: 'Apple',
   },
 };
 export default en;

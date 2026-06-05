@@ -447,6 +447,16 @@ export class World {
                   );
                 }
               }
+
+              // Oak leaves have a 5% chance of dropping an apple when decaying naturally
+              if (cleanType === BLOCK_TYPES.LEAF && Math.random() < 0.05) {
+                if (this.game && this.game.droppedItems) {
+                  this.game.droppedItems.spawnItem(
+                    BLOCK_TYPES.APPLE,
+                    new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5)
+                  );
+                }
+              }
             }
           }
         }

@@ -13,6 +13,7 @@ export class Player {
   public state = { onGround: false, inWater: false };
   public isFlying = false;
   public life = 10;
+  public hunger = 20;
   public selectedBlockType: BlockType = BLOCK_TYPES.GRASS;
 
   private camera: THREE.PerspectiveCamera;
@@ -21,6 +22,8 @@ export class Player {
   private lastJumpTime = 0;
   private doubleJumpDelay = 0.25; // 250ms
   private voidDamageTimer = 0;
+  private hungerExhaustion = 0;
+  private hungerTimer = 0;
 
   constructor(camera: THREE.PerspectiveCamera, onTakeDamage?: () => void) {
     this.camera = camera;
@@ -165,6 +168,58 @@ export class Player {
       this.voidDamageTimer = 0;
     }
 
+    // Hunger system update
+    if (isCreative) {
+      this.hunger = 20;
+      this.hungerExhaustion = 0;
+    } else {
+      // 1. Calculate exhaustion based on actions
+      let deltaExhaustion = 0.003 * dt; // Base very slow decay over time
+
+      const isMoving = inputDirection.lengthSq() > 0.01;
+      if (isMoving && this.state.onGround && !this.isFlying) {
+        const isSprinting = controls.isActionPressed(GameAction.SNEAK); // Shift is sprint in this game!
+        if (isSprinting) {
+          deltaExhaustion += 0.15 * dt; // Running fast decay
+        } else {
+          deltaExhaustion += 0.04 * dt; // Walking slow decay
+        }
+      }
+
+      // Add exhaustion for jumping
+      const justJumped = canJump && this.velocity.y === physics.jumpSpeed;
+      if (justJumped) {
+        const isSprinting = controls.isActionPressed(GameAction.SNEAK);
+        deltaExhaustion += isSprinting ? 0.3 : 0.1;
+      }
+
+      this.hungerExhaustion += deltaExhaustion;
+
+      // 2. Consume hunger points when exhaustion exceeds 4.0
+      if (this.hungerExhaustion >= 4.0) {
+        this.hunger = Math.max(0, this.hunger - 1);
+        this.hungerExhaustion -= 4.0;
+      }
+
+      // 3. Health regeneration & Starvation damage ticks
+      this.hungerTimer += dt;
+      if (this.hungerTimer >= 4.0) {
+        this.hungerTimer -= 4.0;
+
+        // Health regeneration from food (hunger >= 18 and life < 10)
+        if (this.hunger >= 18 && this.life < 10) {
+          this.life = Math.min(10, this.life + 1);
+          this.hungerExhaustion += 1.5; // Regeneration drains hunger
+          if (this.onTakeDamage) this.onTakeDamage(); // Trigger UI/State updates
+        }
+
+        // Starvation damage when hunger is 0 (life > 1)
+        if (this.hunger === 0 && this.life > 1) {
+          this.takeDamage(1, world, physics);
+        }
+      }
+    }
+
     // Sync camera
     this.syncCamera();
   }
@@ -180,6 +235,7 @@ export class Player {
     if (this.life <= 0) {
       sound.playBreak();
       this.life = 10;
+      this.hunger = 20;
       this.spawn(world, physics);
     }
   }

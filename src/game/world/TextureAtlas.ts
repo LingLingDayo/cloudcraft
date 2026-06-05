@@ -537,6 +537,45 @@ export function generateTextureAtlas(): THREE.Texture {
     ctx.fillRect(sx + 8, sy + 7, 1, 2);
   }
 
+  // 33: Apple
+  {
+    const sx = (33 % 8) * tileSize;
+    const sy = Math.floor(33 / 8) * tileSize;
+    ctx.clearRect(sx, sy, tileSize, tileSize);
+
+    // Apple body (Red)
+    ctx.fillStyle = 'rgb(216, 30, 30)';
+    ctx.fillRect(sx + 4, sy + 5, 8, 8);
+    ctx.fillRect(sx + 5, sy + 4, 6, 10);
+    ctx.fillRect(sx + 3, sy + 6, 10, 6);
+    ctx.fillRect(sx + 6, sy + 3, 4, 1);
+    ctx.fillRect(sx + 5, sy + 13, 2, 1);
+    ctx.fillRect(sx + 9, sy + 13, 2, 1);
+
+    // Dark shading on the bottom/left borders
+    ctx.fillStyle = 'rgb(140, 15, 15)';
+    ctx.fillRect(sx + 3, sy + 6, 1, 6);
+    ctx.fillRect(sx + 4, sy + 11, 2, 2);
+    ctx.fillRect(sx + 5, sy + 13, 2, 1);
+    ctx.fillRect(sx + 9, sy + 13, 2, 1);
+    ctx.fillRect(sx + 10, sy + 11, 2, 1);
+
+    // Shading on the top/right borders
+    ctx.fillStyle = 'rgb(255, 70, 70)';
+    ctx.fillRect(sx + 5, sy + 4, 4, 1);
+    ctx.fillRect(sx + 11, sy + 5, 1, 4);
+
+    // Stem (Brown)
+    ctx.fillStyle = 'rgb(115, 75, 45)';
+    ctx.fillRect(sx + 7, sy + 1, 1, 3);
+    ctx.fillRect(sx + 8, sy + 2, 1, 1);
+
+    // Leaf (Green)
+    ctx.fillStyle = 'rgb(45, 150, 45)';
+    ctx.fillRect(sx + 8, sy + 1, 2, 1);
+    ctx.fillRect(sx + 9, sy + 2, 1, 1);
+  }
+
   try {
     cachedDataURL = canvas.toDataURL();
   } catch (_e) {

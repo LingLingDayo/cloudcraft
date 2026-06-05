@@ -13,6 +13,7 @@ export const createPlayerSlice: StateCreator<
   activeSlot: 0,
   hotbar: Array(9).fill(null),
   life: 10,
+  hunger: 20,
   position: { x: 8.5, y: 40, z: 8.5 },
   onGround: false,
   inWater: false,
@@ -129,12 +130,13 @@ export const createPlayerSlice: StateCreator<
   }),
 
   setLife: (life) => set({ life }),
-  setPlayerState: (position, onGround, inWater, life) =>
+  setPlayerState: (position, onGround, inWater, life, hunger) =>
     set((state) => ({
       position,
       onGround,
       inWater,
       life: life !== undefined ? life : state.life,
+      hunger: hunger !== undefined ? hunger : state.hunger,
     })),
   setIsDamaged: (isDamaged) => set({ isDamaged }),
 

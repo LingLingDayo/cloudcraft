@@ -41,6 +41,7 @@ export interface PlayerSlice {
   activeSlot: number;
   hotbar: (HotbarItem | null)[];
   life: number;
+  hunger: number;
   position: { x: number; y: number; z: number };
   onGround: boolean;
   inWater: boolean;
@@ -59,7 +60,8 @@ export interface PlayerSlice {
     position: { x: number; y: number; z: number },
     onGround: boolean,
     inWater: boolean,
-    life?: number
+    life?: number,
+    hunger?: number
   ) => void;
   setIsDamaged: (damaged: boolean) => void;
   openChest: (x: number, y: number, z: number, items: (HotbarItem | null)[]) => void;

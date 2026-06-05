@@ -216,6 +216,14 @@ export class BlockRegistry {
       textureFaces: { top: 32, bottom: 32, side: 32 },
       droppedModelType: 'cross'
     }));
+
+    this.register(new PureItem({
+      id: BLOCK_TYPES.APPLE, name: '苹果', isSolid: false, isTransparent: true, isLiquid: false,
+      hardness: -1, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'none',
+      color: '#ff2222', colorHex: 0xff2222,
+      textureFaces: { top: 33, bottom: 33, side: 33 },
+      droppedModelType: 'cross'
+    }));
   }
 
   public static get(id: number): Block {
