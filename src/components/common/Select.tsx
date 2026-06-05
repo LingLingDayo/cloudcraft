@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { sound } from '@game/systems/Sound';
 import type { SelectOption } from '@type';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import styles from './Select.module.scss';
 
 interface SelectProps {

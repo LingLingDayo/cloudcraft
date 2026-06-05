@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { Dialog } from '@components/common/Dialog';
 
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import type { HotbarItem } from '@store/types';
 import styles from './Inventory.module.scss';
 import { useGame } from '../../context/GameContext';

@@ -5,9 +5,9 @@ import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { useGameStore } from '@store/useGameStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import { SaveManager, type SaveData } from '@game/systems/SaveManager';
-import { requestFullscreenAndLandscape } from '../../utils/device';
+import { requestFullscreenAndLandscape } from '@utils/device';
 import styles from './StartMenu.module.scss';
 
 const SLIDER_CONTAINER_STYLE = { flex: 1 };

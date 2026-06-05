@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import { useGame } from '../../context/GameContext';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { World, WORLD_HEIGHT } from '@game/world/World';
 import * as THREE from 'three';
-import { isMobileDevice } from '../../utils/device';
+import { isMobileDevice } from '@utils/device';
 import styles from './Minimap.module.scss';
 
 // Safe block getter to avoid generating chunk data on the UI thread
