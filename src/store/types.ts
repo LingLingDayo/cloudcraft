@@ -10,6 +10,7 @@ export interface GameSlice {
   autoJump: boolean;
   dpadSize: number;
   miningProgress: number | null;
+  showMinimap: boolean;
   
   isSettingsOpen: boolean;
   settingsSource: 'hud' | 'menu' | null;
@@ -28,6 +29,7 @@ export interface GameSlice {
   setAutoJump: (autoJump: boolean) => void;
   setDpadSize: (size: number) => void;
   setMiningProgress: (progress: number | null) => void;
+  setShowMinimap: (show: boolean) => void;
   setIsSettingsOpen: (open: boolean, source?: 'hud' | 'menu' | null) => void;
   
   // Loading actions

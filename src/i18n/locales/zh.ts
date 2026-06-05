@@ -91,6 +91,8 @@ export const zh = {
     chestItems: '箱子物品',
     hotbar: '快捷栏',
     debugTitle: '调试控制台 (F3)',
+    minimap: '小地图',
+    spawnPoint: '出生点',
   },
   inventory: {
     titleCreative: '创造模式物品栏',

@@ -91,6 +91,8 @@ export const en = {
     chestItems: 'Chest Items',
     hotbar: 'Hotbar',
     debugTitle: 'Debug Panel (F3)',
+    minimap: 'Minimap',
+    spawnPoint: 'Spawn Point',
   },
   inventory: {
     titleCreative: 'Creative Inventory',

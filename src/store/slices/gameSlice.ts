@@ -18,6 +18,7 @@ export const createGameSlice: StateCreator<
   autoJump: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_auto_jump') !== 'false' : true,
   dpadSize: typeof localStorage !== 'undefined' ? Number(localStorage.getItem('minicraft_dpad_size') || 180) : 180,
   miningProgress: null,
+  showMinimap: typeof localStorage !== 'undefined' ? localStorage.getItem('minicraft_show_minimap') !== 'false' : true,
   isSettingsOpen: false,
   settingsSource: null,
 
@@ -69,6 +70,12 @@ export const createGameSlice: StateCreator<
     return { dpadSize };
   }),
   setMiningProgress: (miningProgress) => set({ miningProgress }),
+  setShowMinimap: (showMinimap) => set(() => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('minicraft_show_minimap', String(showMinimap));
+    }
+    return { showMinimap };
+  }),
 
   // Loading actions implementation
   setWorldLoading: (isWorldLoading) => set({ isWorldLoading }),

@@ -31,6 +31,7 @@ describe('useGameStore', () => {
       worldLoadingProgress: 0,
       worldLoadingStage: 'engine',
       chunkLoadingStates: {},
+      showMinimap: true,
     });
   });
 
@@ -60,6 +61,7 @@ describe('useGameStore', () => {
     expect(state.worldLoadingProgress).toBe(0);
     expect(state.worldLoadingStage).toBe('engine');
     expect(state.chunkLoadingStates).toEqual({});
+    expect(state.showMinimap).toBe(true);
   });
 
   test('should set game state via setGameState', () => {
@@ -285,5 +287,13 @@ describe('useGameStore', () => {
     store.setChunkLoadingState('2,1', true);
     store.setChunkLoadingState('2,2', true);
     expect(useGameStore.getState().worldLoadingProgress).toBe(100);
+  });
+
+  test('should set show minimap via setShowMinimap', () => {
+    useGameStore.getState().setShowMinimap(false);
+    expect(useGameStore.getState().showMinimap).toBe(false);
+
+    useGameStore.getState().setShowMinimap(true);
+    expect(useGameStore.getState().showMinimap).toBe(true);
   });
 });
