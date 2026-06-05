@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import { useGame } from '../../context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
 import { GameState } from '@type';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
-import { isMobileDevice } from '../../utils/device';
-import { clamp } from '../../utils/math';
+import { isMobileDevice } from '@utils/device';
+import { clamp } from '@utils/math';
 import styles from './MobileControls.module.scss';
 
 // Pixel Art Icons

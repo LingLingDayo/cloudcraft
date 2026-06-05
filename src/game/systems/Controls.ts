@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hotkeyManager, GameAction } from './HotkeyManager';
-import { isMobileDevice } from '../../utils/device';
+import { isMobileDevice } from '@utils/device';
 import { useGameStore } from '@store/useGameStore';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 

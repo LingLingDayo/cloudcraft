@@ -1,5 +1,5 @@
 import React from 'react';
-import { useBackToClose } from '../../hooks/useBackToClose';
+import { useBackToClose } from '@hooks/useBackToClose';
 import styles from './Dialog.module.scss';
 
 interface DialogProps {

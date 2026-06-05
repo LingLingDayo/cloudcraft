@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGameStore } from '@store/useGameStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import { getBlockProperties } from '@game/world/BlockConfig';
 import styles from './HUD.module.scss';
@@ -9,8 +9,8 @@ import { Inventory } from './Inventory';
 import { useGame } from '../../context/GameContext';
 import { BlockIcon } from './ItemIcon';
 import { MobileControls, PixelDotsIcon } from './MobileControls';
-import { formatCoordinate } from '../../utils/helpers';
-import { isMobileDevice } from '../../utils/device';
+import { formatCoordinate } from '@utils/helpers';
+import { isMobileDevice } from '@utils/device';
 import { Minimap } from './Minimap';
 
 const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (

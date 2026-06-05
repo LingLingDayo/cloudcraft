@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { GameStoreState, GameSlice } from '../types';
 import { GameState, GameMode, ItemType } from '@type';
 import { CREATIVE_DEFAULT_HOTBAR } from './playerSlice';
-import { getSystemSettings, saveSystemSetting } from '../../utils/settings';
+import { getSystemSettings, saveSystemSetting } from '@utils/settings';
 
 export const createGameSlice: StateCreator<
   GameStoreState,

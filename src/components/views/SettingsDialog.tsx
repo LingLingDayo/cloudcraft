@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import { useGameStore } from '@store/useGameStore';
 import { GameMode, type Language } from '@type';
 import { Button } from '@components/common/Button';
@@ -8,9 +8,9 @@ import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
 import { SaveManager } from '@game/systems/SaveManager';
-import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from '../../utils/device';
-import { useBackToClose } from '../../hooks/useBackToClose';
-import { getSystemSettings, saveSystemSetting } from '../../utils/settings';
+import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from '@utils/device';
+import { useBackToClose } from '@hooks/useBackToClose';
+import { getSystemSettings, saveSystemSetting } from '@utils/settings';
 import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {

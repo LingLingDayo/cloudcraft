@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { PauseMenuProps } from '@type';
 import { Button } from '@components/common/Button';
 import { Dialog } from '@components/common/Dialog';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import { SettingsDialog } from './SettingsDialog';
 import { useGameStore } from '@store/useGameStore';
 import styles from './PauseMenu.module.scss';

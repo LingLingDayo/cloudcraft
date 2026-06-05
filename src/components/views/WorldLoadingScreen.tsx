@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 import styles from './WorldLoadingScreen.module.scss';
 
 // Generate procedural pixelated dirt texture for tiling background

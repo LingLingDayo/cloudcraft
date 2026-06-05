@@ -7,7 +7,7 @@ import styles from './GameStage.module.scss';
 import { GameState, GameMode, type ItemType } from '@type';
 import { GameProvider } from '../../context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
-import { useTranslation } from '../../i18n';
+import { useTranslation } from '@i18n';
 
 interface GameStageProps {
   seed: string;
