@@ -45,6 +45,7 @@ export const zh = {
     title: '游戏设置',
     general: '常规设置',
     graphics: '画面设置',
+    fullscreen: '全屏显示',
     controls: '操作方式',
     controlsTitle: '按键与鼠标控制',
     done: '完成',
