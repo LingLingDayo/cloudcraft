@@ -5,6 +5,7 @@ import { useGame } from '../../context/GameContext';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { World } from '@game/world/World';
 import * as THREE from 'three';
+import { isMobileDevice } from '../../utils/device';
 import styles from './Minimap.module.scss';
 
 // Safe block getter to avoid generating chunk data on the UI thread
@@ -274,7 +275,7 @@ export const Minimap: React.FC = () => {
   if (!showMinimap || !gameInstance) return null;
 
   return (
-    <div className={styles.minimapContainer}>
+    <div className={`${styles.minimapContainer} ${isMobileDevice() ? styles.isMobile : ''}`}>
       <div className={styles.minimapWrapper}>
         <canvas ref={canvasRef} className={styles.minimapCanvas} />
         {/* N S E W indicators overlay */}

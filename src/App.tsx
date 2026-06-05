@@ -4,7 +4,6 @@ import { WorldLoadingScreen } from '@components/views/WorldLoadingScreen';
 import { useGameStore } from '@store/useGameStore';
 import styles from './App.module.scss';
 import { GameState } from '@type';
-import { isMobileDevice } from './utils/device';
 
 // Lazy load the 3D game engine and canvas components
 const GameStage = lazy(() => import('@components/views/GameStage'));
@@ -39,8 +38,8 @@ function App() {
     document.addEventListener('gesturestart', handleGestureStart, { passive: false });
 
     // Silent fullscreen attempt on mount (may fail silently due to lack of user gesture, which is expected)
-    // Avoid triggering fullscreen in mobile dev environments
-    if (!(import.meta.env.DEV && isMobileDevice())) {
+    // Avoid triggering fullscreen in dev environments
+    if (!import.meta.env.DEV) {
       interface FullscreenHTMLElement extends HTMLElement {
         webkitRequestFullscreen?: () => Promise<void>;
         mozRequestFullScreen?: () => Promise<void>;
