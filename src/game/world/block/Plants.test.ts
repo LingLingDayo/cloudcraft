@@ -159,13 +159,13 @@ describe('Plant and Flower System', () => {
     expect((seedItem as any).hungerAmount).toBe(0.5);
     expect((seedItem as any).healAmount).toBe(0);
 
-    const playerWithHunger = { hunger: 18, life: 10 };
-    expect(seedItem.canUse(playerWithHunger)).toBe(true);
+    // 使用新的多态 API: onUse(ctx) 返回 ItemUseResult | null
+    const ctxHungry = { player: { hunger: 18, life: 10 }, gameMode: 'adventure' as any };
+    const result = seedItem.onUse(ctxHungry);
+    expect(result).not.toBeNull();
+    expect(result).toEqual({ consumed: true, hungerDelta: 0.5, healDelta: 0 });
 
-    const playerFull = { hunger: 20, life: 10 };
-    expect(seedItem.canUse(playerFull)).toBe(false);
-
-    const effect = seedItem.onUse(playerWithHunger);
-    expect(effect).toEqual({ hungerDelta: 0.5, healDelta: 0 });
+    const ctxFull = { player: { hunger: 20, life: 10 }, gameMode: 'adventure' as any };
+    expect(seedItem.onUse(ctxFull)).toBeNull();
   });
 });

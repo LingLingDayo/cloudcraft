@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { Dialog } from '@components/common/Dialog';
-import { BLOCK_TYPES } from '@game/world/BlockConfig';
+
 import { useTranslation } from '../../i18n';
 import type { HotbarItem } from '@store/types';
 import styles from './Inventory.module.scss';
 import { useGame } from '../../context/GameContext';
-import { BlockIcon } from './BlockIcon';
+import { BlockIcon } from './ItemIcon';
 import { ItemType } from '@type';
-import { ItemRegistry } from '@game/item/ItemRegistry';
 
 // Available items list for creative mode
 const ALL_ITEMS: ItemType[] = Object.values(ItemType);
@@ -94,12 +93,10 @@ export const Inventory: React.FC = () => {
 
     // Update Zustand store
     const activeItem = nextHotbar[currentStore.activeSlot];
-    const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
     const selectedItem = activeItem ? activeItem.type : null;
     useGameStore.setState({
       hotbar: nextHotbar,
       inventory: nextInventory,
-      selectedBlock,
       selectedItem,
     });
   };
@@ -120,12 +117,10 @@ export const Inventory: React.FC = () => {
     nextInventory: (HotbarItem | null)[]
   ) => {
     const activeItem = nextHotbar[activeSlot];
-    const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
     const selectedItem = activeItem ? activeItem.type : null;
     useGameStore.setState({
       hotbar: nextHotbar,
       inventory: nextInventory,
-      selectedBlock,
       selectedItem,
     });
   };
@@ -302,7 +297,7 @@ export const Inventory: React.FC = () => {
                       key={itemId}
                       className={styles.itemSlot}
                       onClick={() => handleSlotClick('creative', idx, itemId)}
-                      title={t(`blocks.${itemId}`)}
+                      title={t(`items.${itemId}`)}
                     >
                       <BlockIcon itemId={itemId} size={18} className={styles.itemPreview} />
                     </div>

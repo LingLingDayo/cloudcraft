@@ -110,7 +110,7 @@ export const zh = {
     engine: '加载游戏引擎及资源',
     chunks: '已加载区块: {{loaded}} / {{total}}',
   },
-  blocks: {
+  items: {
     air: '空气',
     dandelion: '蒲公英',
     poppy: '玫瑰',

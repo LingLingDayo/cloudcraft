@@ -4,16 +4,18 @@ import { getTextureAtlasDataURL } from '@game/world/TextureAtlas';
 import { ItemType } from '@type';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import { BlockItem } from '@game/item/Item';
-import styles from './BlockIcon.module.scss';
+import styles from './ItemIcon.module.scss';
 
-interface BlockIconProps {
-  blockId?: ItemType;
+interface ItemIconProps {
+  /** 物品 ID（统一入口，替代原 blockId / itemId 双参数） */
   itemId?: ItemType;
+  /** @deprecated 向后兼容别名，等同于 itemId */
+  blockId?: ItemType;
   size?: number | string;
   className?: string;
 }
 
-export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, itemId, size, className }) => {
+export const ItemIcon: React.FC<ItemIconProps> = ({ blockId, itemId, size, className }) => {
   const id = itemId ?? blockId;
   if (!id) {
     return null;
@@ -122,3 +124,6 @@ export const BlockIcon: React.FC<BlockIconProps> = ({ blockId, itemId, size, cla
     </div>
   );
 };
+
+/** @deprecated 向后兼容导出，请使用 ItemIcon */
+export const BlockIcon = ItemIcon;

@@ -7,7 +7,7 @@ import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
 import { useGame } from '../../context/GameContext';
-import { BlockIcon } from './BlockIcon';
+import { BlockIcon } from './ItemIcon';
 import { MobileControls, PixelDotsIcon } from './MobileControls';
 import { formatCoordinate } from '../../utils/helpers';
 import { isMobileDevice } from '../../utils/device';
@@ -178,7 +178,7 @@ export const HUD: React.FC = () => {
     const activeItem = state.hotbar[state.activeSlot];
     if (activeItem && selectedItem) {
       const frameId = requestAnimationFrame(() => {
-        setActiveLabel(t(`blocks.${selectedItem}`));
+        setActiveLabel(t(`items.${selectedItem}`));
       });
 
       const timeout = window.setTimeout(() => {
@@ -337,7 +337,7 @@ export const HUD: React.FC = () => {
             <span className={styles.label}>{t('hud.targetBlock')}:</span>
             {debugMetrics.targetBlock ? (
               <div className={styles.detail}>
-                  <div>{t('hud.targetBlockName')}: <span className={styles.blockName}>{t(`blocks.${getBlockProperties(debugMetrics.targetBlock.id).translationKey}`)}</span></div>
+                  <div>{t('hud.targetBlockName')}: <span className={styles.blockName}>{t(`items.${getBlockProperties(debugMetrics.targetBlock.id).translationKey}`)}</span></div>
                 <div>{t('hud.targetBlockCoords')}: <span className={styles.blockCoords}>({debugMetrics.targetBlock.x}, {debugMetrics.targetBlock.y}, {debugMetrics.targetBlock.z})</span></div>
               </div>
             ) : (

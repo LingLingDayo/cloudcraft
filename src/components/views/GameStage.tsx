@@ -4,8 +4,7 @@ import { HUD } from './HUD';
 import { PauseMenu } from './PauseMenu';
 import { useGameStore } from '@store/useGameStore';
 import styles from './GameStage.module.scss';
-import { GameState, GameMode, type BlockType } from '@type';
-import { ItemRegistry } from '@game/item/ItemRegistry';
+import { GameState, GameMode, type ItemType } from '@type';
 import { GameProvider } from '../../context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
 import { useTranslation } from '../../i18n';
@@ -19,7 +18,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
   const { t } = useTranslation();
   const gameState = useGameStore((state) => state.gameState);
   const setGameState = useGameStore((state) => state.setGameState);
-  const selectedBlock = useGameStore((state) => state.selectedBlock);
+  const selectedItem = useGameStore((state) => state.selectedItem);
   const isDamaged = useGameStore((state) => state.isDamaged);
   const renderDistance = useGameStore((state) => state.renderDistance);
   const fov = useGameStore((state) => state.fov);
@@ -29,11 +28,11 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
-  const selectedBlockRef = useRef<BlockType>(selectedBlock);
+  const selectedItemRef = useRef<ItemType | null>(selectedItem);
 
   useEffect(() => {
-    selectedBlockRef.current = selectedBlock;
-  }, [selectedBlock]);
+    selectedItemRef.current = selectedItem;
+  }, [selectedItem]);
 
   // Initialize GameManager once the canvas is mounted
   useEffect(() => {
@@ -46,7 +45,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
       // Apply initial settings
       gm.setRenderDistance(renderDistance);
       gm.setFov(fov);
-      gm.player.selectedBlockType = selectedBlockRef.current;
+      gm.player.selectedItemType = selectedItemRef.current;
 
       gameManagerRef.current = gm;
 
@@ -79,7 +78,6 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
                     hotbar: saved.hotbar,
                     inventory: loadedInventory,
                     activeSlot: saved.activeSlot ?? 0,
-                    selectedBlock: saved.hotbar[saved.activeSlot ?? 0] ? ItemRegistry.getBlockTypeFromItemType(saved.hotbar[saved.activeSlot ?? 0]!.type) : 0,
                     selectedItem: saved.hotbar[saved.activeSlot ?? 0]?.type ?? null
                   });
                 }
@@ -105,13 +103,13 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
     };
   }, [seed, loadSave]);
 
-  // Synchronize selected block to GameManager
+  // Synchronize selected item to GameManager
   useEffect(() => {
     const gm = gameManagerRef.current;
     if (gm) {
-      gm.player.selectedBlockType = selectedBlock;
+      gm.player.selectedItemType = selectedItem;
     }
-  }, [selectedBlock]);
+  }, [selectedItem]);
 
   // Synchronize render distance to GameManager
   useEffect(() => {

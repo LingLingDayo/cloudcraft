@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, PlayerSlice } from '../types';
 import { BLOCK_TYPES } from '@game/world/World';
-import { GameMode, ItemType } from '@type';
+import { GameMode, ItemType, BlockType } from '@type';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import type { HotbarItem } from '../types';
 
@@ -18,13 +18,18 @@ export const CREATIVE_DEFAULT_HOTBAR: HotbarItem[] = [
   { type: ItemType.DIAMOND, count: 1 },
 ];
 
+/** 派生查询：当前手持物品对应的 BlockType（无则返回 AIR） */
+export function getSelectedBlockType(state: { selectedItem: ItemType | null }): BlockType {
+  if (!state.selectedItem) return BLOCK_TYPES.AIR;
+  return ItemRegistry.getBlockTypeFromItemType(state.selectedItem);
+}
+
 export const createPlayerSlice: StateCreator<
   GameStoreState,
   [],
   [],
   PlayerSlice
 > = (set) => ({
-  selectedBlock: BLOCK_TYPES.AIR,
   selectedItem: null,
   activeSlot: 0,
   hotbar: Array(9).fill(null),
@@ -40,29 +45,14 @@ export const createPlayerSlice: StateCreator<
   inventory: Array(54).fill(null),
 
 
-  setSelectedBlock: (selectedBlock) => set((state) => {
-    const itemType = ItemRegistry.getItemTypeFromBlockType(selectedBlock);
-    return {
-      selectedBlock,
-      selectedItem: itemType ?? state.selectedItem,
-    };
-  }),
-
-  setSelectedItem: (selectedItem) => set(() => {
-    const blockType = selectedItem
-      ? ItemRegistry.getBlockTypeFromItemType(selectedItem)
-      : BLOCK_TYPES.AIR;
-    return {
-      selectedItem,
-      selectedBlock: blockType,
-    };
-  }),
+  setSelectedItem: (selectedItem) => set(() => ({
+    selectedItem,
+  })),
   
   setActiveSlot: (activeSlot) => set((state) => {
     const item = state.hotbar[activeSlot];
     const selectedItem = item ? item.type : null;
-    const selectedBlock = item ? ItemRegistry.getBlockTypeFromItemType(item.type) : BLOCK_TYPES.AIR;
-    return { activeSlot, selectedBlock, selectedItem };
+    return { activeSlot, selectedItem };
   }),
 
   addToHotbar: (itemType, count = 1) => {
@@ -108,8 +98,7 @@ export const createPlayerSlice: StateCreator<
       if (success) {
         const activeItem = nextHotbar[state.activeSlot];
         const selectedItem = activeItem ? activeItem.type : null;
-        const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
-        return { hotbar: nextHotbar, inventory: nextInventory, selectedBlock, selectedItem };
+        return { hotbar: nextHotbar, inventory: nextInventory, selectedItem };
       }
       return {};
     });
@@ -130,8 +119,7 @@ export const createPlayerSlice: StateCreator<
       }
       const activeItem = nextHotbar[state.activeSlot];
       const selectedItem = activeItem ? activeItem.type : null;
-      const selectedBlock = activeItem ? ItemRegistry.getBlockTypeFromItemType(activeItem.type) : BLOCK_TYPES.AIR;
-      return { hotbar: nextHotbar, selectedBlock, selectedItem };
+      return { hotbar: nextHotbar, selectedItem };
     }
     return {};
   }),
@@ -141,7 +129,6 @@ export const createPlayerSlice: StateCreator<
       return {
         hotbar: [...CREATIVE_DEFAULT_HOTBAR],
         activeSlot: 0,
-        selectedBlock: BLOCK_TYPES.GRASS,
         selectedItem: ItemType.GRASS,
         inventory: Array(54).fill(null),
       };
@@ -149,7 +136,6 @@ export const createPlayerSlice: StateCreator<
       return {
         hotbar: Array(9).fill(null),
         activeSlot: 0,
-        selectedBlock: BLOCK_TYPES.AIR,
         selectedItem: null,
         inventory: Array(54).fill(null),
       };
@@ -225,4 +211,3 @@ export const createPlayerSlice: StateCreator<
     });
   }
 });
-

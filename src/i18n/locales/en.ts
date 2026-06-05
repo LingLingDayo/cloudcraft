@@ -110,7 +110,7 @@ export const en = {
     engine: 'Loading Engine & Resources',
     chunks: 'Loading Chunks: {{loaded}} / {{total}}',
   },
-  blocks: {
+  items: {
     air: 'Air',
     dandelion: 'Dandelion',
     poppy: 'Poppy',
