@@ -8,6 +8,7 @@ export interface GameSlice {
   gameMode: GameMode;
   language: Language;
   autoJump: boolean;
+  dpadSize: number;
   miningProgress: number | null;
   
   isSettingsOpen: boolean;
@@ -25,6 +26,7 @@ export interface GameSlice {
   setGameMode: (mode: GameMode) => void;
   setLanguage: (lang: Language) => void;
   setAutoJump: (autoJump: boolean) => void;
+  setDpadSize: (size: number) => void;
   setMiningProgress: (progress: number | null) => void;
   setIsSettingsOpen: (open: boolean, source?: 'hud' | 'menu' | null) => void;
   

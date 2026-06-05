@@ -53,6 +53,9 @@ export const zh = {
     version: '版本: {{version}}',
     noSaveData: '没有找到存档数据！',
     exportFailed: '导出存档失败',
+    mobileControls: '移动端控制',
+    dpadSize: '方向键大小',
+    dpadSizeValue: '{{val}} 像素',
   },
   controls: {
     keyboard: '键盘操作',

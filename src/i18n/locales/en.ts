@@ -53,6 +53,9 @@ export const en = {
     version: 'Version: {{version}}',
     noSaveData: 'No save data found!',
     exportFailed: 'Failed to export save',
+    mobileControls: 'Mobile Controls',
+    dpadSize: 'D-pad Size',
+    dpadSizeValue: '{{val}} px',
   },
   controls: {
     keyboard: 'Keyboard Controls',
