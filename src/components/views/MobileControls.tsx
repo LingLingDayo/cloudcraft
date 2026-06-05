@@ -40,7 +40,7 @@ const PixelGearIcon: React.FC = () => (
   </svg>
 );
 
-const PixelChestIcon: React.FC = () => (
+export const PixelChestIcon: React.FC = () => (
   <svg
     width="24"
     height="24"
@@ -376,16 +376,7 @@ export const MobileControls: React.FC = () => {
           >
             <PixelGearIcon />
           </button>
-          <button 
-            className={`${styles.toolbarBtn} glass-panel`} 
-            onClick={() => {
-              useGameStore.getState().toggleInventory();
-              setToolbarExpanded(false);
-            }}
-            title={t('controls.openInventory')}
-          >
-            <PixelChestIcon />
-          </button>
+
           <button 
             className={`${styles.toolbarBtn} glass-panel`} 
             onClick={() => {
