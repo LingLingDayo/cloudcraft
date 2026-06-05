@@ -33,13 +33,25 @@ export interface SafeScreenOrientation {
   unlock?: () => void;
 }
 
+let devMode = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.DEV : false;
+
+export const setDevModeForTesting = (val: boolean) => {
+  devMode = val;
+};
+
 /**
  * 尝试让移动端设备进入横屏，再触发全屏
  */
 export const requestFullscreenAndLandscape = async (element: HTMLElement = document.documentElement) => {
+  if (devMode) {
+    console.warn('[DEV] requestFullscreenAndLandscape bypassed in development environment');
+    return;
+  }
   const isMobile = isMobileDevice();
 
   const orientation = (typeof window !== 'undefined' && window.screen && window.screen.orientation) as unknown as SafeScreenOrientation | undefined;
+
+
 
   // 1. 如果是移动端，先尝试触发横屏锁定
   if (isMobile && orientation && orientation.lock) {
@@ -82,9 +94,15 @@ export const requestFullscreenAndLandscape = async (element: HTMLElement = docum
  * 退出全屏并解除屏幕锁定
  */
 export const exitFullscreenAndUnlock = async () => {
+  if (devMode) {
+    console.warn('[DEV] exitFullscreenAndUnlock bypassed in development environment');
+    return;
+  }
   const isMobile = isMobileDevice();
 
   const orientation = (typeof window !== 'undefined' && window.screen && window.screen.orientation) as unknown as SafeScreenOrientation | undefined;
+
+
 
   // 1. 解锁屏幕方向
   if (isMobile && orientation && orientation.unlock) {
