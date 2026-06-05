@@ -23,6 +23,9 @@ export interface BlockProperties {
   renderAdjacentSameType?: boolean; // 当相邻方块是相同类型时是否依然渲染邻面 (例如树叶)
   renderInternalCross?: boolean;     // 是否在方块内部渲染交叉的斜对角平面 (例如树叶的高级效果)
   isCrossModel?: boolean;            // 是否作为交叉的斜对角平面模型渲染 (而非普通的立方体方块)
+  crossScaleW?: number;              // 交叉模型宽度缩放比例 (如 0.6)
+  crossScaleH?: number;              // 交叉模型高度缩放比例 (如 0.7)
+  enableCrossOffset?: boolean;       // 是否启用斜对角平面随机微调偏移 (避免完美网格对齐)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
 }
@@ -370,6 +373,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.7,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.BIRCH_SAPLING]: {
@@ -390,6 +396,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.7,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.SPRUCE_SAPLING]: {
@@ -410,6 +419,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.7,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.JUNGLE_SAPLING]: {
@@ -430,6 +442,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.7,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.DANDELION]: {
@@ -450,6 +465,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.65,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.POPPY]: {
@@ -470,6 +488,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.65,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.BLUE_ORCHID]: {
@@ -490,6 +511,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.65,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.ALLIUM]: {
@@ -510,6 +534,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.65,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.OXEYE_DAISY]: {
@@ -530,6 +557,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.6,
+    crossScaleH: 0.65,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.TALL_GRASS]: {
@@ -550,6 +580,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 0.85,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.FERN]: {
@@ -570,6 +603,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 0.85,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.DEAD_BUSH]: {
@@ -590,6 +626,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.75,
+    crossScaleH: 0.75,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.SUNFLOWER_BOTTOM]: {
@@ -610,6 +649,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.SUNFLOWER_TOP]: {
@@ -630,6 +672,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.ROSE_BUSH_BOTTOM]: {
@@ -650,6 +695,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.ROSE_BUSH_TOP]: {
@@ -670,6 +718,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.PEONY_BOTTOM]: {
@@ -690,6 +741,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.PEONY_TOP]: {
@@ -710,6 +764,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.LILAC_BOTTOM]: {
@@ -730,6 +787,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.LILAC_TOP]: {
@@ -750,6 +810,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM]: {
@@ -770,6 +833,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
   [BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP]: {
@@ -790,6 +856,9 @@ export const BLOCK_PROPERTIES: Record<number, BlockProperties> = {
     droppedModelType: 'cross',
     isCollidable: false,
     isCrossModel: true,
+    crossScaleW: 0.85,
+    crossScaleH: 1.0,
+    enableCrossOffset: true,
     canSpawnOn: false,
   },
 };
