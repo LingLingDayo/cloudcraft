@@ -7,7 +7,7 @@ import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
 import { useGame } from '../../context/GameContext';
 import { BlockIcon } from './BlockIcon';
-import { MobileControls, PixelChestIcon } from './MobileControls';
+import { MobileControls, PixelDotsIcon } from './MobileControls';
 import { formatCoordinate } from '../../utils/helpers';
 import { isMobileDevice } from '../../utils/device';
 import { Minimap } from './Minimap';
@@ -309,7 +309,7 @@ export const HUD: React.FC = () => {
               }}
               title={t('controls.openInventory')}
             >
-              <PixelChestIcon />
+              <PixelDotsIcon />
             </div>
           )}
         </div>

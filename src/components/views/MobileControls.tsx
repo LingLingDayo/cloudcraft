@@ -76,6 +76,24 @@ export const PixelChestIcon: React.FC = () => (
   </svg>
 );
 
+export const PixelDotsIcon: React.FC = () => {
+  const d = "M3,7h2v2h-2z M7,7h2v2h-2z M11,7h2v2h-2z";
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 16 16"
+      style={{ imageRendering: 'pixelated' }}
+      fillRule="evenodd"
+    >
+      {/* Shadow: black fill, shifted 1px down */}
+      <path d={d} transform="translate(0, 1)" fill="#181818" />
+      {/* Main Icon: white fill */}
+      <path d={d} fill="#ffffff" />
+    </svg>
+  );
+};
+
 const PixelSaveIcon: React.FC = () => {
   const dOuter = "M2,2h10l1,1v10h-11z M4,7h8v5h-8z M7,4h1v2h-1z M3,11h1v1h-1z";
   const dInner = "M5,9h6v1h-6z M5,11h4v1h-4z";
