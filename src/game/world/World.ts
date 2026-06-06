@@ -35,7 +35,7 @@ export class World {
   private originalBlocks: Map<string, Map<string, number>>;
 
   private seed: string;
-  private generator: WorldGenerator;
+  public generator: WorldGenerator;
   private renderer: ChunkRenderer;
   private pendingGenerationQueue: string[] = [];
   private pendingMeshQueue: string[] = [];

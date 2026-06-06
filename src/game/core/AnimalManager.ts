@@ -181,6 +181,10 @@ export class AnimalManager {
     return null;
   }
 
+  public getCount(): number {
+    return this.animals.length;
+  }
+
   public dispose() {
     this.animals.forEach(a => {
       this.game.scene.remove(a.mesh);
