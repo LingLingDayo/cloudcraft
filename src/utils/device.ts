@@ -1,5 +1,7 @@
 import variables from '@styles/variables.module.scss';
 
+let devMode = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.DEV : false;
+
 let cachedIsMobile: boolean | null = null;
 
 const checkIsMobile = (): boolean => {
@@ -10,10 +12,10 @@ const checkIsMobile = (): boolean => {
   // 针对 iPadOS 上的 Safari 浏览器（其 userAgent 默认伪装为 Macintosh）
   const isMaciPad = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 
-  // 页面宽度小于 variables.breakpointMobile (默认 1024px) 判定为移动端
+  // 页面宽度小于 variables.breakpointMobile (默认 1024px) 且在开发环境下判定为移动端
   const parsedBreakpoint = parseInt(variables?.breakpointMobile, 10);
   const breakpoint = isNaN(parsedBreakpoint) ? 1024 : parsedBreakpoint;
-  const isSmallScreen = window.innerWidth < breakpoint;
+  const isSmallScreen = devMode && (window.innerWidth < breakpoint);
 
   return isMobileUA || isMaciPad || isSmallScreen;
 };
@@ -63,8 +65,6 @@ export interface SafeScreenOrientation {
   lock?: (orientation: 'any' | 'natural' | 'landscape' | 'portrait' | 'portrait-primary' | 'portrait-secondary' | 'landscape-primary' | 'landscape-secondary') => Promise<void>;
   unlock?: () => void;
 }
-
-let devMode = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.DEV : false;
 
 export const setDevModeForTesting = (val: boolean) => {
   devMode = val;
