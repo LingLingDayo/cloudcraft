@@ -8,6 +8,7 @@ import styles from './Inventory.module.scss';
 import { useGame } from '@context/GameContext';
 import { BlockIcon } from './ItemIcon';
 import { ItemType } from '@type';
+import { ItemRegistry } from '@game/item/ItemRegistry';
 
 // Available items list for creative mode
 const ALL_ITEMS: ItemType[] = Object.values(ItemType);
@@ -136,12 +137,13 @@ export const Inventory: React.FC = () => {
 
     if (zone === 'creative') {
       const clickedBlockId = blockId!;
+      const maxStackSize = ItemRegistry.get(clickedBlockId).maxStackSize;
       // Left click on creative item
       if (!heldItem) {
-        // Pick up a full stack (64)
+        // Pick up a full stack (maxStackSize)
         setHeldItem({
           type: clickedBlockId,
-          count: 64,
+          count: maxStackSize,
           source: 'creative',
           sourceIndex: index,
         });
@@ -149,7 +151,7 @@ export const Inventory: React.FC = () => {
         // If holding something, clear it and pick up the new item
         setHeldItem({
           type: clickedBlockId,
-          count: 64,
+          count: maxStackSize,
           source: 'creative',
           sourceIndex: index,
         });
@@ -193,14 +195,38 @@ export const Inventory: React.FC = () => {
       else {
         // Same type - merge counts (creative has no limits, survival merges up to max or just adds up)
         if (currentItem.type === heldItem.type) {
-          const newCount = currentItem.count + heldItem.count;
-          if (zone === 'hotbar') {
-            nextHotbar[index] = { type: currentItem.type, count: newCount };
+          const maxStackSize = ItemRegistry.get(currentItem.type).maxStackSize;
+          if (gameMode === 'creative') {
+            const newCount = currentItem.count + heldItem.count;
+            if (zone === 'hotbar') {
+              nextHotbar[index] = { type: currentItem.type, count: newCount };
+            } else {
+              nextInventory[index] = { type: currentItem.type, count: newCount };
+            }
+            syncStore(nextHotbar, nextInventory);
+            setHeldItem(null);
           } else {
-            nextInventory[index] = { type: currentItem.type, count: newCount };
+            const canFit = maxStackSize - currentItem.count;
+            if (canFit > 0) {
+              const toAdd = Math.min(heldItem.count, canFit);
+              const newCount = currentItem.count + toAdd;
+              const remaining = heldItem.count - toAdd;
+              if (zone === 'hotbar') {
+                nextHotbar[index] = { type: currentItem.type, count: newCount };
+              } else {
+                nextInventory[index] = { type: currentItem.type, count: newCount };
+              }
+              syncStore(nextHotbar, nextInventory);
+              if (remaining > 0) {
+                setHeldItem({
+                  ...heldItem,
+                  count: remaining,
+                });
+              } else {
+                setHeldItem(null);
+              }
+            }
           }
-          syncStore(nextHotbar, nextInventory);
-          setHeldItem(null);
         } 
         // Different type - swap held item with slot item
         else {

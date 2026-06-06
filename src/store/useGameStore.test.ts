@@ -230,13 +230,22 @@ describe('useGameStore', () => {
   test('should add items to inventory if hotbar is full in adventure mode', () => {
     // Fill hotbar
     useGameStore.setState({
-      hotbar: Array(9).fill({ type: ItemType.DIRT, count: 64 }),
+      hotbar: Array(9).fill({ type: ItemType.DIRT, count: 100 }),
     });
 
     const success = useGameStore.getState().addToHotbar(ItemType.STONE, 10);
     expect(success).toBe(true);
     // Should be in inventory
     expect(useGameStore.getState().inventory[0]).toEqual({ type: ItemType.STONE, count: 10 });
+  });
+
+  test('should respect maxStackSize (100) when adding items to hotbar and inventory', () => {
+    // Add 150 STONE
+    // Since maxStackSize is 100, it should fill first hotbar slot with 100 and second hotbar slot with 50
+    const success = useGameStore.getState().addToHotbar(ItemType.STONE, 150);
+    expect(success).toBe(true);
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.STONE, count: 100 });
+    expect(useGameStore.getState().hotbar[1]).toEqual({ type: ItemType.STONE, count: 50 });
   });
 
   test('should set language via setLanguage', () => {
