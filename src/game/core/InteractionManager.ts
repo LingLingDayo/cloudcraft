@@ -33,6 +33,14 @@ export class InteractionManager {
   private lastCreativeBreakTime = 0;
   private lastCreativeBreakPos = new THREE.Vector3();
 
+  // Eating state properties
+  public isEating = false;
+  public isRightMouseDown = false;
+  private eatingTime = 0;
+  private eatingDuration = 1600; // 1.6 seconds in ms
+  private lastEatSoundTime = 0;
+  private lastEatParticleTime = 0;
+
   constructor(game: GameManager) {
     this.game = game;
     this.initSelectionBox();
@@ -113,6 +121,7 @@ export class InteractionManager {
   public update(dt: number) {
     this.updateTargetedBlock();
     this.updateMining(dt);
+    this.updateEating(dt);
   }
 
   // ─── 右键交互：Item 多态分发 ──────────────────────────────
@@ -154,7 +163,12 @@ export class InteractionManager {
       this.game.player.life = Math.min(10, this.game.player.life + result.healDelta);
     }
 
-    sound.playPickup();
+    const isFood = result.hungerDelta !== undefined || result.healDelta !== undefined;
+    if (isFood) {
+      sound.playBurp();
+    } else {
+      sound.playPickup();
+    }
 
     const isCreative = useGameStore.getState().gameMode === 'creative';
     if (!isCreative) {
@@ -212,6 +226,15 @@ export class InteractionManager {
     }
 
     // 3. 尝试直接使用物品（食用食物、饮用药水等）
+    if (item.category === 'food') {
+      const useCtx = this.buildItemUseContext();
+      const canEat = useCtx.gameMode === 'creative' || useCtx.player.hunger < 20;
+      if (canEat) {
+        this.startEating();
+      }
+      return;
+    }
+
     const useCtx = this.buildItemUseContext();
     const result = item.onUse(useCtx);
     if (result) {
@@ -225,12 +248,15 @@ export class InteractionManager {
     if (!this.game.controls.isLocked && !this.game.controls.isMobile) return;
 
     if (e.button === 0) {
+      this.cancelEating();
       if (this.game.animals && this.game.animals.checkAttack()) {
         return;
       }
     }
 
     if (e.button === 2) {
+      this.isRightMouseDown = true;
+      this.cancelMining();
       this.updateTargetedBlock();
       this.handleRightClick();
       return;
@@ -272,6 +298,10 @@ export class InteractionManager {
       this.isLeftMouseDown = false;
       this.cancelMining();
     }
+    if (e.button === 2) {
+      this.isRightMouseDown = false;
+      this.cancelEating();
+    }
   };
 
   public cancelMining() {
@@ -280,6 +310,78 @@ export class InteractionManager {
       this.crackMesh.visible = false;
     }
     useGameStore.getState().setMiningProgress(null);
+  }
+
+  private startEating() {
+    this.isEating = true;
+    this.eatingTime = 0;
+    this.lastEatSoundTime = 0;
+    this.lastEatParticleTime = 0;
+  }
+
+  public cancelEating() {
+    if (this.isEating) {
+      this.isEating = false;
+      useGameStore.getState().setMiningProgress(null);
+    }
+  }
+
+  private updateEating(dt: number) {
+    if (!this.isEating) return;
+
+    const storeState = useGameStore.getState();
+    const heldSlotItem = storeState.hotbar[storeState.activeSlot];
+    const item = heldSlotItem ? ItemRegistry.get(heldSlotItem.type) : null;
+
+    // 检查取消吃东西的条件：松开右键、没有手持物品、手持不是食物
+    if (!this.isRightMouseDown || !item || item.category !== 'food') {
+      this.cancelEating();
+      return;
+    }
+
+    this.eatingTime += dt * 1000;
+    const progress = Math.min(1.0, this.eatingTime / this.eatingDuration);
+    
+    // 重用 miningProgress 用以在 HUD 中央绘制圈
+    storeState.setMiningProgress(progress);
+
+    const currentTime = performance.now();
+
+    // 每 250ms 播放一次咀嚼音
+    if (currentTime - this.lastEatSoundTime > 250) {
+      this.lastEatSoundTime = currentTime;
+      sound.playEat();
+    }
+
+    // 每 150ms 产生一些粒子
+    if (currentTime - this.lastEatParticleTime > 150) {
+      this.lastEatParticleTime = currentTime;
+      const color = item.colorHex ?? 0xab6026;
+      
+      const camera = this.game.camera;
+      // 在镜头前下方生成粒子 (模拟嘴部位置)
+      const dir = new THREE.Vector3(0, -0.2, -0.4).applyQuaternion(camera.quaternion);
+      const spawnPos = this.game.player.position.clone()
+        .add(new THREE.Vector3(0, 1.5, 0)) // 假设眼睛在 1.5 高度
+        .add(dir)
+        .add(new THREE.Vector3(
+          (Math.random() - 0.5) * 0.15,
+          (Math.random() - 0.5) * 0.15,
+          (Math.random() - 0.5) * 0.15
+        ));
+      
+      this.game.particles.spawn(spawnPos, color, 1);
+    }
+
+    // 吃完了！
+    if (this.eatingTime >= this.eatingDuration) {
+      const useCtx = this.buildItemUseContext();
+      const result = item.onUse(useCtx);
+      if (result) {
+        this.applyItemUseResult(result);
+      }
+      this.cancelEating();
+    }
   }
 
   private updateTargetedBlock() {
