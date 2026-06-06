@@ -1,4 +1,5 @@
 import { GameMode, type HotbarItem } from '@type';
+import pkg from '../../../package.json';
 
 export interface SaveMetadata {
   id: string;
@@ -21,7 +22,7 @@ export interface SaveData {
 }
 
 export class SaveManager {
-  public static GAME_VERSION = '0.1.0';
+  public static GAME_VERSION = pkg.version;
   private static INDEX_KEY = 'minicraft_saves_index';
   private static SAVE_PREFIX = 'minicraft_save_';
 

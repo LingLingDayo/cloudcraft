@@ -20,7 +20,7 @@ describe('SaveManager', () => {
       inventory: [],
       activeSlot: 0,
       gameMode: GameMode.ADVENTURE,
-      version: '0.1.0'
+      version: SaveManager.GAME_VERSION
     };
 
     await SaveManager.saveGame('world_1', data, 'World One');
@@ -29,12 +29,12 @@ describe('SaveManager', () => {
     expect(saves.length).toBe(1);
     expect(saves[0].displayName).toBe('World One');
     expect(saves[0].id).toBe('world_1');
-    expect(saves[0].version).toBe('0.1.0');
+    expect(saves[0].version).toBe(SaveManager.GAME_VERSION);
 
     const loaded = await SaveManager.getSave('world_1');
     expect(loaded).toBeDefined();
     expect(loaded?.world).toBe('dummy_world_data');
-    expect(loaded?.version).toBe('0.1.0');
+    expect(loaded?.version).toBe(SaveManager.GAME_VERSION);
   });
 
   it('should delete saves', async () => {
@@ -45,7 +45,7 @@ describe('SaveManager', () => {
       inventory: [],
       activeSlot: 0,
       gameMode: GameMode.ADVENTURE,
-      version: '0.1.0'
+      version: SaveManager.GAME_VERSION
     };
 
     await SaveManager.saveGame('world_1', data, 'World One');

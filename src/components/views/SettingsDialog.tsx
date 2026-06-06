@@ -191,7 +191,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </div>
           
           <div className={styles.versionInfo}>
-            {t('settings.version', { version: '0.1.0' })}
+            {t('settings.version', { version: SaveManager.GAME_VERSION })}
           </div>
         </div>
 
