@@ -14,11 +14,6 @@ export class DesertBiome implements Biome {
     this.targetMoisture = targetMoisture;
   }
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 极其平缓，有微弱的沙丘起伏，比海平面(150)高出约 1-10 格
-    return Math.floor(154 + noise.noise(wx * 0.05, wz * 0.05) * 4);
-  }
-
   public fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -30,23 +25,31 @@ export class DesertBiome implements Biome {
     _noise: ImprovedNoise,
     _wx: number,
     _wz: number,
-    _isDryLand: boolean
+    _isDryLand: boolean,
+    slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === 0) {
       chunk[index] = BLOCK_TYPES.STONE; // 基岩
     } else if (y <= finalHeight) {
-      if (depthBelowSurface <= 4) {
-        chunk[index] = BLOCK_TYPES.SAND; // 地表沙子
-      } else if (depthBelowSurface <= 8) {
-        chunk[index] = BLOCK_TYPES.SANDSTONE; // 深层砂岩
+      if (slope > 3.5) {
+        // 陡坡上砂石裸露
+        if (depthBelowSurface <= 4) {
+          chunk[index] = BLOCK_TYPES.SANDSTONE;
+        } else {
+          chunk[index] = BLOCK_TYPES.STONE;
+        }
       } else {
-        // 最深层是石头
-        chunk[index] = BLOCK_TYPES.STONE;
+        if (depthBelowSurface <= 4) {
+          chunk[index] = BLOCK_TYPES.SAND; // 地表沙子
+        } else if (depthBelowSurface <= 8) {
+          chunk[index] = BLOCK_TYPES.SANDSTONE; // 深层砂岩
+        } else {
+          chunk[index] = BLOCK_TYPES.STONE;
+        }
       }
     }
   }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.12; // 较低的植物生存率
@@ -86,4 +89,3 @@ export class DesertBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
-

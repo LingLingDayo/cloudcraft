@@ -33,6 +33,13 @@ export interface DebugMetrics {
     temp: number;
     moisture: number;
   } | null;
+  landform: {
+    id: string;
+    name: string;
+    continentalness: number;
+    erosion: number;
+  } | null;
+  slope: number;
   terrainHeight: number;
   gameTime: {
     time: number;

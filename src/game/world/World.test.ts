@@ -111,7 +111,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     const world = new World('webcraft-seed');
     
     let verified = false;
-    for (let offset = 0; offset < 2000; offset += 96) {
+    for (let offset = 0; offset < 2000; offset += 64) {
       world.loadArea(offset, 150, offset, 2);
       
       for (let x = offset - 32; x < offset + 32; x++) {
@@ -204,7 +204,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     let foundHighPondWater = false;
     
     // Search different regions to find a high-altitude pond (since probability is 3%)
-    for (let offset = 0; offset < 2000; offset += 96) {
+    for (let offset = 0; offset < 2000; offset += 64) {
       const world = new World('webcraft-seed');
       world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
       
@@ -229,7 +229,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     let checkedPondRegions = 0;
     let exposedWaterCount = 0;
 
-    for (let offset = 0; offset < 2000; offset += 96) {
+    for (let offset = 0; offset < 2000; offset += 64) {
       const world = new World('webcraft-seed');
       // Load a 5x5 chunk area (80x80 blocks) centered around offset
       world.loadArea(offset, 150, offset, 2);
@@ -322,11 +322,11 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
 
     let checkedWaterBlocks = 0;
-    for (let offset = 0; offset < 1000; offset += 96) {
+    for (let offset = 0; offset < 2000; offset += 64) {
       world.loadArea(offset, 150, offset, 2);
       
-      const checkMin = offset - 16;
-      const checkMax = offset + 16;
+      const checkMin = offset - 32;
+      const checkMax = offset + 32;
       
       for (let x = checkMin; x < checkMax; x++) {
         for (let z = checkMin; z < checkMax; z++) {
@@ -342,6 +342,6 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     }
     
     expect(checkedWaterBlocks).toBeGreaterThan(0);
-  }, 30000);
+  }, 60000);
 });
 

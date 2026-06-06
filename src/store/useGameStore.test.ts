@@ -179,6 +179,8 @@ describe('useGameStore', () => {
       playerRotation: { yaw: 0, pitch: 0 },
       chunkCoords: { cx: 0, cy: 0, cz: 0, lx: 0, ly: 0, lz: 0 },
       biome: null,
+      landform: null,
+      slope: 0,
       terrainHeight: 0,
       gameTime: { time: 0, formatted: '00:00' },
       entities: { droppedItems: 0, animals: 0 },

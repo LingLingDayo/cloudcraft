@@ -99,7 +99,8 @@ describe('ChunkPipeline Extensions', () => {
         localWaterLevel: 150,
         isDryLand: true,
         isPond: false,
-        maxHeightOffset: 12
+        maxHeightOffset: 12,
+        slope: 0
       })
     };
 
@@ -156,7 +157,8 @@ describe('ChunkPipeline Extensions', () => {
         localWaterLevel: 150,
         isDryLand: true,
         isPond: false,
-        maxHeightOffset: 12
+        maxHeightOffset: 12,
+        slope: 0
       })
     };
 
@@ -214,7 +216,8 @@ describe('ChunkPipeline Extensions', () => {
         localWaterLevel: 150,
         isDryLand: true,
         isPond: false,
-        maxHeightOffset: 12
+        maxHeightOffset: 12,
+        slope: 0
       })
     };
 
@@ -271,7 +274,8 @@ describe('ChunkPipeline Extensions', () => {
         localWaterLevel: 150,
         isDryLand: true,
         isPond: false,
-        maxHeightOffset: -3
+        maxHeightOffset: -3,
+        slope: 0
       })
     };
 
@@ -329,7 +333,8 @@ describe('ChunkPipeline Extensions', () => {
         localWaterLevel: 150,
         isDryLand: true,
         isPond: false,
-        maxHeightOffset: 12
+        maxHeightOffset: 12,
+        slope: 0
       })
     };
 

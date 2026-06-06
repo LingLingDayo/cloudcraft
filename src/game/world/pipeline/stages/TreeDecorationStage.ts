@@ -42,7 +42,7 @@ export class TreeDecorationStage implements ChunkPipelineStage {
               continue;
             }
 
-            const groundType = generator.getGroundBlockType(biome, finalHeight, col.localWaterLevel, col.isDryLand && !col.isPond, wx, wz);
+            const groundType = generator.getGroundBlockType(biome, finalHeight, col.localWaterLevel, col.isDryLand && !col.isPond, wx, wz, col.slope);
             const isValidGround = getBlockProperties(groundType).allowVegetationBase === true;
 
             if (isValidGround && ty > col.localWaterLevel - 2) {

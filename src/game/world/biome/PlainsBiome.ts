@@ -14,11 +14,6 @@ export class PlainsBiome implements Biome {
     this.targetMoisture = targetMoisture;
   }
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 极其平缓，利用低频 fbm 控制轻微波动，比海平面(150)高出约 1-10 格
-    return Math.floor(155 + noise.fbm(wx * 0.01, wz * 0.01, 2, 0.4) * 4);
-  }
-
   public fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -30,17 +25,22 @@ export class PlainsBiome implements Biome {
     _noise: ImprovedNoise,
     _wx: number,
     _wz: number,
-    isDryLand: boolean
+    isDryLand: boolean,
+    slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === finalHeight) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE; // 陡坡裸岩
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.GRASS;
       }
     } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE;
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.DIRT;
@@ -50,9 +50,7 @@ export class PlainsBiome implements Biome {
     }
   }
 
-
   public getTreeProbability(_chunkRandom: number): number {
-    // 平原树木极少
     return 0.04;
   }
 
@@ -65,7 +63,6 @@ export class PlainsBiome implements Biome {
     treeIndex: number,
     noise: ImprovedNoise
   ): void {
-    // 平原仅长橡树，且高度适中
     const seed = chunkRandom * 10 + treeIndex;
     const heightRand = (Math.sin(seed * 789.012) * 43758.5453) % 1;
     const absHeight = Math.abs(heightRand);
@@ -85,7 +82,6 @@ export class PlainsBiome implements Biome {
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
     const r = noise.pseudoRandom2d(wx, wz);
-    // 16% 概率生成植被
     if (r < 0.16) {
       if (r < 0.136) {
         return BLOCK_TYPES.TALL_GRASS;
@@ -102,4 +98,3 @@ export class PlainsBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
-

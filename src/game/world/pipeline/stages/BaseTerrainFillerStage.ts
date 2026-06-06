@@ -33,7 +33,8 @@ export class BaseTerrainFillerStage implements ChunkPipelineStage {
               noise,
               wx,
               wz,
-              col.isDryLand && !col.isPond
+              col.isDryLand && !col.isPond,
+              col.slope
             );
           } else if (y <= col.localWaterLevel && (!col.isDryLand || col.isPond)) {
             chunk[index] = BLOCK_TYPES.WATER;

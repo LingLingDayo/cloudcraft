@@ -14,11 +14,6 @@ export class JungleBiome implements Biome {
     this.targetMoisture = targetMoisture;
   }
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 丛林地表也比较平缓，比海平面(150)高出约 1-10 格
-    return Math.floor(155 + noise.fbm(wx * 0.02, wz * 0.02, 2, 0.4) * 5);
-  }
-
   public fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -30,17 +25,22 @@ export class JungleBiome implements Biome {
     _noise: ImprovedNoise,
     _wx: number,
     _wz: number,
-    isDryLand: boolean
+    isDryLand: boolean,
+    slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === finalHeight) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE; // 陡峭峭壁裸露岩石
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.GRASS;
       }
     } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE;
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.DIRT;
@@ -49,7 +49,6 @@ export class JungleBiome implements Biome {
       chunk[index] = BLOCK_TYPES.STONE;
     }
   }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.4; // 繁茂的丛林，树木极多
@@ -98,4 +97,3 @@ export class JungleBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
-

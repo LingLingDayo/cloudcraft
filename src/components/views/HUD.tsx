@@ -352,6 +352,14 @@ export const HUD: React.FC = () => {
               </div>
             )}
             <div>
+              {t('hud.landform')}: <span className={styles.biomeName}>{debugMetrics.landform ? debugMetrics.landform.name : t('hud.none')}</span>
+            </div>
+            {debugMetrics.landform && (
+              <div>
+                Cont / Eros / Slope: <span className={styles.biomeDetail}>{debugMetrics.landform.continentalness.toFixed(2)} / {debugMetrics.landform.erosion.toFixed(2)} / {debugMetrics.slope.toFixed(2)}</span>
+              </div>
+            )}
+            <div>
               {t('hud.terrainHeight')}: <span className={styles.heightValue}>{debugMetrics.terrainHeight}</span>
             </div>
             <div>

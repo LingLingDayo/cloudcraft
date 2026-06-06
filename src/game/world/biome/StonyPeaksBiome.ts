@@ -14,14 +14,6 @@ export class StonyPeaksBiome implements Biome {
     this.targetMoisture = targetMoisture;
   }
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 高耸起伏大，使用脊线噪波 (1 - abs(noise)) 模拟尖锐山脊
-    const base = 200;
-    const n = noise.fbm(wx * 0.015, wz * 0.015, 3, 0.4);
-    const ridged = 1.0 - Math.abs(n);
-    return Math.floor(base + ridged * 80);
-  }
-
   public fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -33,7 +25,8 @@ export class StonyPeaksBiome implements Biome {
     _noise: ImprovedNoise,
     _wx: number,
     _wz: number,
-    _isDryLand: boolean
+    _isDryLand: boolean,
+    _slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === 0) {
@@ -43,7 +36,6 @@ export class StonyPeaksBiome implements Biome {
       chunk[index] = BLOCK_TYPES.STONE;
     }
   }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0; // 石头山上不长树
@@ -65,4 +57,3 @@ export class StonyPeaksBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
-

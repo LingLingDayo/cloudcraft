@@ -2,6 +2,8 @@ import { ImprovedNoise } from './Noise';
 import { BLOCK_TYPES } from './BlockConfig';
 import { getBiomeAt } from './biome/BiomeRegistry';
 import { type Biome, TreeStyle } from './biome/Biome';
+import { getLandformAt } from './landform/LandformRegistry';
+import { type Landform } from './landform/Landform';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
 import { WORLD_CONFIG } from './WorldConfig';
 import { ChunkPipeline } from './pipeline/ChunkPipeline';
@@ -56,14 +58,9 @@ export class WorldGenerator {
 
   private getFlatnessFactor(wx: number, wz: number): number {
     const step = 4;
-    const biomeCenter = getBiomeAt(wx, wz, this.noise);
-    const hCenter = biomeCenter.getHeight(wx, wz, this.noise);
-
-    const biomeRight = getBiomeAt(wx + step, wz, this.noise);
-    const hRight = biomeRight.getHeight(wx + step, wz, this.noise);
-    
-    const biomeDown = getBiomeAt(wx, wz + step, this.noise);
-    const hDown = biomeDown.getHeight(wx, wz + step, this.noise);
+    const hCenter = this.getRawHeightAt(wx, wz);
+    const hRight = this.getRawHeightAt(wx + step, wz);
+    const hDown = this.getRawHeightAt(wx, wz + step);
 
     const diffRight = Math.abs(hCenter - hRight);
     const diffDown = Math.abs(hCenter - hDown);
@@ -138,8 +135,7 @@ export class WorldGenerator {
           const centerT = (1.0 - t) * flatness;
 
           if (centerT > maxCenterT) {
-            const centerBiome = getBiomeAt(cellCenterX, cellCenterZ, this.noise);
-            const centerSurfaceHeight = centerBiome.getHeight(cellCenterX, cellCenterZ, this.noise);
+            const centerSurfaceHeight = this.getRawHeightAt(cellCenterX, cellCenterZ);
 
             // 采样边缘 8 个方向的高度，防止水位溢出边缘最低点
             let minEdgeHeight = Infinity;
@@ -156,8 +152,7 @@ export class WorldGenerator {
               [cellCenterX - rHalf, cellCenterZ + rHalf]
             ];
             for (const [px, pz] of checkPoints) {
-              const b = getBiomeAt(px, pz, this.noise);
-              const h = b.getHeight(px, pz, this.noise);
+              const h = this.getRawHeightAt(px, pz);
               if (h < minEdgeHeight) {
                 minEdgeHeight = h;
               }
@@ -219,23 +214,34 @@ export class WorldGenerator {
     return false;
   }
 
-  // 3x3 邻域高斯权重插值计算，并返回中心点的主生态
-  public getInterpolatedHeightAndBiome(wx: number, wz: number): { height: number; primaryBiome: Biome } {
+  // 3x3 邻域高斯权重插值计算，并返回中心点的主生态、地貌以及坡度
+  public getInterpolatedHeightAndBiome(wx: number, wz: number): {
+    height: number;
+    primaryBiome: Biome;
+    primaryLandform: Landform;
+    slope: number;
+  } {
     const primaryBiome = getBiomeAt(wx, wz, this.noise);
+    const primaryLandform = getLandformAt(wx, wz, this.noise);
     
     let totalHeight = 0;
     let totalWeight = 0;
     
     const step = WORLD_CONFIG.heightInterpolation.step;
+    const scale = WORLD_CONFIG.landform.scale;
+
     // 3x3 采样，步长设为 step
     for (let dx = -step; dx <= step; dx += step) {
       for (let dz = -step; dz <= step; dz += step) {
         const sampleX = wx + dx;
         const sampleZ = wz + dz;
-        const biome = getBiomeAt(sampleX, sampleZ, this.noise);
+        const landform = getLandformAt(sampleX, sampleZ, this.noise);
         
+        const c = (this.noise.noise((sampleX + WORLD_CONFIG.landform.offsetC) * scale, (sampleZ + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
+        const e = (this.noise.noise((sampleX + WORLD_CONFIG.landform.offsetE) * scale, (sampleZ + WORLD_CONFIG.landform.offsetE) * scale) + 1) / 2;
+
         // 用该生态规律计算中心点的高度
-        const height = biome.getHeight(wx, wz, this.noise);
+        const height = landform.getHeight(wx, wz, this.noise, c, e);
         
         // 高斯权重：dSq = dx^2 + dz^2，W = exp(-dSq / sigmaSq)
         const dSq = dx * dx + dz * dz;
@@ -246,10 +252,30 @@ export class WorldGenerator {
       }
     }
     
+    const finalHeight = Math.round(totalHeight / totalWeight);
+
+    // 计算坡度
+    const hNorth = this.getRawHeightAt(wx, wz - 2);
+    const hSouth = this.getRawHeightAt(wx, wz + 2);
+    const hWest = this.getRawHeightAt(wx - 2, wz);
+    const hEast = this.getRawHeightAt(wx + 2, wz);
+    const slope = Math.max(Math.abs(hNorth - hSouth), Math.abs(hWest - hEast));
+
     return {
-      height: Math.round(totalHeight / totalWeight),
+      height: finalHeight,
       primaryBiome,
+      primaryLandform,
+      slope,
     };
+  }
+
+  // 计算单个点的无插值基础高度
+  public getRawHeightAt(wx: number, wz: number): number {
+    const landform = getLandformAt(wx, wz, this.noise);
+    const scale = WORLD_CONFIG.landform.scale;
+    const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
+    const e = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetE) * scale, (wz + WORLD_CONFIG.landform.offsetE) * scale) + 1) / 2;
+    return landform.getHeight(wx, wz, this.noise, c, e);
   }
 
   // 统一解析任意全局坐标 (wx, wz) 下的地形高度、水体属性及矿洞高度偏好
@@ -261,8 +287,9 @@ export class WorldGenerator {
     isDryLand: boolean;
     isPond: boolean;
     maxHeightOffset: number;
+    slope: number;
   } {
-    const { height: interpolatedHeight } = this.getInterpolatedHeightAndBiome(wx, wz);
+    const { height: interpolatedHeight, slope } = this.getInterpolatedHeightAndBiome(wx, wz);
     const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
     const waterLevel = WORLD_CONFIG.waterLevel;
     
@@ -367,7 +394,8 @@ export class WorldGenerator {
       localWaterLevel,
       isDryLand,
       isPond,
-      maxHeightOffset
+      maxHeightOffset,
+      slope
     };
   }
 
@@ -377,8 +405,12 @@ export class WorldGenerator {
     waterLevel: number,
     isDryLand: boolean,
     _wx: number,
-    _wz: number
+    _wz: number,
+    slope: number
   ): number {
+    if (slope > 3.0) {
+      return BLOCK_TYPES.STONE; // 陡坡上直接裸露石头，不生成草/花
+    }
     if (primaryBiome.id === 'desert') {
       return BLOCK_TYPES.SAND;
     }
