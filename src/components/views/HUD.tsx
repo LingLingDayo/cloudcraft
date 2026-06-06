@@ -220,7 +220,7 @@ export const HUD: React.FC = () => {
       </div>
 
       {/* Top Left Status Info */}
-      {import.meta.env.DEV && (
+      {debugOverlay && (
         <div className={`hud-stats glass-panel ${styles.devStats}`}>
           <div className={`pixel-text-sm ${styles.devTitle}`}>
             WEBCRAFT (DEV)
