@@ -131,13 +131,6 @@ export const HUD: React.FC = () => {
 
   const handleQuickMove = (from: 'hotbar' | 'chest', index: number) => {
     quickMoveItem(from, index);
-    const nextChest = useGameStore.getState().chestInventory;
-    if (activeChest && gameInstance) {
-      const entity = gameInstance.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
-      if (entity && 'inventory' in entity) {
-        (entity as { inventory: typeof nextChest }).inventory = [...nextChest];
-      }
-    }
   };
 
 

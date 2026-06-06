@@ -477,6 +477,13 @@ class SoundManager {
       console.warn('Audio play failed', e);
     }
   }
+
+  public play(soundName: string, ...args: any[]) {
+    const fn = (this as any)[soundName];
+    if (typeof fn === 'function') {
+      fn.apply(this, args);
+    }
+  }
 }
 
 export const sound = new SoundManager();

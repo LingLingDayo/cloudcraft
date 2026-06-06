@@ -1,25 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BlockEntity, ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 
+export type BlockEntityCreator = (x: number, y: number, z: number) => BlockEntity;
+
 export class BlockEntityManager {
+  private static registry = new Map<string, BlockEntityCreator>();
   private entities = new Map<string, BlockEntity>();
+
+  public static register(type: string, creator: BlockEntityCreator) {
+    this.registry.set(type, creator);
+  }
 
   public getEntity(x: number, y: number, z: number): BlockEntity | null {
     return this.entities.get(`${x},${y},${z}`) || null;
   }
 
   public createEntity(type: string, x: number, y: number, z: number): BlockEntity | null {
-    let entity: BlockEntity;
-    switch (type) {
-      case 'chest':
-        entity = new ChestBlockEntity(x, y, z);
-        break;
-      case 'lever':
-        entity = new LeverBlockEntity(x, y, z);
-        break;
-      default:
-        return null;
-    }
+    const creator = BlockEntityManager.registry.get(type);
+    if (!creator) return null;
+    const entity = creator(x, y, z);
     this.entities.set(entity.key, entity);
     return entity;
   }
@@ -57,3 +56,7 @@ export class BlockEntityManager {
     }
   }
 }
+
+// 注册默认的方块实体
+BlockEntityManager.register('chest', (x, y, z) => new ChestBlockEntity(x, y, z));
+BlockEntityManager.register('lever', (x, y, z) => new LeverBlockEntity(x, y, z));

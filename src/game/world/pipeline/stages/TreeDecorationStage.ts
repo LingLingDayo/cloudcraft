@@ -4,8 +4,8 @@ import { getBlockProperties } from '../../BlockConfig';
 import { WORLD_CONFIG } from '../../WorldConfig';
 import { WORLD_HEIGHT } from '../../World';
 import { TreeStyle } from '../../biome/Biome';
-import { BLOCK_TYPES } from '../../BlockConfig';
 import { isCaveAt } from './SurfaceDecorationStage';
+import { ChunkBlockWriter, TreeStructureGenerator } from '../../TreeStructureGenerator';
 
 export class TreeDecorationStage implements ChunkPipelineStage {
   public name = 'TreeDecoration';
@@ -158,154 +158,18 @@ export class TreeDecorationStage implements ChunkPipelineStage {
                 const gBaseY = lty;
                 const gBaseZ = nWorldStartZ + ltz;
 
-                const setLocalBlock = (gx: number, gy: number, gz: number, type: number) => {
-                  const lcx = gx - worldStartX;
-                  const lcy = gy - worldStartY;
-                  const lcz = gz - worldStartZ;
-                  if (
-                    lcx >= 0 && lcx < 16 &&
-                    lcy >= 0 && lcy < 16 &&
-                    lcz >= 0 && lcz < 16
-                  ) {
-                    const idx = lcx + lcz * 16 + lcy * 256;
-                    chunk[idx] = type;
-                  }
-                };
-
-                // 只有当树干放置的地基存在时，才把草地变为泥土
-                setLocalBlock(gBaseX, gBaseY, gBaseZ, BLOCK_TYPES.DIRT);
-
-                if (style === ('cactus' as unknown as TreeStyle)) {
-                  for (let h = 1; h <= height; h++) {
-                    setLocalBlock(gBaseX, gBaseY + h, gBaseZ, trunkBlock);
-                  }
-                  return;
-                }
-
-                for (let h = 1; h <= height; h++) {
-                  setLocalBlock(gBaseX, gBaseY + h, gBaseZ, trunkBlock);
-                }
-
-                const leafCenterY = gBaseY + height;
-                if (style === TreeStyle.OAK || style === TreeStyle.BIRCH) {
-                  const startY = style === TreeStyle.BIRCH ? -3 : -2;
-                  for (let ly = startY; ly <= 1; ly++) {
-                    const radius = ly === 1 ? 1 : 2;
-                    for (let lx = -radius; lx <= radius; lx++) {
-                      for (let lz = -radius; lz <= radius; lz++) {
-                        if (lx === 0 && lz === 0 && ly <= 0) continue;
-                        if (style === TreeStyle.BIRCH && ly === startY && Math.abs(lx) === radius && Math.abs(lz) === radius) {
-                          continue;
-                        }
-
-                        const wlx = gBaseX + lx;
-                        const wlz = gBaseZ + lz;
-                        const wly = leafCenterY + ly;
-
-                        const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-                        if (isOuter && !(lx === 0 && lz === 0)) {
-                          const leafRand = noise.pseudoRandom2d(wlx * 17 + gBaseX, wlz * 23 + gBaseZ + wly);
-                          if (leafRand < 0.20) {
-                            continue;
-                          }
-                        }
-
-                        const lcx = wlx - worldStartX;
-                        const lcy = wly - worldStartY;
-                        const lcz = wlz - worldStartZ;
-                        if (
-                          lcx >= 0 && lcx < 16 &&
-                          lcy >= 0 && lcy < 16 &&
-                          lcz >= 0 && lcz < 16
-                        ) {
-                          const idx = lcx + lcz * 16 + lcy * 256;
-                          if (chunk[idx] === BLOCK_TYPES.AIR) {
-                            chunk[idx] = leafBlock;
-                          }
-                        }
-                      }
-                    }
-                  }
-                } else if (style === TreeStyle.SPRUCE) {
-                  for (let ly = -4; ly <= 1; ly++) {
-                    let radius = 1;
-                    if (ly === 1) radius = 0;
-                    else if (ly === 0) radius = 1;
-                    else if (ly === -1) radius = 2;
-                    else if (ly === -2) radius = 1;
-                    else if (ly === -3) radius = 2;
-                    else if (ly === -4) radius = 2;
-
-                    for (let lx = -radius; lx <= radius; lx++) {
-                      for (let lz = -radius; lz <= radius; lz++) {
-                        if (lx === 0 && lz === 0 && ly <= 0) continue;
-                        if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) continue;
-
-                        const wlx = gBaseX + lx;
-                        const wlz = gBaseZ + lz;
-                        const wly = leafCenterY + ly;
-
-                        const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-                        if (isOuter && !(lx === 0 && lz === 0)) {
-                          const leafRand = noise.pseudoRandom2d(wlx * 17 + gBaseX, wlz * 23 + gBaseZ + wly);
-                          if (leafRand < 0.20) {
-                            continue;
-                          }
-                        }
-
-                        const lcx = wlx - worldStartX;
-                        const lcy = wly - worldStartY;
-                        const lcz = wlz - worldStartZ;
-                        if (
-                          lcx >= 0 && lcx < 16 &&
-                          lcy >= 0 && lcy < 16 &&
-                          lcz >= 0 && lcz < 16
-                        ) {
-                          const idx = lcx + lcz * 16 + lcy * 256;
-                          if (chunk[idx] === BLOCK_TYPES.AIR) {
-                            chunk[idx] = leafBlock;
-                          }
-                        }
-                      }
-                    }
-                  }
-                } else if (style === TreeStyle.JUNGLE) {
-                  for (let ly = -3; ly <= 1; ly++) {
-                    const radius = ly === 1 ? 1 : (ly === -3 ? 1 : 2);
-                    for (let lx = -radius; lx <= radius; lx++) {
-                      for (let lz = -radius; lz <= radius; lz++) {
-                        if (lx === 0 && lz === 0 && ly <= 0) continue;
-                        if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) continue;
-
-                        const wlx = gBaseX + lx;
-                        const wlz = gBaseZ + lz;
-                        const wly = leafCenterY + ly;
-
-                        const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-                        if (isOuter && !(lx === 0 && lz === 0)) {
-                          const leafRand = noise.pseudoRandom2d(wlx * 17 + gBaseX, wlz * 23 + gBaseZ + wly);
-                          if (leafRand < 0.10) {
-                            continue;
-                          }
-                        }
-
-                        const lcx = wlx - worldStartX;
-                        const lcy = wly - worldStartY;
-                        const lcz = wlz - worldStartZ;
-                        if (
-                          lcx >= 0 && lcx < 16 &&
-                          lcy >= 0 && lcy < 16 &&
-                          lcz >= 0 && lcz < 16
-                        ) {
-                          const idx = lcx + lcz * 16 + lcy * 256;
-                          if (chunk[idx] === BLOCK_TYPES.AIR) {
-                            chunk[idx] = leafBlock;
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
+                const writer = new ChunkBlockWriter(chunk, worldStartX, worldStartY, worldStartZ);
+                TreeStructureGenerator.growTree(
+                  writer,
+                  gBaseX,
+                  gBaseY,
+                  gBaseZ,
+                  trunkBlock,
+                  leafBlock,
+                  height,
+                  style,
+                  (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + gBaseX, wlz * 23 + gBaseZ + wly)
+                );
               };
 
               biome.growDecorations(

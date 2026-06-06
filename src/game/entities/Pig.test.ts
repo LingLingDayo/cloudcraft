@@ -23,6 +23,7 @@ vi.mock('@game/systems/Sound', () => {
     sound: {
       playPigHurt: vi.fn(),
       playPigDeath: vi.fn(),
+      play: vi.fn(),
     },
   };
 });
