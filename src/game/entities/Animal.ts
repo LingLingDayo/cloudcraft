@@ -3,6 +3,7 @@ import { World } from '@game/world/World';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { VoxelPhysics } from '@game/physics/voxel/VoxelPhysics';
 import { sound } from '@game/systems/Sound';
+import { LootTableHelper } from '../loot/LootTableHelper';
 
 export abstract class Animal {
   public id: string;
@@ -51,9 +52,20 @@ export abstract class Animal {
     this.mesh.position.copy(this.position);
   }
 
+  public lootTableId?: string;
+
   public abstract initMesh(): void;
   
-  public abstract dropItems(): void;
+  public dropItems(): void {
+    if (this.lootTableId) {
+      const dropPos = this.position.clone().add(new THREE.Vector3(0, 0.3, 0));
+      const context = {
+        world: this.world,
+        position: dropPos
+      };
+      LootTableHelper.spawnDrops(this.lootTableId, context, true);
+    }
+  }
 
   public getBoundingBox(pos = this.position): THREE.Box3 {
     return VoxelPhysics.getBoundingBox(pos, { width: this.width, height: this.height, depth: this.depth });

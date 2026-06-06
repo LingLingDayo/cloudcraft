@@ -4,6 +4,9 @@ import type { BlockEntity } from './BlockEntity';
 import { BlockType, SoundType, ItemType } from '@type';
 import type { BlockProperties } from '../BlockConfig';
 import { ItemRegistry } from '../../item/ItemRegistry';
+import type { LootContext } from '../../loot/LootTable';
+import { LootTableRegistry } from '../../loot/LootTableRegistry';
+import * as THREE from 'three';
 export type { BlockProperties };
 
 
@@ -30,7 +33,7 @@ export abstract class Block {
 
   /**
    * 玩家右键交互
-   * @returns 返回 true 拦截后续的物品放置
+   * @returns 返回 true 拦截后续 of 物品放置
    */
   public onInteract(_world: World, _x: number, _y: number, _z: number, _player: unknown): boolean {
     return false;
@@ -72,7 +75,16 @@ export abstract class Block {
   /**
    * 获取该方块破坏后的掉落物
    */
-  public getDrops(): { type: ItemType; count: number }[] {
+  public getDrops(context?: LootContext): { type: ItemType; count: number }[] {
+    if (this.properties.lootTableId) {
+      const table = LootTableRegistry.get(this.properties.lootTableId);
+      if (table) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ctx = context || { world: {} as any, position: new THREE.Vector3() };
+        return table.generateLoot(ctx);
+      }
+    }
+
     if (this.properties.lootTable && this.properties.lootTable.length > 0) {
       const drops: { type: ItemType; count: number }[] = [];
       for (const entry of this.properties.lootTable) {
