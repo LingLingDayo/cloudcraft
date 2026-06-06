@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Player } from './Player';
 import { useGameStore } from '@store/useGameStore';
 import { BLOCK_TYPES } from '@game/world/World';
+import { GameAction } from '@game/systems/HotkeyManager';
 import type { Physics } from '@game/physics/Physics';
 import type { Controls } from '@game/systems/Controls';
 import type { World } from '@game/world/World';
@@ -252,5 +253,127 @@ describe('Player', () => {
     expect(playerTest.position.z).toBeCloseTo(8.5, 1);
 
     randomSpy.mockRestore();
+  });
+
+  describe('autoJump control conditions', () => {
+    beforeEach(() => {
+      useGameStore.setState({ autoJump: true });
+    });
+
+    test('should autoJump = true when moving purely forward', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return true;
+        if (action === GameAction.MOVE_BACKWARD) return false;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        true,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = true when moving diagonally forward', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return true;
+        if (action === GameAction.MOVE_LEFT) return true;
+        if (action === GameAction.MOVE_BACKWARD) return false;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        true,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = false when moving purely sideways (left/right)', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return false;
+        if (action === GameAction.MOVE_LEFT) return true;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        false,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = false when moving backwards', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return false;
+        if (action === GameAction.MOVE_BACKWARD) return true;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        false,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = false when both MOVE_FORWARD and MOVE_BACKWARD are pressed (canceled out)', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return true;
+        if (action === GameAction.MOVE_BACKWARD) return true;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        false,
+        expect.any(THREE.Vector3)
+      );
+    });
   });
 });

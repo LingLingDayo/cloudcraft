@@ -199,7 +199,9 @@ export class Player {
 
     const canJump = this.state.onGround && !this.state.inWater && !this.isFlying;
     const wasYVelocity = this.velocity.y;
-    const autoJump = useGameStore.getState().autoJump;
+    const autoJumpSetting = useGameStore.getState().autoJump;
+    const isMovingForward = controls.isActionPressed(GameAction.MOVE_FORWARD) && !controls.isActionPressed(GameAction.MOVE_BACKWARD);
+    const autoJump = autoJumpSetting && isMovingForward;
 
     const cameraDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
 
