@@ -190,3 +190,29 @@
     }
   }
 }
+
+/* Mobile Jump Control */
+.jumpContainer {
+  position: absolute;
+  bottom: 50px;
+  right: 50px;
+  z-index: 1000;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.jumpBtn {
+  @extend .dpadBtn;
+  width: calc(var(--dpad-size, 60vh) / 3);
+  height: calc(var(--dpad-size, 60vh) / 3);
+  max-width: calc(var(--dpad-size, 180px) / 3);
+  max-height: calc(var(--dpad-size, 180px) / 3);
+  min-width: calc(var(--dpad-size, 150px) / 3);
+  min-height: calc(var(--dpad-size, 150px) / 3);
+}
+
+

@@ -1,8 +1,8 @@
-/**
- * 判断当前设备是否为移动端设备（手机或平板）
- * 严格基于浏览器 User Agent 标识进行判断，避免触控屏幕等硬件检测误判
- */
-export const isMobileDevice = (): boolean => {
+import variables from '@styles/variables.module.scss';
+
+let cachedIsMobile: boolean | null = null;
+
+const checkIsMobile = (): boolean => {
   if (typeof window === 'undefined') return false;
   const ua = navigator.userAgent;
   const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
@@ -10,7 +10,38 @@ export const isMobileDevice = (): boolean => {
   // 针对 iPadOS 上的 Safari 浏览器（其 userAgent 默认伪装为 Macintosh）
   const isMaciPad = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 
-  return isMobileUA || isMaciPad;
+  // 页面宽度小于 variables.breakpointMobile (默认 1024px) 判定为移动端
+  const parsedBreakpoint = parseInt(variables?.breakpointMobile, 10);
+  const breakpoint = isNaN(parsedBreakpoint) ? 1024 : parsedBreakpoint;
+  const isSmallScreen = window.innerWidth < breakpoint;
+
+  return isMobileUA || isMaciPad || isSmallScreen;
+};
+
+// 监听窗口大小变化以更新缓存值
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    cachedIsMobile = checkIsMobile();
+  });
+}
+
+/**
+ * 判断当前设备是否为移动端设备（手机或平板）
+ * 结合浏览器 User Agent 标识与页面宽度进行判断，满足任意一个即判定为移动端。
+ * 使用缓存和 resize 监听器进行优化，以防在渲染 Tick 循环中高频重复计算带来的性能开销。
+ */
+export const isMobileDevice = (): boolean => {
+  if (cachedIsMobile === null) {
+    cachedIsMobile = checkIsMobile();
+  }
+  return cachedIsMobile;
+};
+
+/**
+ * 清除移动端状态的缓存，仅供单元测试使用
+ */
+export const clearCacheForTesting = () => {
+  cachedIsMobile = null;
 };
 
 export interface FullscreenHTMLElement extends HTMLElement {

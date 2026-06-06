@@ -1,8 +1,17 @@
 import { describe, test, expect, afterEach, beforeEach, vi, type Mock } from 'vitest';
-import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock, setDevModeForTesting } from './device';
+import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock, setDevModeForTesting, clearCacheForTesting } from './device';
 
 describe('isMobileDevice', () => {
   const originalUserAgent = navigator.userAgent;
+
+  beforeEach(() => {
+    // Default to a desktop width of 1024 (so width check alone is false)
+    Object.defineProperty(window, 'innerWidth', {
+      get: () => 1024,
+      configurable: true,
+    });
+    clearCacheForTesting();
+  });
 
   afterEach(() => {
     Object.defineProperty(navigator, 'userAgent', {
@@ -13,6 +22,9 @@ describe('isMobileDevice', () => {
       value: 0,
       configurable: true,
     });
+    // Delete override to restore the original window.innerWidth getter
+    delete (window as { innerWidth?: number }).innerWidth;
+    clearCacheForTesting();
   });
 
   test('should return true for Android user agent', () => {
@@ -62,6 +74,18 @@ describe('isMobileDevice', () => {
     });
     expect(isMobileDevice()).toBe(false);
   });
+
+  test('should return true for small screen width even if user agent is desktop', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      get: () => 800,
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+      configurable: true,
+    });
+    expect(isMobileDevice()).toBe(true);
+  });
 });
 
 describe('fullscreen and orientation lock helpers', () => {
@@ -77,6 +101,7 @@ describe('fullscreen and orientation lock helpers', () => {
     lockMock = vi.fn().mockResolvedValue(undefined);
     unlockMock = vi.fn().mockResolvedValue(undefined);
     setDevModeForTesting(false);
+    clearCacheForTesting();
 
     // Mock document element methods
     Object.defineProperty(document.documentElement, 'requestFullscreen', {
@@ -113,6 +138,7 @@ describe('fullscreen and orientation lock helpers', () => {
       configurable: true,
     });
     vi.restoreAllMocks();
+    clearCacheForTesting();
   });
 
   test('should lock orientation and request fullscreen for mobile device', async () => {
