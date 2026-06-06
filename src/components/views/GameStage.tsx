@@ -5,7 +5,7 @@ import { PauseMenu } from './PauseMenu';
 import { useGameStore } from '@store/useGameStore';
 import styles from './GameStage.module.scss';
 import { GameState, GameMode, type ItemType } from '@type';
-import { GameProvider } from '../../context/GameContext';
+import { GameProvider } from '@context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
 import { useTranslation } from '@i18n';
 

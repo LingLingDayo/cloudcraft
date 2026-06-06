@@ -1,7 +1,7 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { BLOCK_TYPES, getBlockProperties } from '../../BlockConfig';
-import { WORLD_CONFIG } from '../../WorldConfig';
-import { ImprovedNoise } from '../../Noise';
+import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
+import { WORLD_CONFIG } from '@game/world/WorldConfig';
+import { ImprovedNoise } from '@game/world/Noise';
 
 // 纯噪波的矿洞状态预测，判断在全局坐标 (wx, wy, wz) 处是否应当是洞穴(被挖空为空气)
 export function isCaveAt(

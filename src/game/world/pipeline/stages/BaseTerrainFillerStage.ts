@@ -1,5 +1,5 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { BLOCK_TYPES } from '../../BlockConfig';
+import { BLOCK_TYPES } from '@game/world/BlockConfig';
 
 export class BaseTerrainFillerStage implements ChunkPipelineStage {
   public name = 'BaseTerrainFiller';

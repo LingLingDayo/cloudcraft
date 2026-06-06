@@ -7,7 +7,7 @@ import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
 import { Dialog } from '@components/common/Dialog';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '@context/GameContext';
 import { BlockIcon } from './ItemIcon';
 import { MobileControls, PixelDotsIcon } from './MobileControls';
 import { formatCoordinate } from '@utils/helpers';

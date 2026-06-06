@@ -1,6 +1,6 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { BLOCK_TYPES } from '../../BlockConfig';
-import { WORLD_CONFIG } from '../../WorldConfig';
+import { BLOCK_TYPES } from '@game/world/BlockConfig';
+import { WORLD_CONFIG } from '@game/world/WorldConfig';
 
 export class CaveCarverStage implements ChunkPipelineStage {
   public name = 'CaveCarver';

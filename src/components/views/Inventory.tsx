@@ -5,7 +5,7 @@ import { Dialog } from '@components/common/Dialog';
 import { useTranslation } from '@i18n';
 import type { HotbarItem } from '@store/types';
 import styles from './Inventory.module.scss';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '@context/GameContext';
 import { BlockIcon } from './ItemIcon';
 import { ItemType } from '@type';
 

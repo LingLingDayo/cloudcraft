@@ -1,5 +1,5 @@
 import { GameMode, type HotbarItem } from '@type';
-import pkg from '../../../package.json';
+import pkg from '@package';
 
 export interface SaveMetadata {
   id: string;
