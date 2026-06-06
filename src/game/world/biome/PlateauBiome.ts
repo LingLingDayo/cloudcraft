@@ -14,14 +14,6 @@ export class PlateauBiome implements Biome {
     this.targetMoisture = targetMoisture;
   }
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 基础高度 190 左右，利用 smoothstep 实现平坦高台
-    const rawNoise = noise.fbm(wx * 0.012, wz * 0.012, 3, 0.4); // -1 to 1
-    const t = Math.max(0, Math.min(1, (rawNoise + 0.15) / 0.8));
-    const smoothT = t * t * (3 - 2 * t);
-    return Math.floor(190 + smoothT * 40);
-  }
-
   public fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -33,17 +25,22 @@ export class PlateauBiome implements Biome {
     _noise: ImprovedNoise,
     _wx: number,
     _wz: number,
-    isDryLand: boolean
+    isDryLand: boolean,
+    slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === finalHeight) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE; // 陡坡裸岩
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.GRASS;
       }
     } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE;
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.DIRT;
@@ -52,7 +49,6 @@ export class PlateauBiome implements Biome {
       chunk[index] = BLOCK_TYPES.STONE;
     }
   }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.15; // 高原植物较少
@@ -115,4 +111,3 @@ export class PlateauBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
-

@@ -97,7 +97,8 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
                 col.localWaterLevel,
                 col.isDryLand && !col.isPond,
                 wx,
-                wz
+                wz,
+                col.slope
               );
               const groundProps = getBlockProperties(groundType);
               if (groundProps.allowVegetationBase) {

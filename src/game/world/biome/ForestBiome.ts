@@ -14,11 +14,6 @@ export class ForestBiome implements Biome {
     this.targetMoisture = targetMoisture;
   }
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 森林也属于平缓的普通地形，比海平面(150)高出约 1-10 格，但有轻微坡度起伏
-    return Math.floor(155 + noise.fbm(wx * 0.015, wz * 0.015, 2, 0.4) * 5);
-  }
-
   public fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -30,17 +25,22 @@ export class ForestBiome implements Biome {
     _noise: ImprovedNoise,
     _wx: number,
     _wz: number,
-    isDryLand: boolean
+    isDryLand: boolean,
+    slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === finalHeight) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE; // 陡峭峭壁裸露岩石
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.GRASS;
       }
     } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE;
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.DIRT;
@@ -50,9 +50,7 @@ export class ForestBiome implements Biome {
     }
   }
 
-
   public getTreeProbability(_chunkRandom: number): number {
-    // 25% 概率在区块内长树，并在区块内长 1~3 棵
     return 0.25;
   }
 
@@ -65,8 +63,6 @@ export class ForestBiome implements Biome {
     treeIndex: number,
     noise: ImprovedNoise
   ): void {
-    // 森林内橡树（45%）、白桦（55%）
-    // 为了使噪波决定伪随机值，我们基于 wx, wz 和 treeIndex 构造一些伪随机数
     const seed = chunkRandom * 10 + treeIndex;
     const treeTypeVal = (Math.sin(seed * 123.456) * 43758.5453) % 1;
     const heightRand = (Math.sin(seed * 789.012) * 43758.5453) % 1;
@@ -106,12 +102,10 @@ export class ForestBiome implements Biome {
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
     const r = noise.pseudoRandom2d(wx, wz);
-    // 14% 概率生成植被
     if (r < 0.14) {
       if (r < 0.098) {
         return BLOCK_TYPES.TALL_GRASS;
       } else if (r < 0.119) {
-        // 15% 概率生成单格花朵
         const flowers = [
           BLOCK_TYPES.DANDELION,
           BLOCK_TYPES.POPPY,
@@ -122,7 +116,6 @@ export class ForestBiome implements Biome {
         const idx = Math.floor((r - 0.098) * 238) % flowers.length;
         return flowers[idx];
       } else {
-        // 15% 概率生成双格高植物
         const tallPlants = [
           BLOCK_TYPES.SUNFLOWER_BOTTOM,
           BLOCK_TYPES.ROSE_BUSH_BOTTOM,
@@ -137,4 +130,3 @@ export class ForestBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
-

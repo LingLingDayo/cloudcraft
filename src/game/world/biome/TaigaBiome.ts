@@ -14,11 +14,6 @@ export class TaigaBiome implements Biome {
     this.targetMoisture = targetMoisture;
   }
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 针叶林作为丘陵地形，起伏较明显，既有靠近海平面的低洼处，也有最高约 170 的丘陵高地
-    return Math.floor(158 + noise.fbm(wx * 0.012, wz * 0.012, 3, 0.4) * 12);
-  }
-
   public fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -30,17 +25,22 @@ export class TaigaBiome implements Biome {
     _noise: ImprovedNoise,
     _wx: number,
     _wz: number,
-    isDryLand: boolean
+    isDryLand: boolean,
+    slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === finalHeight) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE; // 陡坡裸岩
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.GRASS;
       }
     } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2 && !isDryLand) {
+      if (slope > 3.0) {
+        chunk[index] = BLOCK_TYPES.STONE;
+      } else if (y < waterLevel + 2 && !isDryLand) {
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
         chunk[index] = BLOCK_TYPES.DIRT;
@@ -49,7 +49,6 @@ export class TaigaBiome implements Biome {
       chunk[index] = BLOCK_TYPES.STONE;
     }
   }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.3; // 针叶林树木稍微密集一些
@@ -96,4 +95,3 @@ export class TaigaBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
-

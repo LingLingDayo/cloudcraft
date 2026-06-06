@@ -43,6 +43,11 @@ export const WORLD_CONFIG = {
   },
   biomeScale: 0.003,
   biomeOffset: 2000,
+  landform: {
+    scale: 0.003,
+    offsetC: 4000,
+    offsetE: 6000,
+  },
   biomeTempThresholds: {
     hot: 0.65,
     cold: 0.35,

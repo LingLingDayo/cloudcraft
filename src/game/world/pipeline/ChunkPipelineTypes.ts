@@ -9,6 +9,7 @@ export interface ColumnTerrainData {
   isDryLand: boolean;
   isPond: boolean;
   maxHeightOffset: number;
+  slope: number;
 }
 
 export type ChunkTerrainMap = ColumnTerrainData[][];

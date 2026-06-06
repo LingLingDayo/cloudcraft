@@ -13,6 +13,7 @@ import { EnvironmentManager } from './EnvironmentManager';
 import { InteractionManager } from './InteractionManager';
 import { DroppedItemManager } from './DroppedItemManager';
 import { AnimalManager } from './AnimalManager';
+import { WORLD_CONFIG } from '@game/world/WorldConfig';
 
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
@@ -316,21 +317,35 @@ export class GameManager {
     const ly = ((Math.floor(playerPos.y) % 16) + 16) % 16;
     const lz = ((Math.floor(playerPos.z) % 16) + 16) % 16;
 
-    // 4. Biome and terrain height
+    // 4. Biome, Landform and terrain height
     let biomeInfo: DebugMetrics['biome'] = null;
+    let landformInfo: DebugMetrics['landform'] = null;
     let terrainHeight = 0;
+    let currentSlope = 0;
     if (this.world && this.world.generator) {
-      const { height, primaryBiome } = this.world.generator.getInterpolatedHeightAndBiome(
+      const { height, primaryBiome, primaryLandform, slope } = this.world.generator.getInterpolatedHeightAndBiome(
         playerPos.x,
         playerPos.z
       );
       terrainHeight = height;
+      currentSlope = slope;
       if (primaryBiome) {
         biomeInfo = {
           id: primaryBiome.id,
           name: primaryBiome.name,
           temp: primaryBiome.targetTemp,
           moisture: primaryBiome.targetMoisture,
+        };
+      }
+      if (primaryLandform) {
+        const scale = WORLD_CONFIG.landform.scale;
+        const c = (this.world.generator.getNoise().noise((playerPos.x + WORLD_CONFIG.landform.offsetC) * scale, (playerPos.z + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
+        const e = (this.world.generator.getNoise().noise((playerPos.x + WORLD_CONFIG.landform.offsetE) * scale, (playerPos.z + WORLD_CONFIG.landform.offsetE) * scale) + 1) / 2;
+        landformInfo = {
+          id: primaryLandform.id,
+          name: primaryLandform.name,
+          continentalness: c,
+          erosion: e,
         };
       }
     }
@@ -371,6 +386,8 @@ export class GameManager {
       playerRotation: { yaw, pitch },
       chunkCoords: { cx, cy, cz, lx, ly, lz },
       biome: biomeInfo,
+      landform: landformInfo,
+      slope: currentSlope,
       terrainHeight,
       gameTime: {
         time: gameTimeVal,

@@ -105,6 +105,7 @@ export const en = {
     facing: 'Facing',
     world: 'World',
     biome: 'Biome',
+    landform: 'Terrain Landform',
     terrainHeight: 'Surface Height',
     gameTime: 'Game Time',
     entities: 'Active Entities',

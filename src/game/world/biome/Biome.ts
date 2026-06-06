@@ -16,10 +16,7 @@ export interface Biome {
   targetTemp: number;       // 生态对应的目标温度点 (用于多噪波参数空间选择)
   targetMoisture: number;   // 生态对应的目标湿度点 (用于多噪波参数空间选择)
 
-  // 根据坐标 (wx, wz) 和噪声计算该生态在该点的地形高度
-  getHeight(wx: number, wz: number, noise: ImprovedNoise): number;
-
-  // 根据当前列的各种参数，在此高度 y 填充方块类型
+  // 根据当前列的各种参数，在此高度 y 填充方块类型，增加了 slope 坡度参数
   fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -31,7 +28,8 @@ export interface Biome {
     noise: ImprovedNoise,
     wx: number,
     wz: number,
-    isDryLand: boolean
+    isDryLand: boolean,
+    slope: number
   ): void;
 
   // 获取在该生态中长植物/树木的概率

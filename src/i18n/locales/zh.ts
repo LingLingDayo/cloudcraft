@@ -105,6 +105,7 @@ export const zh = {
     facing: '朝向',
     world: '世界',
     biome: '生态群系',
+    landform: '地形地貌',
     terrainHeight: '地表高度',
     gameTime: '游戏时间',
     entities: '激活实体',
