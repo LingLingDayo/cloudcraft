@@ -17,9 +17,10 @@ export class ItemRegistry {
 
   public static register(item: Item) {
     this.items.set(item.id, item);
-    if (item instanceof BlockItem) {
-      this.blockToItemMap.set(item.blockId, item.id);
-      this.itemToBlockMap.set(item.id, item.blockId);
+    if (item.isBlockItem) {
+      const blockItem = item as BlockItem;
+      this.blockToItemMap.set(blockItem.blockId, blockItem.id);
+      this.itemToBlockMap.set(blockItem.id, blockItem.blockId);
     }
   }
 

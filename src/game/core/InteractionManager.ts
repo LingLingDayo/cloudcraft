@@ -199,8 +199,8 @@ export class InteractionManager {
       const blockCtx = this.buildBlockPlaceContext();
       if (blockCtx && item.onUseOnBlock(blockCtx)) {
         // 播放放置音效
-        if (item instanceof BlockItem) {
-          sound.playPlace(item.getPlaceSoundType());
+        if (item.isBlockItem) {
+          sound.playPlace((item as BlockItem).getPlaceSoundType());
         }
         // 扣减物品（非创造模式）
         const isCreative = storeState.gameMode === 'creative';
