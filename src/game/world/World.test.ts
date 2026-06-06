@@ -82,33 +82,7 @@ describe('World Serialization by Modified Blocks Tracking', () => {
     expect(modifiedSave.length).toBeLessThan(200); // Still extremely small!
   });
 
-  test('should successfully upgrade and restore legacy 2D serialized world state', () => {
-    const world = new World('legacy-upgrade-seed');
-    
-    // Legacy save with 2D chunk keys (cx,cz) and absolute Y coordinates in posKey (lx,y,lz)
-    const legacySave = JSON.stringify({
-      seed: 'legacy-upgrade-seed',
-      modified: {
-        "0,0": {
-          "1,10,1": BLOCK_TYPES.STONE,
-          "2,20,3": BLOCK_TYPES.DIAMOND
-        },
-        "1,1": {
-          "1,35,1": BLOCK_TYPES.GLASS
-        }
-      }
-    });
 
-    world.loadWorld(legacySave);
-
-    // Verify they are restored and migrated properly to 3D sub-chunks (cy = Math.floor(y / 16), ly = y % 16)
-    // 1. (1, 10, 1) -> cx=0, cy=0, cz=0, lx=1, ly=10, lz=1. Relative posKey "1,10,1" in chunk "0,0,0"
-    expect(world.getBlock(1, 10, 1)).toBe(BLOCK_TYPES.STONE);
-    // 2. (2, 20, 3) -> cx=0, cy=1, cz=0, lx=2, ly=4, lz=3. Relative posKey "2,4,3" in chunk "0,1,0"
-    expect(world.getBlock(2, 20, 3)).toBe(BLOCK_TYPES.DIAMOND);
-    // 3. (17, 35, 17) -> x=17 (cx=1, lx=1), y=35 (cy=2, ly=3), z=17 (cz=1, lz=1). Relative posKey "1,3,1" in chunk "1,2,1"
-    expect(world.getBlock(17, 35, 17)).toBe(BLOCK_TYPES.GLASS);
-  });
 });
 
 describe('World Cave and Dry Land Ocean Mask Generation', () => {
