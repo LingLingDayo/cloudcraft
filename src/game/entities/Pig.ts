@@ -13,6 +13,9 @@ export class Pig extends Animal {
   protected panicSpeed = 5.2;
   protected jumpSpeed = 6.2;
 
+  public hurtSound = 'playPigHurt';
+  public deathSound = 'playPigDeath';
+
   // Static cached textures
   private static pinkTexture: THREE.Texture;
   private static headFrontTexture: THREE.Texture;

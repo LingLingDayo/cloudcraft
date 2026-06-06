@@ -1,6 +1,6 @@
 import { Item, BlockItem, FoodItem } from './Item';
 import { ItemType, BlockType, BLOCK_TYPES } from '@type';
-import { getBlockProperties } from '@game/world/BlockConfig';
+import { BlockRegistry } from '@game/world/block/BlockRegistry';
 
 export class ItemRegistry {
   private static items = new Map<ItemType, Item>();
@@ -62,55 +62,37 @@ export class ItemRegistry {
     }));
 
     // 2. Register BlockItems for all block types automatically
-    const blocksList = [
-      { id: BLOCK_TYPES.GRASS, itemId: ItemType.GRASS },
-      { id: BLOCK_TYPES.DIRT, itemId: ItemType.DIRT },
-      { id: BLOCK_TYPES.STONE, itemId: ItemType.STONE },
-      { id: BLOCK_TYPES.WOOD, itemId: ItemType.WOOD },
-      { id: BLOCK_TYPES.LEAF, itemId: ItemType.LEAF },
-      { id: BLOCK_TYPES.BRICK, itemId: ItemType.BRICK },
-      { id: BLOCK_TYPES.GLASS, itemId: ItemType.GLASS },
-      { id: BLOCK_TYPES.WATER, itemId: ItemType.WATER },
-      { id: BLOCK_TYPES.SAND, itemId: ItemType.SAND },
-      { id: BLOCK_TYPES.COAL, itemId: ItemType.COAL },
-      { id: BLOCK_TYPES.IRON, itemId: ItemType.IRON },
-      { id: BLOCK_TYPES.DIAMOND, itemId: ItemType.DIAMOND },
-      { id: BLOCK_TYPES.CHEST, itemId: ItemType.CHEST },
-      { id: BLOCK_TYPES.LEVER, itemId: ItemType.LEVER },
-      { id: BLOCK_TYPES.BIRCH_WOOD, itemId: ItemType.BIRCH_WOOD },
-      { id: BLOCK_TYPES.BIRCH_LEAVES, itemId: ItemType.BIRCH_LEAVES },
-      { id: BLOCK_TYPES.SPRUCE_WOOD, itemId: ItemType.SPRUCE_WOOD },
-      { id: BLOCK_TYPES.SPRUCE_LEAVES, itemId: ItemType.SPRUCE_LEAVES },
-      { id: BLOCK_TYPES.CACTUS, itemId: ItemType.CACTUS },
-      { id: BLOCK_TYPES.JUNGLE_WOOD, itemId: ItemType.JUNGLE_WOOD },
-      { id: BLOCK_TYPES.JUNGLE_LEAVES, itemId: ItemType.JUNGLE_LEAVES },
-      { id: BLOCK_TYPES.SANDSTONE, itemId: ItemType.SANDSTONE },
-      { id: BLOCK_TYPES.OAK_SAPLING, itemId: ItemType.OAK_SAPLING },
-      { id: BLOCK_TYPES.BIRCH_SAPLING, itemId: ItemType.BIRCH_SAPLING },
-      { id: BLOCK_TYPES.SPRUCE_SAPLING, itemId: ItemType.SPRUCE_SAPLING },
-      { id: BLOCK_TYPES.JUNGLE_SAPLING, itemId: ItemType.JUNGLE_SAPLING },
-      { id: BLOCK_TYPES.DANDELION, itemId: ItemType.DANDELION },
-      { id: BLOCK_TYPES.POPPY, itemId: ItemType.POPPY },
-      { id: BLOCK_TYPES.BLUE_ORCHID, itemId: ItemType.BLUE_ORCHID },
-      { id: BLOCK_TYPES.ALLIUM, itemId: ItemType.ALLIUM },
-      { id: BLOCK_TYPES.OXEYE_DAISY, itemId: ItemType.OXEYE_DAISY },
-      { id: BLOCK_TYPES.TALL_GRASS, itemId: ItemType.TALL_GRASS },
-      { id: BLOCK_TYPES.FERN, itemId: ItemType.FERN },
-      { id: BLOCK_TYPES.DEAD_BUSH, itemId: ItemType.DEAD_BUSH },
-      { id: BLOCK_TYPES.SUNFLOWER_BOTTOM, itemId: ItemType.SUNFLOWER },
-      { id: BLOCK_TYPES.ROSE_BUSH_BOTTOM, itemId: ItemType.ROSE_BUSH },
-      { id: BLOCK_TYPES.PEONY_BOTTOM, itemId: ItemType.PEONY },
-      { id: BLOCK_TYPES.LILAC_BOTTOM, itemId: ItemType.LILAC },
-      { id: BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM, itemId: ItemType.DOUBLE_TALL_GRASS },
-    ];
+    const blockTypeToKey = new Map<number, string>();
+    for (const [key, val] of Object.entries(BLOCK_TYPES)) {
+      blockTypeToKey.set(val as number, key);
+    }
 
-    for (const b of blocksList) {
-      const props = getBlockProperties(b.id);
-      if (props) {
+    const allBlocks = BlockRegistry.getAllBlocks();
+    for (const block of allBlocks) {
+      if (block.id === BLOCK_TYPES.AIR) continue;
+
+      const keyName = blockTypeToKey.get(block.id);
+      if (!keyName) continue;
+
+      // Filter out Top blocks of double-height plants, as they are represented by Sunflower/Rosebush etc. items
+      if (keyName.endsWith('_TOP')) {
+        continue;
+      }
+
+      let itemType: ItemType | undefined = (ItemType as Record<string, string>)[keyName] as ItemType;
+
+      // If not found directly, try stripping _BOTTOM suffix
+      if (!itemType && keyName.endsWith('_BOTTOM')) {
+        const baseName = keyName.replace('_BOTTOM', '');
+        itemType = (ItemType as Record<string, string>)[baseName] as ItemType;
+      }
+
+      if (itemType) {
+        const props = block.properties;
         this.register(new BlockItem({
-          id: b.itemId,
+          id: itemType,
           name: props.name,
-          blockId: b.id,
+          blockId: block.id,
           textureFaces: props.textureFaces,
           droppedModelType: props.isCrossModel ? 'cross' : 'block',
           color: props.color,

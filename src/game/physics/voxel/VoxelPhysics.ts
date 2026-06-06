@@ -43,8 +43,134 @@ export class VoxelPhysics {
     return getBlockProperties(blockId).isSolid;
   }
 
-  public isCollidable(blockId: number): boolean {
+  public static isCollidable(blockId: number): boolean {
     return getBlockProperties(blockId).isCollidable ?? getBlockProperties(blockId).isSolid;
+  }
+
+  public isCollidable(blockId: number): boolean {
+    return VoxelPhysics.isCollidable(blockId);
+  }
+
+  /**
+   * 获取任意实体的碰撞包圍盒
+   */
+  public static getBoundingBox(position: THREE.Vector3, size: { width: number; height: number; depth: number }): THREE.Box3 {
+    const halfW = size.width / 2;
+    const halfD = size.depth / 2;
+    return new THREE.Box3(
+      new THREE.Vector3(position.x - halfW, position.y, position.z - halfD),
+      new THREE.Vector3(position.x + halfW, position.y + size.height, position.z + halfD)
+    );
+  }
+
+  /**
+   * 获取与包圍盒相交的所有可碰撞体素方块
+   */
+  public static getCollidingBlocks(world: World, box: THREE.Box3): { x: number; y: number; z: number; id: number }[] {
+    const colliders = [];
+    const minX = Math.floor(box.min.x);
+    const maxX = Math.floor(box.max.x);
+    const minY = Math.floor(box.min.y);
+    const maxY = Math.floor(box.max.y);
+    const minZ = Math.floor(box.min.z);
+    const maxZ = Math.floor(box.max.z);
+
+    const eps = 1e-4;
+
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        for (let z = minZ; z <= maxZ; z++) {
+          const id = world.getBlock(x, y, z);
+          if (VoxelPhysics.isCollidable(id)) {
+            const isIntersect = (
+              box.min.x + eps < x + 1 &&
+              box.max.x - eps > x &&
+              box.min.y + eps < y + 1 &&
+              box.max.y - eps > y &&
+              box.min.z + eps < z + 1 &&
+              box.max.z - eps > z
+            );
+            if (isIntersect) {
+              colliders.push({ x, y, z, id });
+            }
+          }
+        }
+      }
+    }
+    return colliders;
+  }
+
+  /**
+   * 专为实体（动物、掉落物等）设计的通用静态碰撞运动解析方法
+   */
+  public static resolveMove(
+    world: World,
+    position: THREE.Vector3,
+    velocity: THREE.Vector3,
+    size: { width: number; height: number; depth: number },
+    dt: number
+  ): { collidedX: boolean; collidedZ: boolean; onGround: boolean } {
+    let collidedX = false;
+    let collidedZ = false;
+    let onGround = false;
+
+    // 1. 沿 X 轴移动与碰撞处理
+    position.x += velocity.x * dt;
+    let box = VoxelPhysics.getBoundingBox(position, size);
+    let colliders = VoxelPhysics.getCollidingBlocks(world, box);
+    for (const block of colliders) {
+      const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
+      if (overlapX > 0) {
+        if (velocity.x > 0) position.x -= overlapX;
+        else if (velocity.x < 0) position.x += overlapX;
+        velocity.x = 0;
+        collidedX = true;
+        box = VoxelPhysics.getBoundingBox(position, size);
+      }
+    }
+
+    // 2. 沿 Z 轴移动与碰撞处理
+    position.z += velocity.z * dt;
+    box = VoxelPhysics.getBoundingBox(position, size);
+    colliders = VoxelPhysics.getCollidingBlocks(world, box);
+    for (const block of colliders) {
+      const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
+      if (overlapZ > 0) {
+        if (velocity.z > 0) position.z -= overlapZ;
+        else if (velocity.z < 0) position.z += overlapZ;
+        velocity.z = 0;
+        collidedZ = true;
+        box = VoxelPhysics.getBoundingBox(position, size);
+      }
+    }
+
+    // 3. 沿 Y 轴移动与碰撞处理
+    position.y += velocity.y * dt;
+    box = VoxelPhysics.getBoundingBox(position, size);
+    colliders = VoxelPhysics.getCollidingBlocks(world, box);
+    for (const block of colliders) {
+      const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
+      if (overlapY > 0) {
+        if (velocity.y > 0) {
+          position.y -= overlapY;
+          velocity.y = 0;
+        } else if (velocity.y < 0) {
+          position.y += overlapY;
+          velocity.y = 0;
+          onGround = true;
+        }
+        box = VoxelPhysics.getBoundingBox(position, size);
+      }
+    }
+
+    // 防掉出虚空保护
+    if (position.y < 0) {
+      position.y = 0;
+      velocity.y = 0;
+      onGround = true;
+    }
+
+    return { collidedX, collidedZ, onGround };
   }
 
   // Get bounding box of the player

@@ -124,6 +124,22 @@ export class GameManager {
     this.interaction = new InteractionManager(this);
     this.droppedItems = new DroppedItemManager(this);
     this.animals = new AnimalManager(this);
+
+    // Subscribe to chestInventory changes in Zustand to sync with engine blockEntities
+    let prevChestInventory = useGameStore.getState().chestInventory;
+    useGameStore.subscribe((state) => {
+      const nextChest = state.chestInventory;
+      if (nextChest !== prevChestInventory) {
+        prevChestInventory = nextChest;
+        const activeChest = state.activeChest;
+        if (activeChest) {
+          const entity = this.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
+          if (entity && 'inventory' in entity) {
+            (entity as any).inventory = [...nextChest];
+          }
+        }
+      }
+    });
   }
 
   public spawnPlayer() {

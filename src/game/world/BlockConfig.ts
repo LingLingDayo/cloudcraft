@@ -29,6 +29,12 @@ export interface BlockProperties {
   enableCrossOffset?: boolean;       // 是否启用斜对角平面随机微调偏移 (避免完美网格对齐)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
+  lootTable?: {
+    itemType: string;
+    probability: number;
+    minCount?: number;
+    maxCount?: number;
+  }[];
 }
 
 // ─── AIR 默认属性（propertiesResolver 初始化前的回退值）───

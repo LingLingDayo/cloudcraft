@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { World } from '@game/world/World';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
+import { VoxelPhysics } from '@game/physics/voxel/VoxelPhysics';
+import { sound } from '@game/systems/Sound';
 
 export abstract class Animal {
   public id: string;
@@ -33,6 +35,10 @@ export abstract class Animal {
   protected abstract panicSpeed: number;
   protected abstract jumpSpeed: number;
 
+  // Sound keys
+  public abstract hurtSound: string;
+  public abstract deathSound: string;
+
   protected world: World;
 
   constructor(id: string, spawnPos: THREE.Vector3, world: World, maxLife = 10) {
@@ -50,48 +56,7 @@ export abstract class Animal {
   public abstract dropItems(): void;
 
   public getBoundingBox(pos = this.position): THREE.Box3 {
-    const halfW = this.width / 2;
-    const halfD = this.depth / 2;
-    return new THREE.Box3(
-      new THREE.Vector3(pos.x - halfW, pos.y, pos.z - halfD),
-      new THREE.Vector3(pos.x + halfW, pos.y + this.height, pos.z + halfD)
-    );
-  }
-
-  private getCollidingBlocks(box: THREE.Box3): { x: number; y: number; z: number }[] {
-    const colliders = [];
-    const minX = Math.floor(box.min.x);
-    const maxX = Math.floor(box.max.x);
-    const minY = Math.floor(box.min.y);
-    const maxY = Math.floor(box.max.y);
-    const minZ = Math.floor(box.min.z);
-    const maxZ = Math.floor(box.max.z);
-
-    const eps = 1e-4;
-
-    for (let x = minX; x <= maxX; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        for (let z = minZ; z <= maxZ; z++) {
-          const id = this.world.getBlock(x, y, z);
-          const props = getBlockProperties(id);
-          const isCollidable = props.isCollidable ?? props.isSolid;
-          if (isCollidable) {
-            const isIntersect = (
-              box.min.x + eps < x + 1 &&
-              box.max.x - eps > x &&
-              box.min.y + eps < y + 1 &&
-              box.max.y - eps > y &&
-              box.min.z + eps < z + 1 &&
-              box.max.z - eps > z
-            );
-            if (isIntersect) {
-              colliders.push({ x, y, z });
-            }
-          }
-        }
-      }
-    }
-    return colliders;
+    return VoxelPhysics.getBoundingBox(pos, { width: this.width, height: this.height, depth: this.depth });
   }
 
   public checkInWater(): boolean {
@@ -186,43 +151,26 @@ export abstract class Animal {
       }
     }
 
-    // Move along X
-    this.position.x += this.velocity.x * dt;
-    let box = this.getBoundingBox();
-    let colliders = this.getCollidingBlocks(box);
-    let collidedX = false;
-    for (const block of colliders) {
-      const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
-      if (overlapX > 0) {
-        if (this.velocity.x > 0) this.position.x -= overlapX;
-        else if (this.velocity.x < 0) this.position.x += overlapX;
-        this.velocity.x = 0;
-        collidedX = true;
-        box = this.getBoundingBox();
-      }
-    }
+    // Record pre-collision horizontal movement indicators for step-up jump check
+    const velXBefore = this.velocity.x;
+    const velZBefore = this.velocity.z;
 
-    // Move along Z
-    this.position.z += this.velocity.z * dt;
-    box = this.getBoundingBox();
-    colliders = this.getCollidingBlocks(box);
-    let collidedZ = false;
-    for (const block of colliders) {
-      const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
-      if (overlapZ > 0) {
-        if (this.velocity.z > 0) this.position.z -= overlapZ;
-        else if (this.velocity.z < 0) this.position.z += overlapZ;
-        this.velocity.z = 0;
-        collidedZ = true;
-        box = this.getBoundingBox();
-      }
-    }
+    // Delegate movement and collision resolution to VoxelPhysics.resolveMove
+    const { collidedX, collidedZ, onGround } = VoxelPhysics.resolveMove(
+      this.world,
+      this.position,
+      this.velocity,
+      { width: this.width, height: this.height, depth: this.depth },
+      dt
+    );
+
+    this.state.onGround = onGround;
 
     // Step-up jump check: if animal hits a wall horizontally, try to jump
     if (this.state.onGround && (collidedX || collidedZ)) {
       // Check if there is block blocking front at knee height
-      const dx = Math.sign(this.velocity.x || this.targetDir.x);
-      const dz = Math.sign(this.velocity.z || this.targetDir.z);
+      const dx = Math.sign(velXBefore || this.targetDir.x);
+      const dz = Math.sign(velZBefore || this.targetDir.z);
       const checkX = Math.floor(this.position.x + dx * 0.45);
       const checkY = Math.floor(this.position.y);
       const checkZ = Math.floor(this.position.z + dz * 0.45);
@@ -232,33 +180,6 @@ export abstract class Animal {
       if (getBlockProperties(blockHead).id === BLOCK_TYPES.AIR) {
         this.shouldJump = true;
       }
-    }
-
-    // Move along Y
-    this.position.y += this.velocity.y * dt;
-    box = this.getBoundingBox();
-    colliders = this.getCollidingBlocks(box);
-    this.state.onGround = false;
-    for (const block of colliders) {
-      const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
-      if (overlapY > 0) {
-        if (this.velocity.y > 0) {
-          this.position.y -= overlapY;
-          this.velocity.y = 0;
-        } else if (this.velocity.y < 0) {
-          this.position.y += overlapY;
-          this.velocity.y = 0;
-          this.state.onGround = true;
-        }
-        box = this.getBoundingBox();
-      }
-    }
-
-    // Avoid falling into void
-    if (this.position.y < 0) {
-      this.position.y = 0;
-      this.velocity.y = 0;
-      this.state.onGround = true;
     }
   }
 
@@ -283,6 +204,17 @@ export abstract class Animal {
     this.targetDir.set(Math.sin(angle), 0, Math.cos(angle)).normalize();
 
     this.triggerHurtVisual();
+
+    if (this.hurtSound) {
+      if (typeof sound.play === 'function') {
+        sound.play(this.hurtSound);
+      } else {
+        const fallbackFn = (sound as unknown as Record<string, unknown>)[this.hurtSound];
+        if (typeof fallbackFn === 'function') {
+          fallbackFn.call(sound);
+        }
+      }
+    }
 
     if (this.life <= 0) {
       this.die();
@@ -321,6 +253,16 @@ export abstract class Animal {
   protected die() {
     this.isDead = true;
     this.resetHurtVisual();
+    if (this.deathSound) {
+      if (typeof sound.play === 'function') {
+        sound.play(this.deathSound);
+      } else {
+        const fallbackFn = (sound as unknown as Record<string, unknown>)[this.deathSound];
+        if (typeof fallbackFn === 'function') {
+          fallbackFn.call(sound);
+        }
+      }
+    }
     this.dropItems();
   }
 }

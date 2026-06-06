@@ -6,7 +6,6 @@ import { BLOCK_TYPES, BlockType } from '@type';
 import { getBlockProperties } from '../BlockConfig';
 import { ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 import { sound } from '@game/systems/Sound';
-import { ItemType } from '@type';
 import { ItemRegistry } from '../../item/ItemRegistry';
 
 
@@ -136,25 +135,6 @@ export class LeafBlock extends Block {
     super(properties);
   }
 
-  public getDrops(): { type: ItemType; count: number }[] {
-    const drops = [];
-    const rand = Math.random();
-    if (rand < 0.1) {
-      let saplingItem: ItemType = ItemType.OAK_SAPLING;
-      if (this.id === BLOCK_TYPES.BIRCH_LEAVES) saplingItem = ItemType.BIRCH_SAPLING;
-      else if (this.id === BLOCK_TYPES.SPRUCE_LEAVES) saplingItem = ItemType.SPRUCE_SAPLING;
-      else if (this.id === BLOCK_TYPES.JUNGLE_LEAVES) saplingItem = ItemType.JUNGLE_SAPLING;
-
-      drops.push({ type: saplingItem, count: 1 });
-    }
-
-    // Oak leaves have a 5% chance of dropping an apple when broken
-    if (this.id === BLOCK_TYPES.LEAF && Math.random() < 0.05) {
-      drops.push({ type: ItemType.APPLE, count: 1 });
-    }
-    return drops;
-  }
-
   public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, _ny: number, _nz: number): void {
     // 当邻居改变时，检查是否仍连接树木
     world.checkLeafDecay(x, y, z);
@@ -209,14 +189,6 @@ export class FlowerBlock extends Block {
     super(properties);
   }
 
-  public override getDrops(): { type: ItemType; count: number }[] {
-    if (this.id === BLOCK_TYPES.TALL_GRASS) {
-      // 10% chance to drop seed
-      return Math.random() < 0.1 ? [{ type: ItemType.SEED, count: 1 }] : [];
-    }
-    return super.getDrops();
-  }
-
   public onPlaced(world: World, x: number, y: number, z: number): void {
     const belowType = world.getBlock(x, y - 1, z);
     const props = getBlockProperties(belowType);
@@ -258,14 +230,6 @@ export class DoublePlantBottomBlock extends Block {
   constructor(properties: BlockProperties, topBlockId: BlockType) {
     super(properties);
     this.topBlockId = topBlockId;
-  }
-
-  public override getDrops(): { type: ItemType; count: number }[] {
-    if (this.id === BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM) {
-      // 10% chance to drop seed
-      return Math.random() < 0.1 ? [{ type: ItemType.SEED, count: 1 }] : [];
-    }
-    return super.getDrops();
   }
 
   public onPlaced(world: World, x: number, y: number, z: number): void {
@@ -332,18 +296,6 @@ export class DoublePlantTopBlock extends Block {
     if (belowType !== this.bottomBlockId) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
     }
-  }
-
-  public getDrops(): { type: ItemType; count: number }[] {
-    if (this.bottomBlockId === BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM) {
-      // 10% chance to drop seed
-      return Math.random() < 0.1 ? [{ type: ItemType.SEED, count: 1 }] : [];
-    }
-    const itemType = ItemRegistry.getItemTypeFromBlockType(this.bottomBlockId);
-    if (itemType) {
-      return [{ type: itemType, count: 1 }];
-    }
-    return [];
   }
 }
 

@@ -73,6 +73,21 @@ export abstract class Block {
    * 获取该方块破坏后的掉落物
    */
   public getDrops(): { type: ItemType; count: number }[] {
+    if (this.properties.lootTable && this.properties.lootTable.length > 0) {
+      const drops: { type: ItemType; count: number }[] = [];
+      for (const entry of this.properties.lootTable) {
+        if (Math.random() < entry.probability) {
+          const min = entry.minCount ?? 1;
+          const max = entry.maxCount ?? 1;
+          const count = min === max ? min : min + Math.floor(Math.random() * (max - min + 1));
+          if (count > 0) {
+            drops.push({ type: entry.itemType as ItemType, count });
+          }
+        }
+      }
+      return drops;
+    }
+
     const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
     return itemType ? [{ type: itemType, count: 1 }] : [];
   }

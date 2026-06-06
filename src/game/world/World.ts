@@ -9,9 +9,8 @@ import { WorldSerializer } from './WorldSerializer';
 import { TreeStyle } from './biome/Biome';
 import { sound } from '@game/systems/Sound';
 import type { BlockType } from '@type';
-import { ItemType } from '@type';
-import { ItemRegistry } from '@game/item/ItemRegistry';
 import { useGameStore } from '@store/useGameStore';
+import { WorldBlockWriter, TreeStructureGenerator } from './TreeStructureGenerator';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -474,29 +473,13 @@ export class World {
               
               sound.playBreak();
 
-              if (Math.random() < 0.1) {
-                let saplingType: BlockType = BLOCK_TYPES.OAK_SAPLING;
-                if (cleanType === BLOCK_TYPES.BIRCH_LEAVES) saplingType = BLOCK_TYPES.BIRCH_SAPLING;
-                else if (cleanType === BLOCK_TYPES.SPRUCE_LEAVES) saplingType = BLOCK_TYPES.SPRUCE_SAPLING;
-                else if (cleanType === BLOCK_TYPES.JUNGLE_LEAVES) saplingType = BLOCK_TYPES.JUNGLE_SAPLING;
-
-                if (this.game && this.game.droppedItems) {
-                  const itemType = ItemRegistry.getItemTypeFromBlockType(saplingType);
-                  if (itemType) {
-                    this.game.droppedItems.spawnItem(
-                      itemType,
-                      new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5)
-                    );
-                  }
-                }
-              }
-
-              // Oak leaves have a 5% chance of dropping an apple when decaying naturally
-              if (cleanType === BLOCK_TYPES.LEAF && Math.random() < 0.05) {
-                if (this.game && this.game.droppedItems) {
+              if (this.game && this.game.droppedItems) {
+                const drops = blockInstance.getDrops();
+                for (const drop of drops) {
                   this.game.droppedItems.spawnItem(
-                    ItemType.APPLE,
-                    new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5)
+                    drop.type,
+                    new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5),
+                    drop.count
                   );
                 }
               }
@@ -676,110 +659,18 @@ export class World {
     style: TreeStyle
   ): void {
     const height = 4 + Math.floor(Math.random() * 3);
-
-    // Set dirt below trunk
-    this.setBlock(x, y - 1, z, BLOCK_TYPES.DIRT);
-
-    // Grow trunk
-    for (let h = 0; h < height; h++) {
-      this.setBlock(x, y + h, z, trunkBlock);
-    }
-
-    const leafCenterY = y + height;
-
-    if (style === TreeStyle.OAK || style === TreeStyle.BIRCH) {
-      const startY = style === TreeStyle.BIRCH ? -3 : -2;
-      for (let ly = startY; ly <= 1; ly++) {
-        const radius = ly === 1 ? 1 : 2;
-        for (let lx = -radius; lx <= radius; lx++) {
-          for (let lz = -radius; lz <= radius; lz++) {
-            if (lx === 0 && lz === 0 && ly <= 0) continue;
-
-            if (style === TreeStyle.BIRCH && ly === startY && Math.abs(lx) === radius && Math.abs(lz) === radius) {
-              continue;
-            }
-
-            const gx = x + lx;
-            const gy = leafCenterY + ly;
-            const gz = z + lz;
-
-            const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-            if (isOuter && !(lx === 0 && lz === 0)) {
-              if (Math.random() < 0.20) {
-                continue;
-              }
-            }
-
-            if (this.getBlock(gx, gy, gz) === BLOCK_TYPES.AIR) {
-              this.setBlock(gx, gy, gz, leafBlock);
-            }
-          }
-        }
-      }
-    } else if (style === TreeStyle.SPRUCE) {
-      for (let ly = -4; ly <= 1; ly++) {
-        let radius = 1;
-        if (ly === 1) radius = 0;
-        else if (ly === 0) radius = 1;
-        else if (ly === -1) radius = 2;
-        else if (ly === -2) radius = 1;
-        else if (ly === -3) radius = 2;
-        else if (ly === -4) radius = 2;
-
-        for (let lx = -radius; lx <= radius; lx++) {
-          for (let lz = -radius; lz <= radius; lz++) {
-            if (lx === 0 && lz === 0 && ly <= 0) continue;
-
-            if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) {
-              continue;
-            }
-
-            const gx = x + lx;
-            const gy = leafCenterY + ly;
-            const gz = z + lz;
-
-            const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-            if (isOuter && !(lx === 0 && lz === 0)) {
-              if (Math.random() < 0.20) {
-                continue;
-              }
-            }
-
-            if (this.getBlock(gx, gy, gz) === BLOCK_TYPES.AIR) {
-              this.setBlock(gx, gy, gz, leafBlock);
-            }
-          }
-        }
-      }
-    } else if (style === TreeStyle.JUNGLE) {
-      for (let ly = -3; ly <= 1; ly++) {
-        const radius = ly === 1 ? 1 : (ly === -3 ? 1 : 2);
-        for (let lx = -radius; lx <= radius; lx++) {
-          for (let lz = -radius; lz <= radius; lz++) {
-            if (lx === 0 && lz === 0 && ly <= 0) continue;
-
-            if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) {
-              continue;
-            }
-
-            const gx = x + lx;
-            const gy = leafCenterY + ly;
-            const gz = z + lz;
-
-            const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-            if (isOuter && !(lx === 0 && lz === 0)) {
-              if (Math.random() < 0.10) {
-                continue;
-              }
-            }
-
-            if (this.getBlock(gx, gy, gz) === BLOCK_TYPES.AIR) {
-              this.setBlock(gx, gy, gz, leafBlock);
-            }
-          }
-        }
-      }
-    }
+    const writer = new WorldBlockWriter(this);
+    TreeStructureGenerator.growTree(
+      writer,
+      x,
+      y - 1,
+      z,
+      trunkBlock,
+      leafBlock,
+      height,
+      style,
+      () => Math.random()
+    );
   }
 
   private applyChunkModifications(chunkKey: string, chunk: Uint8Array): void {
