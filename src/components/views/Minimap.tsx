@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
-import { useTranslation } from '@i18n';
 import { useGame } from '@context/GameContext';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { World, WORLD_HEIGHT } from '@game/world/World';
@@ -53,15 +52,12 @@ const getShadedColor = (colorHex: number, heightDiff: number, isWater = false): 
 };
 
 export const Minimap: React.FC = () => {
-  const { t } = useTranslation();
   const gameInstance = useGame();
   const showMinimap = useGameStore((state) => state.showMinimap);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   const cachedBlockColorsRef = useRef<string[][]>([]);
   const lastBlockCoordsRef = useRef<{ x: number; z: number }>({ x: -9999, z: -9999 });
-  
-  const facingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!showMinimap || !gameInstance || !canvasRef.current) return;
@@ -78,20 +74,6 @@ export const Minimap: React.FC = () => {
     // Set explicit width/height
     canvas.width = mapSize * pixelSize;
     canvas.height = mapSize * pixelSize;
-
-    const getCardinalDirection = (angle: number): string => {
-      const deg = (angle * 180) / Math.PI;
-      const normDeg = (deg + 360) % 360;
-      
-      if (normDeg >= 337.5 || normDeg < 22.5) return 'N';
-      if (normDeg >= 22.5 && normDeg < 67.5) return 'NE';
-      if (normDeg >= 67.5 && normDeg < 112.5) return 'E';
-      if (normDeg >= 112.5 && normDeg < 157.5) return 'SE';
-      if (normDeg >= 157.5 && normDeg < 202.5) return 'S';
-      if (normDeg >= 202.5 && normDeg < 247.5) return 'SW';
-      if (normDeg >= 247.5 && normDeg < 292.5) return 'W';
-      return 'NW';
-    };
 
     const tick = () => {
       if (!gameInstance.player || !gameInstance.world) {
@@ -269,18 +251,6 @@ export const Minimap: React.FC = () => {
       ctx.stroke();
       
       ctx.restore();
-
-      const cardinal = getCardinalDirection(angle);
-      let facingStr: string;
-      if (cardinal === 'N') facingStr = `${t('hud.spawnPoint')} / ${cardinal} (Facing -Z)`;
-      else if (cardinal === 'E') facingStr = `${cardinal} (Facing +X)`;
-      else if (cardinal === 'S') facingStr = `${cardinal} (Facing +Z)`;
-      else if (cardinal === 'W') facingStr = `${cardinal} (Facing -X)`;
-      else facingStr = cardinal;
-      
-      if (facingRef.current) {
-        facingRef.current.textContent = facingStr;
-      }
     };
 
     const updateLoop = () => {
@@ -293,7 +263,7 @@ export const Minimap: React.FC = () => {
 
     animId = requestAnimationFrame(updateLoop);
     return () => cancelAnimationFrame(animId);
-  }, [showMinimap, gameInstance, t]);
+  }, [showMinimap, gameInstance]);
 
   if (!showMinimap || !gameInstance) return null;
 
@@ -306,9 +276,6 @@ export const Minimap: React.FC = () => {
         <div className={`${styles.compassDir} ${styles.dirS}`}>S</div>
         <div className={`${styles.compassDir} ${styles.dirE}`}>E</div>
         <div className={`${styles.compassDir} ${styles.dirW}`}>W</div>
-      </div>
-      <div className={styles.minimapInfo}>
-        <div ref={facingRef} className={styles.facing} />
       </div>
     </div>
   );
