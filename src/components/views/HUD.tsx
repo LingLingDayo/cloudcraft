@@ -283,7 +283,13 @@ export const HUD: React.FC = () => {
               <div
                 key={index}
                 className={`hotbar-slot ${isActive ? 'active' : ''}`}
-                onClick={() => setActiveSlot(index)}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  setActiveSlot(index);
+                }}
+                onClick={() => {
+                  if (!isMobile) setActiveSlot(index);
+                }}
               >
                 <span className="hotbar-slot-key">{index + 1}</span>
                 {item && props ? (
@@ -300,12 +306,23 @@ export const HUD: React.FC = () => {
           {isMobile && (
             <div
               className="hotbar-slot mobile-inventory-btn"
-              onClick={() => {
+              onTouchStart={(e) => {
+                e.stopPropagation();
                 const state = useGameStore.getState();
                 if (state.activeChest) {
                   state.closeChest();
                 } else {
                   state.toggleInventory();
+                }
+              }}
+              onClick={() => {
+                if (!isMobile) {
+                  const state = useGameStore.getState();
+                  if (state.activeChest) {
+                    state.closeChest();
+                  } else {
+                    state.toggleInventory();
+                  }
                 }
               }}
               title={t('controls.openInventory')}

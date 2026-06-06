@@ -202,6 +202,7 @@ export const MobileControls: React.FC = () => {
   const [isMobile] = useState(() => isMobileDevice());
   const [toolbarExpanded, setToolbarExpanded] = useState(false);
   const [isJumpActive, setIsJumpActive] = useState(false);
+
   const [activeDirections, setActiveDirections] = useState({
     up: false,
     down: false,
@@ -364,7 +365,13 @@ export const MobileControls: React.FC = () => {
       <div className={`${styles.mobileToolbarContainer} ${toolbarExpanded ? styles.expanded : ''}`}>
         <button 
           className={`${styles.toolbarToggleBtn} glass-panel`}
-          onClick={() => setToolbarExpanded(!toolbarExpanded)}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            setToolbarExpanded(!toolbarExpanded);
+          }}
+          onClick={() => {
+            if (!isMobile) setToolbarExpanded(!toolbarExpanded);
+          }}
           title={toolbarExpanded ? "Close Menu" : "Open Menu"}
         >
           <PixelHamburgerIcon />
@@ -373,10 +380,18 @@ export const MobileControls: React.FC = () => {
         <div className={styles.toolbarMenu}>
           <button 
             className={`${styles.toolbarBtn} glass-panel`} 
-            onClick={() => {
+            onTouchStart={(e) => {
+              e.stopPropagation();
               setIsSettingsOpen(false);
               setGameState(GameState.PAUSED);
               setToolbarExpanded(false);
+            }}
+            onClick={() => {
+              if (!isMobile) {
+                setIsSettingsOpen(false);
+                setGameState(GameState.PAUSED);
+                setToolbarExpanded(false);
+              }
             }}
             title={t('settings.title')}
           >
@@ -385,9 +400,16 @@ export const MobileControls: React.FC = () => {
 
           <button 
             className={`${styles.toolbarBtn} glass-panel`} 
-            onClick={() => {
+            onTouchStart={(e) => {
+              e.stopPropagation();
               handleSave();
               setToolbarExpanded(false);
+            }}
+            onClick={() => {
+              if (!isMobile) {
+                handleSave();
+                setToolbarExpanded(false);
+              }
             }}
             title={t('pauseMenu.save')}
           >
@@ -395,7 +417,13 @@ export const MobileControls: React.FC = () => {
           </button>
           <button 
             className={`${styles.toolbarBtn} ${styles.danger} glass-panel`} 
-            onClick={handleQuit}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              handleQuit();
+            }}
+            onClick={() => {
+              if (!isMobile) handleQuit();
+            }}
             title={t('pauseMenu.quit')}
           >
             <PixelQuitIcon />
@@ -449,7 +477,7 @@ export const MobileControls: React.FC = () => {
         onTouchEnd={handleJumpTouchEnd}
         onTouchCancel={handleJumpTouchEnd}
       >
-        <div className={`${styles.jumpBtn} ${isJumpActive ? styles.active : ''}`}>
+        <div className={`${styles.jumpBtn} ${isJumpActive ? styles.active : ''}`} title="Jump">
           <PixelSolidDiamondIcon />
         </div>
       </div>
