@@ -219,7 +219,7 @@ export class World {
 
     const activeKeys = new Set<string>();
     const neededGeneration: string[] = [];
-    const verticalRadius = 6; // Load 6 chunks up and down (covers 192 blocks)
+    const radiusSq = radius * radius;
 
     // Initialize loading progress for this area if we are in world loading screen and asynchronous
     if (!shouldSync) {
@@ -227,8 +227,9 @@ export class World {
       if (store.isWorldLoading) {
         const keys: string[] = [];
         for (let dx = -radius; dx <= radius; dx++) {
-          for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+          for (let dy = -radius; dy <= radius; dy++) {
             for (let dz = -radius; dz <= radius; dz++) {
+              if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
               const cx = ccx + dx;
               const cy = ccy + dy;
               const cz = ccz + dz;
@@ -255,8 +256,9 @@ export class World {
     }
 
     for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+      for (let dy = -radius; dy <= radius; dy++) {
         for (let dz = -radius; dz <= radius; dz++) {
+          if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
           const cx = ccx + dx;
           const cy = ccy + dy;
           const cz = ccz + dz;
@@ -282,8 +284,9 @@ export class World {
 
     if (shouldSync) {
       for (let dx = -radius; dx <= radius; dx++) {
-        for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+        for (let dy = -radius; dy <= radius; dy++) {
           for (let dz = -radius; dz <= radius; dz++) {
+            if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
             const cx = ccx + dx;
             const cy = ccy + dy;
             const cz = ccz + dz;
@@ -301,8 +304,9 @@ export class World {
     } else {
       const neededMesh: string[] = [];
       for (let dx = -radius; dx <= radius; dx++) {
-        for (let dy = -verticalRadius; dy <= verticalRadius; dy++) {
+        for (let dy = -radius; dy <= radius; dy++) {
           for (let dz = -radius; dz <= radius; dz++) {
+            if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
             const cx = ccx + dx;
             const cy = ccy + dy;
             const cz = ccz + dz;
