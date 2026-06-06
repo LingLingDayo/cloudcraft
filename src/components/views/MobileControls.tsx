@@ -211,6 +211,9 @@ export const MobileControls: React.FC = () => {
   });
 
   const dpadRef = useRef<HTMLDivElement>(null);
+  const prevUpRef = useRef<boolean>(false);
+  const lastUpTimeRef = useRef<number>(0);
+  const isDoubleTapSprintingRef = useRef<boolean>(false);
 
   // 如果不是移动端，则不渲染任何控制 UI
   if (!isMobile) return null;
@@ -282,6 +285,30 @@ export const MobileControls: React.FC = () => {
 
     setActiveDirections({ up, down, left, right, center });
 
+    // 检测是否触发双击加速
+    const now = Date.now();
+    if (up && !prevUpRef.current) {
+      if (now - lastUpTimeRef.current < 300) {
+        // 双击成功，触发加速
+        isDoubleTapSprintingRef.current = true;
+        hotkeyManager.setActionPressed(GameAction.SNEAK, true);
+      } else {
+        // 单击按下，如果当前处于双击加速，清除它
+        if (isDoubleTapSprintingRef.current) {
+          isDoubleTapSprintingRef.current = false;
+          hotkeyManager.setActionPressed(GameAction.SNEAK, false);
+        }
+      }
+      lastUpTimeRef.current = now;
+    } else if (!up && prevUpRef.current) {
+      // 停止前进时，取消加速
+      if (isDoubleTapSprintingRef.current) {
+        isDoubleTapSprintingRef.current = false;
+        hotkeyManager.setActionPressed(GameAction.SNEAK, false);
+      }
+    }
+    prevUpRef.current = up;
+
     // 同步状态到 HotkeyManager 触发物理层角色移动
     hotkeyManager.setActionPressed(GameAction.MOVE_FORWARD, up);
     hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, down);
@@ -305,6 +332,13 @@ export const MobileControls: React.FC = () => {
       hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, false);
       hotkeyManager.setActionPressed(GameAction.MOVE_LEFT, false);
       hotkeyManager.setActionPressed(GameAction.MOVE_RIGHT, false);
+
+      // 重置前进状态和双击加速状态
+      prevUpRef.current = false;
+      if (isDoubleTapSprintingRef.current) {
+        isDoubleTapSprintingRef.current = false;
+        hotkeyManager.setActionPressed(GameAction.SNEAK, false);
+      }
     } else {
       // 如果仍有手指在屏幕上，则重新评估触控坐标
       handleDpadTouch(e);
