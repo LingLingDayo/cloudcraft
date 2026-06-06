@@ -97,13 +97,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  pointer-events: none;
-  
-  .coords {
-    white-space: nowrap;
-    color: #e2e8f0;
-  }
-
   .facing {
     color: #38bdf8;
   }

@@ -125,9 +125,15 @@ export class GameManager {
     this.droppedItems = new DroppedItemManager(this);
     this.animals = new AnimalManager(this);
 
-    // Subscribe to chestInventory changes in Zustand to sync with engine blockEntities
+    // Subscribe to state changes in Zustand to sync with engine blockEntities and debug settings
     let prevChestInventory = useGameStore.getState().chestInventory;
+    let prevDebugOverlay = useGameStore.getState().debugOverlay;
+    
+    // Sync initial debug overlay state
+    this.debugOverlayVisible = prevDebugOverlay;
+
     useGameStore.subscribe((state) => {
+      // Sync chest inventory
       const nextChest = state.chestInventory;
       if (nextChest !== prevChestInventory) {
         prevChestInventory = nextChest;
@@ -138,6 +144,13 @@ export class GameManager {
             (entity as any).inventory = [...nextChest];
           }
         }
+      }
+
+      // Sync debugOverlay configuration
+      const nextDebugOverlay = state.debugOverlay;
+      if (nextDebugOverlay !== prevDebugOverlay) {
+        prevDebugOverlay = nextDebugOverlay;
+        this.debugOverlayVisible = nextDebugOverlay;
       }
     });
   }

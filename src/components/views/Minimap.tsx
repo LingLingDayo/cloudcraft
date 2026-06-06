@@ -61,7 +61,6 @@ export const Minimap: React.FC = () => {
   const cachedBlockColorsRef = useRef<string[][]>([]);
   const lastBlockCoordsRef = useRef<{ x: number; z: number }>({ x: -9999, z: -9999 });
   
-  const coordsRef = useRef<HTMLDivElement | null>(null);
   const facingRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -271,11 +270,6 @@ export const Minimap: React.FC = () => {
       
       ctx.restore();
 
-      // Update HUD coordinate labels directly
-      if (coordsRef.current) {
-        coordsRef.current.textContent = `X: ${px.toFixed(1)} Y: ${py.toFixed(1)} Z: ${pz.toFixed(1)}`;
-      }
-      
       const cardinal = getCardinalDirection(angle);
       let facingStr: string;
       if (cardinal === 'N') facingStr = `${t('hud.spawnPoint')} / ${cardinal} (Facing -Z)`;
@@ -314,7 +308,6 @@ export const Minimap: React.FC = () => {
         <div className={`${styles.compassDir} ${styles.dirW}`}>W</div>
       </div>
       <div className={styles.minimapInfo}>
-        <div ref={coordsRef} className={styles.coords} />
         <div ref={facingRef} className={styles.facing} />
       </div>
     </div>
