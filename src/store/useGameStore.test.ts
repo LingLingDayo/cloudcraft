@@ -174,6 +174,15 @@ describe('useGameStore', () => {
       chunksLoaded: 9,
       isFlying: false,
       targetBlock: null,
+      playerPosition: { x: 0, y: 0, z: 0 },
+      playerDirection: 'North',
+      playerRotation: { yaw: 0, pitch: 0 },
+      chunkCoords: { cx: 0, cy: 0, cz: 0, lx: 0, ly: 0, lz: 0 },
+      biome: null,
+      terrainHeight: 0,
+      gameTime: { time: 0, formatted: '00:00' },
+      entities: { droppedItems: 0, animals: 0 },
+      renderer: { drawCalls: 0, triangles: 0, geometries: 0, textures: 0 },
     };
     useGameStore.getState().setDebugMetrics(metrics);
     expect(useGameStore.getState().debugMetrics).toEqual(metrics);

@@ -308,18 +308,73 @@ export const HUD: React.FC = () => {
           <div className={`pixel-text-sm ${styles.debugTitle}`}>
             {t('hud.debugTitle')}
           </div>
-          <div>
-            {t('hud.fps')}: <span style={{ color: debugMetrics.fps >= 50 ? '#4ade80' : '#fb7185', fontWeight: 'bold' }}>{debugMetrics.fps}</span>
+          
+          <div className={styles.debugSection}>
+            <div className={styles.sectionHeader}>{t('hud.system')}</div>
+            <div>
+              {t('hud.fps')}: <span style={{ color: debugMetrics.fps >= 50 ? '#4ade80' : '#fb7185', fontWeight: 'bold' }}>{debugMetrics.fps}</span>
+            </div>
+            <div>
+              {t('hud.chunksLoaded')}: <span className={styles.chunkCount}>{debugMetrics.chunksLoaded}</span>
+            </div>
+            <div>
+              {t('hud.flyMode')}:{' '}
+              <span style={{ color: debugMetrics.isFlying ? '#38bdf8' : '#94a3b8', fontWeight: 'bold' }}>
+                {debugMetrics.isFlying ? t('hud.flyModeOn') : t('hud.flyModeOff')}
+              </span>
+            </div>
           </div>
-          <div>
-            {t('hud.chunksLoaded')}: <span className={styles.chunkCount}>{debugMetrics.chunksLoaded}</span>
+
+          <div className={styles.debugSection}>
+            <div className={styles.sectionHeader}>{t('hud.player')}</div>
+            <div>
+              XYZ: <span className={styles.coordValue}>{debugMetrics.playerPosition.x.toFixed(3)} / {debugMetrics.playerPosition.y.toFixed(3)} / {debugMetrics.playerPosition.z.toFixed(3)}</span>
+            </div>
+            <div>
+              {t('hud.chunk')}: <span className={styles.coordValue}>{debugMetrics.chunkCoords.cx} {debugMetrics.chunkCoords.cy} {debugMetrics.chunkCoords.cz}</span> {t('hud.local')}: <span className={styles.coordValue}>{debugMetrics.chunkCoords.lx} {debugMetrics.chunkCoords.ly} {debugMetrics.chunkCoords.lz}</span>
+            </div>
+            <div>
+              {t('hud.facing')}: <span className={styles.directionValue}>{debugMetrics.playerDirection}</span>
+            </div>
+            <div>
+              Yaw / Pitch: <span className={styles.rotationValue}>{debugMetrics.playerRotation.yaw.toFixed(1)}° / {debugMetrics.playerRotation.pitch.toFixed(1)}°</span>
+            </div>
           </div>
-          <div>
-            {t('hud.flyMode')}:{' '}
-            <span style={{ color: debugMetrics.isFlying ? '#38bdf8' : '#94a3b8', fontWeight: 'bold' }}>
-              {debugMetrics.isFlying ? t('hud.flyModeOn') : t('hud.flyModeOff')}
-            </span>
+
+          <div className={styles.debugSection}>
+            <div className={styles.sectionHeader}>{t('hud.world')}</div>
+            <div>
+              {t('hud.biome')}: <span className={styles.biomeName}>{debugMetrics.biome ? debugMetrics.biome.name : t('hud.none')}</span>
+            </div>
+            {debugMetrics.biome && (
+              <div>
+                Temp / Moist: <span className={styles.biomeDetail}>{debugMetrics.biome.temp.toFixed(2)} / {debugMetrics.biome.moisture.toFixed(2)}</span>
+              </div>
+            )}
+            <div>
+              {t('hud.terrainHeight')}: <span className={styles.heightValue}>{debugMetrics.terrainHeight}</span>
+            </div>
+            <div>
+              {t('hud.gameTime')}: <span className={styles.timeValue}>{debugMetrics.gameTime.formatted}</span>
+            </div>
+            <div>
+              {t('hud.entities')}: <span className={styles.entityValue}>{t('hud.droppedItems')}: {debugMetrics.entities.droppedItems} / {t('hud.animals')}: {debugMetrics.entities.animals}</span>
+            </div>
           </div>
+
+          <div className={styles.debugSection}>
+            <div className={styles.sectionHeader}>{t('hud.renderer')}</div>
+            <div>
+              {t('hud.drawCalls')}: <span className={styles.renderValue}>{debugMetrics.renderer.drawCalls}</span>
+            </div>
+            <div>
+              {t('hud.triangles')}: <span className={styles.renderValue}>{debugMetrics.renderer.triangles.toLocaleString()}</span>
+            </div>
+            <div>
+              Geometries / Textures: <span className={styles.renderValue}>{debugMetrics.renderer.geometries} / {debugMetrics.renderer.textures}</span>
+            </div>
+          </div>
+
           <div className={styles.targetBlockSection}>
             <span className={styles.label}>{t('hud.targetBlock')}:</span>
             {debugMetrics.targetBlock ? (

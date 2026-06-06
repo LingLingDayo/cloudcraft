@@ -268,31 +268,119 @@ export class GameManager {
   }
 
   public getDebugMetrics(): DebugMetrics {
+    // 1. Target block info
     const targeted = this.interaction?.targetedBlockInfo;
+    let targetBlock: DebugMetrics['targetBlock'] = null;
     if (targeted) {
       const blockId = this.world.getBlock(
         targeted.target.x,
         targeted.target.y,
         targeted.target.z
       );
-      return {
-        fps: this.fpsCounter.getFPS(),
-        chunksLoaded: this.world.group.children.length / 2,
-        isFlying: this.player.isFlying,
-        targetBlock: {
-          id: blockId,
-          type: this.getBlockName(blockId),
-          x: targeted.target.x,
-          y: targeted.target.y,
-          z: targeted.target.z,
-        },
+      targetBlock = {
+        id: blockId,
+        type: this.getBlockName(blockId),
+        x: targeted.target.x,
+        y: targeted.target.y,
+        z: targeted.target.z,
       };
     }
+
+    // 2. Player position and rotation
+    const playerPos = {
+      x: this.player.position.x,
+      y: this.player.position.y,
+      z: this.player.position.z,
+    };
+
+    // Calculate Yaw & Pitch and Direction
+    const direction = new THREE.Vector3();
+    this.camera.getWorldDirection(direction);
+    const yaw = Math.atan2(direction.x, direction.z) * 180 / Math.PI;
+    const pitch = Math.asin(direction.y) * 180 / Math.PI;
+
+    let dirStr = 'South (Towards +Z)';
+    if (yaw >= 45 && yaw < 135) {
+      dirStr = 'East (Towards +X)';
+    } else if (yaw >= -135 && yaw < -45) {
+      dirStr = 'West (Towards -X)';
+    } else if (yaw < -45 || yaw >= 135) {
+      dirStr = 'North (Towards -Z)';
+    }
+
+    // 3. Chunk coordinates
+    const cx = Math.floor(playerPos.x / 16);
+    const cy = Math.floor(playerPos.y / 16);
+    const cz = Math.floor(playerPos.z / 16);
+    const lx = ((Math.floor(playerPos.x) % 16) + 16) % 16;
+    const ly = ((Math.floor(playerPos.y) % 16) + 16) % 16;
+    const lz = ((Math.floor(playerPos.z) % 16) + 16) % 16;
+
+    // 4. Biome and terrain height
+    let biomeInfo: DebugMetrics['biome'] = null;
+    let terrainHeight = 0;
+    if (this.world && this.world.generator) {
+      const { height, primaryBiome } = this.world.generator.getInterpolatedHeightAndBiome(
+        playerPos.x,
+        playerPos.z
+      );
+      terrainHeight = height;
+      if (primaryBiome) {
+        biomeInfo = {
+          id: primaryBiome.id,
+          name: primaryBiome.name,
+          temp: primaryBiome.targetTemp,
+          moisture: primaryBiome.targetMoisture,
+        };
+      }
+    }
+
+    // 5. Game time
+    let gameTimeVal = 0;
+    let formattedTime = '00:00';
+    if (this.environment) {
+      const rawTime = this.environment.getGameTime();
+      const duration = this.environment.getDayDuration();
+      gameTimeVal = rawTime;
+      const ratio = duration > 0 ? rawTime / duration : 0;
+      const totalMinutes = Math.floor(ratio * 24 * 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+
+    // 6. Entity count
+    const droppedItemsCount = this.droppedItems ? this.droppedItems.getCount() : 0;
+    const animalsCount = this.animals ? this.animals.getCount() : 0;
+
+    // 7. Renderer Info
+    const rendererInfo = {
+      drawCalls: this.renderer ? this.renderer.info.render.calls : 0,
+      triangles: this.renderer ? this.renderer.info.render.triangles : 0,
+      geometries: this.renderer ? this.renderer.info.memory.geometries : 0,
+      textures: this.renderer ? this.renderer.info.memory.textures : 0,
+    };
+
     return {
       fps: this.fpsCounter.getFPS(),
       chunksLoaded: this.world.group.children.length / 2,
       isFlying: this.player.isFlying,
-      targetBlock: null,
+      targetBlock,
+      playerPosition: playerPos,
+      playerDirection: dirStr,
+      playerRotation: { yaw, pitch },
+      chunkCoords: { cx, cy, cz, lx, ly, lz },
+      biome: biomeInfo,
+      terrainHeight,
+      gameTime: {
+        time: gameTimeVal,
+        formatted: formattedTime,
+      },
+      entities: {
+        droppedItems: droppedItemsCount,
+        animals: animalsCount,
+      },
+      renderer: rendererInfo,
     };
   }
 

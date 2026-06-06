@@ -256,6 +256,10 @@ export class DroppedItemManager {
     return geom;
   }
 
+  public getCount(): number {
+    return this.droppedItems.length;
+  }
+
   public dispose() {
     if (this.droppedItems) {
       this.droppedItems.forEach((item) => {
