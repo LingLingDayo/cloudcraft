@@ -117,8 +117,18 @@ export class WorldGenerator {
           continue;
         }
 
-        const dist = Math.sqrt((wx - cellCenterX) ** 2 + (wz - cellCenterZ) ** 2);
         const pondRadius = WORLD_CONFIG.pond.minRadius + randX * (WORLD_CONFIG.pond.maxRadius - WORLD_CONFIG.pond.minRadius);
+
+        // 避免水潭生成在河道或河谷附近
+        const { dRiver } = this.getRiverValue(cellCenterX, cellCenterZ);
+        const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
+        const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
+        const safetyBuffer = valleyEnd + (pondRadius + 4) * WORLD_CONFIG.river.scale;
+        if (dRiver < safetyBuffer) {
+          continue;
+        }
+
+        const dist = Math.sqrt((wx - cellCenterX) ** 2 + (wz - cellCenterZ) ** 2);
         const shapeNoise = this.noise.noise(wx * 0.15, wz * 0.15) * 1.5;
         const effectiveRadius = pondRadius + shapeNoise;
 

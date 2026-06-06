@@ -1,6 +1,8 @@
 import { vi, describe, test, expect } from 'vitest';
 import { World, WORLD_HEIGHT } from './World';
 import { BLOCK_TYPES } from './BlockConfig';
+import { WorldGenerator } from './WorldGenerator';
+import { WORLD_CONFIG } from './WorldConfig';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -307,5 +309,35 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
 
     expect(floatingCount).toBe(0);
   }, 20000);
+
+  test('should not generate ponds near rivers', () => {
+    const world = new World('minicraft-seed');
+    const generator = new WorldGenerator('minicraft-seed');
+    
+    const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
+    const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
+
+    let checkedWaterBlocks = 0;
+    for (let offset = 0; offset < 1000; offset += 96) {
+      world.loadArea(offset, 150, offset, 2);
+      
+      const checkMin = offset - 16;
+      const checkMax = offset + 16;
+      
+      for (let x = checkMin; x < checkMax; x++) {
+        for (let z = checkMin; z < checkMax; z++) {
+          for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
+            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+              const { dRiver } = generator.getRiverValue(x, z);
+              expect(dRiver).toBeGreaterThanOrEqual(valleyEnd);
+              checkedWaterBlocks++;
+            }
+          }
+        }
+      }
+    }
+    
+    expect(checkedWaterBlocks).toBeGreaterThan(0);
+  }, 30000);
 });
 
