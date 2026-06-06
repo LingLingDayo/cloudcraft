@@ -2,9 +2,9 @@
 
 :root {
   // Font variables
-  --font-family-game: 'Press Start 2P', monospace;
+  --font-family-pixel: 'Press Start 2P', monospace;
   --font-family-sans: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --font-family-active: var(--font-family-game);
+  --font-family-active: var(--font-family-pixel);
   
   // UI Text Shadows
   --ui-text-shadow: 2px 2px 0px #000;
@@ -33,7 +33,10 @@
     inset -2px -2px 0px #7f1d1d;
 
   // Button standard properties
-  --btn-font-size: 11px;
+  --btn-font-size: 12px;
+  
+  // Pixel text small size
+  --pixel-text-sm-size: 10px;
   
   --btn-primary-bg: #7c7c7c;
   --btn-primary-shadow: 
@@ -96,3 +99,36 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+// ==========================================================================
+// I18n Theme Variables Overrides Registry
+// ==========================================================================
+// Centralized map for overrides. To customize any CSS variables for a language,
+// simply register the variable and value under the corresponding language key.
+$lang-theme-overrides: (
+  'en': (
+    '--btn-font-size': 10px,
+  ),
+  'zh': (
+    '--font-family-active': var(--font-family-sans),
+    '--ui-text-shadow': none,
+    '--ui-text-shadow-sm': none,
+    '--ui-dialog-title-shadow': none,
+    '--pixel-text-sm-size': 13px,
+  )
+);
+
+// ==========================================================================
+// I18n Theme Compiler Engine
+// ==========================================================================
+// Automatically generates the override classes. Matches class patterns like .lang-en
+@each $lang, $overrides in $lang-theme-overrides {
+  :root.lang-#{$lang} {
+    @each $name, $value in $overrides {
+      #{$name}: $value;
+    }
+  }
+}
+
+
+

@@ -51,13 +51,13 @@ body, html {
 
 /* Typography styles */
 .pixel-text {
-  font-family: var(--font-family-active);
+  font-family: var(--font-family-pixel);
   text-shadow: var(--ui-text-shadow);
 }
 
 .pixel-text-sm {
-  font-family: var(--font-family-active);
-  font-size: 10px;
+  font-family: var(--font-family-pixel);
+  font-size: var(--pixel-text-sm-size);
   text-shadow: var(--ui-text-shadow-sm);
 }
 
