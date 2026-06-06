@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "minicraft",
+  "name": "webcraft",
   "compatibility_date": "2026-06-04",
   "observability": {
     "enabled": true

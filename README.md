@@ -1,6 +1,6 @@
-# Minicraft 3D
+# WebCraft 3D
 
-Minicraft 是一个运行在浏览器中的轻量级 3D 像素沙盒游戏项目，基于 React 19、Three.js、TypeScript、Zustand 和 Sass 模块化构建。
+WebCraft 是一个运行在浏览器中的轻量级 3D 像素沙盒游戏项目，基于 React 19、Three.js、TypeScript、Zustand 和 Sass 模块化构建。
 
 本项目实现了类似《我的世界 (Minecraft)》的核心基础玩法，并结合了前端的现代工程化实践与渲染性能优化。
 

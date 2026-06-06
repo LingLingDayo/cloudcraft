@@ -44,7 +44,7 @@ export class GameManager {
   public debugOverlayVisible = false;
   public fpsCounter = new FPSCounter();
 
-  constructor(canvas: HTMLCanvasElement, seed: string = 'minicraft') {
+  constructor(canvas: HTMLCanvasElement, seed: string = 'webcraft') {
     this.canvas = canvas;
 
     this.initThree();

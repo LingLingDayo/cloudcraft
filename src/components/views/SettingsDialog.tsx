@@ -134,7 +134,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `minicraft_save_${Date.now()}.json`;
+      link.download = `webcraft_save_${Date.now()}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

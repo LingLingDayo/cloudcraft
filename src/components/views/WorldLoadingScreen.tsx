@@ -146,7 +146,7 @@ export const WorldLoadingScreen: React.FC = () => {
       
       <div className={styles.content}>
         <div className={styles.logoContainer}>
-          <h1 className={`${styles.logoText} pixel-text`}>MINICRAFT</h1>
+          <h1 className={`${styles.logoText} pixel-text`}>WEBCRAFT</h1>
         </div>
 
         {/* Loading status bar container */}

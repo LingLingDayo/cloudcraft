@@ -34,7 +34,7 @@ export class LootTableRegistry {
 
     // 猪的掉落物：1-3 个生猪肉
     this.register(
-      'minicraft:entities/pig',
+      'webcraft:entities/pig',
       new LootTable([
         new LootPool(
           1,
@@ -54,7 +54,7 @@ export class LootTableRegistry {
 
     // 橡树树叶：10% 掉落树苗，5% 掉落苹果
     this.register(
-      'minicraft:blocks/oak_leaves',
+      'webcraft:blocks/oak_leaves',
       new LootTable([
         new LootPool(1, [new LootEntry(ItemType.OAK_SAPLING)], [new RandomChanceLootCondition(0.1)]),
         new LootPool(1, [new LootEntry(ItemType.APPLE)], [new RandomChanceLootCondition(0.05)])
@@ -63,7 +63,7 @@ export class LootTableRegistry {
 
     // 桦树树叶：10% 掉落桦木树苗
     this.register(
-      'minicraft:blocks/birch_leaves',
+      'webcraft:blocks/birch_leaves',
       new LootTable([
         new LootPool(1, [new LootEntry(ItemType.BIRCH_SAPLING)], [new RandomChanceLootCondition(0.1)])
       ])
@@ -71,7 +71,7 @@ export class LootTableRegistry {
 
     // 松树树叶：10% 掉落松树树苗
     this.register(
-      'minicraft:blocks/spruce_leaves',
+      'webcraft:blocks/spruce_leaves',
       new LootTable([
         new LootPool(1, [new LootEntry(ItemType.SPRUCE_SAPLING)], [new RandomChanceLootCondition(0.1)])
       ])
@@ -79,7 +79,7 @@ export class LootTableRegistry {
 
     // 丛林树叶：10% 掉落丛林树苗
     this.register(
-      'minicraft:blocks/jungle_leaves',
+      'webcraft:blocks/jungle_leaves',
       new LootTable([
         new LootPool(1, [new LootEntry(ItemType.JUNGLE_SAPLING)], [new RandomChanceLootCondition(0.1)])
       ])
@@ -87,7 +87,7 @@ export class LootTableRegistry {
 
     // 草丛：10% 概率掉落种子
     this.register(
-      'minicraft:blocks/tall_grass',
+      'webcraft:blocks/tall_grass',
       new LootTable([
         new LootPool(1, [new LootEntry(ItemType.SEED)], [new RandomChanceLootCondition(0.1)])
       ])
@@ -95,23 +95,23 @@ export class LootTableRegistry {
 
     // 双格高草：10% 概率掉落种子
     this.register(
-      'minicraft:blocks/double_tall_grass_bottom',
+      'webcraft:blocks/double_tall_grass_bottom',
       new LootTable([
         new LootPool(1, [new LootEntry(ItemType.SEED)], [new RandomChanceLootCondition(0.1)])
       ])
     );
     this.register(
-      'minicraft:blocks/double_tall_grass_top',
+      'webcraft:blocks/double_tall_grass_top',
       new LootTable([
         new LootPool(1, [new LootEntry(ItemType.SEED)], [new RandomChanceLootCondition(0.1)])
       ])
     );
 
     // 双层花朵顶部掉落对应的物品
-    this.register('minicraft:blocks/sunflower_top', this.createSimpleBlockLootTable(ItemType.SUNFLOWER));
-    this.register('minicraft:blocks/rose_bush_top', this.createSimpleBlockLootTable(ItemType.ROSE_BUSH));
-    this.register('minicraft:blocks/peony_top', this.createSimpleBlockLootTable(ItemType.PEONY));
-    this.register('minicraft:blocks/lilac_top', this.createSimpleBlockLootTable(ItemType.LILAC));
+    this.register('webcraft:blocks/sunflower_top', this.createSimpleBlockLootTable(ItemType.SUNFLOWER));
+    this.register('webcraft:blocks/rose_bush_top', this.createSimpleBlockLootTable(ItemType.ROSE_BUSH));
+    this.register('webcraft:blocks/peony_top', this.createSimpleBlockLootTable(ItemType.PEONY));
+    this.register('webcraft:blocks/lilac_top', this.createSimpleBlockLootTable(ItemType.LILAC));
   }
 
   /**
