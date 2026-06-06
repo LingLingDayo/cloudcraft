@@ -10,6 +10,7 @@ interface DialogProps {
   height?: string | number;
   closeOnBack?: boolean;
   noPadding?: boolean;
+  showCloseBtn?: boolean;
 }
 
 export const Dialog: React.FC<DialogProps> = ({ 
@@ -19,7 +20,8 @@ export const Dialog: React.FC<DialogProps> = ({
   width, 
   height,
   closeOnBack = true,
-  noPadding = false
+  noPadding = false,
+  showCloseBtn = true
 }) => {
   useBackToClose({ onClose, enabled: closeOnBack });
   const style: React.CSSProperties = {
@@ -40,14 +42,16 @@ export const Dialog: React.FC<DialogProps> = ({
           ) : (
             <div />
           )}
-          <button 
-            type="button" 
-            className={styles.closeBtn} 
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ✕
-          </button>
+          {showCloseBtn && (
+            <button 
+              type="button" 
+              className={styles.closeBtn} 
+              onClick={onClose}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          )}
         </div>
         <div className={styles.dialogContent}>
           {children}

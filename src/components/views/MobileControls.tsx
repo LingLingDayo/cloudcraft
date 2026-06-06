@@ -8,6 +8,7 @@ import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { isMobileDevice } from '@utils/device';
 import { clamp } from '@utils/math';
 import styles from './MobileControls.module.scss';
+import { ConfirmationDialog } from '@components/common/ConfirmationDialog';
 
 // Pixel Art Icons
 const PixelGearIcon: React.FC = () => {
@@ -202,6 +203,7 @@ export const MobileControls: React.FC = () => {
   const [isMobile] = useState(() => isMobileDevice());
   const [toolbarExpanded, setToolbarExpanded] = useState(false);
   const [isJumpActive, setIsJumpActive] = useState(false);
+  const [isConfirmQuitOpen, setIsConfirmQuitOpen] = useState(false);
 
   const [activeDirections, setActiveDirections] = useState({
     up: false,
@@ -419,10 +421,14 @@ export const MobileControls: React.FC = () => {
             className={`${styles.toolbarBtn} ${styles.danger} glass-panel`} 
             onTouchStart={(e) => {
               e.stopPropagation();
-              handleQuit();
+              setIsConfirmQuitOpen(true);
+              setToolbarExpanded(false);
             }}
             onClick={() => {
-              if (!isMobile) handleQuit();
+              if (!isMobile) {
+                setIsConfirmQuitOpen(true);
+                setToolbarExpanded(false);
+              }
             }}
             title={t('pauseMenu.quit')}
           >
@@ -481,6 +487,19 @@ export const MobileControls: React.FC = () => {
           <PixelSolidDiamondIcon />
         </div>
       </div>
+
+      <ConfirmationDialog
+        isOpen={isConfirmQuitOpen}
+        title={t('common.confirmQuitTitle')}
+        message={t('common.confirmQuitMessage')}
+        onConfirm={async () => {
+          setIsConfirmQuitOpen(false);
+          await handleQuit();
+        }}
+        onCancel={() => {
+          setIsConfirmQuitOpen(false);
+        }}
+      />
     </>
   );
 };

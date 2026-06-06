@@ -1,6 +1,10 @@
 export const zh = {
   common: {
     selectPlaceholder: '请选择...',
+    confirm: '确认',
+    cancel: '取消',
+    confirmQuitTitle: '确认退出',
+    confirmQuitMessage: '你确定要保存并退出到主菜单吗？',
   },
   startMenu: {
     title: 'WEBCRAFT',

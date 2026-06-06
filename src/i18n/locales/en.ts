@@ -1,6 +1,10 @@
 export const en = {
   common: {
     selectPlaceholder: 'Select...',
+    confirm: 'Confirm',
+    cancel: 'Cancel',
+    confirmQuitTitle: 'Confirm Quit',
+    confirmQuitMessage: 'Are you sure you want to save and quit to the main menu?',
   },
   startMenu: {
     title: 'WEBCRAFT',
