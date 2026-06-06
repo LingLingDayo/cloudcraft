@@ -16,20 +16,34 @@
 
 .dialogWindow {
   position: relative;
-  background: #c6c6c6;
-  border: 4px solid #000;
+  background: var(--ui-dialog-bg);
+  border: var(--ui-dialog-border);
   border-radius: 0px; // Minecraft blocks are strictly rectangular
-  box-shadow: 
-    inset 4px 4px 0px #ffffff,
-    inset -4px -4px 0px #555555,
-    0 12px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--ui-dialog-box-shadow);
   padding: 16px;
   min-width: 320px;
   max-width: 90%;
   image-rendering: pixelated;
-  font-family: monospace;
+  font-family: var(--font-family-active);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 
   @include fit-scale(440px, 400px, 0.92, 768px, 480px);
+
+  &.noPadding {
+    padding: 0;
+
+    .dialogHeader {
+      padding: 16px 20px 12px 20px;
+      margin-bottom: 0;
+      border-bottom: 2px dashed #999;
+    }
+
+    .dialogContent {
+      padding: 0;
+    }
+  }
 }
 
 .dialogHeader {
@@ -38,50 +52,46 @@
   align-items: center;
   margin-bottom: 16px;
   padding: 0 4px;
+  box-sizing: border-box;
 }
 
 .dialogTitle {
-  color: #3f3f3f;
+  color: var(--ui-dialog-text-color);
   margin: 0;
   font-size: 14px;
   font-weight: bold;
-  text-shadow: 1px 1px 0px #fff;
+  text-shadow: var(--ui-dialog-title-shadow);
   user-select: none;
+  font-family: var(--font-family-active);
 }
 
 .closeBtn {
   position: relative;
-  background: #c6c6c6;
-  border: 2px solid #000;
+  background: var(--ui-close-btn-bg);
+  border: var(--ui-close-btn-border);
   width: 24px;
   height: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: monospace;
+  font-family: var(--font-family-active);
   font-size: 14px;
-  color: #3f3f3f;
+  color: var(--ui-dialog-text-color);
   font-weight: bold;
   cursor: pointer;
   outline: none;
-  box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555;
+  box-shadow: var(--ui-close-btn-shadow);
   transition: none; // Strictly immediate updates for pixel buttons
 
   &:hover {
-    color: #ffff00;
-    text-shadow: 1px 1px 0px #000;
-    background: #a8a8a8;
-    box-shadow: 
-      inset 2px 2px 0px #ffffff,
-      inset -2px -2px 0px #3f3f3f;
+    color: var(--ui-close-btn-hover-color);
+    text-shadow: var(--ui-text-shadow-sm);
+    background: var(--ui-close-btn-hover-bg);
+    box-shadow: var(--ui-close-btn-hover-shadow);
   }
 
   &:active {
-    box-shadow: 
-      inset -2px -2px 0px #ffffff,
-      inset 2px 2px 0px #555555;
+    box-shadow: var(--ui-close-btn-hover-shadow);
     padding-top: 2px;
     padding-left: 2px;
   }
@@ -89,5 +99,10 @@
 
 .dialogContent {
   padding: 4px;
-  color: #3f3f3f;
+  color: var(--ui-dialog-text-color);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }

@@ -6,6 +6,7 @@ import { getBlockProperties } from '@game/world/BlockConfig';
 import styles from './HUD.module.scss';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { Inventory } from './Inventory';
+import { Dialog } from '@components/common/Dialog';
 import { useGame } from '../../context/GameContext';
 import { BlockIcon } from './ItemIcon';
 import { MobileControls, PixelDotsIcon } from './MobileControls';
@@ -357,15 +358,15 @@ export const HUD: React.FC = () => {
         </div>
       )}
       {activeChest && (
-        <div className={styles.chestOverlay}>
-          <div className={`${styles.chestWindow} glass-panel`}>
-            <div className={styles.chestHeader}>
-              <span className="pixel-text-sm">{t('hud.chest')}</span>
-              <button className={styles.closeBtn} onClick={() => {
-                closeChest();
-                gameInstance?.controls?.requestLock();
-              }}>✕</button>
-            </div>
+        <Dialog
+          title={t('hud.chest')}
+          onClose={() => {
+            closeChest();
+            gameInstance?.controls?.requestLock();
+          }}
+          width={400}
+        >
+          <div className={styles.chestContent}>
             <div className={styles.sectionTitle}>{t('hud.chestItems')}</div>
             <div className={styles.chestGrid}>
               {chestInventory.map((item, idx) => (
@@ -394,7 +395,7 @@ export const HUD: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
       <Minimap />
       <Inventory />

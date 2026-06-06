@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Press+Start+2P&display=swap');
+
+:root {
+  // Font variables
+  --font-family-game: 'Press Start 2P', monospace;
+  --font-family-sans: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-family-active: var(--font-family-game);
+  
+  // UI Text Shadows
+  --ui-text-shadow: 2px 2px 0px #000;
+  --ui-text-shadow-sm: 1px 1px 0px #000;
+
+  // Dialog Standard Variables
+  --ui-dialog-bg: #c6c6c6;
+  --ui-dialog-border: 4px solid #000;
+  --ui-dialog-box-shadow: 
+    inset 4px 4px 0px #ffffff,
+    inset -4px -4px 0px #555555,
+    0 12px 30px rgba(0, 0, 0, 0.6);
+  --ui-dialog-text-color: #3f3f3f;
+  --ui-dialog-title-shadow: 1px 1px 0px #fff;
+  
+  // Close Button
+  --ui-close-btn-bg: #c6c6c6;
+  --ui-close-btn-border: 2px solid #000;
+  --ui-close-btn-shadow: 
+    inset 2px 2px 0px #ffffff,
+    inset -2px -2px 0px #555555;
+  --ui-close-btn-hover-bg: #ef4444; // Give all close buttons a clean red hover glow
+  --ui-close-btn-hover-color: #ffffff;
+  --ui-close-btn-hover-shadow: 
+    inset 2px 2px 0px #ffffff,
+    inset -2px -2px 0px #7f1d1d;
+
+  // Button standard properties
+  --btn-font-size: 11px;
+  
+  --btn-primary-bg: #7c7c7c;
+  --btn-primary-shadow: 
+    inset 2px 2px 0px #aeaeae,
+    inset -2px -2px 0px #5c5c5c;
+  --btn-primary-hover-bg: #8c8c8c;
+  --btn-primary-hover-shadow: 
+    inset 2px 2px 0px #bebebe,
+    inset -2px -2px 0px #6c6c6c;
+  --btn-primary-active-shadow: 
+    inset -2px -2px 0px #bebebe,
+    inset 2px 2px 0px #5c5c5c;
+  --btn-primary-disabled-bg: #555555;
+  --btn-primary-disabled-shadow: 
+    inset 2px 2px 0px #777777,
+    inset -2px -2px 0px #3f3f3f;
+
+  --btn-secondary-bg: #4c4c4c;
+  --btn-secondary-shadow: 
+    inset 2px 2px 0px #7c7c7c,
+    inset -2px -2px 0px #2c2c2c;
+  --btn-secondary-hover-bg: #5c5c5c;
+  --btn-secondary-hover-shadow: 
+    inset 2px 2px 0px #8c8c8c,
+    inset -2px -2px 0px #3c3c3c;
+  --btn-secondary-active-shadow: 
+    inset -2px -2px 0px #8c8c8c,
+    inset 2px 2px 0px #2c2c2c;
+  --btn-secondary-disabled-bg: #333333;
+  --btn-secondary-disabled-shadow: 
+    inset 2px 2px 0px #555555,
+    inset -2px -2px 0px #1a1a1a;
+
+  --btn-danger-bg: #a82e2e;
+  --btn-danger-shadow: 
+    inset 2px 2px 0px #df5c5c,
+    inset -2px -2px 0px #701c1c;
+  --btn-danger-hover-bg: #be3b3b;
+  --btn-danger-hover-shadow: 
+    inset 2px 2px 0px #ef6c6c,
+    inset -2px -2px 0px #802323;
+  --btn-danger-active-shadow: 
+    inset -2px -2px 0px #ef6c6c,
+    inset 2px 2px 0px #701c1c;
+  --btn-danger-disabled-bg: #5c2020;
+  --btn-danger-disabled-shadow: 
+    inset 2px 2px 0px #7c3a3a,
+    inset -2px -2px 0px #3a1515;
+
+  font-family: var(--font-family-sans);
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0b0c10;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
