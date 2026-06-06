@@ -284,11 +284,11 @@ describe('Physics System', () => {
       const state = { onGround: false, inWater: true };
       const inputDir = new THREE.Vector3(1, 0, 0);
 
-      // 第一步运行，此时 swimTime 增加 0.1，wave = Math.sin(0.8) * 0.25 ≈ 0.179
+      // 第一步运行，此时 swimTime 增加 0.1，wave = Math.sin(0.8) * 0.45 ≈ 0.3228
       physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
 
       expect(vel.y).toBeGreaterThan(0);
-      expect(vel.y).toBeCloseTo(0.5 + Math.sin(0.8) * 0.25);
+      expect(vel.y).toBeCloseTo(0.5 + Math.sin(0.8) * 0.45);
     });
 
     test('player stabilizes at water surface with wave fluctuations when moving forward', () => {
@@ -300,11 +300,11 @@ describe('Physics System', () => {
       const inputDir = new THREE.Vector3(1, 0, 0);
 
       // 目标位置 y = 14.8，diff = 14.8 - 14.2 = 0.6
-      // wave = Math.sin(0.8) * 0.25 ≈ 0.179
-      // vel.y = 0.6 * 4.0 + 0.179 = 2.579，限制在 0.8
+      // wave = Math.sin(0.8) * 0.45 ≈ 0.3228
+      // vel.y = 0.6 * 4.0 + 0.3228 = 2.7228，限制在 1.2
       physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
 
-      expect(vel.y).toBeCloseTo(0.8);
+      expect(vel.y).toBeCloseTo(1.2);
     });
 
     test('player can dive downwards in water when shift is pressed', () => {
@@ -317,7 +317,30 @@ describe('Physics System', () => {
 
       physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, true, false, state);
 
-      expect(vel.y).toBe(-3.0);
+      expect(vel.y).toBe(-1.5);
+    });
+
+    test('player swims up or down based on look direction in water', () => {
+      mockBlockMap.set('10,15,10', BLOCK_TYPES.WATER);
+      mockBlockMap.set('10,16,10', BLOCK_TYPES.WATER);
+
+      const pos = new THREE.Vector3(10.5, 15.0, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: false, inWater: true };
+      const inputDir = new THREE.Vector3(1, 0, 0);
+
+      // Case 1: Looking upwards (pitch up)
+      const lookUp = new THREE.Vector3(1, 0.5, 0).normalize();
+      physics.update(pos, vel, 0.1, inputDir, false, false, false, state, true, lookUp);
+      // lookSwimY = lookUp.y * moveForwardFactor * swimSpeed * 0.8
+      // Expected vel.y ≈ 0.5 + Math.sin(0.8) * 0.45 + lookSwimY
+      expect(vel.y).toBeGreaterThan(0.5 + Math.sin(0.8) * 0.45);
+
+      // Case 2: Looking downwards (pitch down)
+      const lookDown = new THREE.Vector3(1, -0.5, 0).normalize();
+      vel.set(0, 0, 0);
+      physics.update(pos, vel, 0.1, inputDir, false, false, false, state, true, lookDown);
+      expect(vel.y).toBeLessThan(0.5 + Math.sin(1.6) * 0.45);
     });
   });
 
