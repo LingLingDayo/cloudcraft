@@ -57,6 +57,20 @@ describe('Physics System', () => {
     expect(physics.checkInWater(pos)).toBe(true);
   });
 
+  test('checkInWater returns true if below is water and not onGround', () => {
+    const pos = new THREE.Vector3(10.5, 5.4, 10.5);
+    
+    // Case 1: Water below (y - 0.6 = 4.8, Math.floor is 4)
+    mockBlockMap.clear();
+    mockBlockMap.set('10,4,10', BLOCK_TYPES.WATER);
+    
+    // If not onGround, should detect water below
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((physics as any).voxelPhysics.checkInWater(pos, false)).toBe(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((physics as any).voxelPhysics.checkInWater(pos, true)).toBe(false);
+  });
+
   test('gravity pulls player down in air', () => {
     const pos = new THREE.Vector3(10.5, 40, 10.5);
     const vel = new THREE.Vector3(0, 0, 0);
@@ -270,9 +284,9 @@ describe('Physics System', () => {
 
       physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, false, false, state);
 
-      // 没有操作时应该缓慢下沉 (vel.y 应为负值且接近 -1.5 * 0.1 = -0.15)
+      // 没有操作时应该缓慢下沉 (一阶阻尼过渡: targetYVel = -0.3, dt = 0.1, lerpFactor = 0.8 => vel.y = -0.24)
       expect(vel.y).toBeLessThan(0);
-      expect(vel.y).toBeCloseTo(-0.15);
+      expect(vel.y).toBeCloseTo(-0.24);
     });
 
     test('player swims upwards and fluctuates when moving forward in deep water', () => {
@@ -284,11 +298,13 @@ describe('Physics System', () => {
       const state = { onGround: false, inWater: true };
       const inputDir = new THREE.Vector3(1, 0, 0);
 
-      // 第一步运行，此时 swimTime 增加 0.1，wave = Math.sin(0.8) * 0.45 ≈ 0.3228
+      // 第一步运行，此时 swimTime 增加 0.1
+      // 深水游动 targetYVel = 0.5 (lookSwimY=0)，waveAmp = 0 => wave = 0
+      // 一阶阻尼过渡: vel.y = 0.5 * 0.8 = 0.4
       physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
 
       expect(vel.y).toBeGreaterThan(0);
-      expect(vel.y).toBeCloseTo(0.5 + Math.sin(0.8) * 0.45);
+      expect(vel.y).toBeCloseTo(0.4);
     });
 
     test('player stabilizes at water surface with wave fluctuations when moving forward', () => {
@@ -299,12 +315,13 @@ describe('Physics System', () => {
       const state = { onGround: false, inWater: true };
       const inputDir = new THREE.Vector3(1, 0, 0);
 
-      // 目标位置 y = 14.8，diff = 14.8 - 14.2 = 0.6
-      // wave = Math.sin(0.8) * 0.45 ≈ 0.3228
-      // vel.y = 0.6 * 4.0 + 0.3228 = 2.7228，限制在 1.2
+      // 目标位置 y = 14.7，diff = 14.7 - 14.2 = 0.5 => targetYVel = 0.75
+      // wave = Math.sin(0.7) * 0.25 ≈ 0.16105
+      // lerpFactor = 8.0 * 0.1 * (0.8 / 1.8) ≈ 0.3555
+      // 阻尼更新: vel.y = (0.75 + 0.16105) * 0.3555 ≈ 0.3239
       physics.update(pos, vel, 0.1, inputDir, false, false, false, state);
 
-      expect(vel.y).toBeCloseTo(1.2);
+      expect(vel.y).toBeCloseTo(0.324, 3);
     });
 
     test('player can dive downwards in water when shift is pressed', () => {
@@ -317,7 +334,8 @@ describe('Physics System', () => {
 
       physics.update(pos, vel, 0.1, new THREE.Vector3(0, 0, 0), false, true, false, state);
 
-      expect(vel.y).toBe(-1.5);
+      // 一阶阻尼过渡: targetYVel = -1.5 => vel.y = -1.2
+      expect(vel.y).toBeCloseTo(-1.2);
     });
 
     test('player swims up or down based on look direction in water', () => {
@@ -332,15 +350,15 @@ describe('Physics System', () => {
       // Case 1: Looking upwards (pitch up)
       const lookUp = new THREE.Vector3(1, 0.5, 0).normalize();
       physics.update(pos, vel, 0.1, inputDir, false, false, false, state, true, lookUp);
-      // lookSwimY = lookUp.y * moveForwardFactor * swimSpeed * 0.8
-      // Expected vel.y ≈ 0.5 + Math.sin(0.8) * 0.45 + lookSwimY
-      expect(vel.y).toBeGreaterThan(0.5 + Math.sin(0.8) * 0.45);
+      // lookSwimY > 0 => targetYVel > 0.5 => vel.y > 0.4
+      expect(vel.y).toBeGreaterThan(0.4);
 
       // Case 2: Looking downwards (pitch down)
       const lookDown = new THREE.Vector3(1, -0.5, 0).normalize();
       vel.set(0, 0, 0);
       physics.update(pos, vel, 0.1, inputDir, false, false, false, state, true, lookDown);
-      expect(vel.y).toBeLessThan(0.5 + Math.sin(1.6) * 0.45);
+      // lookSwimY < 0 => targetYVel < 0.5 => vel.y < 0.4
+      expect(vel.y).toBeLessThan(0.4);
     });
   });
 
@@ -355,6 +373,21 @@ describe('Physics System', () => {
 
       expect(vel.x).toBe(9.0);
       expect(pos.x).toBeCloseTo(11.4);
+    });
+
+    test('should NOT accelerate swim speed when shift is pressed in water', () => {
+      const pos = new THREE.Vector3(10.5, 15.0, 10.5);
+      const vel = new THREE.Vector3(0, 0, 0);
+      const state = { onGround: false, inWater: true };
+      const inputDir = new THREE.Vector3(1, 0, 0); // Move +X
+
+      mockBlockMap.clear();
+      mockBlockMap.set('10,15,10', BLOCK_TYPES.WATER);
+
+      physics.update(pos, vel, 0.1, inputDir, false, true, false, state, false);
+
+      // swimSpeed is 3.0. Even with shift pressed, it should NOT be 4.5.
+      expect(vel.x).toBe(3.0);
     });
 
     test('should accelerate flying speed by 1.5x when shift is pressed', () => {

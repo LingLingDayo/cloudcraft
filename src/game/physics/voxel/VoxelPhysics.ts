@@ -93,10 +93,45 @@ export class VoxelPhysics {
   }
 
   // Check if player is in a liquid block (like water)
-  public checkInWater(position: THREE.Vector3): boolean {
+  public checkInWater(position: THREE.Vector3, onGround: boolean = false): boolean {
     const blockBottom = this.world.getBlock(Math.floor(position.x), Math.floor(position.y), Math.floor(position.z));
     const blockEye = this.world.getBlock(Math.floor(position.x), Math.floor(position.y + 1.5), Math.floor(position.z));
-    return getBlockProperties(blockBottom).isLiquid || getBlockProperties(blockEye).isLiquid;
+    
+    if (getBlockProperties(blockBottom).isLiquid || getBlockProperties(blockEye).isLiquid) {
+      return true;
+    }
+
+    // 平滑判定：如果不在地面上，且脚底板下方 0.6 米以内是水，依然判定为在水里，防止水面跳跃/加速抖动
+    if (!onGround) {
+      const blockBelow = this.world.getBlock(Math.floor(position.x), Math.floor(position.y - 0.6), Math.floor(position.z));
+      if (getBlockProperties(blockBelow).isLiquid) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * 获取当前位置的水面绝对高度
+   * @param position 玩家位置
+   * @returns 水面顶部的 Y 坐标，如果没找到水，返回 null
+   */
+  private getWaterLevel(position: THREE.Vector3): number | null {
+    const px = Math.floor(position.x);
+    const py = Math.floor(position.y);
+    const pz = Math.floor(position.z);
+    
+    // 头部不在水里，说明水面最高只可能到 py + 1 (即脚部上方一格)
+    // 检查范围从 py + 1 向下到 py - 2
+    for (let dy = 1; dy >= -2; dy--) {
+      const y = py + dy;
+      const blockId = this.world.getBlock(px, y, pz);
+      if (getBlockProperties(blockId).isLiquid) {
+        return y + 1; // 水面为水方块的顶部
+      }
+    }
+    return null;
   }
 
   public update(
@@ -115,7 +150,7 @@ export class VoxelPhysics {
     dt = Math.min(dt, 0.1);
 
     // 1. Check if in water
-    state.inWater = this.checkInWater(position);
+    state.inWater = this.checkInWater(position, state.onGround);
 
     // 2. Apply movement forces
     if (isFlying) {
@@ -129,58 +164,96 @@ export class VoxelPhysics {
 
       state.onGround = false;
     } else {
-      const speedMultiplier = isShiftLeft ? 1.5 : 1.0;
+      // 在水里或脚底下方 1.0 米内有水时，按住 shift (下潜/踏水) 不要加速
+      const hasWaterBelow = getBlockProperties(this.world.getBlock(Math.floor(position.x), Math.floor(position.y - 1.0), Math.floor(position.z))).isLiquid;
+      const speedMultiplier = (isShiftLeft && !state.inWater && !hasWaterBelow) ? 1.5 : 1.0;
       const speed = (state.inWater ? this.settings.swimSpeed : this.settings.walkSpeed) * speedMultiplier;
       velocity.x = inputDirection.x * speed;
       velocity.z = inputDirection.z * speed;
 
       // 3. Apply gravity & swimming buoyancy
       if (state.inWater) {
-        if (isJumping) {
-          velocity.y = 1.5; // Swim upwards, 调整成正常状态 (原来是 3.0)
+        const blockEye = this.world.getBlock(Math.floor(position.x), Math.floor(position.y + 1.5), Math.floor(position.z));
+        const eyeIsLiquid = getBlockProperties(blockEye).isLiquid;
+
+        // 获取稳定的真实水面高度
+        const wl = this.getWaterLevel(position) ?? (Math.floor(position.y) + 1.0);
+        // 计算浸入比率 immersion [0.0, 1.0] (玩家身高 1.8)
+        const playerHeight = this.settings.playerSize.height;
+        const depth = wl - position.y;
+        const immersion = Math.max(0, Math.min(1.0, depth / playerHeight));
+
+        const isMoving = inputDirection.x !== 0 || inputDirection.z !== 0;
+
+        let targetYVel: number;
+        let waveAmp = 0;
+        let waveFreq = 0;
+
+        // 计算视线方向对游泳垂直速度的贡献
+        let lookSwimY = 0;
+        if (cameraDirection && isMoving) {
+          const horizontalLook = new THREE.Vector3(cameraDirection.x, 0, cameraDirection.z).normalize();
+          const moveForwardFactor = inputDirection.dot(horizontalLook);
+          lookSwimY = cameraDirection.y * moveForwardFactor * this.settings.swimSpeed * 0.8;
+        }
+
+        // 核心物理受力决策
+        if (isJumping && isShiftLeft) {
+          // 同时按空格和 Shift：保持悬浮
+          targetYVel = 0;
+          this.swimTime = 0;
+        } else if (isJumping) {
+          // 按住空格向上游
+          this.swimTime += dt;
+          if (eyeIsLiquid) {
+            // 深水区：平稳向上游
+            targetYVel = 1.5;
+          } else {
+            // 水面起伏区：目标高度在水面上方，形成起伏
+            const targetFloatY = wl - 0.15; // 调低目标高度，使其更沉入水中
+            const floatDiff = targetFloatY - position.y;
+            targetYVel = floatDiff * 1.5;
+            waveAmp = 0.45; // 调小起伏幅度
+            waveFreq = 3.9;
+          }
         } else if (isShiftLeft) {
-          velocity.y = -1.5; // Dive downwards, 调整成正常状态 (原来是 -3.0)
+          // 按住 Shift 向下潜
+          targetYVel = -1.5;
+          this.swimTime = 0;
         } else {
-          // 区分完全浸没和浮在水面
-          const blockBottom = this.world.getBlock(Math.floor(position.x), Math.floor(position.y), Math.floor(position.z));
-          const blockEye = this.world.getBlock(Math.floor(position.x), Math.floor(position.y + 1.5), Math.floor(position.z));
-          const bottomIsLiquid = getBlockProperties(blockBottom).isLiquid;
-          const eyeIsLiquid = getBlockProperties(blockEye).isLiquid;
-
-          const isMoving = inputDirection.x !== 0 || inputDirection.z !== 0;
-
+          // 既不按空格也不按 Shift
           if (isMoving) {
             this.swimTime += dt;
-            // 游泳起伏再大一点 (原来是 0.25)
-            const wave = Math.sin(this.swimTime * 8.0) * 0.45;
-
-            // 计算视线方向对游泳速度的影响，抬头往上游，低头往下游
-            let lookSwimY = 0;
-            if (cameraDirection) {
-              const horizontalLook = new THREE.Vector3(cameraDirection.x, 0, cameraDirection.z).normalize();
-              const moveForwardFactor = inputDirection.dot(horizontalLook);
-              lookSwimY = cameraDirection.y * moveForwardFactor * this.settings.swimSpeed * 0.8;
-            }
-
             if (eyeIsLiquid) {
-              // 完全浸没在水里时，向上游泳浮起，并结合抬头/低头朝向
-              velocity.y = 0.5 + wave + lookSwimY;
-            } else if (bottomIsLiquid) {
-              // 浮在水面上时（脚在水里，头在空气中），利用弹性力稳定在水面高度，并叠加起伏波动与视线朝向
-              const targetFloatY = Math.floor(position.y) + 0.8;
-              const diff = targetFloatY - position.y;
-              velocity.y = diff * 4.0 + wave + lookSwimY;
-              velocity.y = Math.max(-1.2, Math.min(1.2, velocity.y)); // 限制起伏速度，使其平滑 (原来是 -0.8 到 0.8)
+              // 深水游动：缓慢浮起并受朝向影响
+              targetYVel = 0.5 + lookSwimY;
             } else {
-              // 安全退回
-              velocity.y = Math.max(-2, velocity.y + this.settings.gravity * 0.15 * dt);
+              // 水面游动：稳定在水面下方一点并受朝向影响
+              const targetFloatY = wl - 0.3; // 调低目标高度，使其更沉入水中
+              const floatDiff = targetFloatY - position.y;
+              targetYVel = floatDiff * 1.5 + lookSwimY;
+              waveAmp = 0.25; // 调小移动时起伏幅度
+              waveFreq = 7.0;
             }
           } else {
             // 静止无操作：没有浮力，缓慢下沉
+            targetYVel = -0.3;
             this.swimTime = 0;
-            velocity.y = Math.max(-0.8, velocity.y - 1.5 * dt);
           }
         }
+
+        // 计算物理波浪，并在深水区平滑淡出以防突变
+        let wave = 0;
+        if (waveAmp > 0) {
+          const rawWave = Math.sin(this.swimTime * waveFreq) * waveAmp;
+          const waveFade = Math.max(0, Math.min(1.0, (0.9 - immersion) / 0.1));
+          wave = rawWave * waveFade;
+        }
+
+        // 一阶阻尼平滑更新速度，彻底消除物理跃变抖动
+        // 将阻尼系数与浸入比率挂钩，当玩家上浮或跳出水面时，水的束缚（阻尼）显著下降，保证能轻松跳上陆地
+        const lerpFactor = 8.0 * dt * Math.max(0.15, immersion);
+        velocity.y += (targetYVel + wave - velocity.y) * lerpFactor;
       } else {
         // Normal gravity
         if (!state.onGround) {
@@ -375,7 +448,7 @@ export class VoxelPhysics {
           }
 
           if (shouldAutoJump) {
-            velocity.y = state.inWater ? 4.5 : this.settings.jumpSpeed; // 水中跳跃速度稍微柔和一些，防止直接飞出
+            velocity.y = state.inWater ? 3.5 : this.settings.jumpSpeed; // 水中跳跃速度稍微柔和一些，防止直接飞出
             state.onGround = false;
             velocity.x = oldVelX;
             velocity.z = oldVelZ;
