@@ -31,6 +31,7 @@ import type { ChunkPipelineContext, ChunkPipelineStage } from './ChunkPipelineTy
 import { ImprovedNoise } from '../Noise';
 import { TerrainHeightMapStage } from './stages/TerrainHeightMapStage';
 import { BaseTerrainFillerStage } from './stages/BaseTerrainFillerStage';
+import { OreGeneratorStage } from './stages/OreGeneratorStage';
 import { CaveCarverStage } from './stages/CaveCarverStage';
 import { SurfaceDecorationStage } from './stages/SurfaceDecorationStage';
 import { TreeDecorationStage } from './stages/TreeDecorationStage';
@@ -351,5 +352,51 @@ describe('ChunkPipeline Extensions', () => {
     // It should invoke growDecorations on the biome (which sets mockGrowDecorationsCalled to true)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((globalThis as any).mockGrowDecorationsCalled).toBe(true);
+  });
+
+  test('OreGeneratorStage should replace STONE blocks with ores based on registration', () => {
+    const pipeline = new ChunkPipeline();
+    pipeline.addStage(new OreGeneratorStage());
+
+    const mockNoise = {
+      pseudoRandom3d: vi.fn().mockReturnValue(0.001), // triggers point ore generation
+      noise3d: vi.fn().mockReturnValue(0.001),       // triggers vein ore generation
+    } as unknown as ImprovedNoise;
+
+    const mockBiome = {
+      id: 'plains',
+      name: '平原',
+    };
+
+    const chunk = new Uint8Array(4096);
+    // y=0: Bedrock
+    chunk[0] = BLOCK_TYPES.STONE;
+    // y=1: Stone inside chunk
+    chunk[1 * 256] = BLOCK_TYPES.STONE;
+    // y=2: Grass
+    chunk[2 * 256] = BLOCK_TYPES.GRASS;
+    // y=3: Air
+    chunk[3 * 256] = BLOCK_TYPES.AIR;
+
+    const context: ChunkPipelineContext = {
+      cx: 0, cy: 0, cz: 0,
+      worldStartX: 0, worldStartY: 0, worldStartZ: 0,
+      chunk,
+      noise: mockNoise,
+      terrainMap: [],
+      biomeMap: Array.from({ length: 16 }, () => Array(16).fill(mockBiome)),
+      generator: {}
+    };
+
+    pipeline.execute(context);
+
+    // Bedrock should remain STONE
+    expect(chunk[0]).toBe(BLOCK_TYPES.STONE);
+    // Rock at y=1 should be replaced with ores
+    expect(chunk[1 * 256]).not.toBe(BLOCK_TYPES.STONE);
+    expect([BLOCK_TYPES.DIAMOND, BLOCK_TYPES.IRON, BLOCK_TYPES.COAL]).toContain(chunk[1 * 256]);
+    // Other blocks remain unchanged
+    expect(chunk[2 * 256]).toBe(BLOCK_TYPES.GRASS);
+    expect(chunk[3 * 256]).toBe(BLOCK_TYPES.AIR);
   });
 });

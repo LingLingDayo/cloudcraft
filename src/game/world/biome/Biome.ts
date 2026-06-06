@@ -1,5 +1,4 @@
 import { ImprovedNoise } from '../Noise';
-import type { OreConfig } from '../WorldConfig';
 import type { BlockWriter } from '../TreeStructureGenerator';
 
 export const TreeStyle = {
@@ -52,22 +51,3 @@ export interface Biome {
   // Decide what vegetation (flower/grass) grows at the given coordinates
   getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number;
 }
-
-export function getOreType(
-  y: number,
-  ores: readonly OreConfig[],
-  defaultBlock: number,
-  noise: ImprovedNoise,
-  wx: number,
-  wz: number
-): number {
-  const r = noise.pseudoRandom3d(wx, y, wz);
-  for (const ore of ores) {
-    if (r < ore.probability && y < ore.maxLevel) {
-      return ore.blockType;
-    }
-  }
-  return defaultBlock;
-}
-
-

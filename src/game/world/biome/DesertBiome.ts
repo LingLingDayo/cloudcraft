@@ -1,7 +1,6 @@
-import { type Biome, getOreType } from './Biome';
+import { type Biome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { WORLD_CONFIG } from '../WorldConfig';
 import type { BlockWriter } from '../TreeStructureGenerator';
 
 export class DesertBiome implements Biome {
@@ -28,9 +27,9 @@ export class DesertBiome implements Biome {
     finalHeight: number,
     _waterLevel: number,
     depthBelowSurface: number,
-    noise: ImprovedNoise,
-    wx: number,
-    wz: number,
+    _noise: ImprovedNoise,
+    _wx: number,
+    _wz: number,
     _isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
@@ -42,8 +41,8 @@ export class DesertBiome implements Biome {
       } else if (depthBelowSurface <= 8) {
         chunk[index] = BLOCK_TYPES.SANDSTONE; // 深层砂岩
       } else {
-        // 最深层是石头加矿石
-        chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
+        // 最深层是石头
+        chunk[index] = BLOCK_TYPES.STONE;
       }
     }
   }
