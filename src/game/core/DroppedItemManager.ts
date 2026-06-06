@@ -79,8 +79,8 @@ export class DroppedItemManager {
     void count;
     const item = ItemRegistry.get(itemType);
     let isTrans = true;
-    if (item instanceof BlockItem) {
-      const blockProps = getBlockProperties(item.blockId);
+    if (item.isBlockItem) {
+      const blockProps = getBlockProperties((item as BlockItem).blockId);
       isTrans = blockProps.opacity < 1.0;
     }
     
@@ -155,7 +155,7 @@ export class DroppedItemManager {
     ];
 
     const item = ItemRegistry.get(itemType);
-    const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+    const blockProps = item.isBlockItem ? getBlockProperties((item as BlockItem).blockId) : null;
     const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
     const atlasIndex = textureFaces?.side ?? textureFaces?.top ?? 3;
     const tx = atlasIndex % 8;
@@ -211,7 +211,7 @@ export class DroppedItemManager {
     const uvs: number[] = [];
 
     const item = ItemRegistry.get(itemType);
-    const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+    const blockProps = item.isBlockItem ? getBlockProperties((item as BlockItem).blockId) : null;
     const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
 
     for (const face of faces) {
