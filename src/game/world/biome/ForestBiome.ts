@@ -1,11 +1,19 @@
-import { type Biome, type GrowTreeFn, TreeStyle, getOreType } from './Biome';
+import { type Biome, TreeStyle, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
+import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class ForestBiome implements Biome {
   public id = 'forest';
   public name = '森林';
+  public targetTemp: number;
+  public targetMoisture: number;
+
+  constructor(targetTemp = 0.52, targetMoisture = 0.60) {
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+  }
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 森林也属于平缓的普通地形，比海平面(150)高出约 1-10 格，但有轻微坡度起伏
@@ -50,16 +58,16 @@ export class ForestBiome implements Biome {
   }
 
   public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
+    writer: BlockWriter,
+    wx: number,
+    wy: number,
+    wz: number,
     chunkRandom: number,
     treeIndex: number,
-    growTree: GrowTreeFn
+    noise: ImprovedNoise
   ): void {
     // 森林内橡树（45%）、白桦（55%）
-    // 为了使噪波决定伪随机值，我们基于 tx, tz 和 treeIndex 构造一些伪随机数
+    // 为了使噪波决定伪随机值，我们基于 wx, wz 和 treeIndex 构造一些伪随机数
     const seed = chunkRandom * 10 + treeIndex;
     const treeTypeVal = (Math.sin(seed * 123.456) * 43758.5453) % 1;
     const heightRand = (Math.sin(seed * 789.012) * 43758.5453) % 1;
@@ -69,11 +77,31 @@ export class ForestBiome implements Biome {
     if (absType < 0.45) {
       // Oak tree
       const treeHeight = 4 + Math.floor(absHeight * 2);
-      growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, TreeStyle.OAK);
+      TreeStructureGenerator.growTree(
+        writer,
+        wx,
+        wy,
+        wz,
+        BLOCK_TYPES.WOOD,
+        BLOCK_TYPES.LEAF,
+        treeHeight,
+        TreeStyle.OAK,
+        (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
+      );
     } else {
       // Birch tree
       const treeHeight = 5 + Math.floor(absHeight * 3);
-      growTree(chunk, tx, ty, tz, BLOCK_TYPES.BIRCH_WOOD, BLOCK_TYPES.BIRCH_LEAVES, treeHeight, TreeStyle.BIRCH);
+      TreeStructureGenerator.growTree(
+        writer,
+        wx,
+        wy,
+        wz,
+        BLOCK_TYPES.BIRCH_WOOD,
+        BLOCK_TYPES.BIRCH_LEAVES,
+        treeHeight,
+        TreeStyle.BIRCH,
+        (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
+      );
     }
   }
 
@@ -110,3 +138,4 @@ export class ForestBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
+

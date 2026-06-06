@@ -1,11 +1,19 @@
-import { type Biome, type GrowTreeFn, TreeStyle, getOreType } from './Biome';
+import { type Biome, TreeStyle, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
+import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class JungleBiome implements Biome {
   public id = 'jungle';
   public name = '丛林';
+  public targetTemp: number;
+  public targetMoisture: number;
+
+  constructor(targetTemp = 0.8, targetMoisture = 0.85) {
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+  }
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 丛林地表也比较平缓，比海平面(150)高出约 1-10 格
@@ -50,13 +58,13 @@ export class JungleBiome implements Biome {
   }
 
   public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
+    writer: BlockWriter,
+    wx: number,
+    wy: number,
+    wz: number,
     chunkRandom: number,
     treeIndex: number,
-    growTree: GrowTreeFn
+    noise: ImprovedNoise
   ): void {
     const seed = chunkRandom * 40 + treeIndex;
     const heightRand = (Math.sin(seed * 432.1) * 43758.5453) % 1;
@@ -64,7 +72,17 @@ export class JungleBiome implements Biome {
     // 树木很高：7 到 11 格
     const treeHeight = 7 + Math.floor(absHeight * 5);
 
-    growTree(chunk, tx, ty, tz, BLOCK_TYPES.JUNGLE_WOOD, BLOCK_TYPES.JUNGLE_LEAVES, treeHeight, TreeStyle.JUNGLE);
+    TreeStructureGenerator.growTree(
+      writer,
+      wx,
+      wy,
+      wz,
+      BLOCK_TYPES.JUNGLE_WOOD,
+      BLOCK_TYPES.JUNGLE_LEAVES,
+      treeHeight,
+      TreeStyle.JUNGLE,
+      (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
+    );
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
@@ -82,3 +100,4 @@ export class JungleBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
+

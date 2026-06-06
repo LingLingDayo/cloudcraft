@@ -2,11 +2,18 @@ import { type Biome, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
-import { CHUNK_SIZE_Y } from '../World';
+import type { BlockWriter } from '../TreeStructureGenerator';
 
 export class DesertBiome implements Biome {
   public id = 'desert';
   public name = '沙漠';
+  public targetTemp: number;
+  public targetMoisture: number;
+
+  constructor(targetTemp = 0.9, targetMoisture = 0.1) {
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+  }
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 极其平缓，有微弱的沙丘起伏，比海平面(150)高出约 1-10 格
@@ -47,12 +54,13 @@ export class DesertBiome implements Biome {
   }
 
   public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
+    writer: BlockWriter,
+    wx: number,
+    wy: number,
+    wz: number,
     chunkRandom: number,
-    treeIndex: number
+    treeIndex: number,
+    _noise: ImprovedNoise
   ): void {
     // 在地表长出 1~3 层高的仙人掌
     const seed = chunkRandom * 30 + treeIndex;
@@ -61,11 +69,10 @@ export class DesertBiome implements Biome {
     const cactusHeight = 1 + Math.floor(absHeight * 3);
 
     for (let h = 1; h <= cactusHeight; h++) {
-      const cy = ty + h;
-      if (cy < CHUNK_SIZE_Y) {
-        const idx = tx + tz * 16 + cy * 256;
-        if (chunk[idx] === BLOCK_TYPES.AIR) {
-          chunk[idx] = BLOCK_TYPES.CACTUS;
+      const cy = wy + h;
+      if (cy < 512) { // WORLD_HEIGHT is 512
+        if (writer.getBlock(wx, cy, wz) === BLOCK_TYPES.AIR) {
+          writer.setBlock(wx, cy, wz, BLOCK_TYPES.CACTUS);
         }
       }
     }
@@ -80,3 +87,4 @@ export class DesertBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
+

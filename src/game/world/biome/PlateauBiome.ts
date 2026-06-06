@@ -1,11 +1,19 @@
-import { type Biome, type GrowTreeFn, TreeStyle, getOreType } from './Biome';
+import { type Biome, TreeStyle, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
+import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class PlateauBiome implements Biome {
   public id = 'plateau';
   public name = '高原';
+  public targetTemp: number;
+  public targetMoisture: number;
+
+  constructor(targetTemp = 0.45, targetMoisture = 0.15) {
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+  }
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 基础高度 190 左右，利用 smoothstep 实现平坦高台
@@ -53,13 +61,13 @@ export class PlateauBiome implements Biome {
   }
 
   public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
+    writer: BlockWriter,
+    wx: number,
+    wy: number,
+    wz: number,
     chunkRandom: number,
     treeIndex: number,
-    growTree: GrowTreeFn
+    noise: ImprovedNoise
   ): void {
     const seed = chunkRandom * 50 + treeIndex;
     const treeTypeVal = (Math.sin(seed * 234.56) * 43758.5453) % 1;
@@ -69,10 +77,30 @@ export class PlateauBiome implements Biome {
 
     if (absType < 0.5) {
       const treeHeight = 4 + Math.floor(absHeight * 2);
-      growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, TreeStyle.OAK);
+      TreeStructureGenerator.growTree(
+        writer,
+        wx,
+        wy,
+        wz,
+        BLOCK_TYPES.WOOD,
+        BLOCK_TYPES.LEAF,
+        treeHeight,
+        TreeStyle.OAK,
+        (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
+      );
     } else {
       const treeHeight = 5 + Math.floor(absHeight * 3);
-      growTree(chunk, tx, ty, tz, BLOCK_TYPES.BIRCH_WOOD, BLOCK_TYPES.BIRCH_LEAVES, treeHeight, TreeStyle.BIRCH);
+      TreeStructureGenerator.growTree(
+        writer,
+        wx,
+        wy,
+        wz,
+        BLOCK_TYPES.BIRCH_WOOD,
+        BLOCK_TYPES.BIRCH_LEAVES,
+        treeHeight,
+        TreeStyle.BIRCH,
+        (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
+      );
     }
   }
 
@@ -89,3 +117,4 @@ export class PlateauBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
+

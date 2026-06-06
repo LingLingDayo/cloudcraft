@@ -251,6 +251,124 @@ export class WorldGenerator {
     };
   }
 
+  // 统一解析任意全局坐标 (wx, wz) 下的地形高度、水体属性及矿洞高度偏好
+  public getColumnTerrainData(wx: number, wz: number): {
+    interpolatedHeight: number;
+    adjustedHeight: number;
+    finalHeight: number;
+    localWaterLevel: number;
+    isDryLand: boolean;
+    isPond: boolean;
+    maxHeightOffset: number;
+  } {
+    const { height: interpolatedHeight } = this.getInterpolatedHeightAndBiome(wx, wz);
+    const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
+    const waterLevel = WORLD_CONFIG.waterLevel;
+    
+    let adjustedHeight = interpolatedHeight;
+    let isDryLand = true;
+
+    if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
+      isDryLand = false;
+      const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - oceanNoise) / WORLD_CONFIG.ocean.transitionWidth);
+      const oceanBaseHeight = WORLD_CONFIG.ocean.baseHeight + this.noise.noise(wx * 0.02, wz * 0.02) * 3;
+      adjustedHeight = Math.round((1 - oceanFactor) * interpolatedHeight + oceanFactor * oceanBaseHeight);
+    } else {
+      const distToShore = oceanNoise - WORLD_CONFIG.ocean.threshold;
+      if (distToShore < WORLD_CONFIG.ocean.shoreWidth) {
+        const t = distToShore / WORLD_CONFIG.ocean.shoreWidth;
+        const minShoreHeight = waterLevel + 1;
+        if (adjustedHeight < minShoreHeight) {
+          adjustedHeight = Math.round(t * adjustedHeight + (1 - t) * minShoreHeight);
+        }
+      }
+    }
+
+    const { t: riverT, bedHeight: riverBedHeight, dRiver } = this.getRiverValue(wx, wz);
+    const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
+    const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
+    
+    if (dRiver < valleyEnd && adjustedHeight > WORLD_CONFIG.river.valleyTargetHeight) {
+      const tVal = 1.0 - (dRiver - valleyStart) / WORLD_CONFIG.river.valleyInfluenceWidth;
+      const clampedT = Math.max(0, Math.min(1, tVal));
+      const flattenWeight = clampedT * clampedT * (3 - 2 * clampedT);
+      const valleyTarget = WORLD_CONFIG.river.valleyTargetHeight;
+      adjustedHeight = Math.round(adjustedHeight * (1 - flattenWeight) + valleyTarget * flattenWeight);
+    }
+    
+    if (riverT > 0) {
+      const smoothedRiverT = riverT * riverT * (3 - 2 * riverT);
+      if (adjustedHeight > riverBedHeight) {
+        adjustedHeight = Math.round(adjustedHeight * (1 - smoothedRiverT) + riverBedHeight * smoothedRiverT);
+      }
+      if (riverT > 0.35) {
+        isDryLand = false;
+      } else if (isDryLand) {
+        const u = riverT / 0.35;
+        const minShoreHeight = waterLevel;
+        if (adjustedHeight < minShoreHeight) {
+          adjustedHeight = Math.round(u * minShoreHeight + (1 - u) * adjustedHeight);
+        }
+      }
+    }
+
+    let isPond = false;
+    let pondWaterLevel: number = waterLevel;
+    const surfaceHeightForPond = adjustedHeight;
+    if (isDryLand) {
+      const { isPond: pondActive, bedHeight: pondBedHeight, centerT: pondCenterT, waterLevel: pLevel } = this.getPondValue(wx, wz, surfaceHeightForPond);
+      if (pondCenterT > 0) {
+        if (adjustedHeight > pondBedHeight) {
+          adjustedHeight = Math.round(adjustedHeight * (1 - pondCenterT) + pondBedHeight * pondCenterT);
+        }
+        if (pondActive) {
+          isPond = true;
+          isDryLand = false;
+          pondWaterLevel = pLevel;
+        }
+      }
+    }
+    
+    let localWaterLevel: number = waterLevel;
+    if (isPond) {
+      localWaterLevel = pondWaterLevel;
+    }
+
+    if (isDryLand) {
+      const neighbors = [
+        [wx + 1, wz], [wx - 1, wz],
+        [wx, wz + 1], [wx, wz - 1]
+      ];
+      let maxAdjacentWaterLevel = 0;
+      for (const [nx, nz] of neighbors) {
+        const wLevel = this.getWaterLevelAt(nx, nz);
+        if (wLevel > maxAdjacentWaterLevel) {
+          maxAdjacentWaterLevel = wLevel;
+        }
+      }
+      if (maxAdjacentWaterLevel > 0 && adjustedHeight < maxAdjacentWaterLevel) {
+        adjustedHeight = maxAdjacentWaterLevel;
+      }
+    }
+
+    const finalHeight = Math.max(3, Math.min(512 - 2, adjustedHeight)); // WORLD_HEIGHT is 512
+
+    let maxHeightOffset: number = WORLD_CONFIG.caves.maxHeightOffsetDefault;
+    const entranceNoise = this.noise.noise(wx * 0.02, wz * 0.02);
+    if (entranceNoise > 0.35 && finalHeight > WORLD_CONFIG.waterLevel + 5) {
+      maxHeightOffset = WORLD_CONFIG.caves.maxHeightOffsetEntrance;
+    }
+
+    return {
+      interpolatedHeight,
+      adjustedHeight,
+      finalHeight,
+      localWaterLevel,
+      isDryLand,
+      isPond,
+      maxHeightOffset
+    };
+  }
 
   public getGroundBlockType(
     primaryBiome: Biome,

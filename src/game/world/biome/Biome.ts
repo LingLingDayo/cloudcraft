@@ -1,5 +1,6 @@
 import { ImprovedNoise } from '../Noise';
 import type { OreConfig } from '../WorldConfig';
+import type { BlockWriter } from '../TreeStructureGenerator';
 
 export const TreeStyle = {
   OAK: 'oak',
@@ -10,20 +11,11 @@ export const TreeStyle = {
 
 export type TreeStyle = typeof TreeStyle[keyof typeof TreeStyle];
 
-export type GrowTreeFn = (
-  chunk: Uint8Array,
-  tx: number,
-  ty: number,
-  tz: number,
-  trunkBlock: number,
-  leafBlock: number,
-  height: number,
-  style: TreeStyle
-) => void;
-
 export interface Biome {
   id: string;
   name: string;
+  targetTemp: number;       // 生态对应的目标温度点 (用于多噪波参数空间选择)
+  targetMoisture: number;   // 生态对应的目标湿度点 (用于多噪波参数空间选择)
 
   // 根据坐标 (wx, wz) 和噪声计算该生态在该点的地形高度
   getHeight(wx: number, wz: number, noise: ImprovedNoise): number;
@@ -46,15 +38,15 @@ export interface Biome {
   // 获取在该生态中长植物/树木的概率
   getTreeProbability(chunkRandom: number): number;
 
-  // 生态专属的装饰物（树木、仙人掌等）生成逻辑
+  // 生态专属的装饰物（树木、仙人掌等）生成逻辑，使用统一的 BlockWriter 写入
   growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
+    writer: BlockWriter,
+    wx: number,
+    wy: number,
+    wz: number,
     chunkRandom: number,
     treeIndex: number,
-    growTree: GrowTreeFn
+    noise: ImprovedNoise
   ): void;
 
   // Decide what vegetation (flower/grass) grows at the given coordinates
@@ -77,4 +69,5 @@ export function getOreType(
   }
   return defaultBlock;
 }
+
 

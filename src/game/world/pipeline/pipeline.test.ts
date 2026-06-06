@@ -11,7 +11,21 @@ vi.mock('../biome/BiomeRegistry', () => ({
   })
 }));
 
+vi.mock('@game/world/biome/BiomeRegistry', () => ({
+  getBiomeAt: () => ({
+    id: 'forest',
+    name: '森林',
+    fillColumn: () => {},
+    getTreeProbability: () => 1.0,
+    growDecorations: () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).mockGrowDecorationsCalled = true;
+    },
+  })
+}));
+
 import { vi, describe, test, expect } from 'vitest';
+import '@game/world/block/BlockRegistry';
 import { ChunkPipeline } from './ChunkPipeline';
 import type { ChunkPipelineContext, ChunkPipelineStage } from './ChunkPipelineTypes';
 import { ImprovedNoise } from '../Noise';
@@ -77,6 +91,15 @@ describe('ChunkPipeline Extensions', () => {
       getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0 }),
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
+      getColumnTerrainData: vi.fn().mockReturnValue({
+        interpolatedHeight: 160,
+        adjustedHeight: 160,
+        finalHeight: 160,
+        localWaterLevel: 150,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: 12
+      })
     };
 
     const context: ChunkPipelineContext = {
@@ -125,6 +148,15 @@ describe('ChunkPipeline Extensions', () => {
       getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0 }),
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
+      getColumnTerrainData: vi.fn().mockReturnValue({
+        interpolatedHeight: 10,
+        adjustedHeight: 10,
+        finalHeight: 10,
+        localWaterLevel: 150,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: 12
+      })
     };
 
     const chunk = new Uint8Array(4096);
@@ -174,6 +206,15 @@ describe('ChunkPipeline Extensions', () => {
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       isWaterArea: vi.fn().mockReturnValue(false),
+      getColumnTerrainData: vi.fn().mockReturnValue({
+        interpolatedHeight: 30,
+        adjustedHeight: 30,
+        finalHeight: 30,
+        localWaterLevel: 150,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: 12
+      })
     };
 
     const chunk = new Uint8Array(4096);
@@ -222,6 +263,15 @@ describe('ChunkPipeline Extensions', () => {
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       getGroundBlockType: vi.fn().mockReturnValue(BLOCK_TYPES.GRASS),
       isWaterArea: vi.fn().mockReturnValue(false),
+      getColumnTerrainData: vi.fn().mockReturnValue({
+        interpolatedHeight: 160,
+        adjustedHeight: 160,
+        finalHeight: 160,
+        localWaterLevel: 150,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: -3
+      })
     };
 
     const chunk = new Uint8Array(4096);
@@ -271,6 +321,15 @@ describe('ChunkPipeline Extensions', () => {
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       getGroundBlockType: vi.fn().mockReturnValue(BLOCK_TYPES.GRASS),
+      getColumnTerrainData: vi.fn().mockReturnValue({
+        interpolatedHeight: 160,
+        adjustedHeight: 160,
+        finalHeight: 160,
+        localWaterLevel: 150,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: 12
+      })
     };
 
     const chunk = new Uint8Array(4096);

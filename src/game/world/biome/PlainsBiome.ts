@@ -1,11 +1,19 @@
-import { type Biome, type GrowTreeFn, TreeStyle, getOreType } from './Biome';
+import { type Biome, TreeStyle, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
+import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class PlainsBiome implements Biome {
   public id = 'plains';
   public name = '平原';
+  public targetTemp: number;
+  public targetMoisture: number;
+
+  constructor(targetTemp = 0.55, targetMoisture = 0.40) {
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+  }
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 极其平缓，利用低频 fbm 控制轻微波动，比海平面(150)高出约 1-10 格
@@ -50,20 +58,30 @@ export class PlainsBiome implements Biome {
   }
 
   public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
+    writer: BlockWriter,
+    wx: number,
+    wy: number,
+    wz: number,
     chunkRandom: number,
     treeIndex: number,
-    growTree: GrowTreeFn
+    noise: ImprovedNoise
   ): void {
     // 平原仅长橡树，且高度适中
     const seed = chunkRandom * 10 + treeIndex;
     const heightRand = (Math.sin(seed * 789.012) * 43758.5453) % 1;
     const absHeight = Math.abs(heightRand);
     const treeHeight = 4 + Math.floor(absHeight * 2); // 4 to 5
-    growTree(chunk, tx, ty, tz, BLOCK_TYPES.WOOD, BLOCK_TYPES.LEAF, treeHeight, TreeStyle.OAK);
+    TreeStructureGenerator.growTree(
+      writer,
+      wx,
+      wy,
+      wz,
+      BLOCK_TYPES.WOOD,
+      BLOCK_TYPES.LEAF,
+      treeHeight,
+      TreeStyle.OAK,
+      (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
+    );
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
@@ -85,3 +103,4 @@ export class PlainsBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
+
