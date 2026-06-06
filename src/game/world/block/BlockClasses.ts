@@ -6,7 +6,6 @@ import { BLOCK_TYPES, BlockType } from '@type';
 import { getBlockProperties } from '../BlockConfig';
 import { ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 import { sound } from '@game/systems/Sound';
-import { ItemRegistry } from '../../item/ItemRegistry';
 
 
 export class AirBlock extends Block {
@@ -153,9 +152,11 @@ export class SaplingBlock extends Block {
       // Pop off immediately
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
-        const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
-        if (itemType) {
-          world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+        const drops = this.getDrops();
+        for (const drop of drops) {
+          if (drop.count > 0) {
+            world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+          }
         }
       }
     } else {
@@ -174,9 +175,11 @@ export class SaplingBlock extends Block {
       if (!props.allowVegetationBase) {
         world.setBlock(x, y, z, BLOCK_TYPES.AIR);
         if (world.game && world.game.droppedItems) {
-          const itemType = ItemRegistry.getItemTypeFromBlockType(this.id);
-          if (itemType) {
-            world.game.droppedItems.spawnItem(itemType, { x: x + 0.5, y: y + 0.5, z: z + 0.5 });
+          const drops = this.getDrops();
+          for (const drop of drops) {
+            if (drop.count > 0) {
+              world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+            }
           }
         }
       }

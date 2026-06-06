@@ -101,6 +101,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         gameManagerRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, loadSave]);
 
   // Synchronize selected item to GameManager

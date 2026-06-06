@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import * as THREE from 'three';
 import { Animal } from './Animal';
 import { World } from '@game/world/World';
-import { ItemType } from '@type';
 
 export class Pig extends Animal {
   public width = 0.9;
@@ -30,6 +29,7 @@ export class Pig extends Animal {
 
   constructor(id: string, spawnPos: THREE.Vector3, world: World) {
     super(id, spawnPos, world, 10); // 10 Health (5 Hearts)
+    this.lootTableId = 'minicraft:entities/pig';
     this.initMesh();
   }
 
@@ -239,32 +239,4 @@ export class Pig extends Animal {
     }
   }
 
-  public dropItems() {
-    if (this.world.game && this.world.game.droppedItems) {
-      // Spawn 1 to 3 porkchops
-      const count = Math.floor(Math.random() * 3) + 1;
-      const dropPos = this.position.clone().add(new THREE.Vector3(0, 0.3, 0));
-      for (let i = 0; i < count; i++) {
-        // Offset slightly
-        const offset = new THREE.Vector3(
-          (Math.random() - 0.5) * 0.3,
-          0.1,
-          (Math.random() - 0.5) * 0.3
-        );
-        const spawnPos = dropPos.clone().add(offset);
-        this.world.game.droppedItems.spawnItem(ItemType.PORKCHOP, spawnPos, 1);
-        
-        // Add velocity away from death point
-        const items = (this.world.game.droppedItems as any).droppedItems;
-        if (items && items.length > 0) {
-          const item = items[items.length - 1];
-          item.velocity.set(
-            (Math.random() - 0.5) * 3,
-            4 + Math.random() * 2,
-            (Math.random() - 0.5) * 3
-          );
-        }
-      }
-    }
-  }
 }

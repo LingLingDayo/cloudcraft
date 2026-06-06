@@ -8,6 +8,7 @@ import { ItemRegistry } from '@game/item/ItemRegistry';
 import { BlockItem } from '@game/item/Item';
 import type { BlockPlaceContext, ItemUseContext, ItemUseResult } from '@game/item/Item';
 import { GameMode } from '@type';
+import { LootTableHelper } from '../loot/LootTableHelper';
 
 
 
@@ -428,14 +429,27 @@ export class InteractionManager {
       );
 
       const blockInstance = BlockRegistry.get(blockId);
-      const drops = blockInstance.getDrops();
-      for (const drop of drops) {
-        if (drop.count > 0) {
-          this.game.droppedItems.spawnItem(
-            drop.type,
-            new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
-            drop.count
-          );
+      const spawnPos = new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5);
+
+      const storeState = useGameStore.getState();
+      const heldSlotItem = storeState.hotbar[storeState.activeSlot];
+      const tool = heldSlotItem ? ItemRegistry.get(heldSlotItem.type) : undefined;
+
+      const context = {
+        world: this.game.world,
+        position: spawnPos,
+        tool,
+        killer: this.game.player
+      };
+
+      if (blockInstance.properties.lootTableId) {
+        LootTableHelper.spawnDrops(blockInstance.properties.lootTableId, context, false);
+      } else {
+        const drops = blockInstance.getDrops(context);
+        for (const drop of drops) {
+          if (drop.count > 0) {
+            this.game.droppedItems.spawnItem(drop.type, spawnPos, drop.count);
+          }
         }
       }
       this.cancelMining();

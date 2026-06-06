@@ -11,6 +11,7 @@ import { sound } from '@game/systems/Sound';
 import type { BlockType } from '@type';
 import { useGameStore } from '@store/useGameStore';
 import { WorldBlockWriter, TreeStructureGenerator } from './TreeStructureGenerator';
+import { LootTableHelper } from '../loot/LootTableHelper';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -474,13 +475,22 @@ export class World {
               sound.playBreak();
 
               if (this.game && this.game.droppedItems) {
-                const drops = blockInstance.getDrops();
-                for (const drop of drops) {
-                  this.game.droppedItems.spawnItem(
-                    drop.type,
-                    new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5),
-                    drop.count
-                  );
+                const spawnPos = new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5);
+                const context = {
+                  world: this,
+                  position: spawnPos
+                };
+                if (blockInstance.properties.lootTableId) {
+                  LootTableHelper.spawnDrops(blockInstance.properties.lootTableId, context, false);
+                } else {
+                  const drops = blockInstance.getDrops(context);
+                  for (const drop of drops) {
+                    this.game.droppedItems.spawnItem(
+                      drop.type,
+                      spawnPos,
+                      drop.count
+                    );
+                  }
                 }
               }
             }
