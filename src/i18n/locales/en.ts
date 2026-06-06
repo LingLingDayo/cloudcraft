@@ -3,7 +3,7 @@ export const en = {
     selectPlaceholder: 'Select...',
   },
   startMenu: {
-    title: 'MINICRAFT',
+    title: 'WEBCRAFT',
     subtitle: 'Lightweight 3D Browser Minecraft',
     seedLabel: 'World Seed',
     seedPlaceholder: 'Random Seed...',

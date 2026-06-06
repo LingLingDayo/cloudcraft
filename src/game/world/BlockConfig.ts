@@ -29,7 +29,7 @@ export interface BlockProperties {
   enableCrossOffset?: boolean;       // 是否启用斜对角平面随机微调偏移 (避免完美网格对齐)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
-  lootTableId?: string;       // 新增的 LootTable 绑定 ID，例如 'minicraft:blocks/oak_leaves'
+  lootTableId?: string;       // 新增 of LootTable 绑定 ID，例如 'webcraft:blocks/oak_leaves'
   lootTable?: {
     itemType: string;
     probability: number;

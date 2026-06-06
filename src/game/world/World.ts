@@ -40,7 +40,7 @@ export class World {
   private pendingGenerationQueue: string[] = [];
   private pendingMeshQueue: string[] = [];
 
-  constructor(seed = 'minicraft', game?: any) {
+  constructor(seed = 'webcraft', game?: any) {
     this.seed = seed;
     this.game = game;
     this.blockEntities = new BlockEntityManager();

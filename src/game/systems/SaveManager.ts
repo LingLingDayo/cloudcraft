@@ -23,15 +23,15 @@ export interface SaveData {
 
 export class SaveManager {
   public static GAME_VERSION = pkg.version;
-  private static INDEX_KEY = 'minicraft_saves_index';
-  private static SAVE_PREFIX = 'minicraft_save_';
+  private static INDEX_KEY = 'webcraft_saves_index';
+  private static SAVE_PREFIX = 'webcraft_save_';
 
   // Detect environment support for IndexedDB (fallback to localStorage in Vitest Node environment)
   private static useLocalStorage = typeof indexedDB === 'undefined';
 
   private static getDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('minicraft_db', 1);
+      const request = indexedDB.open('webcraft_db', 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
       request.onupgradeneeded = (event) => {
@@ -109,7 +109,7 @@ export class SaveManager {
           createdAt: now,
           updatedAt: now,
           gameMode: data.gameMode,
-          seed: 'minicraft',
+          seed: 'webcraft',
           version: data.version,
         });
       }
@@ -132,7 +132,7 @@ export class SaveManager {
       createdAt: now,
       updatedAt: now,
       gameMode: data.gameMode,
-      seed: 'minicraft',
+      seed: 'webcraft',
       version: data.version,
     };
 

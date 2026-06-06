@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   playerName: 'Steve',
 };
 
-const SETTINGS_KEY = 'minicraft_settings';
+const SETTINGS_KEY = 'webcraft_settings';
 
 export function getSystemSettings(): SystemSettings {
   if (typeof localStorage === 'undefined') {

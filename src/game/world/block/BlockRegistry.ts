@@ -84,7 +84,7 @@ export class BlockRegistry {
       color: '#2d7823', colorHex: 0x2d7823,
       textureFaces: { top: 6, bottom: 6, side: 6 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'minicraft:blocks/oak_leaves'
+      lootTableId: 'webcraft:blocks/oak_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -100,7 +100,7 @@ export class BlockRegistry {
       color: '#8fc04e', colorHex: 0x8fc04e,
       textureFaces: { top: 18, bottom: 18, side: 18 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'minicraft:blocks/birch_leaves'
+      lootTableId: 'webcraft:blocks/birch_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -116,7 +116,7 @@ export class BlockRegistry {
       color: '#2d5a27', colorHex: 0x2d5a27,
       textureFaces: { top: 21, bottom: 21, side: 21 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'minicraft:blocks/spruce_leaves'
+      lootTableId: 'webcraft:blocks/spruce_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -186,7 +186,7 @@ export class BlockRegistry {
       color: '#1a5f12', colorHex: 0x1a5f12,
       textureFaces: { top: 26, bottom: 26, side: 26 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'minicraft:blocks/jungle_leaves'
+      lootTableId: 'webcraft:blocks/jungle_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -234,25 +234,25 @@ export class BlockRegistry {
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.BLUE_ORCHID, '兰花', 36, { color: '#2196f3', colorHex: 0x2196f3 })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.ALLIUM, '绒球葱', 37, { color: '#e040fb', colorHex: 0xe040fb })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.OXEYE_DAISY, '雏菊', 38, { color: '#eeeeee', colorHex: 0xeeeeee })));
-    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.TALL_GRASS, '草丛', 39, { color: '#4caf50', colorHex: 0x4caf50, crossScaleW: 0.85, crossScaleH: 0.85, lootTableId: 'minicraft:blocks/tall_grass' })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.TALL_GRASS, '草丛', 39, { color: '#4caf50', colorHex: 0x4caf50, crossScaleW: 0.85, crossScaleH: 0.85, lootTableId: 'webcraft:blocks/tall_grass' })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.FERN, '蕨', 40, { color: '#388e3c', colorHex: 0x388e3c, crossScaleW: 0.85, crossScaleH: 0.85 })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.DEAD_BUSH, '枯萎的灌木', 41, { color: '#a08060', colorHex: 0xa08060, crossScaleW: 0.75, crossScaleH: 0.75 })));
 
     // ─── Double height plants (使用 doublePlantProps 工厂) ──
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_BOTTOM, '向日葵(底)', 'sunflower', 42, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.SUNFLOWER_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_TOP, '向日葵(顶)', 'sunflower', 43, { color: '#ffeb3b', colorHex: 0xffeb3b, lootTableId: 'minicraft:blocks/sunflower_top' }), BLOCK_TYPES.SUNFLOWER_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_TOP, '向日葵(顶)', 'sunflower', 43, { color: '#ffeb3b', colorHex: 0xffeb3b, lootTableId: 'webcraft:blocks/sunflower_top' }), BLOCK_TYPES.SUNFLOWER_BOTTOM));
 
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_BOTTOM, '玫瑰丛(底)', 'rose_bush', 44, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.ROSE_BUSH_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_TOP, '玫瑰丛(顶)', 'rose_bush', 45, { color: '#f44336', colorHex: 0xf44336, lootTableId: 'minicraft:blocks/rose_bush_top' }), BLOCK_TYPES.ROSE_BUSH_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_TOP, '玫瑰丛(顶)', 'rose_bush', 45, { color: '#f44336', colorHex: 0xf44336, lootTableId: 'webcraft:blocks/rose_bush_top' }), BLOCK_TYPES.ROSE_BUSH_BOTTOM));
 
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.PEONY_BOTTOM, '牡丹(底)', 'peony', 46, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.PEONY_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.PEONY_TOP, '牡丹(顶)', 'peony', 47, { color: '#f8bbd0', colorHex: 0xf8bbd0, lootTableId: 'minicraft:blocks/peony_top' }), BLOCK_TYPES.PEONY_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.PEONY_TOP, '牡丹(顶)', 'peony', 47, { color: '#f8bbd0', colorHex: 0xf8bbd0, lootTableId: 'webcraft:blocks/peony_top' }), BLOCK_TYPES.PEONY_BOTTOM));
 
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.LILAC_BOTTOM, '丁香(底)', 'lilac', 48, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.LILAC_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.LILAC_TOP, '丁香(顶)', 'lilac', 49, { color: '#d1c4e9', colorHex: 0xd1c4e9, lootTableId: 'minicraft:blocks/lilac_top' }), BLOCK_TYPES.LILAC_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.LILAC_TOP, '丁香(顶)', 'lilac', 49, { color: '#d1c4e9', colorHex: 0xd1c4e9, lootTableId: 'webcraft:blocks/lilac_top' }), BLOCK_TYPES.LILAC_BOTTOM));
 
-    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM, '双格高草(底)', 'double_tall_grass', 50, { color: '#4caf50', colorHex: 0x4caf50, lootTableId: 'minicraft:blocks/double_tall_grass_bottom' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP, '双格高草(顶)', 'double_tall_grass', 51, { color: '#81c784', colorHex: 0x81c784, lootTableId: 'minicraft:blocks/double_tall_grass_top' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM));
+    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM, '双格高草(底)', 'double_tall_grass', 50, { color: '#4caf50', colorHex: 0x4caf50, lootTableId: 'webcraft:blocks/double_tall_grass_bottom' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP, '双格高草(顶)', 'double_tall_grass', 51, { color: '#81c784', colorHex: 0x81c784, lootTableId: 'webcraft:blocks/double_tall_grass_top' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM));
   }
 
   public static getAllBlocks(): Block[] {

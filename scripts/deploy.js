@@ -20,7 +20,7 @@ try {
   console.log(`远程仓库 URL: ${remoteUrl}`);
 
   console.log('正在执行打包...');
-  // 设置环境变量，指示打包使用 /minicraft/ 作为 base 路径
+  // 设置环境变量，指示打包使用 /webcraft/ 作为 base 路径
   process.env.DEPLOY_BASE = 'true';
   run('npm run build');
 

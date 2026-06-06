@@ -28,7 +28,7 @@ describe('settings utility', () => {
         showMinimap: false,
         playerName: 'Alex',
       };
-      localStorage.setItem('minicraft_settings', JSON.stringify(saved));
+      localStorage.setItem('webcraft_settings', JSON.stringify(saved));
 
       const settings = getSystemSettings();
       expect(settings).toEqual(saved);
@@ -37,7 +37,7 @@ describe('settings utility', () => {
 
   test('should recover gracefully and return defaults if stored JSON is invalid', () => {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('minicraft_settings', 'invalid-json-{');
+      localStorage.setItem('webcraft_settings', 'invalid-json-{');
       
       const settings = getSystemSettings();
       expect(settings).toEqual(DEFAULT_SETTINGS);

@@ -3,7 +3,7 @@ export const zh = {
     selectPlaceholder: '请选择...',
   },
   startMenu: {
-    title: 'MINICRAFT',
+    title: 'WEBCRAFT',
     subtitle: '轻量版 3D 浏览器“我的世界”',
     seedLabel: '世界种子',
     seedPlaceholder: '随机世界种子...',

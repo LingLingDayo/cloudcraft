@@ -43,7 +43,7 @@ export const DEFAULT_KEY_BINDINGS: Record<GameAction, string[]> = {
 };
 
 type ActionCallback = () => void;
-const STORAGE_KEY = 'minicraft_keybindings';
+const STORAGE_KEY = 'webcraft_keybindings';
 
 export class HotkeyManager {
   private bindings: Record<GameAction, string[]> = { ...DEFAULT_KEY_BINDINGS };

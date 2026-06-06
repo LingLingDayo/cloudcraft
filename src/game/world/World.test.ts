@@ -89,7 +89,7 @@ describe('World Serialization by Modified Blocks Tracking', () => {
 
 describe('World Cave and Dry Land Ocean Mask Generation', () => {
   test('should generate dry land below waterLevel when oceanNoise is above threshold', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('webcraft-seed');
     world.loadArea(0, 150, 0, 2);
     
     let foundDryLandBelowSeaLevel = false;
@@ -108,28 +108,32 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate grass on surface when dry land is below waterLevel', () => {
-    const world = new World('minicraft-seed');
-    world.loadArea(0, 150, 0, 2);
+    const world = new World('webcraft-seed');
     
     let verified = false;
-    for (let x = -32; x < 32; x++) {
-      for (let z = -32; z < 32; z++) {
-        // Find surface height
-        let y = WORLD_HEIGHT - 2;
-        while (y > 0 && world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
-          y--;
-        }
-        
-        const surfaceBlock = world.getBlock(x, y, z);
-        
-        // If surface is below waterLevel (150) and it's dry (not water)
-        if (y < 150 && surfaceBlock !== BLOCK_TYPES.WATER && surfaceBlock !== BLOCK_TYPES.AIR) {
-          // It should generate grass instead of sand in grassy biomes
-          if (surfaceBlock === BLOCK_TYPES.GRASS) {
-            verified = true;
-            break;
+    for (let offset = 0; offset < 2000; offset += 96) {
+      world.loadArea(offset, 150, offset, 2);
+      
+      for (let x = offset - 32; x < offset + 32; x++) {
+        for (let z = offset - 32; z < offset + 32; z++) {
+          // Find surface height
+          let y = WORLD_HEIGHT - 2;
+          while (y > 0 && world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
+            y--;
+          }
+          
+          const surfaceBlock = world.getBlock(x, y, z);
+          
+          // If surface is below waterLevel (150) and it's dry (not water)
+          if (y < 150 && surfaceBlock !== BLOCK_TYPES.WATER && surfaceBlock !== BLOCK_TYPES.AIR) {
+            // It should generate grass instead of sand in grassy biomes
+            if (surfaceBlock === BLOCK_TYPES.GRASS) {
+              verified = true;
+              break;
+            }
           }
         }
+        if (verified) break;
       }
       if (verified) break;
     }
@@ -137,7 +141,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate caves (AIR pockets) underground inside stone layers', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('webcraft-seed');
     world.loadArea(0, 150, 0, 2);
 
     let foundUndergroundCave = false;
@@ -165,7 +169,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should not generate exposed floating water walls adjacent to air', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('webcraft-seed');
     world.loadArea(0, 150, 0, 3); // Load a 3x3 chunk area
 
     let exposedWaterCount = 0;
@@ -201,7 +205,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     
     // Search different regions to find a high-altitude pond (since probability is 3%)
     for (let offset = 0; offset < 2000; offset += 96) {
-      const world = new World('minicraft-seed');
+      const world = new World('webcraft-seed');
       world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
       
       for (let x = offset - 32; x < offset + 32; x++) {
@@ -226,7 +230,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     let exposedWaterCount = 0;
 
     for (let offset = 0; offset < 2000; offset += 96) {
-      const world = new World('minicraft-seed');
+      const world = new World('webcraft-seed');
       // Load a 5x5 chunk area (80x80 blocks) centered around offset
       world.loadArea(offset, 150, offset, 2);
       
@@ -272,7 +276,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 30000);
 
   test('should never generate floating vegetation (vegetation block on top of AIR)', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('webcraft-seed');
     world.loadArea(0, 150, 0, 2);
 
     let floatingCount = 0;
@@ -311,8 +315,8 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should not generate ponds near rivers', () => {
-    const world = new World('minicraft-seed');
-    const generator = new WorldGenerator('minicraft-seed');
+    const world = new World('webcraft-seed');
+    const generator = new WorldGenerator('webcraft-seed');
     
     const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
     const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;

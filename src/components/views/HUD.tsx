@@ -223,7 +223,7 @@ export const HUD: React.FC = () => {
       {import.meta.env.DEV && (
         <div className={`hud-stats glass-panel ${styles.devStats}`}>
           <div className={`pixel-text-sm ${styles.devTitle}`}>
-            MINICRAFT (DEV)
+            WEBCRAFT (DEV)
           </div>
           <div>
             XYZ: {fx} / {fy} / {fz}
