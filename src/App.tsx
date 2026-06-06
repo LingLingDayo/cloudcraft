@@ -21,6 +21,7 @@ function App() {
 
   useEffect(() => {
     document.documentElement.className = language === 'zh' ? 'lang-zh' : 'lang-en';
+    document.documentElement.lang = language;
   }, [language]);
 
   // Prevent zoom and pinch gesture on mobile devices, and attempt silent fullscreen
