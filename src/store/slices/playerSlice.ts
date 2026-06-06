@@ -64,38 +64,61 @@ export const createPlayerSlice: StateCreator<
 
       const nextHotbar = [...state.hotbar];
       const nextInventory = [...(state.inventory || Array(54).fill(null))];
-      
-      // 1. Try to find in hotbar
-      const existingHotbarIndex = nextHotbar.findIndex(item => item && item.type === itemType);
-      if (existingHotbarIndex !== -1) {
-        const item = nextHotbar[existingHotbarIndex]!;
-        nextHotbar[existingHotbarIndex] = { ...item, count: item.count + count };
-        success = true;
-      } else {
-        // 2. Try to find in inventory
-        const existingInvIndex = nextInventory.findIndex(item => item && item.type === itemType);
-        if (existingInvIndex !== -1) {
-          const item = nextInventory[existingInvIndex]!;
-          nextInventory[existingInvIndex] = { ...item, count: item.count + count };
-          success = true;
-        } else {
-          // 3. Try empty space in hotbar
-          const emptyHotbarIndex = nextHotbar.findIndex(item => item === null);
-          if (emptyHotbarIndex !== -1) {
-            nextHotbar[emptyHotbarIndex] = { type: itemType, count };
-            success = true;
-          } else {
-            // 4. Try empty space in inventory
-            const emptyInvIndex = nextInventory.findIndex(item => item === null);
-            if (emptyInvIndex !== -1) {
-              nextInventory[emptyInvIndex] = { type: itemType, count };
-              success = true;
-            }
+      const maxStackSize = ItemRegistry.get(itemType).maxStackSize;
+      let remaining = count;
+
+      // 1. Try to merge into existing slots in hotbar
+      for (let i = 0; i < nextHotbar.length; i++) {
+        const item = nextHotbar[i];
+        if (item && item.type === itemType && item.count < maxStackSize) {
+          const canFit = maxStackSize - item.count;
+          const toAdd = Math.min(remaining, canFit);
+          nextHotbar[i] = { ...item, count: item.count + toAdd };
+          remaining -= toAdd;
+          if (remaining <= 0) break;
+        }
+      }
+
+      // 2. Try to merge into existing slots in inventory
+      if (remaining > 0) {
+        for (let i = 0; i < nextInventory.length; i++) {
+          const item = nextInventory[i];
+          if (item && item.type === itemType && item.count < maxStackSize) {
+            const canFit = maxStackSize - item.count;
+            const toAdd = Math.min(remaining, canFit);
+            nextInventory[i] = { ...item, count: item.count + toAdd };
+            remaining -= toAdd;
+            if (remaining <= 0) break;
           }
         }
       }
 
-      if (success) {
+      // 3. Try to place in empty hotbar slots
+      if (remaining > 0) {
+        for (let i = 0; i < nextHotbar.length; i++) {
+          if (nextHotbar[i] === null) {
+            const toAdd = Math.min(remaining, maxStackSize);
+            nextHotbar[i] = { type: itemType, count: toAdd };
+            remaining -= toAdd;
+            if (remaining <= 0) break;
+          }
+        }
+      }
+
+      // 4. Try to place in empty inventory slots
+      if (remaining > 0) {
+        for (let i = 0; i < nextInventory.length; i++) {
+          if (nextInventory[i] === null) {
+            const toAdd = Math.min(remaining, maxStackSize);
+            nextInventory[i] = { type: itemType, count: toAdd };
+            remaining -= toAdd;
+            if (remaining <= 0) break;
+          }
+        }
+      }
+
+      if (remaining < count) {
+        success = true;
         const activeItem = nextHotbar[state.activeSlot];
         const selectedItem = activeItem ? activeItem.type : null;
         return { hotbar: nextHotbar, inventory: nextInventory, selectedItem };
