@@ -2,10 +2,18 @@ import { type Biome, getOreType } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
+import type { BlockWriter } from '../TreeStructureGenerator';
 
 export class StonyPeaksBiome implements Biome {
   public id = 'stony_peaks';
   public name = '石头山';
+  public targetTemp: number;
+  public targetMoisture: number;
+
+  constructor(targetTemp = 0.1, targetMoisture = 0.15) {
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+  }
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
     // 高耸起伏大，使用脊线噪波 (1 - abs(noise)) 模拟尖锐山脊
@@ -42,7 +50,15 @@ export class StonyPeaksBiome implements Biome {
     return 0; // 石头山上不长树
   }
 
-  public growDecorations(): void {
+  public growDecorations(
+    _writer: BlockWriter,
+    _wx: number,
+    _wy: number,
+    _wz: number,
+    _chunkRandom: number,
+    _treeIndex: number,
+    _noise: ImprovedNoise
+  ): void {
     // 空实现，不长树木和其它植物
   }
 
@@ -50,3 +66,4 @@ export class StonyPeaksBiome implements Biome {
     return BLOCK_TYPES.AIR;
   }
 }
+

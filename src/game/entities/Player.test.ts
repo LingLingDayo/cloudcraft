@@ -217,9 +217,15 @@ describe('Player', () => {
   });
 
   test('should offset spawn center dynamically for non-test seeds to prevent starting on rivers', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
     // 1. 测试普通非测试种子：应该发生偏置
     const mockWorldReal = {
-      getBlock: vi.fn(() => BLOCK_TYPES.AIR),
+      getBlock: vi.fn((_x, y, _z) => {
+        if (y === 50) return BLOCK_TYPES.GRASS;
+        if (y < 50) return BLOCK_TYPES.STONE;
+        return BLOCK_TYPES.AIR;
+      }),
       getSeed: vi.fn(() => 'real-game-seed-123')
     } as unknown as World;
 
@@ -231,7 +237,11 @@ describe('Player', () => {
 
     // 2. 测试以 -seed 结尾的测试种子：应该保持 8.5
     const mockWorldTest = {
-      getBlock: vi.fn(() => BLOCK_TYPES.AIR),
+      getBlock: vi.fn((_x, y, _z) => {
+        if (y === 50) return BLOCK_TYPES.GRASS;
+        if (y < 50) return BLOCK_TYPES.STONE;
+        return BLOCK_TYPES.AIR;
+      }),
       getSeed: vi.fn(() => 'adventure-seed')
     } as unknown as World;
 
@@ -240,5 +250,7 @@ describe('Player', () => {
     // 应该保持在 8.5 默认原点
     expect(playerTest.position.x).toBeCloseTo(8.5, 1);
     expect(playerTest.position.z).toBeCloseTo(8.5, 1);
+
+    randomSpy.mockRestore();
   });
 });
