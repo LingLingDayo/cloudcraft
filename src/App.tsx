@@ -20,7 +20,7 @@ function App() {
   const [gameParams, setGameParams] = useState<{ seed: string; loadSave: boolean } | null>(null);
 
   useEffect(() => {
-    document.documentElement.className = language === 'zh' ? 'lang-zh' : 'lang-en';
+    document.documentElement.className = `lang-${language}`;
     document.documentElement.lang = language;
   }, [language]);
 
