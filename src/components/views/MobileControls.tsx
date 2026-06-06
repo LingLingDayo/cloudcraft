@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '@i18n';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '@context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
 import { GameState } from '@type';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';

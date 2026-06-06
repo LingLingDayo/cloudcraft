@@ -3,7 +3,7 @@ import { vi, describe, test, expect } from 'vitest';
 import { World } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { BlockRegistry } from './BlockRegistry';
-import { ItemRegistry } from '../../item/ItemRegistry';
+import { ItemRegistry } from '@game/item/ItemRegistry';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({

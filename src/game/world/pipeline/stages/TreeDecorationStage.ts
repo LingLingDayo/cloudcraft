@@ -1,11 +1,11 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { getBiomeAt } from '../../biome/BiomeRegistry';
-import { getBlockProperties } from '../../BlockConfig';
-import { WORLD_CONFIG } from '../../WorldConfig';
-import { WORLD_HEIGHT } from '../../World';
-import { TreeStyle } from '../../biome/Biome';
+import { getBiomeAt } from '@game/world/biome/BiomeRegistry';
+import { getBlockProperties } from '@game/world/BlockConfig';
+import { WORLD_CONFIG } from '@game/world/WorldConfig';
+import { WORLD_HEIGHT } from '@game/world/World';
+import { TreeStyle } from '@game/world/biome/Biome';
 import { isCaveAt } from './SurfaceDecorationStage';
-import { ChunkBlockWriter, TreeStructureGenerator } from '../../TreeStructureGenerator';
+import { ChunkBlockWriter, TreeStructureGenerator } from '@game/world/TreeStructureGenerator';
 
 export class TreeDecorationStage implements ChunkPipelineStage {
   public name = 'TreeDecoration';

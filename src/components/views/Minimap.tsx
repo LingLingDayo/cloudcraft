@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { useTranslation } from '@i18n';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '@context/GameContext';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { World, WORLD_HEIGHT } from '@game/world/World';
 import * as THREE from 'three';

@@ -3,9 +3,9 @@ import type { World } from '../World';
 import type { BlockEntity } from './BlockEntity';
 import { BlockType, SoundType, ItemType } from '@type';
 import type { BlockProperties } from '../BlockConfig';
-import { ItemRegistry } from '../../item/ItemRegistry';
-import type { LootContext } from '../../loot/LootTable';
-import { LootTableRegistry } from '../../loot/LootTableRegistry';
+import { ItemRegistry } from '@game/item/ItemRegistry';
+import type { LootContext } from '@game/loot/LootTable';
+import { LootTableRegistry } from '@game/loot/LootTableRegistry';
 import * as THREE from 'three';
 export type { BlockProperties };
 

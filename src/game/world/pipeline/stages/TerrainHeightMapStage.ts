@@ -1,6 +1,6 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { WORLD_CONFIG } from '../../WorldConfig';
-import { WORLD_HEIGHT } from '../../World';
+import { WORLD_CONFIG } from '@game/world/WorldConfig';
+import { WORLD_HEIGHT } from '@game/world/World';
 
 export class TerrainHeightMapStage implements ChunkPipelineStage {
   public name = 'TerrainHeightMap';

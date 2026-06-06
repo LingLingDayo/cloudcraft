@@ -12,9 +12,11 @@ export default defineConfig({
     alias: {
       '@assets': path.resolve(__dirname, './src/assets'),
       '@components': path.resolve(__dirname, './src/components'),
+      '@context': path.resolve(__dirname, './src/context'),
       '@game': path.resolve(__dirname, './src/game'),
       '@hooks': path.resolve(__dirname, './src/hooks'),
       '@i18n': path.resolve(__dirname, './src/i18n'),
+      '@package': path.resolve(__dirname, './package.json'),
       '@store': path.resolve(__dirname, './src/store'),
       '@styles': path.resolve(__dirname, './src/styles'),
       '@type': path.resolve(__dirname, './src/types'),

@@ -11,7 +11,7 @@ import { sound } from '@game/systems/Sound';
 import type { BlockType } from '@type';
 import { useGameStore } from '@store/useGameStore';
 import { WorldBlockWriter, TreeStructureGenerator } from './TreeStructureGenerator';
-import { LootTableHelper } from '../loot/LootTableHelper';
+import { LootTableHelper } from '@game/loot/LootTableHelper';
 
 export { BLOCK_TYPES, getBlockProperties };
 
