@@ -215,4 +215,30 @@ describe('Player', () => {
     expect(player.position.z).toBeCloseTo(8.5);
     expect(player.position.y).toBeCloseTo(23.2);
   });
+
+  test('should offset spawn center dynamically for non-test seeds to prevent starting on rivers', () => {
+    // 1. 测试普通非测试种子：应该发生偏置
+    const mockWorldReal = {
+      getBlock: vi.fn(() => BLOCK_TYPES.AIR),
+      getSeed: vi.fn(() => 'real-game-seed-123')
+    } as unknown as World;
+
+    const playerReal = new Player(camera);
+    playerReal.spawn(mockWorldReal, mockPhysics);
+    // 应该偏置，不在默认的 8.5 附近
+    expect(playerReal.position.x).not.toBeCloseTo(8.5, 1);
+    expect(playerReal.position.z).not.toBeCloseTo(8.5, 1);
+
+    // 2. 测试以 -seed 结尾的测试种子：应该保持 8.5
+    const mockWorldTest = {
+      getBlock: vi.fn(() => BLOCK_TYPES.AIR),
+      getSeed: vi.fn(() => 'adventure-seed')
+    } as unknown as World;
+
+    const playerTest = new Player(camera);
+    playerTest.spawn(mockWorldTest, mockPhysics);
+    // 应该保持在 8.5 默认原点
+    expect(playerTest.position.x).toBeCloseTo(8.5, 1);
+    expect(playerTest.position.z).toBeCloseTo(8.5, 1);
+  });
 });
