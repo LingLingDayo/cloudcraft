@@ -376,4 +376,29 @@ describe('Player', () => {
       );
     });
   });
+
+  describe('Hunger and Starvation', () => {
+    test('should take damage when hunger is 0 and life is greater than 1', () => {
+      player.hunger = 0;
+      player.life = 2;
+      
+      // Update by 4 seconds to trigger starvation tick
+      player.update(4.0, mockPhysics, mockControls, mockWorld);
+      
+      expect(player.life).toBe(1);
+    });
+
+    test('should take damage and die (respawn) when hunger is 0 and life is 1', () => {
+      player.hunger = 0;
+      player.life = 1;
+      
+      // Update by 4 seconds to trigger starvation tick
+      player.update(4.0, mockPhysics, mockControls, mockWorld);
+      
+      // Since taking 1 damage when life is 1 causes death, the player should respawn
+      // (which resets life to 10 and hunger to 20)
+      expect(player.life).toBe(10);
+      expect(player.hunger).toBe(20);
+    });
+  });
 });

@@ -292,8 +292,8 @@ export class Player {
           if (this.onTakeDamage) this.onTakeDamage(); // Trigger UI/State updates
         }
 
-        // Starvation damage when hunger is 0 (life > 1)
-        if (this.hunger === 0 && this.life > 1) {
+        // Starvation damage when hunger is 0 (can starve to death)
+        if (this.hunger === 0 && this.life > 0) {
           this.takeDamage(1, world, physics);
         }
       }
