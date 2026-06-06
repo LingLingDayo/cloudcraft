@@ -10,6 +10,7 @@ describe('isMobileDevice', () => {
       get: () => 1024,
       configurable: true,
     });
+    setDevModeForTesting(true);
     clearCacheForTesting();
   });
 
@@ -24,6 +25,7 @@ describe('isMobileDevice', () => {
     });
     // Delete override to restore the original window.innerWidth getter
     delete (window as { innerWidth?: number }).innerWidth;
+    setDevModeForTesting(true);
     clearCacheForTesting();
   });
 
@@ -75,7 +77,8 @@ describe('isMobileDevice', () => {
     expect(isMobileDevice()).toBe(false);
   });
 
-  test('should return true for small screen width even if user agent is desktop', () => {
+  test('should return true for small screen width in development mode even if user agent is desktop', () => {
+    setDevModeForTesting(true);
     Object.defineProperty(window, 'innerWidth', {
       get: () => 800,
       configurable: true,
@@ -85,6 +88,19 @@ describe('isMobileDevice', () => {
       configurable: true,
     });
     expect(isMobileDevice()).toBe(true);
+  });
+
+  test('should return false for small screen width in production mode if user agent is desktop', () => {
+    setDevModeForTesting(false);
+    Object.defineProperty(window, 'innerWidth', {
+      get: () => 800,
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+      configurable: true,
+    });
+    expect(isMobileDevice()).toBe(false);
   });
 });
 
