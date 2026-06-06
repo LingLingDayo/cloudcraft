@@ -108,7 +108,8 @@ export class VoxelPhysics {
     isShiftLeft: boolean,
     isFlying: boolean,
     state: { onGround: boolean; inWater: boolean },
-    autoJump: boolean = true
+    autoJump: boolean = true,
+    cameraDirection?: THREE.Vector3
   ) {
     // Limit dt to prevent huge physics steps (e.g. during lag spikes)
     dt = Math.min(dt, 0.1);
@@ -136,9 +137,9 @@ export class VoxelPhysics {
       // 3. Apply gravity & swimming buoyancy
       if (state.inWater) {
         if (isJumping) {
-          velocity.y = 3.0; // Swim upwards
+          velocity.y = 1.5; // Swim upwards, 调整成正常状态 (原来是 3.0)
         } else if (isShiftLeft) {
-          velocity.y = -3.0; // Dive downwards
+          velocity.y = -1.5; // Dive downwards, 调整成正常状态 (原来是 -3.0)
         } else {
           // 区分完全浸没和浮在水面
           const blockBottom = this.world.getBlock(Math.floor(position.x), Math.floor(position.y), Math.floor(position.z));
@@ -150,17 +151,26 @@ export class VoxelPhysics {
 
           if (isMoving) {
             this.swimTime += dt;
-            const wave = Math.sin(this.swimTime * 8.0) * 0.25;
+            // 游泳起伏再大一点 (原来是 0.25)
+            const wave = Math.sin(this.swimTime * 8.0) * 0.45;
+
+            // 计算视线方向对游泳速度的影响，抬头往上游，低头往下游
+            let lookSwimY = 0;
+            if (cameraDirection) {
+              const horizontalLook = new THREE.Vector3(cameraDirection.x, 0, cameraDirection.z).normalize();
+              const moveForwardFactor = inputDirection.dot(horizontalLook);
+              lookSwimY = cameraDirection.y * moveForwardFactor * this.settings.swimSpeed * 0.8;
+            }
 
             if (eyeIsLiquid) {
-              // 完全浸没在水里时，向上游泳浮起
-              velocity.y = 0.5 + wave;
+              // 完全浸没在水里时，向上游泳浮起，并结合抬头/低头朝向
+              velocity.y = 0.5 + wave + lookSwimY;
             } else if (bottomIsLiquid) {
-              // 浮在水面上时（脚在水里，头在空气中），利用弹性力稳定在水面高度并叠加起伏波动
+              // 浮在水面上时（脚在水里，头在空气中），利用弹性力稳定在水面高度，并叠加起伏波动与视线朝向
               const targetFloatY = Math.floor(position.y) + 0.8;
               const diff = targetFloatY - position.y;
-              velocity.y = diff * 4.0 + wave;
-              velocity.y = Math.max(-0.8, Math.min(0.8, velocity.y)); // 限制起伏速度，使其平滑
+              velocity.y = diff * 4.0 + wave + lookSwimY;
+              velocity.y = Math.max(-1.2, Math.min(1.2, velocity.y)); // 限制起伏速度，使其平滑 (原来是 -0.8 到 0.8)
             } else {
               // 安全退回
               velocity.y = Math.max(-2, velocity.y + this.settings.gravity * 0.15 * dt);
@@ -233,7 +243,8 @@ export class VoxelPhysics {
 
     // Step-up 自动上台阶判定
     const stepHeight = this.settings.stepHeight;
-    if (state.onGround && !isFlying && (collidedX || collidedZ)) {
+    // 允许在水中触发 Step-up 以走上岸
+    if ((state.onGround || state.inWater) && !isFlying && (collidedX || collidedZ)) {
       // 恢复移动前位置
       position.set(oldX, oldY, oldZ);
 
@@ -326,42 +337,49 @@ export class VoxelPhysics {
 
       // 自动跳跃 (Auto Jump)
       if (triggerAutoJump && autoJump) {
-        const baseDirY = Math.floor(position.y);
-        let shouldAutoJump = false;
+        // 在水中时，如果完全浸没在水里，不应该触发自动跳跃，只有在水面（头在空气中）或踩在地上时才自动跳跃
+        const blockEye = this.world.getBlock(Math.floor(position.x), Math.floor(position.y + 1.5), Math.floor(position.z));
+        const eyeIsLiquid = getBlockProperties(blockEye).isLiquid;
+        const canAutoJumpInWater = !eyeIsLiquid || state.onGround;
 
-        if (collidedX) {
-          const dx = Math.sign(oldVelX);
-          const checkX = Math.floor(position.x + dx * 0.35);
-          const checkZ = Math.floor(position.z);
+        if (!state.inWater || canAutoJumpInWater) {
+          const baseDirY = Math.floor(position.y);
+          let shouldAutoJump = false;
 
-          const feetSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY, checkZ));
-          const kneeSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 1, checkZ));
-          const headSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 2, checkZ));
+          if (collidedX) {
+            const dx = Math.sign(oldVelX);
+            const checkX = Math.floor(position.x + dx * 0.35);
+            const checkZ = Math.floor(position.z);
 
-          if (feetSolid && !kneeSolid && !headSolid) {
-            shouldAutoJump = true;
+            const feetSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY, checkZ));
+            const kneeSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 1, checkZ));
+            const headSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 2, checkZ));
+
+            if (feetSolid && !kneeSolid && !headSolid) {
+              shouldAutoJump = true;
+            }
           }
-        }
 
-        if (collidedZ && !shouldAutoJump) {
-          const dz = Math.sign(oldVelZ);
-          const checkX = Math.floor(position.x);
-          const checkZ = Math.floor(position.z + dz * 0.35);
+          if (collidedZ && !shouldAutoJump) {
+            const dz = Math.sign(oldVelZ);
+            const checkX = Math.floor(position.x);
+            const checkZ = Math.floor(position.z + dz * 0.35);
 
-          const feetSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY, checkZ));
-          const kneeSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 1, checkZ));
-          const headSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 2, checkZ));
+            const feetSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY, checkZ));
+            const kneeSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 1, checkZ));
+            const headSolid = this.isCollidable(this.world.getBlock(checkX, baseDirY + 2, checkZ));
 
-          if (feetSolid && !kneeSolid && !headSolid) {
-            shouldAutoJump = true;
+            if (feetSolid && !kneeSolid && !headSolid) {
+              shouldAutoJump = true;
+            }
           }
-        }
 
-        if (shouldAutoJump) {
-          velocity.y = this.settings.jumpSpeed;
-          state.onGround = false;
-          velocity.x = oldVelX;
-          velocity.z = oldVelZ;
+          if (shouldAutoJump) {
+            velocity.y = state.inWater ? 4.5 : this.settings.jumpSpeed; // 水中跳跃速度稍微柔和一些，防止直接飞出
+            state.onGround = false;
+            velocity.x = oldVelX;
+            velocity.z = oldVelZ;
+          }
         }
       }
     }

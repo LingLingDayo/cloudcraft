@@ -130,6 +130,8 @@ export class Player {
     const wasYVelocity = this.velocity.y;
     const autoJump = useGameStore.getState().autoJump;
 
+    const cameraDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+
     // Update positions, resolve collisions
     physics.update(
       this.position,
@@ -140,7 +142,8 @@ export class Player {
       controls.isActionPressed(GameAction.SNEAK),
       this.isFlying,
       this.state,
-      autoJump
+      autoJump,
+      cameraDirection
     );
 
     // Play jump sound

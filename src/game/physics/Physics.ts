@@ -70,7 +70,8 @@ export class Physics {
     isShiftLeft: boolean,
     isFlying: boolean,
     state: { onGround: boolean; inWater: boolean },
-    autoJump: boolean = true
+    autoJump: boolean = true,
+    cameraDirection?: THREE.Vector3
   ) {
     // 1. 优先更新基于 Voxel 碰撞网格的玩家及核心实体运动
     this.voxelPhysics.update(
@@ -82,7 +83,8 @@ export class Physics {
       isShiftLeft,
       isFlying,
       state,
-      autoJump
+      autoJump,
+      cameraDirection
     );
 
     // 2. 更新局部物理辅助引擎（处理粒子、爆炸碎屑、投掷物等）
