@@ -10,7 +10,6 @@ import { Dialog } from '@components/common/Dialog';
 import { useGame } from '@context/GameContext';
 import { BlockIcon } from './ItemIcon';
 import { MobileControls, PixelDotsIcon } from './MobileControls';
-import { formatCoordinate } from '@utils/helpers';
 import { isMobileDevice } from '@utils/device';
 import { Minimap } from './Minimap';
 
@@ -112,9 +111,6 @@ export const HUD: React.FC = () => {
   const setActiveSlot = useGameStore((state) => state.setActiveSlot);
   const life = useGameStore((state) => state.life);
   const hunger = useGameStore((state) => state.hunger);
-  const position = useGameStore((state) => state.position);
-  const onGround = useGameStore((state) => state.onGround);
-  const inWater = useGameStore((state) => state.inWater);
   const debugOverlay = useGameStore((state) => state.debugOverlay);
   const debugMetrics = useGameStore((state) => state.debugMetrics);
   const gameMode = useGameStore((state) => state.gameMode);
@@ -193,11 +189,6 @@ export const HUD: React.FC = () => {
     }
   }, [isInventoryOpen, activeChest]);
 
-  // Format coordinates to 1 decimal place using helper function
-  const fx = formatCoordinate(position.x);
-  const fy = formatCoordinate(position.y);
-  const fz = formatCoordinate(position.z);
-
   return (
     <div className="hud-overlay">
       {/* Target Crosshair */}
@@ -218,21 +209,6 @@ export const HUD: React.FC = () => {
           </svg>
         )}
       </div>
-
-      {/* Top Left Status Info */}
-      {debugOverlay && (
-        <div className={`hud-stats glass-panel ${styles.devStats}`}>
-          <div className={`pixel-text-sm ${styles.devTitle}`}>
-            WEBCRAFT (DEV)
-          </div>
-          <div>
-            XYZ: {fx} / {fy} / {fz}
-          </div>
-          <div className={styles.devDetails}>
-            Ground: {onGround ? 'YES' : 'NO'} | Water: {inWater ? 'YES' : 'NO'}
-          </div>
-        </div>
-      )}
 
 
 
