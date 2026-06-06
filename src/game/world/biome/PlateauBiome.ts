@@ -1,7 +1,6 @@
-import { type Biome, TreeStyle, getOreType } from './Biome';
+import { type Biome, TreeStyle } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { WORLD_CONFIG } from '../WorldConfig';
 import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class PlateauBiome implements Biome {
@@ -31,9 +30,9 @@ export class PlateauBiome implements Biome {
     finalHeight: number,
     waterLevel: number,
     depthBelowSurface: number,
-    noise: ImprovedNoise,
-    wx: number,
-    wz: number,
+    _noise: ImprovedNoise,
+    _wx: number,
+    _wz: number,
     isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
@@ -50,8 +49,7 @@ export class PlateauBiome implements Biome {
         chunk[index] = BLOCK_TYPES.DIRT;
       }
     } else {
-      // 矿脉
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
+      chunk[index] = BLOCK_TYPES.STONE;
     }
   }
 

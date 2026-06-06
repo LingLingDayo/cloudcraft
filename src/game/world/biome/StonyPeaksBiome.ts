@@ -1,7 +1,6 @@
-import { type Biome, getOreType } from './Biome';
+import { type Biome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { WORLD_CONFIG } from '../WorldConfig';
 import type { BlockWriter } from '../TreeStructureGenerator';
 
 export class StonyPeaksBiome implements Biome {
@@ -31,17 +30,17 @@ export class StonyPeaksBiome implements Biome {
     _finalHeight: number,
     _waterLevel: number,
     _depthBelowSurface: number,
-    noise: ImprovedNoise,
-    wx: number,
-    wz: number,
+    _noise: ImprovedNoise,
+    _wx: number,
+    _wz: number,
     _isDryLand: boolean
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === 0) {
       chunk[index] = BLOCK_TYPES.STONE; // 基岩
     } else {
-      // 表面及地表下方全部直接裸露石头，包含较高矿石生成概率
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.stonyPeaks, BLOCK_TYPES.STONE, noise, wx, wz);
+      // 表面及地表下方全部直接裸露石头
+      chunk[index] = BLOCK_TYPES.STONE;
     }
   }
 

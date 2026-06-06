@@ -8,6 +8,7 @@ import { ChunkPipeline } from './pipeline/ChunkPipeline';
 import type { ChunkPipelineContext } from './pipeline/ChunkPipelineTypes';
 import { TerrainHeightMapStage } from './pipeline/stages/TerrainHeightMapStage';
 import { BaseTerrainFillerStage } from './pipeline/stages/BaseTerrainFillerStage';
+import { OreGeneratorStage } from './pipeline/stages/OreGeneratorStage';
 import { CaveCarverStage } from './pipeline/stages/CaveCarverStage';
 import { SurfaceDecorationStage } from './pipeline/stages/SurfaceDecorationStage';
 import { TreeDecorationStage } from './pipeline/stages/TreeDecorationStage';
@@ -400,6 +401,7 @@ export class WorldGenerator {
     const pipeline = new ChunkPipeline();
     pipeline.addStage(new TerrainHeightMapStage());
     pipeline.addStage(new BaseTerrainFillerStage());
+    pipeline.addStage(new OreGeneratorStage());
     pipeline.addStage(new CaveCarverStage());
     pipeline.addStage(new SurfaceDecorationStage());
     pipeline.addStage(new TreeDecorationStage());
