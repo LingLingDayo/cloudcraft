@@ -63,6 +63,7 @@ export class Controls {
       this.domElement.addEventListener('touchstart', this.onTouchStart, { passive: false });
       this.domElement.addEventListener('touchmove', this.onTouchMove, { passive: false });
       this.domElement.addEventListener('touchend', this.onTouchEnd, { passive: false });
+      this.domElement.addEventListener('touchcancel', this.onTouchEnd, { passive: false });
     }
   }
 
@@ -86,6 +87,7 @@ export class Controls {
       this.domElement.removeEventListener('touchstart', this.onTouchStart);
       this.domElement.removeEventListener('touchmove', this.onTouchMove);
       this.domElement.removeEventListener('touchend', this.onTouchEnd);
+      this.domElement.removeEventListener('touchcancel', this.onTouchEnd);
       if (this.miningTimeout) {
         window.clearTimeout(this.miningTimeout);
       }
@@ -178,12 +180,8 @@ export class Controls {
     this.lastTouchY = activeTouch.clientY;
 
     const dist = Math.hypot(activeTouch.clientX - this.startTouchX, activeTouch.clientY - this.startTouchY);
-    if (dist > 15) {
+    if (dist > 25) {
       this.isMoved = true;
-      if (this.miningTimeout) {
-        window.clearTimeout(this.miningTimeout);
-        this.miningTimeout = null;
-      }
     }
 
     this.yaw -= deltaX * this.touchSensitivity;
@@ -212,10 +210,29 @@ export class Controls {
 
         if (!this.isMoved) {
           if (duration < 200) {
-            // Tap: Place block or interact (Right Click)
-            this.triggerMouseEvent('mousedown', 2);
+            // Tap: Attack/Break if looking at an animal or in creative mode, otherwise place/use
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const game = (window as any).gameInstance;
+            let button = 2; // Default: Right Click (Place/Use)
+            if (game) {
+              const isCreative = useGameStore.getState().gameMode === 'creative';
+              
+              // If looking at an animal or in creative mode, tap triggers attack/break (Left Click)
+              const hasAnimalTarget = game.animals && game.animals.getAnimalMeshes().length > 0 && (() => {
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), game.camera);
+                const intersects = raycaster.intersectObjects(game.animals.getAnimalMeshes(), true);
+                return intersects.length > 0 && intersects[0].distance < 5.2;
+              })();
+              
+              if (hasAnimalTarget || isCreative) {
+                button = 0; // Left Click (Attack/Break)
+              }
+            }
+
+            this.triggerMouseEvent('mousedown', button);
             setTimeout(() => {
-              this.triggerMouseEvent('mouseup', 2);
+              this.triggerMouseEvent('mouseup', button);
             }, 50);
           } else {
             // Long Press End: Release whatever button was triggered
