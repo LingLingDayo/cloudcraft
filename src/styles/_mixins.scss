@@ -1,10 +1,12 @@
+@use './variables' as *;
+
 /// 智能自适应动态缩放 mixin
 /// @param {Length} $design-w - 弹窗设计的宽度 (例如 640px)
 /// @param {Length} $design-h - 弹窗设计的高度 (例如 480px)
 /// @param {Number} $safe-ratio [0.92] - 视口安全留边比例
-/// @param {Length} $breakpoint-w [768px] - 触发宽度阈值
-/// @param {Length} $breakpoint-h [520px] - 触发高度阈值
-@mixin fit-scale($design-w, $design-h, $safe-ratio: 0.92, $breakpoint-w: 768px, $breakpoint-h: 520px) {
+/// @param {Length} $breakpoint-w [$breakpoint-tablet-portrait] - 触发宽度阈值
+/// @param {Length} $breakpoint-h [$breakpoint-height-short] - 触发高度阈值
+@mixin fit-scale($design-w, $design-h, $safe-ratio: 0.92, $breakpoint-w: $breakpoint-tablet-portrait, $breakpoint-h: $breakpoint-height-short) {
   @media (max-width: #{$breakpoint-w}), (max-height: #{$breakpoint-h}) {
     --design-w: #{$design-w};
     --design-h: #{$design-h};

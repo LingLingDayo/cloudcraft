@@ -153,6 +153,44 @@ const PixelHamburgerIcon: React.FC = () => {
   );
 };
 
+const PixelHollowDiamondIcon: React.FC = () => {
+  const d = "M7,2h2v1h-2z M6,3h1v1h-1z M9,3h1v1h-1z M5,4h1v1h-1z M10,4h1v1h-1z M4,5h1v1h-1z M11,5h1v1h-1z M3,6h1v1h-1z M12,6h1v1h-1z M2,7h1v1h-1z M13,7h1v1h-1z M2,8h1v1h-1z M13,8h1v1h-1z M3,9h1v1h-1z M12,9h1v1h-1z M4,10h1v1h-1z M11,10h1v1h-1z M5,11h1v1h-1z M10,11h1v1h-1z M6,12h1v1h-1z M9,12h1v1h-1z M7,13h2v1h-2z";
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 16 16"
+      style={{ imageRendering: 'pixelated' }}
+      fillRule="evenodd"
+      className={styles.centerIcon}
+    >
+      {/* Shadow */}
+      <path d={d} transform="translate(0, 1)" fill="#181818" />
+      {/* Main Color */}
+      <path d={d} fill="currentColor" />
+    </svg>
+  );
+};
+
+const PixelSolidDiamondIcon: React.FC = () => {
+  const d = "M7,2h2v1h-2z M6,3h4v1h-4z M5,4h6v1h-6z M4,5h8v1h-8z M3,6h10v1h-10z M2,7h12v1h-12z M2,8h12v1h-12z M3,9h10v1h-10z M4,10h8v1h-8z M5,11h6v1h-6z M6,12h4v1h-4z M7,13h2v1h-2z";
+  return (
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 16 16"
+      style={{ imageRendering: 'pixelated' }}
+      fillRule="evenodd"
+      className={styles.centerIcon}
+    >
+      {/* Shadow */}
+      <path d={d} transform="translate(0, 1)" fill="#181818" />
+      {/* Main Color */}
+      <path d={d} fill="currentColor" />
+    </svg>
+  );
+};
+
 export const MobileControls: React.FC = () => {
   const { t } = useTranslation();
   const gameInstance = useGame();
@@ -163,6 +201,7 @@ export const MobileControls: React.FC = () => {
 
   const [isMobile] = useState(() => isMobileDevice());
   const [toolbarExpanded, setToolbarExpanded] = useState(false);
+  const [isJumpActive, setIsJumpActive] = useState(false);
   const [activeDirections, setActiveDirections] = useState({
     up: false,
     down: false,
@@ -248,7 +287,6 @@ export const MobileControls: React.FC = () => {
     hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, down);
     hotkeyManager.setActionPressed(GameAction.MOVE_LEFT, left);
     hotkeyManager.setActionPressed(GameAction.MOVE_RIGHT, right);
-    hotkeyManager.setActionPressed(GameAction.JUMP, center);
   };
 
   const handleDpadTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -267,11 +305,23 @@ export const MobileControls: React.FC = () => {
       hotkeyManager.setActionPressed(GameAction.MOVE_BACKWARD, false);
       hotkeyManager.setActionPressed(GameAction.MOVE_LEFT, false);
       hotkeyManager.setActionPressed(GameAction.MOVE_RIGHT, false);
-      hotkeyManager.setActionPressed(GameAction.JUMP, false);
     } else {
       // 如果仍有手指在屏幕上，则重新评估触控坐标
       handleDpadTouch(e);
     }
+  };
+
+  // Jump button touch handlers
+  const handleJumpTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    setIsJumpActive(true);
+    hotkeyManager.setActionPressed(GameAction.JUMP, true);
+  };
+
+  const handleJumpTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    setIsJumpActive(false);
+    hotkeyManager.setActionPressed(GameAction.JUMP, false);
   };
 
   return (
@@ -344,7 +394,7 @@ export const MobileControls: React.FC = () => {
             <span className={styles.arrowIcon}>◀</span>
           </div>
           <div className={`${styles.dpadBtn} ${styles.center} ${activeDirections.center ? styles.active : ''}`}>
-            <span className={styles.centerIcon}>●</span>
+            <PixelHollowDiamondIcon />
           </div>
           <div className={`${styles.dpadBtn} ${styles.right} ${activeDirections.right ? styles.active : ''}`}>
             <span className={styles.arrowIcon}>▶</span>
@@ -355,6 +405,18 @@ export const MobileControls: React.FC = () => {
             <span className={styles.arrowIcon}>▼</span>
           </div>
           <div className={styles.dpadEmpty} />
+        </div>
+      </div>
+
+      {/* 移动端右下角跳跃控制 */}
+      <div 
+        className={styles.jumpContainer}
+        onTouchStart={handleJumpTouchStart}
+        onTouchEnd={handleJumpTouchEnd}
+        onTouchCancel={handleJumpTouchEnd}
+      >
+        <div className={`${styles.jumpBtn} ${isJumpActive ? styles.active : ''}`}>
+          <PixelSolidDiamondIcon />
         </div>
       </div>
     </>
