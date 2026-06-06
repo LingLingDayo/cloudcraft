@@ -9,6 +9,7 @@ interface DialogProps {
   width?: string | number;
   height?: string | number;
   closeOnBack?: boolean;
+  noPadding?: boolean;
 }
 
 export const Dialog: React.FC<DialogProps> = ({ 
@@ -17,7 +18,8 @@ export const Dialog: React.FC<DialogProps> = ({
   children, 
   width, 
   height,
-  closeOnBack = true
+  closeOnBack = true,
+  noPadding = false
 }) => {
   useBackToClose({ onClose, enabled: closeOnBack });
   const style: React.CSSProperties = {
@@ -25,9 +27,13 @@ export const Dialog: React.FC<DialogProps> = ({
     ...(height !== undefined ? { height } : {}),
   };
 
+  const getWindowClassName = () => {
+    return `${styles.dialogWindow} ${noPadding ? styles.noPadding : ''}`;
+  };
+
   return (
     <div className={styles.dialogOverlay}>
-      <div className={styles.dialogWindow} style={style}>
+      <div className={getWindowClassName()} style={style}>
         <div className={styles.dialogHeader}>
           {title ? (
             <h3 className={`pixel-text-sm ${styles.dialogTitle}`}>{title}</h3>

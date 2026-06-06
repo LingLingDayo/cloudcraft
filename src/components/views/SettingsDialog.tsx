@@ -7,9 +7,9 @@ import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
+import { Dialog } from '@components/common/Dialog';
 import { SaveManager } from '@game/systems/SaveManager';
 import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from '@utils/device';
-import { useBackToClose } from '@hooks/useBackToClose';
 import { getSystemSettings, saveSystemSetting } from '@utils/settings';
 import styles from './SettingsDialog.module.scss';
 
@@ -35,7 +35,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   onSave,
   closeOnBack = true
 }) => {
-  useBackToClose({ onClose, enabled: closeOnBack });
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('general');
 
@@ -158,23 +157,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   ];
 
   return (
-    <div className={`settings-dialog-overlay ${styles.overlay}`}>
-      <div className={`settings-dialog-container ${styles.container}`}>
-        {/* Close Button at top-right */}
-        <button
-          type="button"
-          className={styles.closeBtn}
-          onClick={onClose}
-          aria-label="Close"
-        >
-          ✕
-        </button>
-
+    <Dialog
+      title={t('settings.title')}
+      onClose={onClose}
+      width={640}
+      height={480}
+      closeOnBack={closeOnBack}
+      noPadding={true}
+    >
+      <div className={styles.dialogInner}>
         {/* Left grouping sidebar */}
         <div className={styles.sidebar}>
-          <h2 className={`pixel-text-sm ${styles.sidebarTitle}`}>
-            {t('settings.title')}
-          </h2>
           <div className={styles.tabList}>
             {tabs.map((tab) => (
               <button
@@ -462,6 +455,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };
