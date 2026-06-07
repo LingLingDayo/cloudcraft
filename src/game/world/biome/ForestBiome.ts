@@ -1,53 +1,18 @@
-import { type Biome, TreeStyle } from './Biome';
+import { BaseSoilBiome, TreeStyle } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
-export class ForestBiome implements Biome {
+export class ForestBiome extends BaseSoilBiome {
   public id = 'forest';
   public name = '森林';
   public targetTemp: number;
   public targetMoisture: number;
 
   constructor(targetTemp = 0.52, targetMoisture = 0.60) {
+    super();
     this.targetTemp = targetTemp;
     this.targetMoisture = targetMoisture;
-  }
-
-  public fillColumn(
-    chunk: Uint8Array,
-    lx: number,
-    lz: number,
-    y: number,
-    finalHeight: number,
-    waterLevel: number,
-    depthBelowSurface: number,
-    _noise: ImprovedNoise,
-    _wx: number,
-    _wz: number,
-    isDryLand: boolean,
-    slope: number
-  ): void {
-    const index = lx + lz * 16 + (y % 16) * 256;
-    if (y === finalHeight) {
-      if (slope > 3.0) {
-        chunk[index] = BLOCK_TYPES.STONE; // 陡峭峭壁裸露岩石
-      } else if (y < waterLevel + 2 && !isDryLand) {
-        chunk[index] = BLOCK_TYPES.SAND;
-      } else {
-        chunk[index] = BLOCK_TYPES.GRASS;
-      }
-    } else if (depthBelowSurface <= 4) {
-      if (slope > 3.0) {
-        chunk[index] = BLOCK_TYPES.STONE;
-      } else if (y < waterLevel + 2 && !isDryLand) {
-        chunk[index] = BLOCK_TYPES.SAND;
-      } else {
-        chunk[index] = BLOCK_TYPES.DIRT;
-      }
-    } else {
-      chunk[index] = BLOCK_TYPES.STONE;
-    }
   }
 
   public getTreeProbability(_chunkRandom: number): number {

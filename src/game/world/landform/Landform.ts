@@ -1,4 +1,5 @@
 import { ImprovedNoise } from '../Noise';
+import { WORLD_CONFIG } from '../WorldConfig';
 
 export interface Landform {
   id: string;
@@ -22,9 +23,9 @@ export class OceanLandform implements Landform {
   public targetErosion = 0.5;
 
   public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 海洋深度：远低于海平面 (150)，河床较平缓，带有低频平滑波纹
+    // 海洋深度：使用配置的海底基准高度与多维噪波起伏半振幅
     const depthNoise = noise.fbm(wx * 0.005, wz * 0.005, 3, 0.5);
-    return Math.floor(115 + depthNoise * 20); // 95 ~ 135 格
+    return Math.floor(WORLD_CONFIG.ocean.baseHeight + depthNoise * WORLD_CONFIG.ocean.variance);
   }
 }
 
