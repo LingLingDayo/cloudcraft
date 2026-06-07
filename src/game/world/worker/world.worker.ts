@@ -1,9 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { WorkerTask, WorkerResult, WorkerTaskHandler } from './WorkerTypes';
 import { WorldGenerator } from '../WorldGenerator';
 
 // Registry of task handlers to support OCP (Open-Closed Principle)
 const TaskRegistry = new Map<string, WorkerTaskHandler>();
+
+interface PostMessageContext {
+  postMessage(message: WorkerResult, transfer?: Transferable[]): void;
+}
+
+const workerCtx = self as unknown as PostMessageContext;
 
 // Handler for chunk data generation
 class GenerateChunkHandler implements WorkerTaskHandler {
@@ -19,8 +24,8 @@ class GenerateChunkHandler implements WorkerTaskHandler {
     return gen;
   }
 
-  public handle(payload: { cx: number; cy: number; cz: number; seed: string }): Uint8Array {
-    const { cx, cy, cz, seed } = payload;
+  public handle(payload: unknown): Uint8Array {
+    const { cx, cy, cz, seed } = payload as { cx: number; cy: number; cz: number; seed: string };
     const generator = this.getGenerator(seed);
     return generator.generateChunkData(cx, cy, cz);
   }
@@ -36,12 +41,12 @@ self.onmessage = async (e: MessageEvent<WorkerTask>) => {
   const handler = TaskRegistry.get(type);
 
   if (!handler) {
-    (self as any).postMessage({
+    workerCtx.postMessage({
       id,
       type,
       success: false,
       error: `Unsupported worker task type: ${type}`
-    } as WorkerResult);
+    });
     return;
   }
 
@@ -54,18 +59,19 @@ self.onmessage = async (e: MessageEvent<WorkerTask>) => {
       transferables.push(resultPayload.buffer);
     }
 
-    (self as any).postMessage({
+    workerCtx.postMessage({
       id,
       type,
       success: true,
       payload: resultPayload
-    } as WorkerResult, transferables);
-  } catch (err: any) {
-    (self as any).postMessage({
+    }, transferables);
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    workerCtx.postMessage({
       id,
       type,
       success: false,
-      error: err?.message || String(err)
-    } as WorkerResult);
+      error: errorMessage
+    });
   }
 };

@@ -1,20 +1,19 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type WorkerTaskType = 'GENERATE_CHUNK';
 
 export interface WorkerTask {
   id: string;
   type: WorkerTaskType;
-  payload: any;
+  payload: unknown;
 }
 
 export interface WorkerResult {
   id: string;
   type: WorkerTaskType;
   success: boolean;
-  payload?: any;
+  payload?: unknown;
   error?: string;
 }
 
 export interface WorkerTaskHandler {
-  handle(payload: any): any | Promise<any>;
+  handle(payload: unknown): unknown | Promise<unknown>;
 }
