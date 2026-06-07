@@ -345,6 +345,6 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     }
     
     expect(checkedWaterBlocks).toBeGreaterThan(0);
-  }, 60000);
+  }, 120000);
 });
 

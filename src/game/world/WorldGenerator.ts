@@ -302,8 +302,22 @@ export class WorldGenerator {
     if (c < WORLD_CONFIG.ocean.threshold) {
       isDryLand = false;
       const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - c) / WORLD_CONFIG.ocean.transitionWidth);
-      const oceanBaseHeight = WORLD_CONFIG.ocean.baseHeight + this.noise.noise(wx * 0.02, wz * 0.02) * 3;
-      adjustedHeight = Math.round((1 - oceanFactor) * interpolatedHeight + oceanFactor * oceanBaseHeight);
+      const t = oceanFactor;
+      const shallowRatio = WORLD_CONFIG.ocean.shallowRatio;
+      const shallowDepth = WORLD_CONFIG.ocean.shallowDepth;
+      const oceanBaseHeight = interpolatedHeight; // 直接采用 OceanLandform 声明的海床噪波高度
+      
+      if (t < shallowRatio) {
+        // 0% - 25% 过渡：浅海/浅滩区，高度从 waterLevel (150) 平缓降至 waterLevel - shallowDepth (146)
+        const localT = t / shallowRatio;
+        const targetShallowHeight = waterLevel - shallowDepth;
+        adjustedHeight = Math.round((1 - localT) * waterLevel + localT * targetShallowHeight);
+      } else {
+        // 25% - 100% 过渡：从浅滩平缓降至深海海床
+        const localT = (t - shallowRatio) / (1.0 - shallowRatio);
+        const startShallowHeight = waterLevel - shallowDepth;
+        adjustedHeight = Math.round((1 - localT) * startShallowHeight + localT * oceanBaseHeight);
+      }
     } else {
       const distToShore = c - WORLD_CONFIG.ocean.threshold;
       if (distToShore < WORLD_CONFIG.ocean.shoreWidth) {
@@ -421,9 +435,9 @@ export class WorldGenerator {
     primaryBiome: Biome,
     finalHeight: number,
     waterLevel: number,
-    isDryLand: boolean,
-    _wx: number,
-    _wz: number,
+    _isDryLand: boolean,
+    wx: number,
+    wz: number,
     slope: number
   ): number {
     if (slope > 3.0) {
@@ -435,8 +449,14 @@ export class WorldGenerator {
     if (primaryBiome.id === 'stony_peaks') {
       return BLOCK_TYPES.STONE;
     }
-    if (finalHeight < waterLevel + 2 && !isDryLand) {
-      return BLOCK_TYPES.SAND;
+    
+    // 计算是否属于海洋及海岸沙滩带 (c < 0.28)
+    const scale = WORLD_CONFIG.landform.scale;
+    const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
+    const isOceanOrBeach = c < WORLD_CONFIG.ocean.threshold + WORLD_CONFIG.ocean.shoreWidth;
+
+    if (isOceanOrBeach && finalHeight <= waterLevel + 2) {
+      return BLOCK_TYPES.SAND; // 从水底到水上 2 格均为沙滩材质，形成连贯过渡
     }
     return BLOCK_TYPES.GRASS;
   }

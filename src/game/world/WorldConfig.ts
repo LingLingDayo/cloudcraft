@@ -13,6 +13,9 @@ export const WORLD_CONFIG = {
     transitionWidth: 0.10,
     shoreWidth: 0.05,
     baseHeight: 80,
+    shallowRatio: 0.25, // 大陆度过渡百分比：0~25% 为浅海滩区
+    shallowDepth: 4,     // 浅海滩区的最大深度 (低于海平面 4 格)
+    variance: 15,        // 海洋海床的多维噪波起伏半振幅
   },
   river: {
     scale: 0.0025,
