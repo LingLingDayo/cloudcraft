@@ -18,7 +18,7 @@ describe('useGameStore', () => {
       debugOverlay: false,
       debugMetrics: null,
       isDamaged: false,
-      renderDistance: 3,
+      renderDistance: 4,
       fov: 75,
       gameMode: GameMode.ADVENTURE,
       isInventoryOpen: false,
@@ -48,7 +48,7 @@ describe('useGameStore', () => {
     expect(state.debugOverlay).toBe(false);
     expect(state.debugMetrics).toBeNull();
     expect(state.isDamaged).toBe(false);
-    expect(state.renderDistance).toBe(3);
+    expect(state.renderDistance).toBe(4);
     expect(state.fov).toBe(75);
     expect(state.gameMode).toBe(GameMode.ADVENTURE);
     expect(state.isInventoryOpen).toBe(false);

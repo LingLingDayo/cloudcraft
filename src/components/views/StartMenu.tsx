@@ -184,7 +184,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             <Slider
               label={t('startMenu.renderDistance')}
               min={2}
-              max={5}
+              max={10}
               value={renderDistance}
               onChange={setRenderDistance}
               valueFormatter={(val) => t('startMenu.renderDistanceValue', { val })}

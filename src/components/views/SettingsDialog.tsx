@@ -280,7 +280,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <Slider
                     label={t('pauseMenu.renderDistance')}
                     min={2}
-                    max={5}
+                    max={10}
                     value={renderDistance}
                     onChange={setRenderDistance}
                     valueFormatter={(val) => t('pauseMenu.renderDistanceValue', { val })}
