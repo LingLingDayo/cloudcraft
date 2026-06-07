@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useCallback } from 'react';
 import { useGameStore } from '@store/useGameStore';
 import { zh } from './locales/zh';
 import { en } from './locales/en';
@@ -13,7 +14,7 @@ export type LanguageType = 'zh' | 'en';
 export const useTranslation = () => {
   const language = useGameStore((state) => state.language);
   
-  const t = (keyPath: string, variables?: Record<string, string | number>) => {
+  const t = useCallback((keyPath: string, variables?: Record<string, string | number>) => {
     const keys = keyPath.split('.');
     let translation: any = translations[language] || translations.zh;
     
@@ -47,7 +48,7 @@ export const useTranslation = () => {
     }
     
     return keyPath;
-  };
+  }, [language]);
   
   return { t, language };
 };
