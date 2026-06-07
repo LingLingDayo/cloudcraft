@@ -21,6 +21,13 @@ export const WORLD_CONFIG = {
     bedHeight: 142,
     valleyInfluenceWidth: 0.10, // 新增：河谷扁平化过渡宽度
     valleyTargetHeight: 153,    // 新增：目标河谷地表高度，比海平面高 3 格
+    bankOffsets: {
+      mountains: 6.0,
+      plateau: 4.5,
+      hills: 3.5,
+      plains: 1.5,
+      default: 2.0,
+    } as const,
   },
   pond: {
     probability: 0.03, // 3% of cells have a pond
