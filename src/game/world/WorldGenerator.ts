@@ -30,7 +30,28 @@ export class WorldGenerator {
     return this.noise;
   }
 
-  public getRiverValue(wx: number, wz: number): { t: number; bedHeight: number; dRiver: number } {
+  public getRiverValue(wx: number, wz: number): { t: number; bedHeight: number; dRiver: number; riverWeight: number } {
+    // 计算大陆度 c，用于控制河流在海洋及海岸线的淡出
+    const scale = WORLD_CONFIG.landform.scale;
+    const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
+
+    let riverWeight = 1.0;
+    const oceanThreshold = WORLD_CONFIG.ocean.threshold;
+    const shoreWidth = WORLD_CONFIG.ocean.shoreWidth;
+
+    if (c < oceanThreshold) {
+      riverWeight = 0.0;
+    } else if (c < oceanThreshold + shoreWidth) {
+      // 在海岸线过渡带，权重从 0.0 平滑过渡到 1.0
+      const u = (c - oceanThreshold) / shoreWidth;
+      riverWeight = u * u * (3 - 2 * u); // smoothstep
+    }
+
+    if (riverWeight === 0.0) {
+      // 如果完全在海洋里，河流完全不存在，跳过计算以提升性能
+      return { t: 0, bedHeight: WORLD_CONFIG.river.bedHeight, dRiver: 10.0, riverWeight: 0.0 };
+    }
+
     // 增加双频坐标扭曲 (Multi-octave Domain Warping)，使大尺度走向蜿蜒、小尺度边缘自然折皱
     const warpX = this.noise.noise(wx * 0.01, wz * 0.01) * 15 + this.noise.noise(wx * 0.04, wz * 0.04) * 4;
     const warpZ = this.noise.noise(wx * 0.01 + 50, wz * 0.01 + 50) * 15 + this.noise.noise(wx * 0.04 + 50, wz * 0.04 + 50) * 4;
@@ -49,11 +70,14 @@ export class WorldGenerator {
         : 1.0 - (dRiver - threshold) / transitionWidth;
     }
 
+    // 缩放 t
+    t = t * riverWeight;
+
     // 动态深度控制（河床高度起伏更深，有时会形成浅滩或深水区）
     const depthNoise = this.noise.noise(wx * 0.015, wz * 0.015);
     const bedHeight = WORLD_CONFIG.river.bedHeight + depthNoise * 6;
 
-    return { t, bedHeight, dRiver };
+    return { t, bedHeight, dRiver, riverWeight };
   }
 
   private getFlatnessFactor(wx: number, wz: number): number {
@@ -329,7 +353,7 @@ export class WorldGenerator {
       }
     }
 
-    const { bedHeight: riverBedHeight, dRiver } = this.getRiverValue(wx, wz);
+    const { bedHeight: riverBedHeight, dRiver, riverWeight } = this.getRiverValue(wx, wz);
     const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
     const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
 
@@ -348,26 +372,33 @@ export class WorldGenerator {
       // 2. 计算水面边缘对应的 dRiver 阈值（即 riverT = 0.35 的那一刻）
       const waterEdgeDRiver = valleyStart - 0.35 * WORLD_CONFIG.river.transitionWidth;
 
+      // 保存河流插值前的原始高度
+      const heightBeforeRiver = adjustedHeight;
+      let riverAdjustedHeight: number;
+
       // 3. 分段样条插值（一阶导数连续，完美平滑对接）
       if (dRiver > valleyStart) {
         // A 段：河谷边缘到河岸顶部 (dRiver 介于 valleyEnd 和 valleyStart 之间)
         const u = (valleyEnd - dRiver) / (valleyEnd - valleyStart);
         const w = u * u * (3 - 2 * u); // smoothstep
-        adjustedHeight = Math.round(adjustedHeight * (1 - w) + bankHeight * w);
+        riverAdjustedHeight = Math.round(adjustedHeight * (1 - w) + bankHeight * w);
       } else if (dRiver > waterEdgeDRiver) {
         // B 段：河岸顶部到水面交界线 (dRiver 介于 valleyStart 和 waterEdgeDRiver 之间)
         const u = (valleyStart - dRiver) / (valleyStart - waterEdgeDRiver);
         const w = u * u * (3 - 2 * u);
-        adjustedHeight = Math.round(bankHeight * (1 - w) + waterLevel * w);
+        riverAdjustedHeight = Math.round(bankHeight * (1 - w) + waterLevel * w);
       } else {
         // C 段：水面交界线到河道底中心 (dRiver 介于 waterEdgeDRiver 到 0 之间)
         const u = (waterEdgeDRiver - dRiver) / waterEdgeDRiver;
         const w = u * u * (3 - 2 * u);
-        adjustedHeight = Math.round(waterLevel * (1 - w) + riverBedHeight * w);
+        riverAdjustedHeight = Math.round(waterLevel * (1 - w) + riverBedHeight * w);
       }
 
-      // 更新陆地标记：处于水面边缘内侧，即为水域
-      if (dRiver < waterEdgeDRiver) {
+      // 根据 riverWeight 插值最终的高度
+      adjustedHeight = Math.round(heightBeforeRiver * (1 - riverWeight) + riverAdjustedHeight * riverWeight);
+
+      // 更新陆地标记：处于水面边缘内侧且河流足够显著，即为水域
+      if (dRiver < waterEdgeDRiver && riverWeight > 0.35) {
         isDryLand = false;
       }
     }
