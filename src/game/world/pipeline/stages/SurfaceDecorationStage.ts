@@ -1,5 +1,5 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
+import { BLOCK_TYPES, getBlockProperties, canBlockGrowOn } from '@game/world/BlockConfig';
 import { WORLD_CONFIG } from '@game/world/WorldConfig';
 import { ImprovedNoise } from '@game/world/Noise';
 
@@ -102,7 +102,12 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
               );
               const groundProps = getBlockProperties(groundType);
               if (groundProps.allowVegetationBase) {
-                chunk[index] = biome.getVegetationType(wx, wz, noise);
+                const vegType = biome.getVegetationType(wx, wz, noise);
+                if (vegType !== BLOCK_TYPES.AIR && canBlockGrowOn(vegType, groundType)) {
+                  chunk[index] = vegType;
+                } else {
+                  chunk[index] = BLOCK_TYPES.AIR;
+                }
               } else {
                 chunk[index] = BLOCK_TYPES.AIR;
               }
