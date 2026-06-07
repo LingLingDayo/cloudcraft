@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useGameStore } from './useGameStore';
 import { GameState, GameMode, type DebugMetrics, ItemType } from '@type';
+import { getSystemSettings } from '@utils/settings';
 
 describe('useGameStore', () => {
   beforeEach(() => {
@@ -313,5 +314,15 @@ describe('useGameStore', () => {
 
     useGameStore.getState().setShowMinimap(true);
     expect(useGameStore.getState().showMinimap).toBe(true);
+  });
+
+  test('should set setting generic via setSetting', () => {
+    useGameStore.getState().setSetting('renderDistance', 8);
+    expect(useGameStore.getState().renderDistance).toBe(8);
+    expect(getSystemSettings().renderDistance).toBe(8);
+
+    useGameStore.getState().setSetting('fov', 85);
+    expect(useGameStore.getState().fov).toBe(85);
+    expect(getSystemSettings().fov).toBe(85);
   });
 });
