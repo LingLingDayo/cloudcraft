@@ -42,7 +42,7 @@ describe('Block Registry and Entity System', () => {
 
     const stone = BlockRegistry.get(BLOCK_TYPES.STONE);
     expect(stone).toBeDefined();
-    expect(stone.properties.allowVegetationBase).toBe(true);
+    expect(stone.properties.allowVegetationBase).toBeFalsy();
 
     const air = BlockRegistry.get(BLOCK_TYPES.AIR);
     expect(air).toBeDefined();

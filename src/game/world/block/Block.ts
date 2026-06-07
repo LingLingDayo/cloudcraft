@@ -2,7 +2,7 @@
 import type { World } from '../World';
 import type { BlockEntity } from './BlockEntity';
 import { BlockType, SoundType, ItemType } from '@type';
-import type { BlockProperties } from '../BlockConfig';
+import { type BlockProperties, canBlockGrowOn } from '../BlockConfig';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import type { LootContext } from '@game/loot/LootTable';
 import { LootTableRegistry } from '@game/loot/LootTableRegistry';
@@ -30,6 +30,13 @@ export abstract class Block {
   public get soundType(): SoundType { return this.properties.soundType; }
   public get showBreakCracks(): boolean { return this.properties.showBreakCracks !== false; }
   public get allowVegetationBase(): boolean { return this.properties.allowVegetationBase === true; }
+
+  /**
+   * 检查该方块（作为植物/附着物）是否可以生长/放置在指定的底座方块上
+   */
+  public canGrowOn(baseBlockId: number): boolean {
+    return canBlockGrowOn(this.id, baseBlockId);
+  }
 
   /**
    * 玩家右键交互

@@ -3,7 +3,6 @@
 import { Block, type BlockProperties } from './Block';
 import type { World } from '../World';
 import { BLOCK_TYPES, BlockType } from '@type';
-import { getBlockProperties } from '../BlockConfig';
 import { ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 import { sound } from '@game/systems/Sound';
 
@@ -147,8 +146,7 @@ export class SaplingBlock extends Block {
 
   public onPlaced(world: World, x: number, y: number, z: number): void {
     const belowType = world.getBlock(x, y - 1, z);
-    const props = getBlockProperties(belowType);
-    if (!props.allowVegetationBase) {
+    if (!this.canGrowOn(belowType)) {
       // Pop off immediately
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
@@ -171,8 +169,7 @@ export class SaplingBlock extends Block {
   public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, ny: number, _nz: number): void {
     if (ny === y - 1) {
       const belowType = world.getBlock(x, y - 1, z);
-      const props = getBlockProperties(belowType);
-      if (!props.allowVegetationBase) {
+      if (!this.canGrowOn(belowType)) {
         world.setBlock(x, y, z, BLOCK_TYPES.AIR);
         if (world.game && world.game.droppedItems) {
           const drops = this.getDrops();
@@ -194,8 +191,7 @@ export class FlowerBlock extends Block {
 
   public onPlaced(world: World, x: number, y: number, z: number): void {
     const belowType = world.getBlock(x, y - 1, z);
-    const props = getBlockProperties(belowType);
-    if (!props.allowVegetationBase) {
+    if (!this.canGrowOn(belowType)) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
         const drops = this.getDrops();
@@ -211,8 +207,7 @@ export class FlowerBlock extends Block {
   public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, ny: number, _nz: number): void {
     if (ny === y - 1) {
       const belowType = world.getBlock(x, y - 1, z);
-      const props = getBlockProperties(belowType);
-      if (!props.allowVegetationBase) {
+      if (!this.canGrowOn(belowType)) {
         world.setBlock(x, y, z, BLOCK_TYPES.AIR);
         if (world.game && world.game.droppedItems) {
           const drops = this.getDrops();
@@ -237,10 +232,9 @@ export class DoublePlantBottomBlock extends Block {
 
   public onPlaced(world: World, x: number, y: number, z: number): void {
     const belowType = world.getBlock(x, y - 1, z);
-    const belowProps = getBlockProperties(belowType);
     const aboveType = world.getBlock(x, y + 1, z);
 
-    if (!belowProps.allowVegetationBase || aboveType !== BLOCK_TYPES.AIR) {
+    if (!this.canGrowOn(belowType) || aboveType !== BLOCK_TYPES.AIR) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
         const drops = this.getDrops();
@@ -257,9 +251,8 @@ export class DoublePlantBottomBlock extends Block {
 
   public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, _ny: number, _nz: number): void {
     const belowType = world.getBlock(x, y - 1, z);
-    const belowProps = getBlockProperties(belowType);
     
-    if (!belowProps.allowVegetationBase) {
+    if (!this.canGrowOn(belowType)) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
       if (world.game && world.game.droppedItems) {
         const drops = this.getDrops();
@@ -298,6 +291,44 @@ export class DoublePlantTopBlock extends Block {
     const belowType = world.getBlock(x, y - 1, z);
     if (belowType !== this.bottomBlockId) {
       world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+    }
+  }
+}
+
+export class CactusBlock extends Block {
+  constructor(properties: BlockProperties) {
+    super(properties);
+  }
+
+  public onPlaced(world: World, x: number, y: number, z: number): void {
+    const belowType = world.getBlock(x, y - 1, z);
+    if (!this.canGrowOn(belowType)) {
+      world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+      if (world.game && world.game.droppedItems) {
+        const drops = this.getDrops();
+        for (const drop of drops) {
+          if (drop.count > 0) {
+            world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+          }
+        }
+      }
+    }
+  }
+
+  public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, ny: number, _nz: number): void {
+    if (ny === y - 1) {
+      const belowType = world.getBlock(x, y - 1, z);
+      if (!this.canGrowOn(belowType)) {
+        world.setBlock(x, y, z, BLOCK_TYPES.AIR);
+        if (world.game && world.game.droppedItems) {
+          const drops = this.getDrops();
+          for (const drop of drops) {
+            if (drop.count > 0) {
+              world.game.droppedItems.spawnItem(drop.type, { x: x + 0.5, y: y + 0.5, z: z + 0.5 }, drop.count);
+            }
+          }
+        }
+      }
     }
   }
 }

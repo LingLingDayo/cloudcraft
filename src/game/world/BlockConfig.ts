@@ -19,6 +19,7 @@ export interface BlockProperties {
   colorHex?: number;          // 3D particle/material color (number like 0x56a032)
   border?: string;            // UI preview border (optional)
   allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
+  allowedBaseBlocks?: BlockType[]; // 该植被/植物方块只能放置/生长在指定的这些方块类型上
   textureFaces?: { top: number; bottom: number; side: number };
   droppedModelType?: 'block' | 'cross';
   renderAdjacentSameType?: boolean; // 当相邻方块是相同类型时是否依然渲染邻面 (例如树叶)
@@ -96,4 +97,16 @@ export function getBlockProperties(blockId: number): BlockProperties & { transla
     isCollidable: props.isCollidable ?? props.isSolid,
     canSpawnOn: props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid)
   };
+}
+
+/**
+ * 校验某个方块类型（如花、草等植物）是否可以种植/生长在指定的底座方块类型上
+ */
+export function canBlockGrowOn(plantId: number, baseId: number): boolean {
+  const plantProps = getBlockProperties(plantId);
+  if (plantProps.allowedBaseBlocks) {
+    return plantProps.allowedBaseBlocks.includes(baseId as BlockType);
+  }
+  const baseProps = getBlockProperties(baseId);
+  return baseProps.allowVegetationBase === true;
 }
