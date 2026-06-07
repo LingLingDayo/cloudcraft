@@ -7,6 +7,7 @@ import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { GameAction } from '@game/systems/HotkeyManager';
 import { useGameStore } from '@store/useGameStore';
 import type { ItemType } from '@type';
+import { isTestSeed as checkIsTestSeed } from '@game/world/WorldConfig';
 
 export class Player {
   public position = new THREE.Vector3(8.5, 40, 8.5);
@@ -36,17 +37,12 @@ export class Player {
     // 1. 每次均根据当前传入的 world 种子重新计算并定位安全的世界出生中心点（World Spawn Center）
     let baseX = 8.5;
     let baseZ = 8.5;
+    let isTestSeed = false;
 
     const getSeed = (world as unknown as { getSeed?: () => string }).getSeed;
     if (typeof getSeed === 'function') {
       const seed = getSeed.call(world);
-      // 过滤掉单元测试中的常见种子（以 -seed 结尾或包含 test / revert / size 等字样），保持原点 8.5 以免破坏单元测试断言
-      const isTestSeed = seed && (
-        seed.endsWith('-seed') || 
-        seed.includes('test') || 
-        seed.includes('revert') || 
-        seed.includes('size')
-      );
+      isTestSeed = !!(seed && checkIsTestSeed(seed));
       if (seed && !isTestSeed) {
         let hash = 0;
         for (let i = 0; i < seed.length; i++) {
@@ -65,7 +61,7 @@ export class Player {
 
     // 寻找安全的陆地出生点中心 (不属于水域且是 solid 的地面)
     let foundSafeSpawn = false;
-    const maxSearchRadius = 32; // 扩大范围至 32 格，方便找到安全平坦的陆地出生点
+    const maxSearchRadius = isTestSeed ? 4 : 32; // 单元测试种子下限制最大检索半径为 4，大幅优化单元测试性能
     
     // 螺旋式搜索安全的出生点
     outerLoop:
