@@ -9,7 +9,7 @@ export interface OreConfig {
 export const WORLD_CONFIG = {
   waterLevel: 150,
   ocean: {
-    threshold: 0.35, // 大陆度低于此阈值为海洋
+    threshold: 0.23, // 大陆度低于此阈值为海洋
     transitionWidth: 0.10,
     shoreWidth: 0.05,
     baseHeight: 80,
