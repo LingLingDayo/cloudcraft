@@ -184,8 +184,9 @@ export class WorldGenerator {
   }
 
   public getWaterLevelAt(wx: number, wz: number): number {
-    const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
-    if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
+    const scale = WORLD_CONFIG.landform.scale;
+    const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
+    if (c < WORLD_CONFIG.ocean.threshold) {
       return WORLD_CONFIG.waterLevel;
     }
     const { t } = this.getRiverValue(wx, wz);
@@ -200,8 +201,9 @@ export class WorldGenerator {
   }
 
   public isWaterArea(wx: number, wz: number): boolean {
-    const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
-    if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
+    const scale = WORLD_CONFIG.landform.scale;
+    const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
+    if (c < WORLD_CONFIG.ocean.threshold) {
       return true;
     }
     const { t } = this.getRiverValue(wx, wz);
@@ -290,19 +292,20 @@ export class WorldGenerator {
     slope: number;
   } {
     const { height: interpolatedHeight, slope } = this.getInterpolatedHeightAndBiome(wx, wz);
-    const oceanNoise = this.noise.noise(wx * WORLD_CONFIG.ocean.scale, wz * WORLD_CONFIG.ocean.scale);
+    const scale = WORLD_CONFIG.landform.scale;
+    const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
     const waterLevel = WORLD_CONFIG.waterLevel;
     
     let adjustedHeight = interpolatedHeight;
     let isDryLand = true;
 
-    if (oceanNoise < WORLD_CONFIG.ocean.threshold) {
+    if (c < WORLD_CONFIG.ocean.threshold) {
       isDryLand = false;
-      const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - oceanNoise) / WORLD_CONFIG.ocean.transitionWidth);
+      const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - c) / WORLD_CONFIG.ocean.transitionWidth);
       const oceanBaseHeight = WORLD_CONFIG.ocean.baseHeight + this.noise.noise(wx * 0.02, wz * 0.02) * 3;
       adjustedHeight = Math.round((1 - oceanFactor) * interpolatedHeight + oceanFactor * oceanBaseHeight);
     } else {
-      const distToShore = oceanNoise - WORLD_CONFIG.ocean.threshold;
+      const distToShore = c - WORLD_CONFIG.ocean.threshold;
       if (distToShore < WORLD_CONFIG.ocean.shoreWidth) {
         const t = distToShore / WORLD_CONFIG.ocean.shoreWidth;
         const minShoreHeight = waterLevel + 1;

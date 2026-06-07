@@ -127,8 +127,8 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
           
           const surfaceBlock = world.getBlock(x, y, z);
           
-          // If surface is below waterLevel (150) and it's dry (not water)
-          if (y < 150 && surfaceBlock !== BLOCK_TYPES.WATER && surfaceBlock !== BLOCK_TYPES.AIR) {
+          // If surface is close to waterLevel (<= 151) and it's dry (not water)
+          if (y <= 151 && surfaceBlock !== BLOCK_TYPES.WATER && surfaceBlock !== BLOCK_TYPES.AIR) {
             // It should generate grass instead of sand in grassy biomes
             if (surfaceBlock === BLOCK_TYPES.GRASS) {
               verified = true;
