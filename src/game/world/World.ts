@@ -12,6 +12,7 @@ import type { BlockType } from '@type';
 import { useGameStore } from '@store/useGameStore';
 import { WorldBlockWriter, TreeStructureGenerator } from './TreeStructureGenerator';
 import { LootTableHelper } from '@game/loot/LootTableHelper';
+import { WorkerManager } from './worker/WorkerManager';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -37,6 +38,8 @@ export class World {
   private seed: string;
   public generator: WorldGenerator;
   private renderer: ChunkRenderer;
+  private workerManager: WorkerManager;
+  private generatingChunks: Set<string> = new Set();
   private pendingGenerationQueue: string[] = [];
   private pendingMeshQueue: string[] = [];
 
@@ -54,6 +57,7 @@ export class World {
     
     this.generator = new WorldGenerator(seed);
     this.renderer = new ChunkRenderer(this);
+    this.workerManager = WorkerManager.getInstance();
   }
 
   public getSeed(): string {
@@ -357,6 +361,7 @@ export class World {
   // Clean up WebGL resources
   public dispose() {
     this.renderer.dispose();
+    this.workerManager.dispose();
   }
 
   // Serialize world to JSON (only saves modified blocks to keep save size minimal)
@@ -410,17 +415,24 @@ export class World {
         }
       } else if (this.pendingGenerationQueue.length > 0) {
         const key = this.pendingGenerationQueue.shift();
-        if (key) {
+        if (key && !this.chunks.has(key) && !this.generatingChunks.has(key)) {
+          this.generatingChunks.add(key);
           const [cx, cy, cz] = key.split(',').map(Number);
-          if (!this.chunks.has(key)) {
-            const chunk = this.generator.generateChunkData(cx, cy, cz);
-            this.applyChunkModifications(key, chunk);
-            this.chunks.set(key, chunk);
+          
+          this.workerManager.execute<Uint8Array>('GENERATE_CHUNK', { cx, cy, cz, seed: this.seed })
+            .then(chunk => {
+              this.generatingChunks.delete(key);
+              this.applyChunkModifications(key, chunk);
+              this.chunks.set(key, chunk);
 
-            // Once generated, queue it for mesh creation and re-sort by proximity
-            this.pendingMeshQueue.push(key);
-            this.pendingMeshQueue.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
-          }
+              // Once generated, queue it for mesh creation and re-sort by proximity
+              this.pendingMeshQueue.push(key);
+              this.pendingMeshQueue.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
+            })
+            .catch(err => {
+              console.error(`Failed to generate chunk asynchronously for key ${key}`, err);
+              this.generatingChunks.delete(key);
+            });
         }
       } else {
         break; // No more items to load
