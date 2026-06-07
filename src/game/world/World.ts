@@ -185,19 +185,11 @@ export class World {
     newBlock.onPlaced(this, x, y, z);
     this.notifyNeighborsOfStateChange(x, y, z);
 
-    // Rebuild this chunk's mesh
-    this.updateChunkMesh(cx, cy, cz);
-
-    // If block is on the edge of the chunk, update neighbor chunks too
-    if (lx === 0) this.updateChunkMesh(cx - 1, cy, cz);
-    if (lx === CHUNK_SIZE_X - 1) this.updateChunkMesh(cx + 1, cy, cz);
-    if (ly === 0) this.updateChunkMesh(cx, cy - 1, cz);
-    if (ly === CHUNK_SIZE_Y - 1) this.updateChunkMesh(cx, cy + 1, cz);
-    if (lz === 0) this.updateChunkMesh(cx, cy, cz - 1);
-    if (lz === CHUNK_SIZE_Z - 1) this.updateChunkMesh(cx, cy, cz + 1);
+    // Rebuild this chunk's mesh and its neighbors to ensure boundary faces are culled correctly
+    this.updateChunkMesh(cx, cy, cz, true);
   }
 
-  public updateChunkMesh(cx: number, cy: number, cz: number) {
+  public updateChunkMesh(cx: number, cy: number, cz: number, updateNeighbors = true) {
     this.renderer.updateChunkMesh(cx, cy, cz, this.chunks);
     
     // Update chunk loading progress in store
@@ -206,6 +198,23 @@ export class World {
       const key = `${cx},${cy},${cz}`;
       if (store.chunkLoadingStates[key] === false) {
         store.setChunkLoadingState(key, true);
+      }
+    }
+
+    if (updateNeighbors) {
+      const neighbors = [
+        [1, 0, 0], [-1, 0, 0],
+        [0, 1, 0], [0, -1, 0],
+        [0, 0, 1], [0, 0, -1]
+      ];
+      for (const [dx, dy, dz] of neighbors) {
+        const ncx = cx + dx;
+        const ncy = cy + dy;
+        const ncz = cz + dz;
+        const nkey = `${ncx},${ncy},${ncz}`;
+        if (this.renderer.hasChunkMesh(nkey)) {
+          this.updateChunkMesh(ncx, ncy, ncz, false);
+        }
       }
     }
   }
