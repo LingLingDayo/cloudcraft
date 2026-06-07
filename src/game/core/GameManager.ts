@@ -39,7 +39,7 @@ export class GameManager {
   private lastUiUpdateTime = 0;
 
   // Settings
-  public renderDistance = 3;
+  public renderDistance = 4;
 
   // Debug metrics
   public debugOverlayVisible = false;

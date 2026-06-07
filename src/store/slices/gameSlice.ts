@@ -14,7 +14,7 @@ export const createGameSlice: StateCreator<
 
   return {
     gameState: GameState.MENU,
-    renderDistance: 3,
+    renderDistance: 4,
     fov: 75,
     gameMode: GameMode.ADVENTURE,
     language: settings.language,
