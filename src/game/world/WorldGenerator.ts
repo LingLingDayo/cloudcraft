@@ -31,9 +31,9 @@ export class WorldGenerator {
   }
 
   public getRiverValue(wx: number, wz: number): { t: number; bedHeight: number; dRiver: number } {
-    // 增加坐标扭曲 (Domain Warping)，使河流具有弯曲多变的形状
-    const warpX = this.noise.noise(wx * 0.01, wz * 0.01) * 15;
-    const warpZ = this.noise.noise(wx * 0.01 + 50, wz * 0.01 + 50) * 15;
+    // 增加双频坐标扭曲 (Multi-octave Domain Warping)，使大尺度走向蜿蜒、小尺度边缘自然折皱
+    const warpX = this.noise.noise(wx * 0.01, wz * 0.01) * 15 + this.noise.noise(wx * 0.04, wz * 0.04) * 4;
+    const warpZ = this.noise.noise(wx * 0.01 + 50, wz * 0.01 + 50) * 15 + this.noise.noise(wx * 0.04 + 50, wz * 0.04 + 50) * 4;
     const riverNoise = this.noise.noise((wx + warpX) * WORLD_CONFIG.river.scale, (wz + warpZ) * WORLD_CONFIG.river.scale);
     const dRiver = Math.abs(riverNoise);
     
@@ -291,7 +291,7 @@ export class WorldGenerator {
     maxHeightOffset: number;
     slope: number;
   } {
-    const { height: interpolatedHeight, slope } = this.getInterpolatedHeightAndBiome(wx, wz);
+    const { height: interpolatedHeight, primaryLandform, slope } = this.getInterpolatedHeightAndBiome(wx, wz);
     const scale = WORLD_CONFIG.landform.scale;
     const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
     const waterLevel = WORLD_CONFIG.waterLevel;
@@ -315,31 +315,46 @@ export class WorldGenerator {
       }
     }
 
-    const { t: riverT, bedHeight: riverBedHeight, dRiver } = this.getRiverValue(wx, wz);
+    const { bedHeight: riverBedHeight, dRiver } = this.getRiverValue(wx, wz);
     const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
     const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
-    
-    if (dRiver < valleyEnd && adjustedHeight > WORLD_CONFIG.river.valleyTargetHeight) {
-      const tVal = 1.0 - (dRiver - valleyStart) / WORLD_CONFIG.river.valleyInfluenceWidth;
-      const clampedT = Math.max(0, Math.min(1, tVal));
-      const flattenWeight = clampedT * clampedT * (3 - 2 * clampedT);
-      const valleyTarget = WORLD_CONFIG.river.valleyTargetHeight;
-      adjustedHeight = Math.round(adjustedHeight * (1 - flattenWeight) + valleyTarget * flattenWeight);
-    }
-    
-    if (riverT > 0) {
-      const smoothedRiverT = riverT * riverT * (3 - 2 * riverT);
-      if (adjustedHeight > riverBedHeight) {
-        adjustedHeight = Math.round(adjustedHeight * (1 - smoothedRiverT) + riverBedHeight * smoothedRiverT);
+
+    if (dRiver < valleyEnd) {
+      // 1. 根据当前地貌 (primaryLandform) 动态决定地貌河岸偏移量，支持峡谷或平缓过渡
+      let targetBankOffset: number = WORLD_CONFIG.river.bankOffsets.default;
+      const landformId = primaryLandform.id;
+      if (landformId in WORLD_CONFIG.river.bankOffsets) {
+        targetBankOffset = WORLD_CONFIG.river.bankOffsets[landformId as keyof typeof WORLD_CONFIG.river.bankOffsets];
       }
-      if (riverT > 0.35) {
+
+      // 添加有机河岸噪声，避免整条河岸高度水平一致
+      const bankNoise = this.noise.noise(wx * 0.03, wz * 0.03) * 1.0;
+      const bankHeight = Math.max(waterLevel + 1.0, waterLevel + targetBankOffset + bankNoise);
+
+      // 2. 计算水面边缘对应的 dRiver 阈值（即 riverT = 0.35 的那一刻）
+      const waterEdgeDRiver = valleyStart - 0.35 * WORLD_CONFIG.river.transitionWidth;
+
+      // 3. 分段样条插值（一阶导数连续，完美平滑对接）
+      if (dRiver > valleyStart) {
+        // A 段：河谷边缘到河岸顶部 (dRiver 介于 valleyEnd 和 valleyStart 之间)
+        const u = (valleyEnd - dRiver) / (valleyEnd - valleyStart);
+        const w = u * u * (3 - 2 * u); // smoothstep
+        adjustedHeight = Math.round(adjustedHeight * (1 - w) + bankHeight * w);
+      } else if (dRiver > waterEdgeDRiver) {
+        // B 段：河岸顶部到水面交界线 (dRiver 介于 valleyStart 和 waterEdgeDRiver 之间)
+        const u = (valleyStart - dRiver) / (valleyStart - waterEdgeDRiver);
+        const w = u * u * (3 - 2 * u);
+        adjustedHeight = Math.round(bankHeight * (1 - w) + waterLevel * w);
+      } else {
+        // C 段：水面交界线到河道底中心 (dRiver 介于 waterEdgeDRiver 到 0 之间)
+        const u = (waterEdgeDRiver - dRiver) / waterEdgeDRiver;
+        const w = u * u * (3 - 2 * u);
+        adjustedHeight = Math.round(waterLevel * (1 - w) + riverBedHeight * w);
+      }
+
+      // 更新陆地标记：处于水面边缘内侧，即为水域
+      if (dRiver < waterEdgeDRiver) {
         isDryLand = false;
-      } else if (isDryLand) {
-        const u = riverT / 0.35;
-        const minShoreHeight = waterLevel;
-        if (adjustedHeight < minShoreHeight) {
-          adjustedHeight = Math.round(u * minShoreHeight + (1 - u) * adjustedHeight);
-        }
       }
     }
 

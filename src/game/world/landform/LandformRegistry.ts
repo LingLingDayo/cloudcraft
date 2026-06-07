@@ -32,11 +32,18 @@ class LandformRegistryClass {
     // 侵蚀度 (Erosion)
     const e = (noise.noise((wx + WORLD_CONFIG.landform.offsetE) * scale, (wz + WORLD_CONFIG.landform.offsetE) * scale) + 1) / 2;
 
+    const isOcean = c < WORLD_CONFIG.ocean.threshold;
     let nearestLandform = this.landforms[0];
     let minDistanceSq = Infinity;
 
-    // 欧式空间最近邻匹配
+    // 欧式空间最近邻匹配 (对海洋和陆地分区过滤以防止地貌断层)
     for (const landform of this.landforms) {
+      if (isOcean) {
+        if (landform.id !== 'ocean') continue;
+      } else {
+        if (landform.id === 'ocean') continue;
+      }
+
       const dc = c - landform.targetContinentalness;
       const de = e - landform.targetErosion;
       const distSq = dc * dc + de * de;
