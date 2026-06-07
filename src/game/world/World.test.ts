@@ -4,6 +4,9 @@ import { BLOCK_TYPES } from './BlockConfig';
 import { WorldGenerator } from './WorldGenerator';
 import { WORLD_CONFIG } from './WorldConfig';
 
+// Bypass slow WebGL mesh updates globally in this test suite
+World.prototype.updateChunkMesh = () => {};
+
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
   fillStyle: '',
@@ -117,7 +120,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       for (let x = offset - 32; x < offset + 32; x++) {
         for (let z = offset - 32; z < offset + 32; z++) {
           // Find surface height
-          let y = WORLD_HEIGHT - 2;
+          let y = 220; // Limit search height to 220 to avoid generating high-altitude air chunks
           while (y > 0 && world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
             y--;
           }

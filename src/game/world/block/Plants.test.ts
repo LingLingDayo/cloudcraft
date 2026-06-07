@@ -2,6 +2,9 @@
 import { vi, describe, test, expect } from 'vitest';
 import { World } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
+
+// Bypass slow WebGL mesh updates globally in this test suite
+World.prototype.updateChunkMesh = () => {};
 import { BlockRegistry } from './BlockRegistry';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 

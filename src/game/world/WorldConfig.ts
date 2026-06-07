@@ -73,3 +73,10 @@ export const WORLD_CONFIG = {
     ] as const,
   },
 } as const;
+
+export const TEST_SEED_IDENTIFIER = 'test';
+
+export function isTestSeed(seed: string): boolean {
+  const lower = seed.toLowerCase();
+  return lower.includes(TEST_SEED_IDENTIFIER) || lower.endsWith('-seed');
+}
