@@ -378,7 +378,7 @@ export class GameManager {
 
     return {
       fps: this.fpsCounter.getFPS(),
-      chunksLoaded: this.world.group.children.length / 2,
+      chunksLoaded: this.world.getRenderer().getChunkMeshes().size,
       isFlying: this.player.isFlying,
       targetBlock,
       playerPosition: playerPos,
