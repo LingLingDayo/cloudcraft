@@ -12,10 +12,10 @@ const checkIsMobile = (): boolean => {
   // 针对 iPadOS 上的 Safari 浏览器（其 userAgent 默认伪装为 Macintosh）
   const isMaciPad = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 
-  // 页面宽度小于 variables.breakpointMobile (默认 1024px) 且在开发环境下判定为移动端
+  // 页面宽度小于 variables.breakpointMobile (默认 1024px) 判定为移动端
   const parsedBreakpoint = parseInt(variables?.breakpointMobile, 10);
   const breakpoint = isNaN(parsedBreakpoint) ? 1024 : parsedBreakpoint;
-  const isSmallScreen = devMode && (window.innerWidth < breakpoint);
+  const isSmallScreen = window.innerWidth < breakpoint;
 
   return isMobileUA || isMaciPad || isSmallScreen;
 };

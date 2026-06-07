@@ -90,7 +90,7 @@ describe('isMobileDevice', () => {
     expect(isMobileDevice()).toBe(true);
   });
 
-  test('should return false for small screen width in production mode if user agent is desktop', () => {
+  test('should return true for small screen width in production mode if user agent is desktop', () => {
     setDevModeForTesting(false);
     Object.defineProperty(window, 'innerWidth', {
       get: () => 800,
@@ -100,7 +100,7 @@ describe('isMobileDevice', () => {
       value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
       configurable: true,
     });
-    expect(isMobileDevice()).toBe(false);
+    expect(isMobileDevice()).toBe(true);
   });
 });
 
