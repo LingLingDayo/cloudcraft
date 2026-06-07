@@ -40,6 +40,42 @@ export const Inventory: React.FC = () => {
   const [heldItem, setHeldItem] = useState<HeldItem | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
+  // Tracking hovered item for description tooltip
+  const [hoveredItem, setHoveredItem] = useState<{
+    type: ItemType;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isInventoryOpen) {
+      const frameId = requestAnimationFrame(() => {
+        setHoveredItem(null);
+      });
+      return () => cancelAnimationFrame(frameId);
+    }
+  }, [isInventoryOpen]);
+
+  const handleMouseEnterSlot = (type: ItemType, e: React.MouseEvent) => {
+    setHoveredItem({
+      type,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  const handleMouseMoveSlot = (type: ItemType, e: React.MouseEvent) => {
+    setHoveredItem({
+      type,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  const handleMouseLeaveSlot = () => {
+    setHoveredItem(null);
+  };
+
   // Update mouse position for floating held item preview
   useEffect(() => {
     if (!isInventoryOpen) return;
@@ -107,9 +143,28 @@ export const Inventory: React.FC = () => {
       putHeldItemBack(heldItem);
       setHeldItem(null);
     }
+    setHoveredItem(null);
     closeInventory();
     // Relock pointer in game controls
     gameInstance?.controls?.requestLock?.();
+  };
+
+  const handleSlotClickWithTooltip = (
+    zone: 'hotbar' | 'inventory' | 'creative',
+    index: number,
+    blockId?: ItemType
+  ) => {
+    handleSlotClick(zone, index, blockId);
+    handleMouseLeaveSlot();
+  };
+
+  const handleRightClickWithTooltip = (
+    zone: 'hotbar' | 'inventory',
+    index: number,
+    e: React.MouseEvent
+  ) => {
+    handleRightClick(zone, index, e);
+    handleMouseLeaveSlot();
   };
 
   // Safe helper to update Zustand store states
@@ -322,8 +377,10 @@ export const Inventory: React.FC = () => {
                     <div
                       key={itemId}
                       className={styles.itemSlot}
-                      onClick={() => handleSlotClick('creative', idx, itemId)}
-                      title={t(`items.${itemId}`)}
+                      onClick={() => handleSlotClickWithTooltip('creative', idx, itemId)}
+                      onMouseEnter={(e) => handleMouseEnterSlot(itemId, e)}
+                      onMouseMove={(e) => handleMouseMoveSlot(itemId, e)}
+                      onMouseLeave={handleMouseLeaveSlot}
                     >
                       <BlockIcon itemId={itemId} size={18} className={styles.itemPreview} />
                     </div>
@@ -342,8 +399,11 @@ export const Inventory: React.FC = () => {
                   <div
                     key={`inv-${idx}`}
                     className={styles.itemSlot}
-                    onClick={() => handleSlotClick('inventory', idx)}
-                    onContextMenu={(e) => handleRightClick('inventory', idx, e)}
+                    onClick={() => handleSlotClickWithTooltip('inventory', idx)}
+                    onContextMenu={(e) => handleRightClickWithTooltip('inventory', idx, e)}
+                    onMouseEnter={(e) => item && handleMouseEnterSlot(item.type, e)}
+                    onMouseMove={(e) => item && handleMouseMoveSlot(item.type, e)}
+                    onMouseLeave={item ? handleMouseLeaveSlot : undefined}
                   >
                     {item ? (
                       <>
@@ -371,8 +431,11 @@ export const Inventory: React.FC = () => {
                 <div
                   key={`hot-${idx}`}
                   className={`${styles.itemSlot} ${idx === activeSlot ? styles.activeSlotBorder : ''}`}
-                  onClick={() => handleSlotClick('hotbar', idx)}
-                  onContextMenu={(e) => handleRightClick('hotbar', idx, e)}
+                  onClick={() => handleSlotClickWithTooltip('hotbar', idx)}
+                  onContextMenu={(e) => handleRightClickWithTooltip('hotbar', idx, e)}
+                  onMouseEnter={(e) => item && handleMouseEnterSlot(item.type, e)}
+                  onMouseMove={(e) => item && handleMouseMoveSlot(item.type, e)}
+                  onMouseLeave={item ? handleMouseLeaveSlot : undefined}
                 >
                   {item ? (
                     <>
@@ -410,6 +473,31 @@ export const Inventory: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Item Description Tooltip */}
+      {hoveredItem && !heldItem && (() => {
+        let tooltipLeft = hoveredItem.x + 12;
+        let tooltipTop = hoveredItem.y + 12;
+        // Overflow checks
+        if (hoveredItem.x + 220 > window.innerWidth) {
+          tooltipLeft = hoveredItem.x - 220;
+        }
+        if (hoveredItem.y + 100 > window.innerHeight) {
+          tooltipTop = hoveredItem.y - 100;
+        }
+        return (
+          <div
+            className={styles.tooltip}
+            style={{
+              top: tooltipTop,
+              left: tooltipLeft,
+            }}
+          >
+            <div className={styles.tooltipTitle}>{t(`items.${hoveredItem.type}`)}</div>
+            <div className={styles.tooltipDesc}>{t(`itemDescriptions.${hoveredItem.type}`)}</div>
+          </div>
+        );
+      })()}
     </>
   );
 };

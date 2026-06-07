@@ -179,6 +179,13 @@ export const HUD: React.FC = () => {
         cancelAnimationFrame(frameId);
         window.clearTimeout(timeout);
       };
+    } else {
+      const frameId = requestAnimationFrame(() => {
+        setActiveLabel('');
+      });
+      return () => {
+        cancelAnimationFrame(frameId);
+      };
     }
   }, [selectedItem, t]);
 
