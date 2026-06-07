@@ -1,12 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { WorkerTask, WorkerResult, WorkerTaskType } from './WorkerTypes';
+
+interface QueuedTask {
+  task: WorkerTask;
+  transfers: Transferable[];
+}
 
 export class WorkerManager {
   private static instance: WorkerManager | null = null;
   private workers: Worker[] = [];
   private activeTasks = new Map<Worker, string | null>(); // worker -> active taskId
-  private callbacks = new Map<string, { resolve: (val: any) => void; reject: (err: any) => void }>();
-  private taskQueue: WorkerTask[] = [];
+  private callbacks = new Map<string, { resolve: (val: unknown) => void; reject: (err: Error) => void }>();
+  private taskQueue: QueuedTask[] = [];
   private nextTaskId = 0;
   private maxWorkers = 4;
 
@@ -45,16 +49,17 @@ export class WorkerManager {
     }
   }
 
-  public execute<TResult>(type: WorkerTaskType, payload: any, transferables?: Transferable[]): Promise<TResult> {
+  public execute<TResult>(type: WorkerTaskType, payload: unknown, transferables?: Transferable[]): Promise<TResult> {
     return new Promise<TResult>((resolve, reject) => {
       const id = `${type}_${this.nextTaskId++}_${Date.now()}`;
       const task: WorkerTask = { id, type, payload };
-      if (transferables) {
-        (task as any)._transfers = transferables;
-      }
+      const transfers = transferables || [];
 
-      this.callbacks.set(id, { resolve, reject });
-      this.taskQueue.push(task);
+      this.callbacks.set(id, { 
+        resolve: (val) => resolve(val as TResult), 
+        reject 
+      });
+      this.taskQueue.push({ task, transfers });
       this.dispatchNext();
     });
   }
@@ -66,14 +71,17 @@ export class WorkerManager {
     const idleWorker = this.workers.find(w => this.activeTasks.get(w) === null);
     if (!idleWorker) return;
 
-    const task = this.taskQueue.shift()!;
+    const queued = this.taskQueue.shift()!;
+    const { task, transfers } = queued;
     this.activeTasks.set(idleWorker, task.id);
 
-    // If there are transferables in the payload, they should be passed as the second argument
-    // We check if the payload itself or parts of it need transfer
-    const transfers: Transferable[] = (task as any)._transfers || [];
-    if (task.type === 'GENERATE_CHUNK' && task.payload.chunk instanceof Uint8Array) {
-      transfers.push(task.payload.chunk.buffer);
+    // If generating chunk, check if payload contains a chunk buffer that needs transfer
+    const isGenerateChunk = task.type === 'GENERATE_CHUNK';
+    if (isGenerateChunk && task.payload && typeof task.payload === 'object') {
+      const p = task.payload as { chunk?: Uint8Array };
+      if (p.chunk instanceof Uint8Array) {
+        transfers.push(p.chunk.buffer);
+      }
     }
 
     idleWorker.postMessage(task, transfers);
