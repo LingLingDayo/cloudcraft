@@ -14,8 +14,8 @@ export const createGameSlice: StateCreator<
 
   return {
     gameState: GameState.MENU,
-    renderDistance: 4,
-    fov: 75,
+    renderDistance: settings.renderDistance,
+    fov: settings.fov,
     gameMode: GameMode.ADVENTURE,
     language: settings.language,
     autoJump: settings.autoJump,
@@ -33,8 +33,14 @@ export const createGameSlice: StateCreator<
 
     setGameState: (gameState) => set({ gameState }),
     setIsSettingsOpen: (isSettingsOpen, settingsSource = null) => set({ isSettingsOpen, settingsSource }),
-    setRenderDistance: (renderDistance) => set({ renderDistance }),
-    setFov: (fov) => set({ fov }),
+    setRenderDistance: (renderDistance) => set(() => {
+      saveSystemSetting('renderDistance', renderDistance);
+      return { renderDistance };
+    }),
+    setFov: (fov) => set(() => {
+      saveSystemSetting('fov', fov);
+      return { fov };
+    }),
     setGameMode: (gameMode) => set(() => {
       if (gameMode === GameMode.CREATIVE) {
         return {
@@ -68,6 +74,10 @@ export const createGameSlice: StateCreator<
     setShowMinimap: (showMinimap) => set(() => {
       saveSystemSetting('showMinimap', showMinimap);
       return { showMinimap };
+    }),
+    setSetting: (key, value) => set(() => {
+      saveSystemSetting(key, value);
+      return { [key]: value } as unknown as Partial<GameStoreState>;
     }),
 
   // Loading actions implementation

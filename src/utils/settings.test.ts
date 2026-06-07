@@ -27,6 +27,8 @@ describe('settings utility', () => {
         dpadSize: 200,
         showMinimap: false,
         playerName: 'Alex',
+        renderDistance: 5,
+        fov: 80,
       };
       localStorage.setItem('webcraft_settings', JSON.stringify(saved));
 
