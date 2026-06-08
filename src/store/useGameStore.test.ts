@@ -32,6 +32,8 @@ describe('useGameStore', () => {
       worldLoadingStage: 'engine',
       chunkLoadingStates: {},
       showMinimap: true,
+      enableDistanceLOD: true,
+      lodStrength: 3,
     });
   });
 
@@ -62,6 +64,8 @@ describe('useGameStore', () => {
     expect(state.worldLoadingStage).toBe('engine');
     expect(state.chunkLoadingStates).toEqual({});
     expect(state.showMinimap).toBe(true);
+    expect(state.enableDistanceLOD).toBe(true);
+    expect(state.lodStrength).toBe(3);
   });
 
   test('should set game state via setGameState', () => {
@@ -328,5 +332,13 @@ describe('useGameStore', () => {
     useGameStore.getState().setSetting('fov', 85);
     expect(useGameStore.getState().fov).toBe(85);
     expect(getSystemSettings().fov).toBe(85);
+
+    useGameStore.getState().setSetting('enableDistanceLOD', false);
+    expect(useGameStore.getState().enableDistanceLOD).toBe(false);
+    expect(getSystemSettings().enableDistanceLOD).toBe(false);
+
+    useGameStore.getState().setSetting('lodStrength', 4);
+    expect(useGameStore.getState().lodStrength).toBe(4);
+    expect(getSystemSettings().lodStrength).toBe(4);
   });
 });

@@ -160,7 +160,7 @@ export class AnimalManager {
     return false;
   }
 
-  private getAnimalMeshes(): THREE.Object3D[] {
+  public getAnimalMeshes(): THREE.Object3D[] {
     const list: THREE.Object3D[] = [];
     this.animals.forEach(a => {
       list.push(...a.mesh.children);
