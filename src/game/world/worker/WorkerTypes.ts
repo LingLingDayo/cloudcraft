@@ -1,4 +1,4 @@
-export type WorkerTaskType = 'GENERATE_CHUNK';
+export type WorkerTaskType = 'GENERATE_CHUNK' | 'GENERATE_MESH';
 
 export interface WorkerTask {
   id: string;

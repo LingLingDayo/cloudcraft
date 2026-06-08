@@ -1,12 +1,14 @@
 import { World, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z, WORLD_HEIGHT } from './World';
 import { useGameStore } from '@store/useGameStore';
 import { WorkerManager } from './worker/WorkerManager';
+import type { ChunkMeshResult, ChunkNeighbors } from './ChunkMeshBuilder';
 
 export class WorldChunkManager {
   private world: World;
   private workerManager: WorkerManager;
   
   private generatingChunks: Set<string> = new Set();
+  private generatingMeshes: Set<string> = new Set();
   private pendingGenerationQueue: string[] = [];
   public pendingMeshQueue: string[] = []; // Used for incremental loading
 
@@ -149,7 +151,8 @@ export class WorldChunkManager {
     if (!this.world.game) return;
 
     const startTime = performance.now();
-    const BUDGET_MS = 8; // Max time budget in ms per frame for loading chunks
+    const store = useGameStore.getState();
+    const BUDGET_MS = store.isWorldLoading ? 50 : 8; // Loading map gets 50ms budget, in-game gets 8ms
 
     const playerX = this.world.game.player.position.x;
     const playerY = this.world.game.player.position.y;
@@ -161,10 +164,38 @@ export class WorldChunkManager {
     while (performance.now() - startTime < BUDGET_MS) {
       if (this.pendingMeshQueue.length > 0) {
         const key = this.pendingMeshQueue.shift();
-        if (key) {
+        if (key && !this.generatingMeshes.has(key)) {
           const [cx, cy, cz] = key.split(',').map(Number);
-          if (this.world.chunks.has(key)) {
-            this.world.updateChunkMesh(cx, cy, cz);
+          const chunk = this.world.chunks.get(key);
+          if (chunk) {
+            this.generatingMeshes.add(key);
+            
+            // Collect neighbors package
+            const neighbors: ChunkNeighbors = {
+              px: this.world.chunks.get(`${cx + 1},${cy},${cz}`),
+              nx: this.world.chunks.get(`${cx - 1},${cy},${cz}`),
+              py: this.world.chunks.get(`${cx},${cy + 1},${cz}`),
+              ny: this.world.chunks.get(`${cx},${cy - 1},${cz}`),
+              pz: this.world.chunks.get(`${cx},${cy},${cz + 1}`),
+              nz: this.world.chunks.get(`${cx},${cy},${cz - 1}`),
+            };
+
+            this.workerManager.execute<ChunkMeshResult>('GENERATE_MESH', {
+              cx, cy, cz, chunk, neighbors
+            }).then(meshResult => {
+              this.generatingMeshes.delete(key);
+              this.world.getRenderer().applyMeshResult(cx, cy, cz, meshResult);
+
+              // Update chunk loading progress in store
+              if (store.isWorldLoading) {
+                if (store.chunkLoadingStates[key] === false) {
+                  store.setChunkLoadingState(key, true);
+                }
+              }
+            }).catch(err => {
+              console.error(`Failed to generate mesh asynchronously for key ${key}`, err);
+              this.generatingMeshes.delete(key);
+            });
           }
         }
       } else if (this.pendingGenerationQueue.length > 0) {
