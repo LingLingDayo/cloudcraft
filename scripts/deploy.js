@@ -14,6 +14,16 @@ function getOutput(cmd, cwd = rootDir) {
   return execSync(cmd, { cwd, encoding: 'utf8' }).trim();
 }
 
+const distDir = path.resolve(rootDir, 'dist');
+const gitDir = path.resolve(distDir, '.git');
+
+function cleanGitDir() {
+  if (existsSync(gitDir)) {
+    console.log('正在清理临时 Git 仓库...');
+    rmSync(gitDir, { recursive: true, force: true });
+  }
+}
+
 try {
   console.log('正在获取远程仓库 URL...');
   const remoteUrl = getOutput('git remote get-url origin');
@@ -24,16 +34,11 @@ try {
   process.env.DEPLOY_BASE = 'true';
   run('npm run build');
 
-  const distDir = path.resolve(rootDir, 'dist');
   if (!existsSync(distDir)) {
     throw new Error('未找到打包生成的 dist 目录！');
   }
 
-  const gitDir = path.resolve(distDir, '.git');
-  if (existsSync(gitDir)) {
-    console.log('正在清理旧的临时 Git 仓库...');
-    rmSync(gitDir, { recursive: true, force: true });
-  }
+  cleanGitDir();
 
   console.log('正在初始化临时 Git 仓库并推送...');
   run('git init', distDir);
@@ -48,5 +53,8 @@ try {
   console.log('部署成功！');
 } catch (error) {
   console.error('部署失败:', error);
+  cleanGitDir();
   process.exit(1);
 }
+
+cleanGitDir();
