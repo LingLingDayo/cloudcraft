@@ -323,12 +323,13 @@ export class GameManager {
     let terrainHeight = 0;
     let currentSlope = 0;
     if (this.world && this.world.generator) {
-      const { height, primaryBiome, primaryLandform, slope } = this.world.generator.getInterpolatedHeightAndBiome(
-        playerPos.x,
-        playerPos.z
-      );
-      terrainHeight = height;
-      currentSlope = slope;
+      const terrainData = this.world.generator.getColumnTerrainData(playerPos.x, playerPos.z);
+      terrainHeight = terrainData.finalHeight;
+      currentSlope = terrainData.slope;
+      
+      const primaryBiome = this.world.generator.getPrimaryBiome(playerPos.x, playerPos.z);
+      const primaryLandform = this.world.generator.getPrimaryLandform(playerPos.x, playerPos.z);
+
       if (primaryBiome) {
         biomeInfo = {
           id: primaryBiome.id,

@@ -4,6 +4,7 @@ import { getBiomeAt } from './biome/BiomeRegistry';
 import { type Biome, TreeStyle } from './biome/Biome';
 import { getLandformAt } from './landform/LandformRegistry';
 import { type Landform } from './landform/Landform';
+import { TerrainShaper } from './landform/TerrainShaper';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
 import { WORLD_CONFIG } from './WorldConfig';
 import { ChunkPipeline } from './pipeline/ChunkPipeline';
@@ -240,73 +241,24 @@ export class WorldGenerator {
     return false;
   }
 
-  // 3x3 邻域高斯权重插值计算，并返回中心点的主生态、地貌以及坡度
-  public getInterpolatedHeightAndBiome(wx: number, wz: number): {
-    height: number;
-    primaryBiome: Biome;
-    primaryLandform: Landform;
-    slope: number;
-  } {
-    const primaryBiome = getBiomeAt(wx, wz, this.noise);
-    const primaryLandform = getLandformAt(wx, wz, this.noise);
-    
-    let totalHeight = 0;
-    let totalWeight = 0;
-    
-    const step = WORLD_CONFIG.heightInterpolation.step;
-    const scale = WORLD_CONFIG.landform.scale;
+  public getPrimaryBiome(wx: number, wz: number): Biome {
+    return getBiomeAt(wx, wz, this.noise);
+  }
 
-    // 3x3 采样，步长设为 step
-    for (let dx = -step; dx <= step; dx += step) {
-      for (let dz = -step; dz <= step; dz += step) {
-        const sampleX = wx + dx;
-        const sampleZ = wz + dz;
-        const landform = getLandformAt(sampleX, sampleZ, this.noise);
-        
-        const c = (this.noise.noise((sampleX + WORLD_CONFIG.landform.offsetC) * scale, (sampleZ + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
-        const e = (this.noise.noise((sampleX + WORLD_CONFIG.landform.offsetE) * scale, (sampleZ + WORLD_CONFIG.landform.offsetE) * scale) + 1) / 2;
-
-        // 用该生态规律计算中心点的高度
-        const height = landform.getHeight(wx, wz, this.noise, c, e);
-        
-        // 高斯权重：dSq = dx^2 + dz^2，W = exp(-dSq / sigmaSq)
-        const dSq = dx * dx + dz * dz;
-        const weight = Math.exp(-dSq / WORLD_CONFIG.heightInterpolation.sigmaSq);
-        
-        totalHeight += height * weight;
-        totalWeight += weight;
-      }
-    }
-    
-    const finalHeight = Math.round(totalHeight / totalWeight);
-
-    // 计算坡度
-    const hNorth = this.getRawHeightAt(wx, wz - 2);
-    const hSouth = this.getRawHeightAt(wx, wz + 2);
-    const hWest = this.getRawHeightAt(wx - 2, wz);
-    const hEast = this.getRawHeightAt(wx + 2, wz);
-    const slope = Math.max(Math.abs(hNorth - hSouth), Math.abs(hWest - hEast));
-
-    return {
-      height: finalHeight,
-      primaryBiome,
-      primaryLandform,
-      slope,
-    };
+  public getPrimaryLandform(wx: number, wz: number): Landform {
+    return getLandformAt(wx, wz, this.noise);
   }
 
   // 计算单个点的无插值基础高度
   public getRawHeightAt(wx: number, wz: number): number {
-    const landform = getLandformAt(wx, wz, this.noise);
     const scale = WORLD_CONFIG.landform.scale;
     const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
     const e = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetE) * scale, (wz + WORLD_CONFIG.landform.offsetE) * scale) + 1) / 2;
-    return landform.getHeight(wx, wz, this.noise, c, e);
+    return TerrainShaper.getHeight(wx, wz, this.noise, c, e);
   }
 
   // 统一解析任意全局坐标 (wx, wz) 下的地形高度、水体属性及矿洞高度偏好
   public getColumnTerrainData(wx: number, wz: number): {
-    interpolatedHeight: number;
     adjustedHeight: number;
     finalHeight: number;
     localWaterLevel: number;
@@ -315,42 +267,25 @@ export class WorldGenerator {
     maxHeightOffset: number;
     slope: number;
   } {
-    const { height: interpolatedHeight, primaryLandform, slope } = this.getInterpolatedHeightAndBiome(wx, wz);
+    const primaryLandform = getLandformAt(wx, wz, this.noise);
+    
+    // 计算坡度
+    const hNorth = this.getRawHeightAt(wx, wz - 2);
+    const hSouth = this.getRawHeightAt(wx, wz + 2);
+    const hWest = this.getRawHeightAt(wx - 2, wz);
+    const hEast = this.getRawHeightAt(wx + 2, wz);
+    const slope = Math.max(Math.abs(hNorth - hSouth), Math.abs(hWest - hEast));
+
     const scale = WORLD_CONFIG.landform.scale;
     const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
     const waterLevel = WORLD_CONFIG.waterLevel;
     
-    let adjustedHeight = interpolatedHeight;
+    // 基础高度现在是连续的，不再需要区分海洋和海岸线插值
+    let adjustedHeight = this.getRawHeightAt(wx, wz);
     let isDryLand = true;
 
     if (c < WORLD_CONFIG.ocean.threshold) {
       isDryLand = false;
-      const oceanFactor = Math.min(1, (WORLD_CONFIG.ocean.threshold - c) / WORLD_CONFIG.ocean.transitionWidth);
-      const t = oceanFactor;
-      const shallowRatio = WORLD_CONFIG.ocean.shallowRatio;
-      const shallowDepth = WORLD_CONFIG.ocean.shallowDepth;
-      const oceanBaseHeight = interpolatedHeight; // 直接采用 OceanLandform 声明的海床噪波高度
-      
-      if (t < shallowRatio) {
-        // 0% - 25% 过渡：浅海/浅滩区，高度从 waterLevel (150) 平缓降至 waterLevel - shallowDepth (146)
-        const localT = t / shallowRatio;
-        const targetShallowHeight = waterLevel - shallowDepth;
-        adjustedHeight = Math.round((1 - localT) * waterLevel + localT * targetShallowHeight);
-      } else {
-        // 25% - 100% 过渡：从浅滩平缓降至深海海床
-        const localT = (t - shallowRatio) / (1.0 - shallowRatio);
-        const startShallowHeight = waterLevel - shallowDepth;
-        adjustedHeight = Math.round((1 - localT) * startShallowHeight + localT * oceanBaseHeight);
-      }
-    } else {
-      const distToShore = c - WORLD_CONFIG.ocean.threshold;
-      if (distToShore < WORLD_CONFIG.ocean.shoreWidth) {
-        const t = distToShore / WORLD_CONFIG.ocean.shoreWidth;
-        const minShoreHeight = waterLevel + 1;
-        if (adjustedHeight < minShoreHeight) {
-          adjustedHeight = Math.round(t * adjustedHeight + (1 - t) * minShoreHeight);
-        }
-      }
     }
 
     const { bedHeight: riverBedHeight, dRiver, riverWeight } = this.getRiverValue(wx, wz);
@@ -451,7 +386,6 @@ export class WorldGenerator {
     }
 
     return {
-      interpolatedHeight,
       adjustedHeight,
       finalHeight,
       localWaterLevel,

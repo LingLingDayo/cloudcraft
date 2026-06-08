@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { ImprovedNoise } from '../Noise';
 import { BiomeRegistry } from './BiomeRegistry';
-import { LandformRegistry } from '../landform/LandformRegistry';
+import { TerrainShaper } from '../landform/TerrainShaper';
 
 describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
   const mockNoise = new ImprovedNoise('test-seed');
@@ -33,29 +33,29 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
     expect(BiomeRegistry.PLAINS.name).toBe('平原');
   });
 
-  test('不同地貌在特定坐标计算的高度应符合设计预期范围', () => {
-    // 平原地貌地形应非常平缓 (高度在 151 ~ 159 之间)
-    const plainsH1 = LandformRegistry.PLAINS.getHeight(0, 0, mockNoise, 0.5, 0.8);
-    const plainsH2 = LandformRegistry.PLAINS.getHeight(100, 100, mockNoise, 0.5, 0.8);
-    expect(plainsH1).toBeGreaterThanOrEqual(151);
-    expect(plainsH1).toBeLessThanOrEqual(159);
-    expect(plainsH2).toBeGreaterThanOrEqual(151);
-    expect(plainsH2).toBeLessThanOrEqual(159);
+  test('不同地貌特性在特定坐标计算的高度应符合设计预期范围', () => {
+    // 平原特性 (Continentality 0.5, Erosion 0.8): 地势平缓
+    const plainsH1 = TerrainShaper.getHeight(0, 0, mockNoise, 0.5, 0.8);
+    const plainsH2 = TerrainShaper.getHeight(100, 100, mockNoise, 0.5, 0.8);
+    expect(plainsH1).toBeGreaterThanOrEqual(150);
+    expect(plainsH1).toBeLessThanOrEqual(170);
+    expect(plainsH2).toBeGreaterThanOrEqual(150);
+    expect(plainsH2).toBeLessThanOrEqual(170);
 
-    // 山地地势应高耸且波动起伏大 (高度大约在 180 ~ 245)
-    const mountainH1 = LandformRegistry.MOUNTAINS.getHeight(0, 0, mockNoise, 0.85, 0.2);
-    const mountainH2 = LandformRegistry.MOUNTAINS.getHeight(50, 50, mockNoise, 0.85, 0.2);
+    // 山地特性 (Continentality 0.85, Erosion 0.2): 地势高耸起伏大
+    const mountainH1 = TerrainShaper.getHeight(0, 0, mockNoise, 0.85, 0.2);
+    const mountainH2 = TerrainShaper.getHeight(50, 50, mockNoise, 0.85, 0.2);
     expect(mountainH1).toBeGreaterThanOrEqual(180);
-    expect(mountainH1).toBeLessThanOrEqual(245);
+    expect(mountainH1).toBeLessThanOrEqual(280);
     expect(mountainH2).toBeGreaterThanOrEqual(180);
-    expect(mountainH2).toBeLessThanOrEqual(245);
+    expect(mountainH2).toBeLessThanOrEqual(280);
 
-    // 高原高度应该稳定维持在高海拔区 (大约在 199 ~ 211)
-    const plateauH1 = LandformRegistry.PLATEAU.getHeight(0, 0, mockNoise, 0.7, 0.7);
-    const plateauH2 = LandformRegistry.PLATEAU.getHeight(200, 200, mockNoise, 0.7, 0.7);
-    expect(plateauH1).toBeGreaterThanOrEqual(199);
-    expect(plateauH1).toBeLessThanOrEqual(211);
-    expect(plateauH2).toBeGreaterThanOrEqual(199);
-    expect(plateauH2).toBeLessThanOrEqual(211);
+    // 高原特性 (Continentality 0.7, Erosion 0.7): 较高海拔但平缓
+    const plateauH1 = TerrainShaper.getHeight(0, 0, mockNoise, 0.7, 0.7);
+    const plateauH2 = TerrainShaper.getHeight(200, 200, mockNoise, 0.7, 0.7);
+    expect(plateauH1).toBeGreaterThanOrEqual(160);
+    expect(plateauH1).toBeLessThanOrEqual(180);
+    expect(plateauH2).toBeGreaterThanOrEqual(160);
+    expect(plateauH2).toBeLessThanOrEqual(180);
   });
 });

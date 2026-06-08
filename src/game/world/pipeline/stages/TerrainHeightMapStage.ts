@@ -18,7 +18,7 @@ export class TerrainHeightMapStage implements ChunkPipelineStage {
         const wx = worldStartX + x;
         const wz = worldStartZ + z;
         
-        const { primaryBiome } = generator.getInterpolatedHeightAndBiome(wx, wz);
+        const primaryBiome = generator.getPrimaryBiome(wx, wz);
         context.biomeMap[x][z] = primaryBiome;
         context.terrainMap[x][z] = generator.getColumnTerrainData(wx, wz);
       }
