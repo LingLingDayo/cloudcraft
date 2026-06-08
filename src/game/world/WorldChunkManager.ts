@@ -294,8 +294,9 @@ export class WorldChunkManager {
     const dcx = cx - ccx;
     const dcy = cy - ccy;
     const dcz = cz - ccz;
-    // Prioritize chunks closer horizontally first, and prioritize chunks closer to player's Y plane.
-    // We give a high weight to Y distance so Y-axis distance is minimized first (dcy === 0 loads first).
-    return Math.abs(dcy) * 1000 + (dcx * dcx + dcz * dcz);
+    // Balanced 3D distance priority: (dcx^2 + dcz^2) + dcy^2 * 4.
+    // By setting Y_BIAS to 4 (which is 2^2), we treat 1 chunk vertically as equivalent to 2 chunks horizontally.
+    // This aligns with screen aspect ratio and field of view, ensuring nearby vertical chunks load quickly.
+    return (dcx * dcx + dcz * dcz) + dcy * dcy * 4;
   }
 }

@@ -383,9 +383,9 @@ describe('World Chunk Loading Priority and Custom Sorting', () => {
     expect(priority('0,0,0')).toBe(0); // Player chunk has absolute priority
     expect(priority('0,0,1')).toBe(1); // Same Y plane, horizontal distance 1
     expect(priority('1,0,1')).toBe(2); // Same Y plane, horizontal distance sqrt(2)
-    expect(priority('0,1,0')).toBe(1000); // Diff Y plane by 1, horizontal distance 0
-    expect(priority('0,-1,0')).toBe(1000); // Diff Y plane by 1, horizontal distance 0
-    expect(priority('0,1,1')).toBe(1001); // Diff Y plane by 1, horizontal distance 1
+    expect(priority('0,1,0')).toBe(4); // Diff Y plane by 1, horizontal distance 0 (weighted)
+    expect(priority('0,-1,0')).toBe(4); // Diff Y plane by 1, horizontal distance 0 (weighted)
+    expect(priority('0,1,1')).toBe(5); // Diff Y plane by 1, horizontal distance 1 (weighted)
     
     // Sort array:
     const list = ['0,1,1', '1,0,1', '0,-1,0', '0,0,1', '0,0,0', '0,1,0'];
@@ -395,14 +395,14 @@ describe('World Chunk Loading Priority and Custom Sorting', () => {
     // 1. '0,0,0' (priority 0)
     // 2. '0,0,1' (priority 1)
     // 3. '1,0,1' (priority 2)
-    // 4. '0,-1,0' or '0,1,0' (priority 1000)
-    // 5. '0,1,0' or '0,-1,0' (priority 1000)
-    // 6. '0,1,1' (priority 1001)
+    // 4. '0,-1,0' or '0,1,0' (priority 4)
+    // 5. '0,1,0' or '0,-1,0' (priority 4)
+    // 6. '0,1,1' (priority 5)
     expect(list[0]).toBe('0,0,0');
     expect(list[1]).toBe('0,0,1');
     expect(list[2]).toBe('1,0,1');
-    expect(priority(list[3])).toBe(1000);
-    expect(priority(list[4])).toBe(1000);
+    expect(priority(list[3])).toBe(4);
+    expect(priority(list[4])).toBe(4);
     expect(list[5]).toBe('0,1,1');
   });
 });
