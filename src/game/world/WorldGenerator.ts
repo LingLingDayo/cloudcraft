@@ -32,25 +32,45 @@ export class WorldGenerator {
     return this.noise;
   }
 
-  public getRiverValue(wx: number, wz: number): { t: number; bedHeight: number; dRiver: number; riverWeight: number } {
+  public getRiverValue(wx: number, wz: number, rawHeight?: number): { t: number; bedHeight: number; dRiver: number; riverWeight: number } {
     // 计算大陆度 c，用于控制河流在海洋及海岸线的淡出
     const scale = WORLD_CONFIG.landform.scale;
     const c = (this.noise.noise((wx + WORLD_CONFIG.landform.offsetC) * scale, (wz + WORLD_CONFIG.landform.offsetC) * scale) + 1) / 2;
 
-    let riverWeight = 1.0;
+    let baseRiverWeight = 1.0;
     const oceanThreshold = WORLD_CONFIG.ocean.threshold;
     const oceanFadeWidth = WORLD_CONFIG.river.oceanFadeWidth;
 
     if (c < oceanThreshold - oceanFadeWidth) {
-      riverWeight = 0.0;
+      baseRiverWeight = 0.0;
     } else if (c < oceanThreshold) {
       // 在海洋内部的淡出带，权重从 0.0 平滑过渡到 1.0
       const u = (c - (oceanThreshold - oceanFadeWidth)) / oceanFadeWidth;
-      riverWeight = u * u * (3 - 2 * u); // smoothstep
+      baseRiverWeight = u * u * (3 - 2 * u); // smoothstep
+    }
+
+    let riverWeight = baseRiverWeight;
+    // 如果处于海洋淡出区，但该位置原始海拔高于海平面（例如有石头山阻挡），则不允许河流过早淡出，以避免产生堤坝
+    if (c < oceanThreshold) {
+      const h = rawHeight !== undefined ? rawHeight : this.getRawHeightAt(wx, wz);
+      const waterLevel = WORLD_CONFIG.waterLevel;
+      const bedHeight = WORLD_CONFIG.river.bedHeight;
+      const depthThreshold = waterLevel - bedHeight; // 8
+
+      let heightFactor = 1.0;
+      if (h <= bedHeight) {
+        heightFactor = 0.0;
+      } else if (h < waterLevel) {
+        const u = (h - bedHeight) / depthThreshold;
+        heightFactor = u * u * (3 - 2 * u); // smoothstep
+      }
+
+      // 综合考虑 continentalness 和海拔高度，确保高地处刻蚀力度不受大陆度淡出的限制
+      riverWeight = Math.max(baseRiverWeight, heightFactor);
     }
 
     if (riverWeight === 0.0) {
-      // 如果完全在海洋里，河流完全不存在，跳过计算以提升性能
+      // 如果完全在海洋里且没有陆地高山，河流完全不存在，跳过计算以提升性能
       return { t: 0, bedHeight: WORLD_CONFIG.river.bedHeight, dRiver: 10.0, riverWeight: 0.0 };
     }
 
@@ -289,7 +309,7 @@ export class WorldGenerator {
       isDryLand = false;
     }
 
-    const { bedHeight: riverBedHeight, dRiver, riverWeight } = this.getRiverValue(wx, wz);
+    const { bedHeight: riverBedHeight, dRiver, riverWeight } = this.getRiverValue(wx, wz, adjustedHeight);
     const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
     const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
 

@@ -5,7 +5,7 @@
   text-shadow: var(--ui-text-shadow);
   border: var(--ui-control-border);
   image-rendering: pixelated;
-  height: var(--ui-control-height);
+  height: calc(var(--ui-control-height) + 4px);
   padding: 0 20px;
   box-sizing: border-box;
   cursor: pointer;
