@@ -1,5 +1,8 @@
 import type { WorkerTask, WorkerResult, WorkerTaskHandler } from './WorkerTypes';
 import { WorldGenerator } from '../WorldGenerator';
+import { ChunkMeshBuilder } from '../ChunkMeshBuilder';
+import type { ChunkNeighbors, ChunkMeshResult } from '../ChunkMeshBuilder';
+import '../block/BlockRegistry'; // Ensure propertiesResolver is registered
 
 // Registry of task handlers to support OCP (Open-Closed Principle)
 const TaskRegistry = new Map<string, WorkerTaskHandler>();
@@ -31,9 +34,24 @@ class GenerateChunkHandler implements WorkerTaskHandler {
   }
 }
 
+// Handler for chunk mesh generation
+class GenerateMeshHandler implements WorkerTaskHandler {
+  public handle(payload: unknown): unknown {
+    const { cx, cy, cz, chunk, neighbors } = payload as {
+      cx: number;
+      cy: number;
+      cz: number;
+      chunk: Uint8Array;
+      neighbors: ChunkNeighbors;
+    };
+    return ChunkMeshBuilder.buildMesh(cx, cy, cz, chunk, neighbors);
+  }
+}
+
 // Register default handlers
 // Extension Point: Register new multi-threaded task handlers here!
 TaskRegistry.set('GENERATE_CHUNK', new GenerateChunkHandler());
+TaskRegistry.set('GENERATE_MESH', new GenerateMeshHandler());
 
 // Self listen to messages
 self.onmessage = async (e: MessageEvent<WorkerTask>) => {
@@ -57,6 +75,17 @@ self.onmessage = async (e: MessageEvent<WorkerTask>) => {
     const transferables: Transferable[] = [];
     if (resultPayload instanceof Uint8Array) {
       transferables.push(resultPayload.buffer);
+    } else if (resultPayload && typeof resultPayload === 'object') {
+      const meshResult = resultPayload as ChunkMeshResult;
+      ['solid', 'transparent', 'cutout'].forEach(key => {
+        const geom = meshResult[key as keyof ChunkMeshResult];
+        if (geom) {
+          if (geom.positions instanceof Float32Array) transferables.push(geom.positions.buffer);
+          if (geom.normals instanceof Float32Array) transferables.push(geom.normals.buffer);
+          if (geom.uvs instanceof Float32Array) transferables.push(geom.uvs.buffer);
+          if (geom.atlasOffsets instanceof Float32Array) transferables.push(geom.atlasOffsets.buffer);
+        }
+      });
     }
 
     workerCtx.postMessage({
