@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hotkeyManager, GameAction } from './HotkeyManager';
-import { isMobileDevice } from '@utils/device';
+import { isMobileDevice, getRealDeviceType } from '@utils/device';
 import { useGameStore } from '@store/useGameStore';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 
@@ -34,6 +34,11 @@ export class Controls {
   private onLockChangeCallbacks: ((locked: boolean) => void)[] = [];
   private unsubscribers: (() => void)[] = [];
 
+  // Mobile Mouse Drag States
+  private isMouseDown = false;
+  private lastMouseX = 0;
+  private lastMouseY = 0;
+
   // Mobile Touch States
   private activeTouchId: number | null = null;
   private lastTouchX = 0;
@@ -55,16 +60,16 @@ export class Controls {
   }
 
   private initListeners() {
-    if (!this.isMobile) {
-      this.domElement.addEventListener('click', this.requestLock);
-      document.addEventListener('pointerlockchange', this.onPointerLockChange);
-      document.addEventListener('mousemove', this.onMouseMove);
-    } else {
-      this.domElement.addEventListener('touchstart', this.onTouchStart, { passive: false });
-      this.domElement.addEventListener('touchmove', this.onTouchMove, { passive: false });
-      this.domElement.addEventListener('touchend', this.onTouchEnd, { passive: false });
-      this.domElement.addEventListener('touchcancel', this.onTouchEnd, { passive: false });
-    }
+    this.domElement.addEventListener('click', this.requestLock);
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
+    document.addEventListener('mousemove', this.onMouseMove);
+    this.domElement.addEventListener('mousedown', this.onMouseDown);
+    document.addEventListener('mouseup', this.onMouseUp);
+
+    this.domElement.addEventListener('touchstart', this.onTouchStart, { passive: false });
+    this.domElement.addEventListener('touchmove', this.onTouchMove, { passive: false });
+    this.domElement.addEventListener('touchend', this.onTouchEnd, { passive: false });
+    this.domElement.addEventListener('touchcancel', this.onTouchEnd, { passive: false });
   }
 
   private initHotkeys() {
@@ -79,18 +84,18 @@ export class Controls {
   }
 
   public dispose() {
-    if (!this.isMobile) {
-      this.domElement.removeEventListener('click', this.requestLock);
-      document.removeEventListener('pointerlockchange', this.onPointerLockChange);
-      document.removeEventListener('mousemove', this.onMouseMove);
-    } else {
-      this.domElement.removeEventListener('touchstart', this.onTouchStart);
-      this.domElement.removeEventListener('touchmove', this.onTouchMove);
-      this.domElement.removeEventListener('touchend', this.onTouchEnd);
-      this.domElement.removeEventListener('touchcancel', this.onTouchEnd);
-      if (this.miningTimeout) {
-        window.clearTimeout(this.miningTimeout);
-      }
+    this.domElement.removeEventListener('click', this.requestLock);
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange);
+    document.removeEventListener('mousemove', this.onMouseMove);
+    this.domElement.removeEventListener('mousedown', this.onMouseDown);
+    document.removeEventListener('mouseup', this.onMouseUp);
+
+    this.domElement.removeEventListener('touchstart', this.onTouchStart);
+    this.domElement.removeEventListener('touchmove', this.onTouchMove);
+    this.domElement.removeEventListener('touchend', this.onTouchEnd);
+    this.domElement.removeEventListener('touchcancel', this.onTouchEnd);
+    if (this.miningTimeout) {
+      window.clearTimeout(this.miningTimeout);
     }
     
     // Unsubscribe hotkey listeners
@@ -101,7 +106,7 @@ export class Controls {
   public onF4Pressed?: () => void;
 
   public requestLock = () => {
-    if (this.isMobile) return;
+    if (getRealDeviceType() === 'mobile') return;
     if (!this.isLocked) {
       this.domElement.requestPointerLock();
     }
@@ -112,15 +117,7 @@ export class Controls {
     this.onLockChangeCallbacks.forEach((cb) => cb(this.isLocked));
   };
 
-  private onMouseMove = (e: MouseEvent) => {
-    if (!this.isLocked) return;
-
-    const movementX = e.movementX || 0;
-    const movementY = e.movementY || 0;
-
-    this.yaw -= movementX * this.mouseSensitivity;
-    this.pitch -= movementY * this.mouseSensitivity;
-
+  private updateCameraRotation() {
     // Clamp pitch (look up/down) to avoid flipping camera upsidedown
     const maxPitch = Math.PI / 2 - 0.05;
     this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
@@ -129,6 +126,41 @@ export class Controls {
     const q = new THREE.Quaternion();
     q.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
     this.camera.quaternion.copy(q);
+  }
+
+  private onMouseDown = (e: MouseEvent) => {
+    if (this.isMobile && !this.isLocked) {
+      this.isMouseDown = true;
+      this.lastMouseX = e.clientX;
+      this.lastMouseY = e.clientY;
+    }
+  };
+
+  private onMouseUp = () => {
+    this.isMouseDown = false;
+  };
+
+  private onMouseMove = (e: MouseEvent) => {
+    if (this.isLocked) {
+      const movementX = e.movementX || 0;
+      const movementY = e.movementY || 0;
+
+      this.yaw -= movementX * this.mouseSensitivity;
+      this.pitch -= movementY * this.mouseSensitivity;
+
+      this.updateCameraRotation();
+    } else if (this.isMobile && this.isMouseDown) {
+      const deltaX = e.clientX - this.lastMouseX;
+      const deltaY = e.clientY - this.lastMouseY;
+
+      this.lastMouseX = e.clientX;
+      this.lastMouseY = e.clientY;
+
+      this.yaw -= deltaX * this.touchSensitivity;
+      this.pitch -= deltaY * this.touchSensitivity;
+
+      this.updateCameraRotation();
+    }
   };
 
   // Mobile Touch Callbacks
@@ -187,12 +219,7 @@ export class Controls {
     this.yaw -= deltaX * this.touchSensitivity;
     this.pitch -= deltaY * this.touchSensitivity;
 
-    const maxPitch = Math.PI / 2 - 0.05;
-    this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
-
-    const q = new THREE.Quaternion();
-    q.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
-    this.camera.quaternion.copy(q);
+    this.updateCameraRotation();
   };
 
   private onTouchEnd = (e: TouchEvent) => {
