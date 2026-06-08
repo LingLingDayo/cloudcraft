@@ -32,7 +32,7 @@ import { ImprovedNoise } from '../Noise';
 import { TerrainHeightMapStage } from './stages/TerrainHeightMapStage';
 import { BaseTerrainFillerStage } from './stages/BaseTerrainFillerStage';
 import { OreGeneratorStage } from './stages/OreGeneratorStage';
-import { CaveCarverStage } from './stages/CaveCarverStage';
+import { CaveCarverStage, isCaveAt } from './stages/CaveCarverStage';
 import { SurfaceDecorationStage } from './stages/SurfaceDecorationStage';
 import { TreeDecorationStage } from './stages/TreeDecorationStage';
 import { BLOCK_TYPES } from '../BlockConfig';
@@ -208,8 +208,8 @@ describe('ChunkPipeline Extensions', () => {
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       isWaterArea: vi.fn().mockReturnValue(false),
       getColumnTerrainData: vi.fn().mockReturnValue({
-        adjustedHeight: 30,
-        finalHeight: 30,
+        adjustedHeight: 45,
+        finalHeight: 45,
         localWaterLevel: 150,
         isDryLand: true,
         isPond: false,
@@ -220,8 +220,8 @@ describe('ChunkPipeline Extensions', () => {
 
     const chunk = new Uint8Array(4096);
     const context: ChunkPipelineContext = {
-      cx: 0, cy: 0, cz: 0,
-      worldStartX: 0, worldStartY: 0, worldStartZ: 0,
+      cx: 0, cy: 1, cz: 0,
+      worldStartX: 0, worldStartY: 16, worldStartZ: 0,
       chunk,
       noise: mockNoise,
       terrainMap: [],
@@ -231,8 +231,8 @@ describe('ChunkPipeline Extensions', () => {
 
     pipeline.execute(context);
 
-    // Stone filled block at y = 15 should be carved to AIR
-    expect(chunk[15 * 256]).toBe(BLOCK_TYPES.AIR);
+    // Stone filled block at y = 28 (aligns with layerSpacing 28) should be carved to AIR (ly = 28 - 16 = 12)
+    expect(chunk[12 * 256]).toBe(BLOCK_TYPES.AIR);
   });
 
   test('SurfaceDecorationStage should not generate floating vegetation on carved surface', () => {
@@ -265,8 +265,8 @@ describe('ChunkPipeline Extensions', () => {
       getGroundBlockType: vi.fn().mockReturnValue(BLOCK_TYPES.GRASS),
       isWaterArea: vi.fn().mockReturnValue(false),
       getColumnTerrainData: vi.fn().mockReturnValue({
-        adjustedHeight: 160,
-        finalHeight: 160,
+        adjustedHeight: 168,
+        finalHeight: 168,
         localWaterLevel: 150,
         isDryLand: true,
         isPond: false,
@@ -288,10 +288,10 @@ describe('ChunkPipeline Extensions', () => {
 
     pipeline.execute(context);
 
-    // Ground block at y = 160 (index 0) should be carved to AIR
-    expect(chunk[0]).toBe(BLOCK_TYPES.AIR);
-    // Vegetation at y = 161 (index 256) should NOT be TALL_GRASS (should be AIR) since ground is carved!
-    expect(chunk[256]).toBe(BLOCK_TYPES.AIR);
+    // Ground block at y = 168 (index 8 * 256, aligns with layerSpacing) should be carved to AIR
+    expect(chunk[8 * 256]).toBe(BLOCK_TYPES.AIR);
+    // Vegetation at y = 169 (index 9 * 256) should NOT be TALL_GRASS (should be AIR) since ground is carved!
+    expect(chunk[9 * 256]).toBe(BLOCK_TYPES.AIR);
   });
 
   test('TreeDecorationStage should run without error and respect biome growth probabilities', () => {
@@ -398,5 +398,20 @@ describe('ChunkPipeline Extensions', () => {
     // Other blocks remain unchanged
     expect(chunk[2 * 256]).toBe(BLOCK_TYPES.GRASS);
     expect(chunk[3 * 256]).toBe(BLOCK_TYPES.AIR);
+  });
+
+  test('isCaveAt should return false for heights above 200', () => {
+    const mockNoise = {
+      noise: vi.fn().mockReturnValue(0.1),
+      noise3d: vi.fn().mockReturnValue(0.01),
+    } as unknown as ImprovedNoise;
+
+    const mockGenerator = {
+      isWaterArea: vi.fn().mockReturnValue(false)
+    };
+
+    // Height 201 should return false regardless of noise
+    const result = isCaveAt(0, 201, 0, 300, 12, 150, mockNoise, mockGenerator);
+    expect(result).toBe(false);
   });
 });
