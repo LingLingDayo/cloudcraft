@@ -15,7 +15,6 @@ import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {
   onClose: () => void;
-  onSave?: () => void;
   closeOnBack?: boolean;
 }
 
@@ -32,7 +31,6 @@ interface FullscreenDocument extends Document {
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ 
   onClose, 
-  onSave,
   closeOnBack = true
 }) => {
   const { t } = useTranslation();
@@ -111,35 +109,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     saveSystemSetting('playerName', name);
   };
 
-  const handleExport = async () => {
-    if (onSave) {
-      try {
-        await onSave();
-      } catch (err) {
-        console.error('Failed to auto-save before export:', err);
-      }
-    }
-    try {
-      const saveData = await SaveManager.getSave('default_world');
-      if (!saveData) {
-        alert(t('settings.noSaveData'));
-        return;
-      }
-      const saveDataStr = JSON.stringify(saveData);
-      const blob = new Blob([saveDataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `webcraft_save_${Date.now()}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      alert(t('settings.exportFailed'));
-    }
-  };
+
 
   const gameModeOptions = [
     { label: t('pauseMenu.gameModeAdventure'), value: GameMode.ADVENTURE },
@@ -230,15 +200,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       checked={autoJump}
                       onChange={(checked) => setAutoJump(checked)}
                     />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <span className={styles.label} style={{ marginBottom: '8px' }}>
-                      {t('settings.saveData')}
-                    </span>
-                    <Button variant="secondary" onClick={handleExport}>
-                      {t('settings.exportSave')}
-                    </Button>
                   </div>
                 </div>
               </div>
