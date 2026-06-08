@@ -285,7 +285,6 @@ export class Player {
         if (this.hunger >= 18 && this.life < 10) {
           this.life = Math.min(10, this.life + 1);
           this.hungerExhaustion += 1.5; // Regeneration drains hunger
-          if (this.onTakeDamage) this.onTakeDamage(); // Trigger UI/State updates
         }
 
         // Starvation damage when hunger is 0 (can starve to death)
