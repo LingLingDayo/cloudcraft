@@ -400,5 +400,16 @@ describe('Player', () => {
       expect(player.life).toBe(10);
       expect(player.hunger).toBe(20);
     });
+
+    test('should regenerate health when hunger is high (>= 18) and health is less than 10', () => {
+      player.hunger = 19;
+      player.life = 5;
+      
+      // Update by 4 seconds to trigger regeneration tick
+      player.update(4.0, mockPhysics, mockControls, mockWorld);
+      
+      expect(player.life).toBe(6);
+      expect(player['hungerExhaustion']).toBeCloseTo(1.512, 3);
+    });
   });
 });
