@@ -133,7 +133,9 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
   // Synchronize distance LOD settings to GameManager
   useEffect(() => {
     const gm = gameManagerRef.current;
-    if (gm && gm.world) {
+    const store = useGameStore.getState();
+    // Only rebuild meshes synchronously if the world is fully loaded
+    if (gm && gm.world && !store.isWorldLoading) {
       // Rebuild all loaded chunk meshes with the new LOD settings
       const radius = gm.renderDistance;
       gm.world.loadArea(gm.player.position.x, gm.player.position.y, gm.player.position.z, radius, true);
