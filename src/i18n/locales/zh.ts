@@ -61,6 +61,9 @@ export const zh = {
     mobileControls: '移动端控制',
     dpadSize: '方向键大小',
     dpadSizeValue: '{{val}} 像素',
+    enableDistanceLOD: '按距离优化精度',
+    lodStrength: '优化效果强度',
+    lodStrengthValue: '等级 {{val}}',
   },
   controls: {
     keyboard: '键盘操作',

@@ -3,16 +3,19 @@ import { BLOCK_TYPES, getBlockProperties } from './BlockConfig';
 import { generateTextureAtlas } from './TextureAtlas';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z, WORLD_HEIGHT } from './World';
 import type { World } from './World';
+import { useGameStore } from '@store/useGameStore';
 
 export class ChunkRenderer {
   private world: World;
   private textureAtlas: THREE.Texture;
   public materials: { solid: THREE.Material; transparent: THREE.Material; cutout: THREE.Material };
   private chunkMeshes: Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }>;
+  private chunkLODs: Map<string, number>;
 
   constructor(world: World) {
     this.world = world;
     this.chunkMeshes = new Map();
+    this.chunkLODs = new Map();
 
     // Create materials
     this.textureAtlas = generateTextureAtlas();
@@ -46,6 +49,49 @@ export class ChunkRenderer {
         shadowSide: THREE.DoubleSide,
       }),
     };
+  }
+
+  public getChunkLOD(key: string): number | undefined {
+    return this.chunkLODs.get(key);
+  }
+
+  public getLODStep(cx: number, cy: number, cz: number): number {
+    const store = useGameStore.getState();
+    if (!store.enableDistanceLOD) {
+      return 1;
+    }
+
+    let px = 0, py = 0, pz = 0;
+    if (this.world.game && this.world.game.player) {
+      px = this.world.game.player.position.x;
+      py = this.world.game.player.position.y;
+      pz = this.world.game.player.position.z;
+    }
+
+    const pcx = Math.floor(px / CHUNK_SIZE_X);
+    const pcy = Math.floor(py / CHUNK_SIZE_Y);
+    const pcz = Math.floor(pz / CHUNK_SIZE_Z);
+
+    const dx = cx - pcx;
+    const dy = cy - pcy;
+    const dz = cz - pcz;
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    const strength = store.lodStrength; // 1 to 5
+
+    // Lower strength -> larger thresholds (higher quality at same distance)
+    // Higher strength -> smaller thresholds (lower quality/more aggressive optimization at same distance)
+    // We can scale the thresholds by (6 - strength).
+    const scale = Math.max(1, 6 - strength);
+    const t1 = 2 * scale; // Threshold for LOD 2
+    const t2 = 4 * scale; // Threshold for LOD 4
+
+    if (distance > t2) {
+      return 4;
+    } else if (distance > t1) {
+      return 2;
+    }
+    return 1;
   }
 
   public updateChunkMesh(cx: number, cy: number, cz: number, chunks: Map<string, Uint8Array>): void {
@@ -131,13 +177,39 @@ export class ChunkRenderer {
       { dir: [0, 0, -1], corners: [[0,0,0], [0,1,0], [1,1,0], [1,0,0]], uvFace: 'side' },  // nz
     ];
 
-    for (let x = 0; x < CHUNK_SIZE_X; x++) {
-      for (let z = 0; z < CHUNK_SIZE_Z; z++) {
-        for (let y = 0; y < CHUNK_SIZE_Y; y++) {
+    const lodStep = this.getLODStep(cx, cy, cz);
+
+    for (let x = 0; x < CHUNK_SIZE_X; x += lodStep) {
+      for (let z = 0; z < CHUNK_SIZE_Z; z += lodStep) {
+        for (let y = 0; y < CHUNK_SIZE_Y; y += lodStep) {
           const index = x + z * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-          const rawBlockType = chunk[index];
-          const blockType = rawBlockType & 0x3F;
-          const orientation = rawBlockType >> 6; // 0: Y, 1: X, 2: Z
+          const rBase = chunk[index];
+          let blockType = rBase & 0x3F;
+          let orientation = rBase >> 6; // 0: Y, 1: X, 2: Z
+
+          if (lodStep > 1) {
+            // Scan the lodStep cube for the first solid/non-air block
+            let found = false;
+            for (let dx = 0; dx < lodStep && !found; dx++) {
+              for (let dz = 0; dz < lodStep && !found; dz++) {
+                for (let dy = 0; dy < lodStep && !found; dy++) {
+                  const ix = x + dx;
+                  const iy = y + dy;
+                  const iz = z + dz;
+                  if (ix < CHUNK_SIZE_X && iy < CHUNK_SIZE_Y && iz < CHUNK_SIZE_Z) {
+                    const idx = ix + iz * CHUNK_SIZE_X + iy * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+                    const r = chunk[idx];
+                    const b = r & 0x3F;
+                    if (b !== BLOCK_TYPES.AIR) {
+                      blockType = b;
+                      orientation = r >> 6;
+                      found = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
 
           if (blockType === BLOCK_TYPES.AIR) continue;
 
@@ -155,7 +227,8 @@ export class ChunkRenderer {
 
           if (!props.isCrossModel) {
             for (const face of faces) {
-              const neighbor = getNeighbor(x, y, z, face.dir);
+              const neighborDir = [face.dir[0] * lodStep, face.dir[1] * lodStep, face.dir[2] * lodStep];
+              const neighbor = getNeighbor(x, y, z, neighborDir);
               
               // Draw face if:
               // 1. Neighbor is air/transparent
@@ -176,10 +249,10 @@ export class ChunkRenderer {
               if (drawFace) {
                 // Add vertices
                 const corners = face.corners;
-                const v0 = [wx + corners[0][0], worldStartY + y + corners[0][1], wz + corners[0][2]];
-                const v1 = [wx + corners[1][0], worldStartY + y + corners[1][1], wz + corners[1][2]];
-                const v2 = [wx + corners[2][0], worldStartY + y + corners[2][1], wz + corners[2][2]];
-                const v3 = [wx + corners[3][0], worldStartY + y + corners[3][1], wz + corners[3][2]];
+                const v0 = [wx + corners[0][0] * lodStep, worldStartY + y + corners[0][1] * lodStep, wz + corners[0][2] * lodStep];
+                const v1 = [wx + corners[1][0] * lodStep, worldStartY + y + corners[1][1] * lodStep, wz + corners[1][2] * lodStep];
+                const v2 = [wx + corners[2][0] * lodStep, worldStartY + y + corners[2][1] * lodStep, wz + corners[2][2] * lodStep];
+                const v3 = [wx + corners[3][0] * lodStep, worldStartY + y + corners[3][1] * lodStep, wz + corners[3][2] * lodStep];
 
                 // Triangle 1
                 data.positions.push(...v0, ...v1, ...v2);
@@ -283,14 +356,16 @@ export class ChunkRenderer {
               h = props.crossScaleH ?? 1.0;
             }
 
-            const blockCenterX = wx + 0.5;
-            const blockCenterZ = wz + 0.5;
+            const blockCenterX = wx + 0.5 * lodStep;
+            const blockCenterZ = wz + 0.5 * lodStep;
+            const scaledH = h * lodStep;
+            const scaledHW = hw * lodStep;
 
             // Diagonal Plane 1 Positions
-            const p1_0 = [blockCenterX - hw + dx, worldStartY + y, blockCenterZ - hw + dz];
-            const p1_1 = [blockCenterX - hw + dx, worldStartY + y + h, blockCenterZ - hw + dz];
-            const p1_2 = [blockCenterX + hw + dx, worldStartY + y + h, blockCenterZ + hw + dz];
-            const p1_3 = [blockCenterX + hw + dx, worldStartY + y, blockCenterZ + hw + dz];
+            const p1_0 = [blockCenterX - scaledHW + dx, worldStartY + y, blockCenterZ - scaledHW + dz];
+            const p1_1 = [blockCenterX - scaledHW + dx, worldStartY + y + scaledH, blockCenterZ - scaledHW + dz];
+            const p1_2 = [blockCenterX + scaledHW + dx, worldStartY + y + scaledH, blockCenterZ + scaledHW + dz];
+            const p1_3 = [blockCenterX + scaledHW + dx, worldStartY + y, blockCenterZ + scaledHW + dz];
 
             cutoutData.positions.push(...p1_0, ...p1_1, ...p1_2);
             cutoutData.positions.push(...p1_0, ...p1_2, ...p1_3);
@@ -308,10 +383,10 @@ export class ChunkRenderer {
             }
 
             // Diagonal Plane 2 Positions
-            const p2_0 = [blockCenterX + hw + dx, worldStartY + y, blockCenterZ - hw + dz];
-            const p2_1 = [blockCenterX + hw + dx, worldStartY + y + h, blockCenterZ - hw + dz];
-            const p2_2 = [blockCenterX - hw + dx, worldStartY + y + h, blockCenterZ + hw + dz];
-            const p2_3 = [blockCenterX - hw + dx, worldStartY + y, blockCenterZ + hw + dz];
+            const p2_0 = [blockCenterX + scaledHW + dx, worldStartY + y, blockCenterZ - scaledHW + dz];
+            const p2_1 = [blockCenterX + scaledHW + dx, worldStartY + y + scaledH, blockCenterZ - scaledHW + dz];
+            const p2_2 = [blockCenterX - scaledHW + dx, worldStartY + y + scaledH, blockCenterZ + scaledHW + dz];
+            const p2_3 = [blockCenterX - scaledHW + dx, worldStartY + y, blockCenterZ + scaledHW + dz];
 
             cutoutData.positions.push(...p2_0, ...p2_1, ...p2_2);
             cutoutData.positions.push(...p2_0, ...p2_2, ...p2_3);
@@ -370,6 +445,7 @@ export class ChunkRenderer {
 
     // Save references to meshes
     this.chunkMeshes.set(key, { solid: solidMesh, transparent: transMesh, cutout: cutoutMesh });
+    this.chunkLODs.set(key, lodStep);
   }
 
   public removeChunkMesh(key: string): void {
@@ -385,6 +461,7 @@ export class ChunkRenderer {
       oldMeshes.transparent.geometry.dispose();
       this.chunkMeshes.delete(key);
     }
+    this.chunkLODs.delete(key);
   }
 
   public getChunkMeshes(): Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }> {
@@ -403,6 +480,7 @@ export class ChunkRenderer {
         meshes.cutout.geometry.dispose();
       }
     }
+    this.chunkLODs.clear();
     this.materials.solid.dispose();
     this.materials.transparent.dispose();
     if (this.materials.cutout) {

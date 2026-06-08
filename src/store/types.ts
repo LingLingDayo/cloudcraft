@@ -12,6 +12,8 @@ export interface GameSlice {
   dpadSize: number;
   miningProgress: number | null;
   showMinimap: boolean;
+  enableDistanceLOD: boolean;
+  lodStrength: number;
   
   isSettingsOpen: boolean;
   settingsSource: 'hud' | 'menu' | null;

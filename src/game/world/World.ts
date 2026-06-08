@@ -306,8 +306,15 @@ export class World {
             if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
 
             const key = `${cx},${cy},${cz}`;
-            if (!this.renderer.hasChunkMesh(key)) {
+            const hasMesh = this.renderer.hasChunkMesh(key);
+            if (!hasMesh) {
               this.updateChunkMesh(cx, cy, cz);
+            } else {
+              const currentLOD = this.renderer.getChunkLOD(key);
+              const targetLOD = this.renderer.getLODStep(cx, cy, cz);
+              if (currentLOD !== undefined && currentLOD !== targetLOD) {
+                this.updateChunkMesh(cx, cy, cz);
+              }
             }
           }
         }
@@ -326,8 +333,17 @@ export class World {
             if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
 
             const key = `${cx},${cy},${cz}`;
-            if (!this.renderer.hasChunkMesh(key) && this.chunks.has(key)) {
-              neededMesh.push(key);
+            if (this.chunks.has(key)) {
+              const hasMesh = this.renderer.hasChunkMesh(key);
+              if (!hasMesh) {
+                neededMesh.push(key);
+              } else {
+                const currentLOD = this.renderer.getChunkLOD(key);
+                const targetLOD = this.renderer.getLODStep(cx, cy, cz);
+                if (currentLOD !== undefined && currentLOD !== targetLOD) {
+                  neededMesh.push(key);
+                }
+              }
             }
           }
         }
