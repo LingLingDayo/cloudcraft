@@ -10,7 +10,7 @@ export class WorldChunkManager {
   private generatingChunks: Set<string> = new Set();
   private generatingMeshes: Set<string> = new Set();
   private pendingGenerationQueue: string[] = [];
-  public pendingMeshQueue: string[] = []; // Used for incremental loading
+  public pendingMeshQueue: Array<{ key: string; updateNeighbors: boolean }> = []; // Used for incremental loading
 
   constructor(world: World) {
     this.world = world;
@@ -135,7 +135,7 @@ export class WorldChunkManager {
       neededMesh.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
 
       this.pendingGenerationQueue = neededGeneration;
-      this.pendingMeshQueue = neededMesh;
+      this.pendingMeshQueue = neededMesh.map(key => ({ key, updateNeighbors: true }));
     }
 
     // Unload chunks that are too far away
@@ -163,39 +163,74 @@ export class WorldChunkManager {
 
     while (performance.now() - startTime < BUDGET_MS) {
       if (this.pendingMeshQueue.length > 0) {
-        const key = this.pendingMeshQueue.shift();
-        if (key && !this.generatingMeshes.has(key)) {
-          const [cx, cy, cz] = key.split(',').map(Number);
-          const chunk = this.world.chunks.get(key);
-          if (chunk) {
-            this.generatingMeshes.add(key);
-            
-            // Collect neighbors package
-            const neighbors: ChunkNeighbors = {
-              px: this.world.chunks.get(`${cx + 1},${cy},${cz}`),
-              nx: this.world.chunks.get(`${cx - 1},${cy},${cz}`),
-              py: this.world.chunks.get(`${cx},${cy + 1},${cz}`),
-              ny: this.world.chunks.get(`${cx},${cy - 1},${cz}`),
-              pz: this.world.chunks.get(`${cx},${cy},${cz + 1}`),
-              nz: this.world.chunks.get(`${cx},${cy},${cz - 1}`),
-            };
+        const item = this.pendingMeshQueue.shift();
+        if (item) {
+          const { key, updateNeighbors } = item;
+          if (!this.generatingMeshes.has(key)) {
+            const [cx, cy, cz] = key.split(',').map(Number);
+            const chunk = this.world.chunks.get(key);
+            if (chunk) {
+              this.generatingMeshes.add(key);
+              
+              // Collect neighbors package
+              const neighbors: ChunkNeighbors = {
+                px: this.world.chunks.get(`${cx + 1},${cy},${cz}`),
+                nx: this.world.chunks.get(`${cx - 1},${cy},${cz}`),
+                py: this.world.chunks.get(`${cx},${cy + 1},${cz}`),
+                ny: this.world.chunks.get(`${cx},${cy - 1},${cz}`),
+                pz: this.world.chunks.get(`${cx},${cy},${cz + 1}`),
+                nz: this.world.chunks.get(`${cx},${cy},${cz - 1}`),
+              };
 
-            this.workerManager.execute<ChunkMeshResult>('GENERATE_MESH', {
-              cx, cy, cz, chunk, neighbors
-            }).then(meshResult => {
-              this.generatingMeshes.delete(key);
-              this.world.getRenderer().applyMeshResult(cx, cy, cz, meshResult);
+              this.workerManager.execute<ChunkMeshResult>('GENERATE_MESH', {
+                cx, cy, cz, chunk, neighbors
+              }).then(meshResult => {
+                this.generatingMeshes.delete(key);
+                this.world.getRenderer().applyMeshResult(cx, cy, cz, meshResult);
 
-              // Update chunk loading progress in store
-              if (store.isWorldLoading) {
-                if (store.chunkLoadingStates[key] === false) {
-                  store.setChunkLoadingState(key, true);
+                // Update chunk loading progress in store
+                if (store.isWorldLoading) {
+                  if (store.chunkLoadingStates[key] === false) {
+                    store.setChunkLoadingState(key, true);
+                  }
                 }
-              }
-            }).catch(err => {
-              console.error(`Failed to generate mesh asynchronously for key ${key}`, err);
-              this.generatingMeshes.delete(key);
-            });
+
+                // Update neighbors if required to ensure boundary faces are culled correctly
+                if (updateNeighbors) {
+                  const directions = [
+                    [1, 0, 0], [-1, 0, 0],
+                    [0, 1, 0], [0, -1, 0],
+                    [0, 0, 1], [0, 0, -1]
+                  ];
+                  let addedNeighbor = false;
+                  for (const [dx, dy, dz] of directions) {
+                    const ncx = cx + dx;
+                    const ncy = cy + dy;
+                    const ncz = cz + dz;
+                    const nkey = `${ncx},${ncy},${ncz}`;
+                    if (this.world.getRenderer().hasChunkMesh(nkey)) {
+                      const isAlreadyQueued = this.pendingMeshQueue.some(q => q.key === nkey);
+                      if (!isAlreadyQueued && !this.generatingMeshes.has(nkey)) {
+                        this.pendingMeshQueue.push({ key: nkey, updateNeighbors: false });
+                        addedNeighbor = true;
+                      }
+                    }
+                  }
+                  if (addedNeighbor && this.world.game) {
+                    const pX = this.world.game.player.position.x;
+                    const pY = this.world.game.player.position.y;
+                    const pZ = this.world.game.player.position.z;
+                    const currentCcx = Math.floor(pX / CHUNK_SIZE_X);
+                    const currentCcy = Math.floor(pY / CHUNK_SIZE_Y);
+                    const currentCcz = Math.floor(pZ / CHUNK_SIZE_Z);
+                    this.pendingMeshQueue.sort((a, b) => this.getChunkPriority(a.key, currentCcx, currentCcy, currentCcz) - this.getChunkPriority(b.key, currentCcx, currentCcy, currentCcz));
+                  }
+                }
+              }).catch(err => {
+                console.error(`Failed to generate mesh asynchronously for key ${key}`, err);
+                this.generatingMeshes.delete(key);
+              });
+            }
           }
         }
       } else if (this.pendingGenerationQueue.length > 0) {
@@ -211,8 +246,8 @@ export class WorldChunkManager {
               this.world.chunks.set(key, chunk);
 
               // Once generated, queue it for mesh creation and re-sort by proximity
-              this.pendingMeshQueue.push(key);
-              this.pendingMeshQueue.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
+              this.pendingMeshQueue.push({ key, updateNeighbors: true });
+              this.pendingMeshQueue.sort((a, b) => this.getChunkPriority(a.key, ccx, ccy, ccz) - this.getChunkPriority(b.key, ccx, ccy, ccz));
             })
             .catch(err => {
               console.error(`Failed to generate chunk asynchronously for key ${key}`, err);
