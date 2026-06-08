@@ -1,0 +1,6 @@
+<svg viewBox="0 0 16 16" fill-rule="evenodd" xmlns="http://www.w3.org/2000/svg">
+  <path d="M2,2h8v2h-8z M2,12h8v2h-8z M2,4h2v8h-2z" transform="translate(0, 1)" fill="#181818" />
+  <path d="M5,7h6v2h-6z M11,5h1v6h-1z M12,6h1v4h-1z M13,7h1v2h-1z" transform="translate(0, 1)" fill="#181818" />
+  <path d="M2,2h8v2h-8z M2,12h8v2h-8z M2,4h2v8h-2z" fill="#ffffff" />
+  <path d="M5,7h6v2h-6z M11,5h1v6h-1z M12,6h1v4h-1z M13,7h1v2h-1z" fill="#ffffff" />
+</svg>
