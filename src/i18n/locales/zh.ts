@@ -85,6 +85,8 @@ export const zh = {
   hud: {
     fps: 'FPS',
     chunksLoaded: '已载入区块',
+    chunkLoadSpeed: '区块加载速度',
+    chunksPerSecond: '个/秒',
     flyMode: '创造飞行模式 (F4)',
     flyModeOn: '开启 (飞行中)',
     flyModeOff: '关闭',

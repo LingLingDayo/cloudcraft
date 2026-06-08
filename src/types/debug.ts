@@ -1,6 +1,7 @@
 export interface DebugMetrics {
   fps: number;
   chunksLoaded: number;
+  chunkLoadSpeed: number;
   isFlying: boolean;
   targetBlock: {
     type: string;

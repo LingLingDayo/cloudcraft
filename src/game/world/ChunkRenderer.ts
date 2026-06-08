@@ -9,6 +9,7 @@ export class ChunkRenderer {
   private textureAtlas: THREE.Texture;
   public materials: { solid: THREE.Material; transparent: THREE.Material; cutout: THREE.Material };
   private chunkMeshes: Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }>;
+  private loadedTimestamps: number[] = [];
 
   constructor(world: World) {
     this.world = world;
@@ -93,6 +94,11 @@ export class ChunkRenderer {
     meshResult: ChunkMeshResult
   ): void {
     const key = `${cx},${cy},${cz}`;
+    const isNewChunk = !this.chunkMeshes.has(key);
+    if (isNewChunk) {
+      this.loadedTimestamps.push(performance.now());
+    }
+
     this.removeChunkMesh(key);
 
     const solidGeom = new THREE.BufferGeometry();
@@ -168,6 +174,15 @@ export class ChunkRenderer {
 
   public hasChunkMesh(key: string): boolean {
     return this.chunkMeshes.has(key);
+  }
+
+  public getChunkLoadSpeed(): number {
+    const now = performance.now();
+    const windowMs = 2000;
+    while (this.loadedTimestamps.length > 0 && now - this.loadedTimestamps[0] > windowMs) {
+      this.loadedTimestamps.shift();
+    }
+    return this.loadedTimestamps.length / (windowMs / 1000);
   }
 
   public dispose(): void {

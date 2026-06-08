@@ -85,6 +85,8 @@ export const en = {
   hud: {
     fps: 'FPS',
     chunksLoaded: 'Chunks Loaded',
+    chunkLoadSpeed: 'Chunk Load Speed',
+    chunksPerSecond: 'chunks/s',
     flyMode: 'Toggle Fly Mode (F4)',
     flyModeOn: 'On (Flying)',
     flyModeOff: 'Off',
