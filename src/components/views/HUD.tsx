@@ -325,6 +325,9 @@ export const HUD: React.FC = () => {
               {t('hud.chunksLoaded')}: <span className={styles.chunkCount}>{debugMetrics.chunksLoaded}</span>
             </div>
             <div>
+              {t('hud.chunkLoadSpeed')}: <span className={styles.chunkCount}>{debugMetrics.chunkLoadSpeed.toFixed(1)}</span> {t('hud.chunksPerSecond')}
+            </div>
+            <div>
               {t('hud.flyMode')}:{' '}
               <span style={{ color: debugMetrics.isFlying ? '#38bdf8' : '#94a3b8', fontWeight: 'bold' }}>
                 {debugMetrics.isFlying ? t('hud.flyModeOn') : t('hud.flyModeOff')}

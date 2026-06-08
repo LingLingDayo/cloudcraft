@@ -173,6 +173,7 @@ describe('useGameStore', () => {
     const metrics: DebugMetrics = {
       fps: 60,
       chunksLoaded: 9,
+      chunkLoadSpeed: 0,
       isFlying: false,
       targetBlock: null,
       playerPosition: { x: 0, y: 0, z: 0 },
