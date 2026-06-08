@@ -54,6 +54,7 @@ export interface DebugMetrics {
     triangles: number;
     geometries: number;
     textures: number;
+    gpu: string;
   };
 }
 

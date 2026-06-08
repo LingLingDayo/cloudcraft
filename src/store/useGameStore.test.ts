@@ -185,7 +185,7 @@ describe('useGameStore', () => {
       terrainHeight: 0,
       gameTime: { time: 0, formatted: '00:00' },
       entities: { droppedItems: 0, animals: 0 },
-      renderer: { drawCalls: 0, triangles: 0, geometries: 0, textures: 0 },
+      renderer: { drawCalls: 0, triangles: 0, geometries: 0, textures: 0, gpu: 'Test GPU' },
     };
     useGameStore.getState().setDebugMetrics(metrics);
     expect(useGameStore.getState().debugMetrics).toEqual(metrics);

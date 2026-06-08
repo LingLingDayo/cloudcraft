@@ -388,6 +388,9 @@ export const HUD: React.FC = () => {
             <div>
               Geometries / Textures: <span className={styles.renderValue}>{debugMetrics.renderer.geometries} / {debugMetrics.renderer.textures}</span>
             </div>
+            <div>
+              GPU: <span className={styles.renderValue} style={{ fontSize: '10px', wordBreak: 'break-all' }}>{debugMetrics.renderer.gpu}</span>
+            </div>
           </div>
 
           <div className={styles.targetBlockSection}>
