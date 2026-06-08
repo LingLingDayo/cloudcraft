@@ -39,13 +39,13 @@ export class WorldGenerator {
 
     let riverWeight = 1.0;
     const oceanThreshold = WORLD_CONFIG.ocean.threshold;
-    const shoreWidth = WORLD_CONFIG.ocean.shoreWidth;
+    const oceanFadeWidth = WORLD_CONFIG.river.oceanFadeWidth;
 
-    if (c < oceanThreshold) {
+    if (c < oceanThreshold - oceanFadeWidth) {
       riverWeight = 0.0;
-    } else if (c < oceanThreshold + shoreWidth) {
-      // 在海岸线过渡带，权重从 0.0 平滑过渡到 1.0
-      const u = (c - oceanThreshold) / shoreWidth;
+    } else if (c < oceanThreshold) {
+      // 在海洋内部的淡出带，权重从 0.0 平滑过渡到 1.0
+      const u = (c - (oceanThreshold - oceanFadeWidth)) / oceanFadeWidth;
       riverWeight = u * u * (3 - 2 * u); // smoothstep
     }
 

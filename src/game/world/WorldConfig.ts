@@ -20,8 +20,9 @@ export const WORLD_CONFIG = {
     threshold: 0.04,
     transitionWidth: 0.03,
     bedHeight: 142,
-    valleyInfluenceWidth: 0.10, // 新增：河谷扁平化过渡宽度
-    valleyTargetHeight: 153,    // 新增：目标河谷地表高度，比海平面高 3 格
+    valleyInfluenceWidth: 0.10, // 河谷扁平化过渡宽度
+    valleyTargetHeight: 153,    // 目标河谷地表高度，比海平面高 3 格
+    oceanFadeWidth: 0.05,       // 河流在海洋内部的淡出宽度
     bankOffsets: {
       mountains: 6.0,
       plateau: 4.5,
