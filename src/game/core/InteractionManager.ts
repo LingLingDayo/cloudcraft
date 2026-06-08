@@ -41,6 +41,10 @@ export class InteractionManager {
   private lastEatSoundTime = 0;
   private lastEatParticleTime = 0;
 
+  // Attack state properties
+  private lastAttackTime = 0;
+  private attackInterval = 500; // 500ms continuous attack rate
+
   constructor(game: GameManager) {
     this.game = game;
     this.initSelectionBox();
@@ -120,7 +124,23 @@ export class InteractionManager {
 
   public update(dt: number) {
     this.updateTargetedBlock();
-    this.updateMining(dt);
+    
+    let attacked = false;
+    if (this.isLeftMouseDown && this.hasAnimalTarget()) {
+      this.cancelMining();
+      const now = performance.now();
+      if (now - this.lastAttackTime >= this.attackInterval) {
+        if (this.game.animals && this.game.animals.checkAttack()) {
+          this.lastAttackTime = now;
+        }
+      }
+      attacked = true;
+    }
+
+    if (!attacked) {
+      this.updateMining(dt);
+    }
+    
     this.updateEating(dt);
   }
 
@@ -248,8 +268,11 @@ export class InteractionManager {
     if (!this.game.controls.isLocked && !this.game.controls.isMobile) return;
 
     if (e.button === 0) {
+      this.isLeftMouseDown = true;
+      this.mouseDownTime = performance.now();
       this.cancelEating();
       if (this.game.animals && this.game.animals.checkAttack()) {
+        this.lastAttackTime = performance.now();
         return;
       }
     }
@@ -267,9 +290,6 @@ export class InteractionManager {
     if (!this.targetedBlockInfo) return;
 
     if (e.button === 0) {
-      this.isLeftMouseDown = true;
-      this.mouseDownTime = performance.now();
-
       const isCreative = useGameStore.getState().gameMode === 'creative';
       if (isCreative && this.targetedBlockInfo) {
         const { target } = this.targetedBlockInfo;
@@ -382,6 +402,17 @@ export class InteractionManager {
       }
       this.cancelEating();
     }
+  }
+
+  private hasAnimalTarget(): boolean {
+    if (!this.game.animals) return false;
+    const meshes = this.game.animals.getAnimalMeshes();
+    if (meshes.length === 0) return false;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), this.game.camera);
+    const intersects = raycaster.intersectObjects(meshes, true);
+    return intersects.length > 0 && intersects[0].distance < 5.2;
   }
 
   private updateTargetedBlock() {
