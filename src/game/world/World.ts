@@ -333,17 +333,8 @@ export class World {
         }
       }
 
-      // Sort both queues by distance to player (closer chunks loaded first)
-      const getDistanceSq = (key: string) => {
-        const [cx, cy, cz] = key.split(',').map(Number);
-        const dcx = cx - ccx;
-        const dcy = cy - ccy;
-        const dcz = cz - ccz;
-        return dcx * dcx + dcy * dcy + dcz * dcz;
-      };
-
-      neededGeneration.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
-      neededMesh.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
+      neededGeneration.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
+      neededMesh.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
 
       this.pendingGenerationQueue = neededGeneration;
       this.pendingMeshQueue = neededMesh;
@@ -396,13 +387,6 @@ export class World {
     const ccy = Math.floor(playerY / CHUNK_SIZE_Y);
     const ccz = Math.floor(playerZ / CHUNK_SIZE_Z);
 
-    const getDistanceSq = (key: string) => {
-      const [cx, cy, cz] = key.split(',').map(Number);
-      const dcx = cx - ccx;
-      const dcy = cy - ccy;
-      const dcz = cz - ccz;
-      return dcx * dcx + dcy * dcy + dcz * dcz;
-    };
 
     while (performance.now() - startTime < BUDGET_MS) {
       if (this.pendingMeshQueue.length > 0) {
@@ -427,7 +411,7 @@ export class World {
 
               // Once generated, queue it for mesh creation and re-sort by proximity
               this.pendingMeshQueue.push(key);
-              this.pendingMeshQueue.sort((a, b) => getDistanceSq(a) - getDistanceSq(b));
+              this.pendingMeshQueue.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
             })
             .catch(err => {
               console.error(`Failed to generate chunk asynchronously for key ${key}`, err);
@@ -713,5 +697,15 @@ export class World {
       const index = lx + lz * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
       chunk[index] = type;
     }
+  }
+
+  private getChunkPriority(key: string, ccx: number, ccy: number, ccz: number): number {
+    const [cx, cy, cz] = key.split(',').map(Number);
+    const dcx = cx - ccx;
+    const dcy = cy - ccy;
+    const dcz = cz - ccz;
+    // Prioritize chunks closer horizontally first, and prioritize chunks closer to player's Y plane.
+    // We give a high weight to Y distance so Y-axis distance is minimized first (dcy === 0 loads first).
+    return Math.abs(dcy) * 1000 + (dcx * dcx + dcz * dcz);
   }
 }

@@ -348,3 +348,38 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 120000);
 });
 
+describe('World Chunk Loading Priority and Custom Sorting', () => {
+  test('should prioritize chunks on the same horizontal plane (Y-level difference is minimized) and then by horizontal distance', () => {
+    const world = new World('priority-test');
+    const ccx = 0, ccy = 0, ccz = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const priority = (key: string) => (world as any).getChunkPriority(key, ccx, ccy, ccz);
+    
+    expect(priority('0,0,0')).toBe(0); // Player chunk has absolute priority
+    expect(priority('0,0,1')).toBe(1); // Same Y plane, horizontal distance 1
+    expect(priority('1,0,1')).toBe(2); // Same Y plane, horizontal distance sqrt(2)
+    expect(priority('0,1,0')).toBe(1000); // Diff Y plane by 1, horizontal distance 0
+    expect(priority('0,-1,0')).toBe(1000); // Diff Y plane by 1, horizontal distance 0
+    expect(priority('0,1,1')).toBe(1001); // Diff Y plane by 1, horizontal distance 1
+    
+    // Sort array:
+    const list = ['0,1,1', '1,0,1', '0,-1,0', '0,0,1', '0,0,0', '0,1,0'];
+    list.sort((a, b) => priority(a) - priority(b));
+    
+    // Expected sorted order:
+    // 1. '0,0,0' (priority 0)
+    // 2. '0,0,1' (priority 1)
+    // 3. '1,0,1' (priority 2)
+    // 4. '0,-1,0' or '0,1,0' (priority 1000)
+    // 5. '0,1,0' or '0,-1,0' (priority 1000)
+    // 6. '0,1,1' (priority 1001)
+    expect(list[0]).toBe('0,0,0');
+    expect(list[1]).toBe('0,0,1');
+    expect(list[2]).toBe('1,0,1');
+    expect(priority(list[3])).toBe(1000);
+    expect(priority(list[4])).toBe(1000);
+    expect(list[5]).toBe('0,1,1');
+  });
+});
+
+
