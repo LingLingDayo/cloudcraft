@@ -86,13 +86,7 @@ export class ChunkRenderer {
     this.materials.cutout.onBeforeCompile = injectShader;
   }
 
-  public getChunkLOD(_key: string): number | undefined {
-    return 1;
-  }
 
-  public getLODStep(_cx: number, _cy: number, _cz: number): number {
-    return 1;
-  }
 
   public updateChunkMesh(cx: number, cy: number, cz: number, chunks: Map<string, Uint8Array>): void {
     const key = `${cx},${cy},${cz}`;

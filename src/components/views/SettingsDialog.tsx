@@ -105,9 +105,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const setDpadSize = useGameStore((state) => state.setDpadSize);
   const showMinimap = useGameStore((state) => state.showMinimap);
   const setShowMinimap = useGameStore((state) => state.setShowMinimap);
-  const enableDistanceLOD = useGameStore((state) => state.enableDistanceLOD);
-  const lodStrength = useGameStore((state) => state.lodStrength);
-  const setSetting = useGameStore((state) => state.setSetting);
 
   const [playerName, setPlayerName] = useState<string>(() => {
     return getSystemSettings().playerName;
@@ -305,27 +302,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     />
                   </div>
 
-                  <div className={styles.optionItem}>
-                    <Switch
-                      label={t('settings.enableDistanceLOD')}
-                      checked={enableDistanceLOD}
-                      onChange={(checked) => setSetting('enableDistanceLOD', checked)}
-                    />
-                  </div>
-
-                  {enableDistanceLOD && (
-                    <div className={styles.optionItem}>
-                      <Slider
-                        label={t('settings.lodStrength')}
-                        min={1}
-                        max={5}
-                        step={1}
-                        value={lodStrength}
-                        onChange={(val) => setSetting('lodStrength', val)}
-                        valueFormatter={(val) => t('settings.lodStrengthValue', { val })}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             )}

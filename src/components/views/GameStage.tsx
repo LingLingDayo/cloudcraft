@@ -23,8 +23,6 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
   const renderDistance = useGameStore((state) => state.renderDistance);
   const fov = useGameStore((state) => state.fov);
   const gameMode = useGameStore((state) => state.gameMode);
-  const enableDistanceLOD = useGameStore((state) => state.enableDistanceLOD);
-  const lodStrength = useGameStore((state) => state.lodStrength);
   const isInventoryOpen = useGameStore((state) => state.isInventoryOpen);
   const activeChest = useGameStore((state) => state.activeChest);
 
@@ -130,17 +128,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
     }
   }, [fov]);
 
-  // Synchronize distance LOD settings to GameManager
-  useEffect(() => {
-    const gm = gameManagerRef.current;
-    const store = useGameStore.getState();
-    // Only rebuild meshes synchronously if the world is fully loaded
-    if (gm && gm.world && !store.isWorldLoading) {
-      // Rebuild all loaded chunk meshes with the new LOD settings
-      const radius = gm.renderDistance;
-      gm.world.loadArea(gm.player.position.x, gm.player.position.y, gm.player.position.z, radius, true);
-    }
-  }, [enableDistanceLOD, lodStrength]);
+
 
   // Synchronize game mode and disable flying if not creative
   useEffect(() => {

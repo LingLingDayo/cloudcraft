@@ -29,8 +29,6 @@ describe('settings utility', () => {
         playerName: 'Alex',
         renderDistance: 5,
         fov: 80,
-        enableDistanceLOD: false,
-        lodStrength: 4,
         debugOverlay: false,
       };
       localStorage.setItem('webcraft_settings', JSON.stringify(saved));

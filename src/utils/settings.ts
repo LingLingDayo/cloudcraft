@@ -8,8 +8,6 @@ export interface SystemSettings {
   playerName: string;
   renderDistance: number;
   fov: number;
-  enableDistanceLOD: boolean;
-  lodStrength: number;
   debugOverlay: boolean;
 }
 
@@ -54,17 +52,6 @@ export const SETTINGS_REGISTRY: { [K in keyof SystemSettings]: SettingDefinition
     validate: (val) => {
       const num = Number(val);
       return !isNaN(num) ? Math.max(60, Math.min(90, num)) : 75;
-    },
-  },
-  enableDistanceLOD: {
-    defaultValue: true,
-    validate: (val) => (typeof val === 'boolean' ? val : true),
-  },
-  lodStrength: {
-    defaultValue: 3,
-    validate: (val) => {
-      const num = Number(val);
-      return !isNaN(num) ? Math.max(1, Math.min(5, num)) : 3;
     },
   },
   debugOverlay: {

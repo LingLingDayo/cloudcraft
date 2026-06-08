@@ -22,8 +22,6 @@ export const createGameSlice: StateCreator<
     dpadSize: settings.dpadSize,
     miningProgress: null,
     showMinimap: settings.showMinimap,
-    enableDistanceLOD: settings.enableDistanceLOD,
-    lodStrength: settings.lodStrength,
     isSettingsOpen: false,
     settingsSource: null,
 
