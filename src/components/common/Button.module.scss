@@ -3,9 +3,11 @@
   font-size: var(--btn-font-size);
   color: #e0e0e0;
   text-shadow: var(--ui-text-shadow);
-  border: 2px solid #000;
+  border: var(--ui-control-border);
   image-rendering: pixelated;
-  padding: 12px 20px;
+  height: var(--ui-control-height);
+  padding: 0 20px;
+  box-sizing: border-box;
   cursor: pointer;
   outline: none;
   user-select: none;
@@ -22,8 +24,7 @@
   }
 
   &:active:not(:disabled) {
-    padding-top: 14px;
-    padding-bottom: 10px;
+    padding-top: 2px;
   }
 
   &:disabled {

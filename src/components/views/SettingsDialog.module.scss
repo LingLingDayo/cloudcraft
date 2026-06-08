@@ -10,14 +10,11 @@
 
 .sidebar {
   width: 180px;
-  background: #a8a8a8;
-  border-right: 4px solid #000;
+  background: transparent;
+  border-right: 2px dashed #999;
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  box-shadow: 
-    inset 4px 4px 0px #ffffff,
-    inset -4px 0px 0px #555555;
   box-sizing: border-box;
 }
 
@@ -28,52 +25,44 @@
 }
 
 .tabBtn {
-  background: #c6c6c6;
-  border: 2px solid #000;
+  background: var(--ui-control-light-bg);
+  border: var(--ui-control-border);
   padding: 0 12px;
-  height: 34px;
+  height: var(--ui-control-height);
   cursor: pointer;
   text-align: left;
   font-family: var(--font-family-active);
   font-size: 12px;
-  color: #3f3f3f;
-  box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555;
+  color: var(--ui-control-light-text-color);
+  box-shadow: var(--ui-control-light-shadow);
   transition: none;
   width: 100%;
   outline: none;
 
   &:hover {
-    color: #ffffff;
-    background: #909090;
-    text-shadow: 1px 1px 0px #000;
-    box-shadow: 
-      inset 2px 2px 0px #ffffff,
-      inset -2px -2px 0px #303030;
+    color: var(--ui-control-light-hover-text-color);
+    background: var(--ui-control-light-hover-bg);
+    text-shadow: var(--ui-control-light-text-shadow);
+    box-shadow: var(--ui-control-light-hover-shadow);
   }
 
   &:active {
-    box-shadow: 
-      inset -2px -2px 0px #ffffff,
-      inset 2px 2px 0px #555555;
+    box-shadow: var(--ui-control-light-active-shadow);
     padding-left: 14px;
     padding-top: 2px;
   }
 }
 
 .activeTabBtn {
-  background: #555555;
-  color: #ffff00;
+  background: var(--ui-control-light-active-bg);
+  color: var(--ui-control-light-active-text-color);
   text-shadow: 1px 1px 0px #000;
-  box-shadow: 
-    inset -2px -2px 0px #ffffff,
-    inset 2px 2px 0px #000;
+  box-shadow: var(--ui-control-light-active-shadow);
   pointer-events: none; // Prevent clicking again
 
   &:hover {
-    background: #555555;
-    color: #ffff00;
+    background: var(--ui-control-light-active-bg);
+    color: var(--ui-control-light-active-text-color);
   }
 }
 
@@ -81,25 +70,24 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 16px 20px;
   box-sizing: border-box;
-  background: #c6c6c6;
-  box-shadow: inset 4px 4px 0px #ffffff;
+  background: transparent;
   overflow: hidden;
 }
 
 .tabPanel {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 12px;
-  padding-right: 8px;
+  padding-right: 4px;
 }
 
 .groupTitle {
-  color: #3f3f3f;
-  margin: 0 0 20px 0;
-  font-size: 12px;
-  text-shadow: 1px 1px 0px #fff;
+  color: var(--ui-dialog-text-color);
+  font-family: var(--font-family-sans);
+  margin: 0;
+  font-size: 16px;
+  text-shadow: var(--ui-dialog-title-shadow);
   border-bottom: 2px dashed #999;
   padding-bottom: 8px;
   user-select: none;
@@ -108,7 +96,7 @@
 .settingsGroup {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .optionItem {
@@ -128,8 +116,8 @@
 .label {
   font-family: var(--font-family-active);
   font-size: 12px;
-  color: #3f3f3f;
-  text-shadow: 1px 1px 0px #fff;
+  color: var(--ui-dialog-text-color);
+  text-shadow: var(--ui-dialog-title-shadow);
   font-weight: bold;
   user-select: none;
 }
@@ -143,17 +131,18 @@
 }
 
 .controlSection {
-  background: #a8a8a8;
-  border: 2px solid #000;
-  box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555;
-  padding: 12px;
+  background: var(--ui-section-bg);
+  border: var(--ui-section-border);
+  box-shadow: var(--ui-section-shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .sectionTitle {
   color: #2b2b2b;
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 10px;
   text-shadow: 1px 1px 0px #fff;
   border-bottom: 2px dashed #777;
@@ -175,8 +164,8 @@
 .controlLabel {
   font-family: var(--font-family-active);
   font-size: 10px;
-  color: #3f3f3f;
-  text-shadow: 1px 1px 0px #fff;
+  color: var(--ui-dialog-text-color);
+  text-shadow: var(--ui-dialog-title-shadow);
 }
 
 .controlKeys {
@@ -192,15 +181,14 @@
   min-width: 22px;
   height: 22px;
   padding: 0 5px;
-  background: #c6c6c6;
-  border: 2px solid #000;
+  background: var(--ui-control-light-bg);
+  border: var(--ui-control-border);
   box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555,
+    var(--ui-control-light-shadow),
     0 2px 0px #555555;
   font-family: var(--font-family-active);
   font-size: 8px;
-  color: #000000;
+  color: var(--ui-control-light-text-color);
   border-radius: 2px;
   text-shadow: none;
   user-select: none;
@@ -247,4 +235,3 @@
     font-size: 10px !important;
   }
 }
-

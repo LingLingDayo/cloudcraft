@@ -32,6 +32,90 @@
     inset 2px 2px 0px #ffffff,
     inset -2px -2px 0px #7f1d1d;
 
+  // Unified Borders for controls
+  --ui-control-border: 2px solid #000;
+
+  // Dark-Bg controls (used inside dark panels, or as dark style inputs)
+  --ui-control-dark-bg: #5c5c5c;
+  --ui-control-dark-text-color: #e0e0e0;
+  --ui-control-dark-text-shadow: var(--ui-text-shadow);
+  --ui-control-dark-shadow: 
+    inset 2px 2px 0px #8b8b8b,
+    inset -2px -2px 0px #373737;
+  --ui-control-dark-hover-bg: #6c6c6c;
+  --ui-control-dark-hover-text-color: #ffffa0;
+  --ui-control-dark-hover-shadow: 
+    inset 2px 2px 0px #9e9e9e,
+    inset -2px -2px 0px #474747;
+  --ui-control-dark-active-shadow: 
+    inset -2px -2px 0px #9e9e9e,
+    inset 2px 2px 0px #373737;
+  --ui-control-dark-disabled-bg: #3c3c3c;
+  --ui-control-dark-disabled-text-color: #707070;
+  --ui-control-dark-disabled-shadow: 
+    inset 2px 2px 0px #5c5c5c,
+    inset -2px -2px 0px #242424;
+
+  // Light-Bg controls (used inside light panels like Settings, Tabs)
+  --ui-control-light-bg: #c6c6c6;
+  --ui-control-light-text-color: #3f3f3f;
+  --ui-control-light-text-shadow: none;
+  --ui-control-light-shadow: 
+    inset 2px 2px 0px #ffffff,
+    inset -2px -2px 0px #555555;
+  --ui-control-light-hover-bg: #a8a8a8;
+  --ui-control-light-hover-text-color: #000000;
+  --ui-control-light-hover-shadow: 
+    inset 2px 2px 0px #ffffff,
+    inset -2px -2px 0px #3f3f3f;
+  --ui-control-light-active-bg: #8b8b8b;
+  --ui-control-light-active-text-color: #ffff00;
+  --ui-control-light-active-shadow: 
+    inset -2px -2px 0px #ffffff,
+    inset 2px 2px 0px #3f3f3f;
+
+  // Section backgrounds inside panels (like creative inventory sections, controls group background, settings sidebar)
+  --ui-section-bg: #b0b0b0;
+  --ui-section-border: 2px solid #555555;
+  --ui-section-shadow: 
+    inset 2px 2px 0px #555555,
+    inset -2px -2px 0px #ffffff;
+    
+  // Sidebar styling
+  --ui-sidebar-bg: #b0b0b0;
+  --ui-sidebar-border: 2px solid #555555;
+  --ui-sidebar-shadow: 
+    inset 4px 4px 0px #ffffff,
+    inset -2px 0px 0px #555555;
+  --ui-content-area-shadow: 
+    inset 4px 4px 0px #ffffff;
+
+  // Text inputs & textareas (standard black input box)
+  --ui-input-bg: #000000;
+  --ui-input-border: 2px solid #a0a0a0;
+  --ui-input-text-color: #ffffff;
+  --ui-input-focus-border: #ffffff;
+  --ui-input-text-shadow: 1px 1px 0px #202020;
+  --ui-input-disabled-bg: #1a1a1a;
+  --ui-input-disabled-border: 2px solid #555555;
+  --ui-input-disabled-text-color: #707070;
+
+  // Indents / Track elements (Slider track, Switch track)
+  --ui-track-bg: #2e2e2e;
+  --ui-track-border: 2px solid #000000;
+  --ui-track-shadow: 
+    inset -2px -2px 0px #4a4a4a,
+    inset 2px 2px 0px #1c1c1c;
+
+  // Switch active state
+  --ui-switch-checked-bg: #3b8b3b;
+  --ui-switch-checked-shadow: 
+    inset -2px -2px 0px #5ebf5e,
+    inset 2px 2px 0px #1a3e1a;
+
+  // Unified control height
+  --ui-control-height: 34px;
+
   // Button standard properties
   --btn-font-size: 12px;
   
