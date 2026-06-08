@@ -215,7 +215,9 @@ export class GameManager {
       if (this.environment) this.environment.update(dt);
       
       this.player.update(dt, this.physics, this.controls, this.world);
-      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, this.renderDistance);
+      const store = useGameStore.getState();
+      const radius = store.isWorldLoading ? 2 : this.renderDistance;
+      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
 
       if (this.interaction) this.interaction.update(dt);
       if (this.droppedItems) this.droppedItems.update(dt);
@@ -244,7 +246,9 @@ export class GameManager {
       // Background continues when game is paused/menus open
       if (this.environment) this.environment.update(dt);
       if (this.player) {
-        this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, this.renderDistance);
+        const store = useGameStore.getState();
+        const radius = store.isWorldLoading ? 2 : this.renderDistance;
+        this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
       }
       this.world.update(dt);
     }
@@ -255,7 +259,9 @@ export class GameManager {
   public setRenderDistance(dist: number) {
     this.renderDistance = dist;
     if (this.world && this.player) {
-      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, this.renderDistance);
+      const store = useGameStore.getState();
+      const radius = store.isWorldLoading ? 2 : this.renderDistance;
+      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
     }
   }
 
