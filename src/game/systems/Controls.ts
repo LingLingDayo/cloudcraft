@@ -3,6 +3,7 @@ import { hotkeyManager, GameAction } from './HotkeyManager';
 import { isMobileDevice, getRealDeviceType } from '@utils/device';
 import { useGameStore } from '@store/useGameStore';
 import { ItemRegistry } from '@game/item/ItemRegistry';
+import { GameState } from '@type';
 
 
 export class Controls {
@@ -23,6 +24,22 @@ export class Controls {
 
   public get isMobile(): boolean {
     return isMobileDevice();
+  }
+
+  public get canControlView(): boolean {
+    const store = useGameStore.getState();
+    const isPlaying = store.gameState === GameState.PLAYING;
+    const isUIOpen = store.isInventoryOpen || store.isSettingsOpen || store.activeChest !== null;
+
+    if (!isPlaying || isUIOpen) {
+      return false;
+    }
+
+    const isActuallyLocked = document.pointerLockElement === this.domElement;
+    if (this.isMobile) {
+      return true;
+    }
+    return isActuallyLocked;
   }
 
   public mouseSensitivity = 0.0022;
@@ -129,6 +146,7 @@ export class Controls {
   }
 
   private onMouseDown = (e: MouseEvent) => {
+    if (!this.canControlView) return;
     if (this.isMobile && !this.isLocked) {
       this.isMouseDown = true;
       this.lastMouseX = e.clientX;
@@ -141,9 +159,24 @@ export class Controls {
   };
 
   private onMouseMove = (e: MouseEvent) => {
+    const isActuallyLocked = document.pointerLockElement === this.domElement;
+    if (isActuallyLocked !== this.isLocked) {
+      this.isLocked = isActuallyLocked;
+    }
+
+    if (!this.canControlView) {
+      this.isMouseDown = false;
+      return;
+    }
+
     if (this.isLocked) {
       const movementX = e.movementX || 0;
       const movementY = e.movementY || 0;
+
+      // 过滤进入或退出指针锁定瞬间由浏览器产生的异常巨大偏移量（例如数百至数千像素的坐标跃变）
+      if (Math.abs(movementX) > 300 || Math.abs(movementY) > 300) {
+        return;
+      }
 
       this.yaw -= movementX * this.mouseSensitivity;
       this.pitch -= movementY * this.mouseSensitivity;
@@ -152,6 +185,12 @@ export class Controls {
     } else if (this.isMobile && this.isMouseDown) {
       const deltaX = e.clientX - this.lastMouseX;
       const deltaY = e.clientY - this.lastMouseY;
+
+      if (Math.abs(deltaX) > 300 || Math.abs(deltaY) > 300) {
+        this.lastMouseX = e.clientX;
+        this.lastMouseY = e.clientY;
+        return;
+      }
 
       this.lastMouseX = e.clientX;
       this.lastMouseY = e.clientY;
@@ -165,6 +204,7 @@ export class Controls {
 
   // Mobile Touch Callbacks
   private onTouchStart = (e: TouchEvent) => {
+    if (!this.canControlView) return;
     if (this.activeTouchId !== null) return;
 
     const touch = e.changedTouches[0];
@@ -193,6 +233,14 @@ export class Controls {
   };
 
   private onTouchMove = (e: TouchEvent) => {
+    if (!this.canControlView) {
+      this.activeTouchId = null;
+      if (this.miningTimeout) {
+        window.clearTimeout(this.miningTimeout);
+        this.miningTimeout = null;
+      }
+      return;
+    }
     if (this.activeTouchId === null) return;
 
     let activeTouch: Touch | null = null;
