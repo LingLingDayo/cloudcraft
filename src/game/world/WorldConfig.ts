@@ -42,12 +42,20 @@ export const WORLD_CONFIG = {
     scaleY: 0.06,
     threshold: 0.08,
     minHeight: 10,
+    maxHeight: 200,
     maxHeightOffset: 20, // 低于地表几格开始生成矿洞
     baseThreshold: 0.12, // 矿洞基础阈值
     maxHeightOffsetDefault: 12, // 默认限制高度
     maxHeightOffsetEntrance: -3, // 露天入口限制高度
     warpScale: 0.05, // 坐标扭曲噪波频率
     warpStrength: 5.0, // 坐标扭曲偏移强度
+    layerSpacing: 28, // 水平层间距
+    verticalScale: 0.35, // 垂直层约束系数（控制隧道高度）
+    layerOffsetScale: 0.01, // 水平起伏噪波频率
+    layerOffsetStrength: 4.0, // 水平起伏最大偏移
+    shaftNoiseScale: 0.015, // 垂直竖井噪波频率
+    shaftThreshold: 0.35, // 垂直竖井阈值
+    shaftBlendRange: 0.25, // 垂直竖井混合范围
   },
   biomeScale: 0.003,
   biomeOffset: 2000,

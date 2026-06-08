@@ -156,8 +156,8 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
         }
         
         if (surfaceHeight > 25) {
-          // Check range y=5 to y=15 for cave air pockets
-          for (let y = 5; y < 15; y++) {
+          // Check range y=20 to y=35 (centered around the Y=28 layer) for cave air pockets
+          for (let y = 20; y < 35; y++) {
             if (world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
               foundUndergroundCave = true;
               break;
