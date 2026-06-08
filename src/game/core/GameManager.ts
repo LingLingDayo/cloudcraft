@@ -14,6 +14,7 @@ import { InteractionManager } from './InteractionManager';
 import { DroppedItemManager } from './DroppedItemManager';
 import { AnimalManager } from './AnimalManager';
 import { WORLD_CONFIG } from '@game/world/WorldConfig';
+import { cleanGpuName } from '@utils/gpu';
 
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
@@ -64,6 +65,7 @@ export class GameManager {
       canvas: this.canvas,
       antialias: false,
       alpha: false,
+      powerPreference: 'high-performance',
     });
     this.renderer.setSize(width, height, false);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -376,11 +378,23 @@ export class GameManager {
     const animalsCount = this.animals ? this.animals.getCount() : 0;
 
     // 7. Renderer Info
+    let gpuName = 'Unknown';
+    if (this.renderer) {
+      const gl = this.renderer.getContext();
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        gpuName = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Unknown';
+      } else {
+        gpuName = 'Standard WebGL';
+      }
+    }
+
     const rendererInfo = {
       drawCalls: this.renderer ? this.renderer.info.render.calls : 0,
       triangles: this.renderer ? this.renderer.info.render.triangles : 0,
       geometries: this.renderer ? this.renderer.info.memory.geometries : 0,
       textures: this.renderer ? this.renderer.info.memory.textures : 0,
+      gpu: cleanGpuName(gpuName),
     };
 
     return {
