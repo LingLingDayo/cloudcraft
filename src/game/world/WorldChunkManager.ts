@@ -12,6 +12,18 @@ export class WorldChunkManager {
   private pendingGenerationQueue: string[] = [];
   public pendingMeshQueue: Array<{ key: string; updateNeighbors: boolean }> = []; // Used for incremental loading
 
+  private lastCcx: number | null = null;
+  private lastCcy: number | null = null;
+  private lastCcz: number | null = null;
+  private lastRadius: number | null = null;
+
+  public clearCache() {
+    this.lastCcx = null;
+    this.lastCcy = null;
+    this.lastCcz = null;
+    this.lastRadius = null;
+  }
+
   constructor(world: World) {
     this.world = world;
     this.workerManager = WorkerManager.getInstance();
@@ -23,6 +35,23 @@ export class WorldChunkManager {
     const ccx = Math.floor(centerX / CHUNK_SIZE_X);
     const ccy = Math.floor(centerY / CHUNK_SIZE_Y);
     const ccz = Math.floor(centerZ / CHUNK_SIZE_Z);
+
+    if (!shouldSync) {
+      if (
+        this.lastCcx === ccx &&
+        this.lastCcy === ccy &&
+        this.lastCcz === ccz &&
+        this.lastRadius === radius
+      ) {
+        return;
+      }
+      this.lastCcx = ccx;
+      this.lastCcy = ccy;
+      this.lastCcz = ccz;
+      this.lastRadius = radius;
+    } else {
+      this.clearCache();
+    }
 
     const activeKeys = new Set<string>();
     const neededGeneration: string[] = [];

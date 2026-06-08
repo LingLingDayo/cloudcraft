@@ -237,6 +237,7 @@ export class World {
   // Load world from JSON
   public loadWorld(saveStr: string) {
     WorldSerializer.loadWorld(this, saveStr);
+    this.chunkManager.clearCache();
   }
 
   public addFallingBlock(x: number, y: number, z: number) {
