@@ -200,51 +200,53 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   {t('settings.general')}
                 </h3>
                 
-                <div className={styles.optionItem}>
-                  <Select
-                    label={t('pauseMenu.language')}
-                    value={language}
-                    options={[
-                      { label: '简体中文', value: 'zh' },
-                      { label: 'English', value: 'en' },
-                    ]}
-                    onChange={(val) => setLanguage(val as Language)}
-                  />
-                </div>
+                <div className={styles.controlSection}>
+                  <div className={styles.optionItem}>
+                    <Select
+                      label={t('pauseMenu.language')}
+                      value={language}
+                      options={[
+                        { label: '简体中文', value: 'zh' },
+                        { label: 'English', value: 'en' },
+                      ]}
+                      onChange={(val) => setLanguage(val as Language)}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Input
-                    label={t('pauseMenu.playerName')}
-                    value={playerName}
-                    onChange={handlePlayerNameChange}
-                    placeholder={t('pauseMenu.playerNamePlaceholder')}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Input
+                      label={t('pauseMenu.playerName')}
+                      value={playerName}
+                      onChange={handlePlayerNameChange}
+                      placeholder={t('pauseMenu.playerNamePlaceholder')}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Select
-                    label={t('pauseMenu.gameMode')}
-                    value={gameMode}
-                    options={gameModeOptions}
-                    onChange={(val) => setGameMode(val as GameMode)}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Select
+                      label={t('pauseMenu.gameMode')}
+                      value={gameMode}
+                      options={gameModeOptions}
+                      onChange={(val) => setGameMode(val as GameMode)}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('pauseMenu.autoJump')}
-                    checked={autoJump}
-                    onChange={(checked) => setAutoJump(checked)}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('pauseMenu.autoJump')}
+                      checked={autoJump}
+                      onChange={(checked) => setAutoJump(checked)}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <span className={styles.label} style={{ marginBottom: '8px' }}>
-                    {t('settings.saveData')}
-                  </span>
-                  <Button variant="secondary" onClick={handleExport}>
-                    {t('settings.exportSave')}
-                  </Button>
+                  <div className={styles.optionItem}>
+                    <span className={styles.label} style={{ marginBottom: '8px' }}>
+                      {t('settings.saveData')}
+                    </span>
+                    <Button variant="secondary" onClick={handleExport}>
+                      {t('settings.exportSave')}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -255,74 +257,76 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   {t('settings.graphics')}
                 </h3>
 
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('settings.fullscreen')}
-                    checked={isFullscreen}
-                    onChange={toggleFullscreen}
-                  />
-                </div>
-
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('pauseMenu.debugOverlay')}
-                    checked={debugOverlay}
-                    onChange={(checked) => setDebugOverlay(checked)}
-                  />
-                </div>
-
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('hud.minimap')}
-                    checked={showMinimap}
-                    onChange={(checked) => setShowMinimap(checked)}
-                  />
-                </div>
-
-                <div className={styles.optionItem}>
-                  <Slider
-                    label={t('pauseMenu.renderDistance')}
-                    min={2}
-                    max={10}
-                    value={renderDistance}
-                    onChange={setRenderDistance}
-                    valueFormatter={(val) => t('pauseMenu.renderDistanceValue', { val })}
-                  />
-                </div>
-
-                <div className={styles.optionItem}>
-                  <Slider
-                    label={t('pauseMenu.fov')}
-                    min={60}
-                    max={90}
-                    step={5}
-                    value={fov}
-                    onChange={setFov}
-                    valueFormatter={(val) => t('pauseMenu.fovValue', { val })}
-                  />
-                </div>
-
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('settings.enableDistanceLOD')}
-                    checked={enableDistanceLOD}
-                    onChange={(checked) => setSetting('enableDistanceLOD', checked)}
-                  />
-                </div>
-
-                {enableDistanceLOD && (
+                <div className={styles.controlSection}>
                   <div className={styles.optionItem}>
-                    <Slider
-                      label={t('settings.lodStrength')}
-                      min={1}
-                      max={5}
-                      step={1}
-                      value={lodStrength}
-                      onChange={(val) => setSetting('lodStrength', val)}
-                      valueFormatter={(val) => t('settings.lodStrengthValue', { val })}
+                    <Switch
+                      label={t('settings.fullscreen')}
+                      checked={isFullscreen}
+                      onChange={toggleFullscreen}
                     />
                   </div>
-                )}
+
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('pauseMenu.debugOverlay')}
+                      checked={debugOverlay}
+                      onChange={(checked) => setDebugOverlay(checked)}
+                    />
+                  </div>
+
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('hud.minimap')}
+                      checked={showMinimap}
+                      onChange={(checked) => setShowMinimap(checked)}
+                    />
+                  </div>
+
+                  <div className={styles.optionItem}>
+                    <Slider
+                      label={t('pauseMenu.renderDistance')}
+                      min={2}
+                      max={10}
+                      value={renderDistance}
+                      onChange={setRenderDistance}
+                      valueFormatter={(val) => t('pauseMenu.renderDistanceValue', { val })}
+                    />
+                  </div>
+
+                  <div className={styles.optionItem}>
+                    <Slider
+                      label={t('pauseMenu.fov')}
+                      min={60}
+                      max={90}
+                      step={5}
+                      value={fov}
+                      onChange={setFov}
+                      valueFormatter={(val) => t('pauseMenu.fovValue', { val })}
+                    />
+                  </div>
+
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('settings.enableDistanceLOD')}
+                      checked={enableDistanceLOD}
+                      onChange={(checked) => setSetting('enableDistanceLOD', checked)}
+                    />
+                  </div>
+
+                  {enableDistanceLOD && (
+                    <div className={styles.optionItem}>
+                      <Slider
+                        label={t('settings.lodStrength')}
+                        min={1}
+                        max={5}
+                        step={1}
+                        value={lodStrength}
+                        onChange={(val) => setSetting('lodStrength', val)}
+                        valueFormatter={(val) => t('settings.lodStrengthValue', { val })}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
