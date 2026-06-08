@@ -204,79 +204,95 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate high-altitude ponds on land with water blocks above sea level', () => {
-    let foundHighPondWater = false;
-    
-    // Search different regions to find a high-altitude pond (since probability is 3%)
-    for (let offset = 0; offset < 2000; offset += 64) {
-      const world = new World('webcraft-seed');
-      world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
+    const config = WORLD_CONFIG as unknown as { pond: { probability: number } };
+    const originalProb = config.pond.probability;
+    config.pond.probability = 1.0; // Temporarily raise pond probability to 100% to guarantee generation
+
+    try {
+      let foundHighPondWater = false;
       
-      for (let x = offset - 32; x < offset + 32; x++) {
-        for (let z = offset - 32; z < offset + 32; z++) {
-          for (let y = 152; y < 250; y++) {
-            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
-              foundHighPondWater = true;
-              break;
+      // With 100% probability, we can search in just the first few regions
+      for (const offset of [0, 64, 128]) {
+        const world = new World('webcraft-seed');
+        world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
+        
+        for (let x = offset - 32; x < offset + 32; x++) {
+          for (let z = offset - 32; z < offset + 32; z++) {
+            for (let y = 152; y < 250; y++) {
+              if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+                foundHighPondWater = true;
+                break;
+              }
             }
+            if (foundHighPondWater) break;
           }
           if (foundHighPondWater) break;
         }
         if (foundHighPondWater) break;
       }
-      if (foundHighPondWater) break;
+      expect(foundHighPondWater).toBe(true);
+    } finally {
+      config.pond.probability = originalProb; // Always restore probability
     }
-    expect(foundHighPondWater).toBe(true);
-  }, 30000);
+  }, 10000);
 
   test('should not generate exposed floating water walls at high altitudes for ponds', () => {
-    let checkedPondRegions = 0;
-    let exposedWaterCount = 0;
+    const config = WORLD_CONFIG as unknown as { pond: { probability: number } };
+    const originalProb = config.pond.probability;
+    config.pond.probability = 1.0; // Temporarily raise pond probability to 100%
 
-    for (let offset = 0; offset < 2000; offset += 64) {
-      const world = new World('webcraft-seed');
-      // Load a 5x5 chunk area (80x80 blocks) centered around offset
-      world.loadArea(offset, 150, offset, 2);
-      
-      let hasHighWater = false;
-      // Scan coordinate range inside the loaded region
-      const checkMin = offset - 16;
-      const checkMax = offset + 16;
-      
-      for (let x = checkMin; x < checkMax; x++) {
-        for (let z = checkMin; z < checkMax; z++) {
-          for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
-            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
-              hasHighWater = true;
-              
-              const neighbors = [
-                { name: 'X+1', val: world.getBlock(x + 1, y, z) },
-                { name: 'X-1', val: world.getBlock(x - 1, y, z) },
-                { name: 'Z+1', val: world.getBlock(x, y, z + 1) },
-                { name: 'Z-1', val: world.getBlock(x, y, z - 1) }
-              ];
-              
-              for (const neighbor of neighbors) {
-                if (neighbor.val === BLOCK_TYPES.AIR) {
-                  console.log(`Exposed high-altitude water at: (${x}, ${y}, ${z}) during test, neighbor ${neighbor.name} is AIR`);
-                  exposedWaterCount++;
+    try {
+      let checkedPondRegions = 0;
+      let exposedWaterCount = 0;
+
+      for (const offset of [0, 64, 128]) {
+        const world = new World('webcraft-seed');
+        // Load a 5x5 chunk area (80x80 blocks) centered around offset
+        world.loadArea(offset, 150, offset, 2);
+        
+        let hasHighWater = false;
+        // Scan coordinate range inside the loaded region
+        const checkMin = offset - 16;
+        const checkMax = offset + 16;
+        
+        for (let x = checkMin; x < checkMax; x++) {
+          for (let z = checkMin; z < checkMax; z++) {
+            for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
+              if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+                hasHighWater = true;
+                
+                const neighbors = [
+                  { name: 'X+1', val: world.getBlock(x + 1, y, z) },
+                  { name: 'X-1', val: world.getBlock(x - 1, y, z) },
+                  { name: 'Z+1', val: world.getBlock(x, y, z + 1) },
+                  { name: 'Z-1', val: world.getBlock(x, y, z - 1) }
+                ];
+                
+                for (const neighbor of neighbors) {
+                  if (neighbor.val === BLOCK_TYPES.AIR) {
+                    console.log(`Exposed high-altitude water at: (${x}, ${y}, ${z}) during test, neighbor ${neighbor.name} is AIR`);
+                    exposedWaterCount++;
+                  }
                 }
               }
             }
           }
         }
-      }
-      
-      if (hasHighWater) {
-        checkedPondRegions++;
-        if (checkedPondRegions >= 1) {
-          break;
+        
+        if (hasHighWater) {
+          checkedPondRegions++;
+          if (checkedPondRegions >= 1) {
+            break;
+          }
         }
       }
+      
+      expect(checkedPondRegions).toBeGreaterThan(0);
+      expect(exposedWaterCount).toBe(0);
+    } finally {
+      config.pond.probability = originalProb; // Always restore probability
     }
-    
-    expect(checkedPondRegions).toBeGreaterThan(0);
-    expect(exposedWaterCount).toBe(0);
-  }, 30000);
+  }, 10000);
 
   test('should never generate floating vegetation (vegetation block on top of AIR)', () => {
     const world = new World('webcraft-seed');
@@ -318,34 +334,43 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should not generate ponds near rivers', () => {
-    const world = new World('webcraft-seed');
-    const generator = new WorldGenerator('webcraft-seed');
-    
-    const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
-    const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
+    const config = WORLD_CONFIG as unknown as { pond: { probability: number } };
+    const originalProb = config.pond.probability;
+    config.pond.probability = 1.0; // Temporarily raise pond probability to 100%
 
-    let checkedWaterBlocks = 0;
-    for (let offset = 0; offset < 2000; offset += 64) {
-      world.loadArea(offset, 150, offset, 2);
+    try {
+      const world = new World('webcraft-seed');
+      const generator = new WorldGenerator('webcraft-seed');
       
-      const checkMin = offset - 32;
-      const checkMax = offset + 32;
-      
-      for (let x = checkMin; x < checkMax; x++) {
-        for (let z = checkMin; z < checkMax; z++) {
-          for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
-            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
-              const { dRiver } = generator.getRiverValue(x, z);
-              expect(dRiver).toBeGreaterThanOrEqual(valleyEnd);
-              checkedWaterBlocks++;
+      const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
+      const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
+
+      let checkedWaterBlocks = 0;
+      // With 100% probability, we can verify this safety distance in just a couple of regions
+      for (const offset of [0, 64]) {
+        world.loadArea(offset, 150, offset, 2);
+        
+        const checkMin = offset - 32;
+        const checkMax = offset + 32;
+        
+        for (let x = checkMin; x < checkMax; x++) {
+          for (let z = checkMin; z < checkMax; z++) {
+            for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
+              if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+                const { dRiver } = generator.getRiverValue(x, z);
+                expect(dRiver).toBeGreaterThanOrEqual(valleyEnd);
+                checkedWaterBlocks++;
+              }
             }
           }
         }
       }
+      
+      expect(checkedWaterBlocks).toBeGreaterThan(0);
+    } finally {
+      config.pond.probability = originalProb; // Always restore probability
     }
-    
-    expect(checkedWaterBlocks).toBeGreaterThan(0);
-  }, 120000);
+  }, 10000);
 });
 
 describe('World Chunk Loading Priority and Custom Sorting', () => {

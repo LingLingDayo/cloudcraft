@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { vi, describe, test, expect } from 'vitest';
+/* eslint-disable @typescript-eslint/no-explicit-any -- Allow explicit any in unit test mocks to override WorkerManager execution */
+import { vi, describe, test, expect, afterEach } from 'vitest';
 import { World } from './World';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
@@ -17,7 +17,14 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
 }) as any;
 
 describe('WorldChunkManager Neighbor Mesh Re-indexing', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   test('should push loaded neighbors with existing meshes into pendingMeshQueue for updates', async () => {
+    // Mock performance.now to bypass the time-slicing budget check during testing
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+
     // Create world with a test seed
     const world = new World('test-neighbor-culling');
     
