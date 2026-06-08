@@ -5,6 +5,7 @@ import { type Biome, TreeStyle } from './biome/Biome';
 import { getLandformAt } from './landform/LandformRegistry';
 import { type Landform } from './landform/Landform';
 import { TerrainShaper } from './landform/TerrainShaper';
+import { WaterConnectionSolver } from './WaterConnectionSolver';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
 import { WORLD_CONFIG } from './WorldConfig';
 import { ChunkPipeline } from './pipeline/ChunkPipeline';
@@ -360,20 +361,23 @@ export class WorldGenerator {
       localWaterLevel = pondWaterLevel;
     }
 
-    if (isDryLand) {
-      const neighbors = [
-        [wx + 1, wz], [wx - 1, wz],
-        [wx, wz + 1], [wx, wz - 1]
-      ];
-      let maxAdjacentWaterLevel = 0;
-      for (const [nx, nz] of neighbors) {
-        const wLevel = this.getWaterLevelAt(nx, nz);
-        if (wLevel > maxAdjacentWaterLevel) {
-          maxAdjacentWaterLevel = wLevel;
-        }
-      }
-      if (maxAdjacentWaterLevel > 0 && adjustedHeight < maxAdjacentWaterLevel) {
-        adjustedHeight = maxAdjacentWaterLevel;
+    // 如果是低于水面的陆地，进行漫流连通性检测，判断是否应被水淹没
+    if (isDryLand && adjustedHeight < waterLevel) {
+      const isFlooded = WaterConnectionSolver.isConnectedToNaturalWater(
+        wx,
+        wz,
+        {
+          noise: this.noise,
+          waterLevel,
+          oceanThreshold: WORLD_CONFIG.ocean.threshold,
+          maxDepth: 16
+        },
+        (x, z) => this.getRawHeightAt(x, z),
+        (x, z) => this.getRiverValue(x, z).riverWeight
+      );
+
+      if (isFlooded) {
+        isDryLand = false;
       }
     }
 
