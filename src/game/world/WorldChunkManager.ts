@@ -101,12 +101,6 @@ export class WorldChunkManager {
             const hasMesh = this.world.getRenderer().hasChunkMesh(key);
             if (!hasMesh) {
               this.world.updateChunkMesh(cx, cy, cz);
-            } else {
-              const currentLOD = this.world.getRenderer().getChunkLOD(key);
-              const targetLOD = this.world.getRenderer().getLODStep(cx, cy, cz);
-              if (currentLOD !== undefined && currentLOD !== targetLOD) {
-                this.world.updateChunkMesh(cx, cy, cz);
-              }
             }
           }
         }
@@ -129,12 +123,6 @@ export class WorldChunkManager {
               const hasMesh = this.world.getRenderer().hasChunkMesh(key);
               if (!hasMesh) {
                 neededMesh.push(key);
-              } else {
-                const currentLOD = this.world.getRenderer().getChunkLOD(key);
-                const targetLOD = this.world.getRenderer().getLODStep(cx, cy, cz);
-                if (currentLOD !== undefined && currentLOD !== targetLOD) {
-                  neededMesh.push(key);
-                }
               }
             }
           }

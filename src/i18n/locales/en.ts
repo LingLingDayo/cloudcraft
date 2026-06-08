@@ -61,9 +61,6 @@ export const en = {
     mobileControls: 'Mobile Controls',
     dpadSize: 'D-pad Size',
     dpadSizeValue: '{{val}} px',
-    enableDistanceLOD: 'Distance LOD Optimization',
-    lodStrength: 'LOD Strength',
-    lodStrengthValue: 'Level {{val}}',
   },
   controls: {
     keyboard: 'Keyboard Controls',
