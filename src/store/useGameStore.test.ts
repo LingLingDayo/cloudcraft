@@ -296,13 +296,17 @@ describe('useGameStore', () => {
       '2,2': false,
     });
 
-    // Load one chunk (1 out of 4 is 25% progress of chunks stage: 30 + 0.25 * 70 = 48% approximately)
+    // Load one chunk (1 out of 4 chunks, which is 50% of the 50% target (2 chunks): 30 + 0.5 * 70 = 65%)
     store.setChunkLoadingState('1,1', true);
     expect(useGameStore.getState().chunkLoadingStates['1,1']).toBe(true);
-    expect(useGameStore.getState().worldLoadingProgress).toBe(Math.round(30 + 0.25 * 70)); // 48%
+    expect(useGameStore.getState().worldLoadingProgress).toBe(Math.round(30 + 0.5 * 70)); // 65%
 
-    // Load all chunks
+    // Load second chunk (2 out of 4 chunks, reaching the 50% target of 2 chunks: progress reaches 100%)
     store.setChunkLoadingState('1,2', true);
+    expect(useGameStore.getState().chunkLoadingStates['1,2']).toBe(true);
+    expect(useGameStore.getState().worldLoadingProgress).toBe(100);
+
+    // Load remaining chunks (progress remains 100%)
     store.setChunkLoadingState('2,1', true);
     store.setChunkLoadingState('2,2', true);
     expect(useGameStore.getState().worldLoadingProgress).toBe(100);

@@ -94,8 +94,10 @@ export const createGameSlice: StateCreator<
     
     let progress = state.worldLoadingProgress;
     if (state.worldLoadingStage === 'chunks' && total > 0) {
-      // Chunk generation progress maps from 30% to 100%
-      progress = Math.round(30 + (loadedCount / total) * 70);
+      // Chunk generation progress maps from 30% to 100% when 50% of chunks are loaded
+      const targetCount = Math.ceil(total * 0.5);
+      const ratio = Math.min(1, loadedCount / targetCount);
+      progress = Math.round(30 + ratio * 70);
     }
     
     return {
