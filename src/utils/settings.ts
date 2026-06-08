@@ -10,6 +10,7 @@ export interface SystemSettings {
   fov: number;
   enableDistanceLOD: boolean;
   lodStrength: number;
+  debugOverlay: boolean;
 }
 
 export interface SettingDefinition<T> {
@@ -65,6 +66,10 @@ export const SETTINGS_REGISTRY: { [K in keyof SystemSettings]: SettingDefinition
       const num = Number(val);
       return !isNaN(num) ? Math.max(1, Math.min(5, num)) : 3;
     },
+  },
+  debugOverlay: {
+    defaultValue: false,
+    validate: (val) => (typeof val === 'boolean' ? val : false),
   },
 };
 
