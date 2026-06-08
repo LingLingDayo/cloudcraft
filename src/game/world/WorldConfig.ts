@@ -10,12 +10,10 @@ export const WORLD_CONFIG = {
   waterLevel: 150,
   ocean: {
     threshold: 0.23, // 大陆度低于此阈值为海洋
-    transitionWidth: 0.10,
-    shoreWidth: 0.05,
-    baseHeight: 80,
-    shallowRatio: 0.25, // 大陆度过渡百分比：0~25% 为浅海滩区
-    shallowDepth: 4,     // 浅海滩区的最大深度 (低于海平面 4 格)
-    variance: 15,        // 海洋海床的多维噪波起伏半振幅
+    transitionWidth: 0.18, // 拓宽过渡带，降低下潜坡度
+    shoreWidth: 0.06,      // 适当加宽陆地侧的平滑下降带
+    baseHeight: 100,       // 海底基准高度在 100 左右
+    variance: 12,          // 海底起伏振幅，类似平原丘陵的起伏幅度
   },
   river: {
     scale: 0.0025,

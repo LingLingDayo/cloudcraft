@@ -88,12 +88,11 @@ describe('ChunkPipeline Extensions', () => {
     };
 
     const mockGenerator = {
-      getInterpolatedHeightAndBiome: vi.fn().mockReturnValue({ height: 160, primaryBiome: mockBiome }),
+      getPrimaryBiome: vi.fn().mockReturnValue(mockBiome),
       getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0, riverWeight: 1.0 }),
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       getColumnTerrainData: vi.fn().mockReturnValue({
-        interpolatedHeight: 160,
         adjustedHeight: 160,
         finalHeight: 160,
         localWaterLevel: 150,
@@ -146,12 +145,11 @@ describe('ChunkPipeline Extensions', () => {
     };
 
     const mockGenerator = {
-      getInterpolatedHeightAndBiome: vi.fn().mockReturnValue({ height: 10, primaryBiome: mockBiome }),
+      getPrimaryBiome: vi.fn().mockReturnValue(mockBiome),
       getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0, riverWeight: 1.0 }),
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       getColumnTerrainData: vi.fn().mockReturnValue({
-        interpolatedHeight: 10,
         adjustedHeight: 10,
         finalHeight: 10,
         localWaterLevel: 150,
@@ -204,13 +202,12 @@ describe('ChunkPipeline Extensions', () => {
     };
 
     const mockGenerator = {
-      getInterpolatedHeightAndBiome: vi.fn().mockReturnValue({ height: 30, primaryBiome: mockBiome }),
+      getPrimaryBiome: vi.fn().mockReturnValue(mockBiome),
       getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0, riverWeight: 1.0 }),
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       isWaterArea: vi.fn().mockReturnValue(false),
       getColumnTerrainData: vi.fn().mockReturnValue({
-        interpolatedHeight: 30,
         adjustedHeight: 30,
         finalHeight: 30,
         localWaterLevel: 150,
@@ -261,14 +258,13 @@ describe('ChunkPipeline Extensions', () => {
     };
 
     const mockGenerator = {
-      getInterpolatedHeightAndBiome: vi.fn().mockReturnValue({ height: 160, primaryBiome: mockBiome }),
+      getPrimaryBiome: vi.fn().mockReturnValue(mockBiome),
       getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0, riverWeight: 1.0 }),
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       getGroundBlockType: vi.fn().mockReturnValue(BLOCK_TYPES.GRASS),
       isWaterArea: vi.fn().mockReturnValue(false),
       getColumnTerrainData: vi.fn().mockReturnValue({
-        interpolatedHeight: 160,
         adjustedHeight: 160,
         finalHeight: 160,
         localWaterLevel: 150,
@@ -321,13 +317,12 @@ describe('ChunkPipeline Extensions', () => {
     };
 
     const mockGenerator = {
-      getInterpolatedHeightAndBiome: vi.fn().mockReturnValue({ height: 160, primaryBiome: mockBiome }),
+      getPrimaryBiome: vi.fn().mockReturnValue(mockBiome),
       getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0, riverWeight: 1.0 }),
       getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
       getWaterLevelAt: vi.fn().mockReturnValue(0),
       getGroundBlockType: vi.fn().mockReturnValue(BLOCK_TYPES.GRASS),
       getColumnTerrainData: vi.fn().mockReturnValue({
-        interpolatedHeight: 160,
         adjustedHeight: 160,
         finalHeight: 160,
         localWaterLevel: 150,
