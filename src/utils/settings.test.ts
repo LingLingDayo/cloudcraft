@@ -31,6 +31,7 @@ describe('settings utility', () => {
         fov: 80,
         enableDistanceLOD: false,
         lodStrength: 4,
+        debugOverlay: false,
       };
       localStorage.setItem('webcraft_settings', JSON.stringify(saved));
 

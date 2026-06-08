@@ -340,5 +340,9 @@ describe('useGameStore', () => {
     useGameStore.getState().setSetting('lodStrength', 4);
     expect(useGameStore.getState().lodStrength).toBe(4);
     expect(getSystemSettings().lodStrength).toBe(4);
+
+    useGameStore.getState().setSetting('debugOverlay', true);
+    expect(useGameStore.getState().debugOverlay).toBe(true);
+    expect(getSystemSettings().debugOverlay).toBe(true);
   });
 });
