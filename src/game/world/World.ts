@@ -7,12 +7,10 @@ import { WorldGenerator } from './WorldGenerator';
 import { ChunkRenderer } from './ChunkRenderer';
 import { WorldSerializer } from './WorldSerializer';
 import { TreeStyle } from './biome/Biome';
-import { sound } from '@game/systems/Sound';
-import type { BlockType } from '@type';
 import { useGameStore } from '@store/useGameStore';
-import { WorldBlockWriter, TreeStructureGenerator } from './TreeStructureGenerator';
-import { LootTableHelper } from '@game/loot/LootTableHelper';
 import { WorkerManager } from './worker/WorkerManager';
+import { WorldChunkManager } from './WorldChunkManager';
+import { WorldTickManager } from './WorldTickManager';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -24,9 +22,6 @@ export const WORLD_HEIGHT = 512;
 export class World {
   public game: any;
   public blockEntities: BlockEntityManager;
-  private fallingBlocks: Map<string, { x: number; y: number; z: number; blockId: number; timer: number }>;
-  private decayingLeaves: Map<string, { x: number; y: number; z: number; timer: number }>;
-  private growingSaplings: Map<string, { x: number; y: number; z: number; timer: number; saplingType: number }>;
   public chunks: Map<string, Uint8Array>;
   public group: THREE.Group;
   
@@ -39,17 +34,14 @@ export class World {
   public generator: WorldGenerator;
   private renderer: ChunkRenderer;
   private workerManager: WorkerManager;
-  private generatingChunks: Set<string> = new Set();
-  private pendingGenerationQueue: string[] = [];
-  private pendingMeshQueue: string[] = [];
+  
+  public chunkManager: WorldChunkManager;
+  public tickManager: WorldTickManager;
 
   constructor(seed = 'webcraft', game?: any) {
     this.seed = seed;
     this.game = game;
     this.blockEntities = new BlockEntityManager();
-    this.fallingBlocks = new Map();
-    this.decayingLeaves = new Map();
-    this.growingSaplings = new Map();
     this.chunks = new Map();
     this.modifiedBlocks = new Map();
     this.originalBlocks = new Map();
@@ -58,6 +50,9 @@ export class World {
     this.generator = new WorldGenerator(seed);
     this.renderer = new ChunkRenderer(this);
     this.workerManager = WorkerManager.getInstance();
+
+    this.chunkManager = new WorldChunkManager(this);
+    this.tickManager = new WorldTickManager(this);
   }
 
   public getSeed(): string {
@@ -225,144 +220,7 @@ export class World {
 
   // Load an area around a central chunk (generate if not existing, create meshes)
   public loadArea(centerX: number, centerY: number, centerZ: number, radius: number, sync = false) {
-    const shouldSync = sync || !this.game;
-    const ccx = Math.floor(centerX / CHUNK_SIZE_X);
-    const ccy = Math.floor(centerY / CHUNK_SIZE_Y);
-    const ccz = Math.floor(centerZ / CHUNK_SIZE_Z);
-
-    const activeKeys = new Set<string>();
-    const neededGeneration: string[] = [];
-    const radiusSq = radius * radius;
-
-    // Initialize loading progress for this area if we are in world loading screen and asynchronous
-    if (!shouldSync) {
-      const store = useGameStore.getState();
-      if (store.isWorldLoading) {
-        const keys: string[] = [];
-        for (let dx = -radius; dx <= radius; dx++) {
-          for (let dy = -radius; dy <= radius; dy++) {
-            for (let dz = -radius; dz <= radius; dz++) {
-              if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-              const cx = ccx + dx;
-              const cy = ccy + dy;
-              const cz = ccz + dz;
-              if (cy >= 0 && cy < WORLD_HEIGHT / CHUNK_SIZE_Y) {
-                keys.push(`${cx},${cy},${cz}`);
-              }
-            }
-          }
-        }
-        // Only initialize if the keys list is different
-        const currentKeys = Object.keys(store.chunkLoadingStates);
-        const keysMatch = keys.length === currentKeys.length && keys.every(k => currentKeys.includes(k));
-        if (!keysMatch) {
-          store.setWorldLoadingStage('chunks');
-          store.initChunkLoading(keys);
-          // Mark already loaded chunks as true immediately
-          keys.forEach(key => {
-            if (this.renderer.hasChunkMesh(key)) {
-              store.setChunkLoadingState(key, true);
-            }
-          });
-        }
-      }
-    }
-
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-          const cx = ccx + dx;
-          const cy = ccy + dy;
-          const cz = ccz + dz;
-          if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
-
-          const key = `${cx},${cy},${cz}`;
-          activeKeys.add(key);
-
-          if (shouldSync) {
-            if (!this.chunks.has(key)) {
-              const chunk = this.generator.generateChunkData(cx, cy, cz);
-              this.applyChunkModifications(key, chunk);
-              this.chunks.set(key, chunk);
-            }
-          } else {
-            if (!this.chunks.has(key)) {
-              neededGeneration.push(key);
-            }
-          }
-        }
-      }
-    }
-
-    if (shouldSync) {
-      for (let dx = -radius; dx <= radius; dx++) {
-        for (let dy = -radius; dy <= radius; dy++) {
-          for (let dz = -radius; dz <= radius; dz++) {
-            if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-            const cx = ccx + dx;
-            const cy = ccy + dy;
-            const cz = ccz + dz;
-            if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
-
-            const key = `${cx},${cy},${cz}`;
-            const hasMesh = this.renderer.hasChunkMesh(key);
-            if (!hasMesh) {
-              this.updateChunkMesh(cx, cy, cz);
-            } else {
-              const currentLOD = this.renderer.getChunkLOD(key);
-              const targetLOD = this.renderer.getLODStep(cx, cy, cz);
-              if (currentLOD !== undefined && currentLOD !== targetLOD) {
-                this.updateChunkMesh(cx, cy, cz);
-              }
-            }
-          }
-        }
-      }
-      this.pendingGenerationQueue = [];
-      this.pendingMeshQueue = [];
-    } else {
-      const neededMesh: string[] = [];
-      for (let dx = -radius; dx <= radius; dx++) {
-        for (let dy = -radius; dy <= radius; dy++) {
-          for (let dz = -radius; dz <= radius; dz++) {
-            if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-            const cx = ccx + dx;
-            const cy = ccy + dy;
-            const cz = ccz + dz;
-            if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
-
-            const key = `${cx},${cy},${cz}`;
-            if (this.chunks.has(key)) {
-              const hasMesh = this.renderer.hasChunkMesh(key);
-              if (!hasMesh) {
-                neededMesh.push(key);
-              } else {
-                const currentLOD = this.renderer.getChunkLOD(key);
-                const targetLOD = this.renderer.getLODStep(cx, cy, cz);
-                if (currentLOD !== undefined && currentLOD !== targetLOD) {
-                  neededMesh.push(key);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      neededGeneration.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
-      neededMesh.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
-
-      this.pendingGenerationQueue = neededGeneration;
-      this.pendingMeshQueue = neededMesh;
-    }
-
-    // Unload chunks that are too far away
-    const chunkMeshes = this.renderer.getChunkMeshes();
-    for (const key of chunkMeshes.keys()) {
-      if (!activeKeys.has(key)) {
-        this.renderer.removeChunkMesh(key);
-      }
-    }
+    this.chunkManager.loadArea(centerX, centerY, centerZ, radius, sync);
   }
 
   // Clean up WebGL resources
@@ -382,178 +240,12 @@ export class World {
   }
 
   public addFallingBlock(x: number, y: number, z: number) {
-    const blockId = this.getBlock(x, y, z);
-    if (blockId === BLOCK_TYPES.AIR) return;
-    const key = `${x},${y},${z}`;
-    if (!this.fallingBlocks.has(key)) {
-      this.fallingBlocks.set(key, { x, y, z, blockId, timer: 0.1 });
-    }
-  }
-
-  private processIncrementalLoading() {
-    if (!this.game) return;
-
-    const startTime = performance.now();
-    const BUDGET_MS = 8; // Max time budget in ms per frame for loading chunks
-
-    const playerX = this.game.player.position.x;
-    const playerY = this.game.player.position.y;
-    const playerZ = this.game.player.position.z;
-    const ccx = Math.floor(playerX / CHUNK_SIZE_X);
-    const ccy = Math.floor(playerY / CHUNK_SIZE_Y);
-    const ccz = Math.floor(playerZ / CHUNK_SIZE_Z);
-
-
-    while (performance.now() - startTime < BUDGET_MS) {
-      if (this.pendingMeshQueue.length > 0) {
-        const key = this.pendingMeshQueue.shift();
-        if (key) {
-          const [cx, cy, cz] = key.split(',').map(Number);
-          if (this.chunks.has(key)) {
-            this.updateChunkMesh(cx, cy, cz);
-          }
-        }
-      } else if (this.pendingGenerationQueue.length > 0) {
-        const key = this.pendingGenerationQueue.shift();
-        if (key && !this.chunks.has(key) && !this.generatingChunks.has(key)) {
-          this.generatingChunks.add(key);
-          const [cx, cy, cz] = key.split(',').map(Number);
-          
-          this.workerManager.execute<Uint8Array>('GENERATE_CHUNK', { cx, cy, cz, seed: this.seed })
-            .then(chunk => {
-              this.generatingChunks.delete(key);
-              this.applyChunkModifications(key, chunk);
-              this.chunks.set(key, chunk);
-
-              // Once generated, queue it for mesh creation and re-sort by proximity
-              this.pendingMeshQueue.push(key);
-              this.pendingMeshQueue.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
-            })
-            .catch(err => {
-              console.error(`Failed to generate chunk asynchronously for key ${key}`, err);
-              this.generatingChunks.delete(key);
-            });
-        }
-      } else {
-        break; // No more items to load
-      }
-    }
+    this.tickManager.addFallingBlock(x, y, z);
   }
 
   public update(dt: number) {
-    this.processIncrementalLoading();
-
-    // 1. Update falling blocks
-    if (this.fallingBlocks.size > 0) {
-      const fbs = Array.from(this.fallingBlocks.entries());
-      for (const [key, fb] of fbs) {
-        fb.timer -= dt;
-        if (fb.timer <= 0) {
-          this.fallingBlocks.delete(key);
-          const currentType = this.getBlock(fb.x, fb.y, fb.z);
-          if (currentType === fb.blockId) {
-            const belowY = fb.y - 1;
-            const belowType = this.getBlock(fb.x, belowY, fb.z);
-            if (belowType === BLOCK_TYPES.AIR || belowType === BLOCK_TYPES.WATER) {
-              // Lower sand block by 1 voxel
-              this.setBlock(fb.x, fb.y, fb.z, BLOCK_TYPES.AIR);
-              this.setBlock(fb.x, belowY, fb.z, fb.blockId);
-              // Recursively trigger next fall check
-              this.addFallingBlock(fb.x, belowY, fb.z);
-            }
-          }
-        }
-      }
-    }
-
-    // 2. Update leaf decay
-    if (this.decayingLeaves.size > 0) {
-      const leaves = Array.from(this.decayingLeaves.entries());
-      for (const [key, dl] of leaves) {
-        dl.timer -= dt;
-        if (dl.timer <= 0) {
-          this.decayingLeaves.delete(key);
-          const currentType = this.getBlock(dl.x, dl.y, dl.z);
-          const cleanType = currentType & 0x3F;
-          const isLeaf = cleanType === BLOCK_TYPES.LEAF || 
-                         cleanType === BLOCK_TYPES.BIRCH_LEAVES || 
-                         cleanType === BLOCK_TYPES.SPRUCE_LEAVES || 
-                         cleanType === BLOCK_TYPES.JUNGLE_LEAVES;
-          if (isLeaf) {
-            if (!this.isConnectedToWood(dl.x, dl.y, dl.z)) {
-              this.setBlock(dl.x, dl.y, dl.z, BLOCK_TYPES.AIR);
-              
-              const blockInstance = BlockRegistry.get(currentType);
-              const color = blockInstance.properties.colorHex ?? 0x2d7823;
-              if (this.game && this.game.particles) {
-                this.game.particles.spawn(
-                  new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5),
-                  color,
-                  8
-                );
-              }
-              
-              sound.playBreak();
-
-              if (this.game && this.game.droppedItems) {
-                const spawnPos = new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5);
-                const context = {
-                  world: this,
-                  position: spawnPos
-                };
-                if (blockInstance.properties.lootTableId) {
-                  LootTableHelper.spawnDrops(blockInstance.properties.lootTableId, context, false);
-                } else {
-                  const drops = blockInstance.getDrops(context);
-                  for (const drop of drops) {
-                    this.game.droppedItems.spawnItem(
-                      drop.type,
-                      spawnPos,
-                      drop.count
-                    );
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // 3. Update sapling growth
-    if (this.growingSaplings.size > 0) {
-      const saplings = Array.from(this.growingSaplings.entries());
-      for (const [key, gs] of saplings) {
-        gs.timer -= dt;
-        if (gs.timer <= 0) {
-          this.growingSaplings.delete(key);
-          const currentType = this.getBlock(gs.x, gs.y, gs.z);
-          if ((currentType & 0x3F) === (gs.saplingType & 0x3F)) {
-            this.setBlock(gs.x, gs.y, gs.z, BLOCK_TYPES.AIR);
-
-            let woodBlock: BlockType = BLOCK_TYPES.WOOD;
-            let leafBlock: BlockType = BLOCK_TYPES.LEAF;
-            let style: TreeStyle = TreeStyle.OAK;
-
-            if (gs.saplingType === BLOCK_TYPES.BIRCH_SAPLING) {
-              woodBlock = BLOCK_TYPES.BIRCH_WOOD;
-              leafBlock = BLOCK_TYPES.BIRCH_LEAVES;
-              style = TreeStyle.BIRCH;
-            } else if (gs.saplingType === BLOCK_TYPES.SPRUCE_SAPLING) {
-              woodBlock = BLOCK_TYPES.SPRUCE_WOOD;
-              leafBlock = BLOCK_TYPES.SPRUCE_LEAVES;
-              style = TreeStyle.SPRUCE;
-            } else if (gs.saplingType === BLOCK_TYPES.JUNGLE_SAPLING) {
-              woodBlock = BLOCK_TYPES.JUNGLE_WOOD;
-              leafBlock = BLOCK_TYPES.JUNGLE_LEAVES;
-              style = TreeStyle.JUNGLE;
-            }
-
-            this.spawnTree(gs.x, gs.y, gs.z, woodBlock, leafBlock, style);
-          }
-        }
-      }
-    }
+    this.chunkManager.processIncrementalLoading();
+    this.tickManager.update(dt);
   }
 
   public notifyNeighborsOfStateChange(x: number, y: number, z: number) {
@@ -590,95 +282,19 @@ export class World {
   }
 
   public registerSapling(x: number, y: number, z: number, saplingType: number) {
-    const key = `${x},${y},${z}`;
-    // Sapling grows in 10 to 20 seconds
-    const growTime = 10.0 + Math.random() * 10.0;
-    this.growingSaplings.set(key, { x, y, z, timer: growTime, saplingType });
+    this.tickManager.registerSapling(x, y, z, saplingType);
   }
 
   public unregisterSapling(x: number, y: number, z: number) {
-    const key = `${x},${y},${z}`;
-    this.growingSaplings.delete(key);
+    this.tickManager.unregisterSapling(x, y, z);
   }
 
   public checkLeafDecay(x: number, y: number, z: number) {
-    const blockId = this.getBlock(x, y, z) & 0x3F;
-    const isLeafType = blockId === BLOCK_TYPES.LEAF || 
-                       blockId === BLOCK_TYPES.BIRCH_LEAVES || 
-                       blockId === BLOCK_TYPES.SPRUCE_LEAVES || 
-                       blockId === BLOCK_TYPES.JUNGLE_LEAVES;
-    if (!isLeafType) return;
-
-    if (!this.isConnectedToWood(x, y, z)) {
-      const key = `${x},${y},${z}`;
-      if (!this.decayingLeaves.has(key)) {
-        this.decayingLeaves.set(key, { x, y, z, timer: 1.0 + Math.random() * 3.0 });
-      }
-    } else {
-      const key = `${x},${y},${z}`;
-      if (this.decayingLeaves.has(key)) {
-        this.decayingLeaves.delete(key);
-      }
-    }
+    this.tickManager.checkLeafDecay(x, y, z);
   }
 
   public isConnectedToWood(startX: number, startY: number, startZ: number): boolean {
-    const maxDistance = 4;
-    const queue: { x: number; y: number; z: number; dist: number }[] = [];
-    const visited = new Set<string>();
-
-    queue.push({ x: startX, y: startY, z: startZ, dist: 0 });
-    visited.add(`${startX},${startY},${startZ}`);
-
-    const isWood = (id: number) => {
-      const cleanId = id & 0x3F;
-      return cleanId === BLOCK_TYPES.WOOD || 
-             cleanId === BLOCK_TYPES.BIRCH_WOOD || 
-             cleanId === BLOCK_TYPES.SPRUCE_WOOD || 
-             cleanId === BLOCK_TYPES.JUNGLE_WOOD;
-    };
-
-    const isLeaf = (id: number) => {
-      const cleanId = id & 0x3F;
-      return cleanId === BLOCK_TYPES.LEAF || 
-             cleanId === BLOCK_TYPES.BIRCH_LEAVES || 
-             cleanId === BLOCK_TYPES.SPRUCE_LEAVES || 
-             cleanId === BLOCK_TYPES.JUNGLE_LEAVES;
-    };
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      
-      const currentBlockId = this.getBlock(current.x, current.y, current.z);
-      if (isWood(currentBlockId)) {
-        return true;
-      }
-
-      if (current.dist < maxDistance) {
-        const neighbors = [
-          [1, 0, 0], [-1, 0, 0],
-          [0, 1, 0], [0, -1, 0],
-          [0, 0, 1], [0, 0, -1]
-        ];
-
-        for (const [dx, dy, dz] of neighbors) {
-          const nx = current.x + dx;
-          const ny = current.y + dy;
-          const nz = current.z + dz;
-          const key = `${nx},${ny},${nz}`;
-
-          if (!visited.has(key)) {
-            visited.add(key);
-            const neighborBlockId = this.getBlock(nx, ny, nz);
-            if (isLeaf(neighborBlockId) || isWood(neighborBlockId)) {
-              queue.push({ x: nx, y: ny, z: nz, dist: current.dist + 1 });
-            }
-          }
-        }
-      }
-    }
-
-    return false;
+    return this.tickManager.isConnectedToWood(startX, startY, startZ);
   }
 
   public spawnTree(
@@ -689,22 +305,10 @@ export class World {
     leafBlock: number,
     style: TreeStyle
   ): void {
-    const height = 4 + Math.floor(Math.random() * 3);
-    const writer = new WorldBlockWriter(this);
-    TreeStructureGenerator.growTree(
-      writer,
-      x,
-      y - 1,
-      z,
-      trunkBlock,
-      leafBlock,
-      height,
-      style,
-      () => Math.random()
-    );
+    this.tickManager.spawnTree(x, y, z, trunkBlock, leafBlock, style);
   }
 
-  private applyChunkModifications(chunkKey: string, chunk: Uint8Array): void {
+  public applyChunkModifications(chunkKey: string, chunk: Uint8Array): void {
     const chunkModified = this.modifiedBlocks.get(chunkKey);
     if (!chunkModified) return;
 
@@ -715,13 +319,7 @@ export class World {
     }
   }
 
-  private getChunkPriority(key: string, ccx: number, ccy: number, ccz: number): number {
-    const [cx, cy, cz] = key.split(',').map(Number);
-    const dcx = cx - ccx;
-    const dcy = cy - ccy;
-    const dcz = cz - ccz;
-    // Prioritize chunks closer horizontally first, and prioritize chunks closer to player's Y plane.
-    // We give a high weight to Y distance so Y-axis distance is minimized first (dcy === 0 loads first).
-    return Math.abs(dcy) * 1000 + (dcx * dcx + dcz * dcz);
+  public getChunkPriority(key: string, ccx: number, ccy: number, ccz: number): number {
+    return this.chunkManager.getChunkPriority(key, ccx, ccy, ccz);
   }
 }
