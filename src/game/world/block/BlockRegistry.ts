@@ -24,6 +24,7 @@ function flowerProps(id: BlockType, name: string, texture: number, opts?: Partia
     crossScaleW: 0.6, crossScaleH: 0.65, enableCrossOffset: true, canSpawnOn: false,
     textureFaces: { top: texture, bottom: texture, side: texture },
     allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
+    particleEffect: 'webcraft:grass',
     ...opts,
   };
 }
@@ -37,6 +38,7 @@ function doublePlantProps(id: BlockType, name: string, translationKey: string, t
     crossScaleW: 0.85, crossScaleH: 1.0, enableCrossOffset: true, canSpawnOn: false,
     textureFaces: { top: texture, bottom: texture, side: texture },
     allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
+    particleEffect: 'webcraft:grass',
     ...opts,
   };
 }
@@ -85,6 +87,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.LEAF, name: '树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d7823', colorHex: 0x2d7823,
+      particleEffect: 'webcraft:leaf',
       textureFaces: { top: 6, bottom: 6, side: 6 },
       renderAdjacentSameType: true, renderInternalCross: true,
       lootTableId: 'webcraft:blocks/oak_leaves'
@@ -101,6 +104,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.BIRCH_LEAVES, name: '桦树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
+      particleEffect: 'webcraft:leaf',
       textureFaces: { top: 18, bottom: 18, side: 18 },
       renderAdjacentSameType: true, renderInternalCross: true,
       lootTableId: 'webcraft:blocks/birch_leaves'
@@ -117,6 +121,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.SPRUCE_LEAVES, name: '松树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
+      particleEffect: 'webcraft:leaf',
       textureFaces: { top: 21, bottom: 21, side: 21 },
       renderAdjacentSameType: true, renderInternalCross: true,
       lootTableId: 'webcraft:blocks/spruce_leaves'
@@ -133,6 +138,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.GLASS, name: '玻璃', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.3, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.3, soundType: 'glass', showBreakCracks: false,
       color: 'rgba(150, 230, 255, 0.35)', colorHex: 0xe0f7fa, border: '1.5px solid #96e6ff',
+      particleEffect: 'webcraft:glass',
       textureFaces: { top: 8, bottom: 8, side: 8 }
     }));
 
@@ -188,6 +194,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.JUNGLE_LEAVES, name: '丛林叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
+      particleEffect: 'webcraft:leaf',
       textureFaces: { top: 26, bottom: 26, side: 26 },
       renderAdjacentSameType: true, renderInternalCross: true,
       lootTableId: 'webcraft:blocks/jungle_leaves'
@@ -206,7 +213,8 @@ export class BlockRegistry {
       color: '#4c9436', colorHex: 0x4c9436,
       textureFaces: { top: 28, bottom: 28, side: 28 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
-      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT]
+      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
+      particleEffect: 'webcraft:grass'
     }));
 
     this.register(new SaplingBlock({
@@ -215,7 +223,8 @@ export class BlockRegistry {
       color: '#8fc04e', colorHex: 0x8fc04e,
       textureFaces: { top: 29, bottom: 29, side: 29 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
-      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT]
+      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
+      particleEffect: 'webcraft:grass'
     }));
 
     this.register(new SaplingBlock({
@@ -224,7 +233,8 @@ export class BlockRegistry {
       color: '#2d5a27', colorHex: 0x2d5a27,
       textureFaces: { top: 30, bottom: 30, side: 30 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
-      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT]
+      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
+      particleEffect: 'webcraft:grass'
     }));
 
     this.register(new SaplingBlock({
@@ -233,7 +243,8 @@ export class BlockRegistry {
       color: '#1a5f12', colorHex: 0x1a5f12,
       textureFaces: { top: 31, bottom: 31, side: 31 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
-      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT]
+      allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
+      particleEffect: 'webcraft:grass'
     }));
 
     // ─── Flowers (使用 flowerProps 工厂) ────────────────────

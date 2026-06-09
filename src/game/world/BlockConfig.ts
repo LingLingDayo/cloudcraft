@@ -17,6 +17,7 @@ export interface BlockProperties {
   showBreakCracks?: boolean;  // 破坏过程中是否显示裂纹，默认 true
   color?: string;             // UI preview color (hex string like '#56a032' or rgba)
   colorHex?: number;          // 3D particle/material color (number like 0x56a032)
+  particleEffect?: string;    // Custom particle effect ID (e.g. 'webcraft:leaf', 'webcraft:sand', etc.)
   border?: string;            // UI preview border (optional)
   allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
   allowedBaseBlocks?: BlockType[]; // 该植被/植物方块只能放置/生长在指定的这些方块类型上
