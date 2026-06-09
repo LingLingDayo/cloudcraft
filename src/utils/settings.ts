@@ -60,7 +60,7 @@ export const SETTINGS_REGISTRY: { [K in keyof SystemSettings]: SettingDefinition
   },
 };
 
-const SETTINGS_KEY = 'webcraft_settings';
+const SETTINGS_KEY = 'cloudcraft_settings';
 
 export class SettingsManager {
   public static load(): SystemSettings {

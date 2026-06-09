@@ -1,7 +1,7 @@
 export class ImprovedNoise {
   private p: Uint8Array;
 
-  constructor(seed: string | number = 'webcraft') {
+  constructor(seed: string | number = 'cloudcraft') {
     this.p = new Uint8Array(512);
     this.seed(seed);
   }

@@ -38,7 +38,7 @@ export class ParticleSystem {
   public spawnBlockParticles(position: THREE.Vector3, blockId: number, count = 12) {
     const cleanId = blockId & 0x3F;
     const props = getBlockProperties(cleanId);
-    const effectType = props.particleEffect ?? 'webcraft:block_break';
+    const effectType = props.particleEffect ?? 'cloudcraft:block_break';
 
     if (cleanId === BLOCK_TYPES.GRASS) {
       // 混合草色和泥土色立方体碎片，极大提升草方块破坏效果的真实感
@@ -47,8 +47,8 @@ export class ParticleSystem {
       const grassCount = Math.floor(count * 0.35);
       const dirtCount = count - grassCount;
 
-      this.spawn('webcraft:block_break', position, grassColor, grassCount);
-      this.spawn('webcraft:block_break', position, dirtColor, dirtCount);
+      this.spawn('cloudcraft:block_break', position, grassColor, grassCount);
+      this.spawn('cloudcraft:block_break', position, dirtColor, dirtCount);
     } else {
       const color = props.colorHex ?? 0x787878;
       this.spawn(effectType, position, color, count);

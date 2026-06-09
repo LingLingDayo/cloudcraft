@@ -29,7 +29,7 @@ export class Pig extends Animal {
 
   constructor(id: string, spawnPos: THREE.Vector3, world: World) {
     super(id, spawnPos, world, 10); // 10 Health (5 Hearts)
-    this.lootTableId = 'webcraft:entities/pig';
+    this.lootTableId = 'cloudcraft:entities/pig';
     this.initMesh();
   }
 

@@ -46,7 +46,7 @@ export class GameManager {
   public debugOverlayVisible = false;
   public fpsCounter = new FPSCounter();
 
-  constructor(canvas: HTMLCanvasElement, seed: string = 'webcraft') {
+  constructor(canvas: HTMLCanvasElement, seed: string = 'cloudcraft') {
     this.canvas = canvas;
 
     this.initThree();

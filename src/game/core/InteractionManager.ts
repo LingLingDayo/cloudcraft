@@ -389,7 +389,7 @@ export class InteractionManager {
           (Math.random() - 0.5) * 0.15
         ));
       
-      this.game.particles.spawn('webcraft:eat', spawnPos, color, 1);
+      this.game.particles.spawn('cloudcraft:eat', spawnPos, color, 1);
     }
 
     // 吃完了！

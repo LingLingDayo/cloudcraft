@@ -41,7 +41,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `webcraft_save_${Date.now()}.json`;
+      link.download = `cloudcraft_save_${Date.now()}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

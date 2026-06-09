@@ -24,7 +24,7 @@ function flowerProps(id: BlockType, name: string, texture: number, opts?: Partia
     crossScaleW: 0.6, crossScaleH: 0.65, enableCrossOffset: true, canSpawnOn: false,
     textureFaces: { top: texture, bottom: texture, side: texture },
     allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-    particleEffect: 'webcraft:grass',
+    particleEffect: 'cloudcraft:grass',
     ...opts,
   };
 }
@@ -38,7 +38,7 @@ function doublePlantProps(id: BlockType, name: string, translationKey: string, t
     crossScaleW: 0.85, crossScaleH: 1.0, enableCrossOffset: true, canSpawnOn: false,
     textureFaces: { top: texture, bottom: texture, side: texture },
     allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-    particleEffect: 'webcraft:grass',
+    particleEffect: 'cloudcraft:grass',
     ...opts,
   };
 }
@@ -87,10 +87,10 @@ export class BlockRegistry {
       id: BLOCK_TYPES.LEAF, name: '树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d7823', colorHex: 0x2d7823,
-      particleEffect: 'webcraft:leaf',
+      particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 6, bottom: 6, side: 6 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'webcraft:blocks/oak_leaves'
+      lootTableId: 'cloudcraft:blocks/oak_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -104,10 +104,10 @@ export class BlockRegistry {
       id: BLOCK_TYPES.BIRCH_LEAVES, name: '桦树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
-      particleEffect: 'webcraft:leaf',
+      particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 18, bottom: 18, side: 18 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'webcraft:blocks/birch_leaves'
+      lootTableId: 'cloudcraft:blocks/birch_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -121,10 +121,10 @@ export class BlockRegistry {
       id: BLOCK_TYPES.SPRUCE_LEAVES, name: '松树叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
-      particleEffect: 'webcraft:leaf',
+      particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 21, bottom: 21, side: 21 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'webcraft:blocks/spruce_leaves'
+      lootTableId: 'cloudcraft:blocks/spruce_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -138,7 +138,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.GLASS, name: '玻璃', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.3, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.3, soundType: 'glass', showBreakCracks: false,
       color: 'rgba(150, 230, 255, 0.35)', colorHex: 0xe0f7fa, border: '1.5px solid #96e6ff',
-      particleEffect: 'webcraft:glass',
+      particleEffect: 'cloudcraft:glass',
       textureFaces: { top: 8, bottom: 8, side: 8 }
     }));
 
@@ -194,10 +194,10 @@ export class BlockRegistry {
       id: BLOCK_TYPES.JUNGLE_LEAVES, name: '丛林叶', isSolid: true, isTransparent: true, isLiquid: false,
       hardness: 0.2, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
-      particleEffect: 'webcraft:leaf',
+      particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 26, bottom: 26, side: 26 },
       renderAdjacentSameType: true, renderInternalCross: true,
-      lootTableId: 'webcraft:blocks/jungle_leaves'
+      lootTableId: 'cloudcraft:blocks/jungle_leaves'
     }));
 
     this.register(new SimpleSolidBlock({
@@ -214,7 +214,7 @@ export class BlockRegistry {
       textureFaces: { top: 28, bottom: 28, side: 28 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'webcraft:grass'
+      particleEffect: 'cloudcraft:grass'
     }));
 
     this.register(new SaplingBlock({
@@ -224,7 +224,7 @@ export class BlockRegistry {
       textureFaces: { top: 29, bottom: 29, side: 29 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'webcraft:grass'
+      particleEffect: 'cloudcraft:grass'
     }));
 
     this.register(new SaplingBlock({
@@ -234,7 +234,7 @@ export class BlockRegistry {
       textureFaces: { top: 30, bottom: 30, side: 30 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'webcraft:grass'
+      particleEffect: 'cloudcraft:grass'
     }));
 
     this.register(new SaplingBlock({
@@ -244,7 +244,7 @@ export class BlockRegistry {
       textureFaces: { top: 31, bottom: 31, side: 31 },
       droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'webcraft:grass'
+      particleEffect: 'cloudcraft:grass'
     }));
 
     // ─── Flowers (使用 flowerProps 工厂) ────────────────────
@@ -253,25 +253,25 @@ export class BlockRegistry {
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.BLUE_ORCHID, '兰花', 36, { color: '#2196f3', colorHex: 0x2196f3 })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.ALLIUM, '绒球葱', 37, { color: '#e040fb', colorHex: 0xe040fb })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.OXEYE_DAISY, '雏菊', 38, { color: '#eeeeee', colorHex: 0xeeeeee })));
-    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.TALL_GRASS, '草丛', 39, { color: '#4caf50', colorHex: 0x4caf50, crossScaleW: 0.85, crossScaleH: 0.85, lootTableId: 'webcraft:blocks/tall_grass' })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.TALL_GRASS, '草丛', 39, { color: '#4caf50', colorHex: 0x4caf50, crossScaleW: 0.85, crossScaleH: 0.85, lootTableId: 'cloudcraft:blocks/tall_grass' })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.FERN, '蕨', 40, { color: '#388e3c', colorHex: 0x388e3c, crossScaleW: 0.85, crossScaleH: 0.85 })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.DEAD_BUSH, '枯萎的灌木', 41, { color: '#a08060', colorHex: 0xa08060, crossScaleW: 0.75, crossScaleH: 0.75, allowedBaseBlocks: [BLOCK_TYPES.SAND, BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT] })));
 
     // ─── Double height plants (使用 doublePlantProps 工厂) ──
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_BOTTOM, '向日葵(底)', 'sunflower', 42, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.SUNFLOWER_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_TOP, '向日葵(顶)', 'sunflower', 43, { color: '#ffeb3b', colorHex: 0xffeb3b, lootTableId: 'webcraft:blocks/sunflower_top' }), BLOCK_TYPES.SUNFLOWER_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_TOP, '向日葵(顶)', 'sunflower', 43, { color: '#ffeb3b', colorHex: 0xffeb3b, lootTableId: 'cloudcraft:blocks/sunflower_top' }), BLOCK_TYPES.SUNFLOWER_BOTTOM));
 
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_BOTTOM, '玫瑰丛(底)', 'rose_bush', 44, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.ROSE_BUSH_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_TOP, '玫瑰丛(顶)', 'rose_bush', 45, { color: '#f44336', colorHex: 0xf44336, lootTableId: 'webcraft:blocks/rose_bush_top' }), BLOCK_TYPES.ROSE_BUSH_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.ROSE_BUSH_TOP, '玫瑰丛(顶)', 'rose_bush', 45, { color: '#f44336', colorHex: 0xf44336, lootTableId: 'cloudcraft:blocks/rose_bush_top' }), BLOCK_TYPES.ROSE_BUSH_BOTTOM));
 
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.PEONY_BOTTOM, '牡丹(底)', 'peony', 46, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.PEONY_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.PEONY_TOP, '牡丹(顶)', 'peony', 47, { color: '#f8bbd0', colorHex: 0xf8bbd0, lootTableId: 'webcraft:blocks/peony_top' }), BLOCK_TYPES.PEONY_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.PEONY_TOP, '牡丹(顶)', 'peony', 47, { color: '#f8bbd0', colorHex: 0xf8bbd0, lootTableId: 'cloudcraft:blocks/peony_top' }), BLOCK_TYPES.PEONY_BOTTOM));
 
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.LILAC_BOTTOM, '丁香(底)', 'lilac', 48, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.LILAC_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.LILAC_TOP, '丁香(顶)', 'lilac', 49, { color: '#d1c4e9', colorHex: 0xd1c4e9, lootTableId: 'webcraft:blocks/lilac_top' }), BLOCK_TYPES.LILAC_BOTTOM));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.LILAC_TOP, '丁香(顶)', 'lilac', 49, { color: '#d1c4e9', colorHex: 0xd1c4e9, lootTableId: 'cloudcraft:blocks/lilac_top' }), BLOCK_TYPES.LILAC_BOTTOM));
 
-    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM, '双格高草(底)', 'double_tall_grass', 50, { color: '#4caf50', colorHex: 0x4caf50, lootTableId: 'webcraft:blocks/double_tall_grass_bottom' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP));
-    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP, '双格高草(顶)', 'double_tall_grass', 51, { color: '#81c784', colorHex: 0x81c784, lootTableId: 'webcraft:blocks/double_tall_grass_top' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM));
+    this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM, '双格高草(底)', 'double_tall_grass', 50, { color: '#4caf50', colorHex: 0x4caf50, lootTableId: 'cloudcraft:blocks/double_tall_grass_bottom' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP));
+    this.register(new DoublePlantTopBlock(doublePlantProps(BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP, '双格高草(顶)', 'double_tall_grass', 51, { color: '#81c784', colorHex: 0x81c784, lootTableId: 'cloudcraft:blocks/double_tall_grass_top' }), BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM));
   }
 
   public static getAllBlocks(): Block[] {

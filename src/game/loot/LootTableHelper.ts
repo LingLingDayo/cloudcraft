@@ -5,7 +5,7 @@ import { LootTableRegistry } from './LootTableRegistry';
 export class LootTableHelper {
   /**
    * 生成指定战利品表对应的掉落物，并调用游戏引擎进行 Spawn 与物理抛射。
-   * @param lootTableId 战利品表 ID (命名空间资源定位符，例如 'webcraft:entities/pig')
+   * @param lootTableId 战利品表 ID (命名空间资源定位符，例如 'cloudcraft:entities/pig')
    * @param context 战利品上下文
    * @param spread 是否开启随机初速度扩散（典型应用：生物死亡、方块被挖掘爆开）
    */
