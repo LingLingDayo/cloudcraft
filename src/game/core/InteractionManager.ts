@@ -299,10 +299,9 @@ export class InteractionManager {
           this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
           sound.playBreak(props.soundType);
           
-          const color = getBlockProperties(blockId).colorHex ?? 0x787878;
-          this.game.particles.spawn(
+          this.game.particles.spawnBlockParticles(
             new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
-            color,
+            blockId,
             15
           );
           this.lastCreativeBreakTime = performance.now();
@@ -390,7 +389,7 @@ export class InteractionManager {
           (Math.random() - 0.5) * 0.15
         ));
       
-      this.game.particles.spawn(spawnPos, color, 1);
+      this.game.particles.spawn('webcraft:eat', spawnPos, color, 1);
     }
 
     // 吃完了！
@@ -458,10 +457,9 @@ export class InteractionManager {
             this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
             sound.playBreak(props.soundType);
             
-            const color = getBlockProperties(blockId).colorHex ?? 0x787878;
-            this.game.particles.spawn(
+            this.game.particles.spawnBlockParticles(
               new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
-              color,
+              blockId,
               15
             );
             this.lastCreativeBreakTime = now;
@@ -526,14 +524,13 @@ export class InteractionManager {
 
     if (currentTime - this.lastDigParticleTime > 120) {
       this.lastDigParticleTime = currentTime;
-      const color = getBlockProperties(blockId).colorHex ?? 0x787878;
-      this.game.particles.spawn(
+      this.game.particles.spawnBlockParticles(
         new THREE.Vector3(
           target.x + 0.2 + Math.random() * 0.6,
           target.y + 0.2 + Math.random() * 0.6,
           target.z + 0.2 + Math.random() * 0.6
         ),
-        color,
+        blockId,
         2
       );
     }
@@ -554,10 +551,9 @@ export class InteractionManager {
       this.game.world.setBlock(target.x, target.y, target.z, BLOCK_TYPES.AIR);
       sound.playBreak(props.soundType);
 
-      const color = getBlockProperties(blockId).colorHex ?? 0x787878;
-      this.game.particles.spawn(
+      this.game.particles.spawnBlockParticles(
         new THREE.Vector3(target.x + 0.5, target.y + 0.5, target.z + 0.5),
-        color,
+        blockId,
         15
       );
 

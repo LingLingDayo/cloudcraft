@@ -63,11 +63,10 @@ export class WorldTickManager {
               this.world.setBlock(dl.x, dl.y, dl.z, BLOCK_TYPES.AIR);
               
               const blockInstance = BlockRegistry.get(currentType);
-              const color = blockInstance.properties.colorHex ?? 0x2d7823;
               if (this.world.game && this.world.game.particles) {
-                this.world.game.particles.spawn(
+                this.world.game.particles.spawnBlockParticles(
                   new THREE.Vector3(dl.x + 0.5, dl.y + 0.5, dl.z + 0.5),
-                  color,
+                  currentType,
                   8
                 );
               }

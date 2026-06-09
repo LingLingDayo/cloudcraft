@@ -446,5 +446,8 @@ export class GameManager {
     if (this.interaction) this.interaction.dispose();
     if (this.droppedItems) this.droppedItems.dispose();
     if (this.animals) this.animals.dispose();
+    if (this.particles) {
+      this.particles.clear();
+    }
   }
 }
