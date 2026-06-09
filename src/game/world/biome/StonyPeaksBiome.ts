@@ -2,12 +2,14 @@ import { type Biome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import type { BlockWriter } from '../TreeStructureGenerator';
+import type { ConfiguredFeature } from '../feature/WorldFeature';
 
 export class StonyPeaksBiome implements Biome {
   public id = 'stony_peaks';
   public name = '石头山';
   public targetTemp: number;
   public targetMoisture: number;
+  public configuredFeatures: ConfiguredFeature[] = [];
 
   constructor(targetTemp = 0.1, targetMoisture = 0.15) {
     this.targetTemp = targetTemp;
@@ -38,6 +40,10 @@ export class StonyPeaksBiome implements Biome {
   }
 
   public getTreeProbability(_chunkRandom: number): number {
+    return 0; // 石头山上不长树
+  }
+
+  public getTreeAttempts(_chunkRandom: number): number {
     return 0; // 石头山上不长树
   }
 

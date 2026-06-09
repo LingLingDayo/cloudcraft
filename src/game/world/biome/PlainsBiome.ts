@@ -1,7 +1,6 @@
-import { BaseSoilBiome, TreeStyle } from './Biome';
+import { BaseSoilBiome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class PlainsBiome extends BaseSoilBiome {
   public id = 'plains';
@@ -13,36 +12,13 @@ export class PlainsBiome extends BaseSoilBiome {
     super();
     this.targetTemp = targetTemp;
     this.targetMoisture = targetMoisture;
+    this.configuredFeatures = [
+      { featureId: 'oak_tree', probability: 1.0 }
+    ];
   }
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.04;
-  }
-
-  public growDecorations(
-    writer: BlockWriter,
-    wx: number,
-    wy: number,
-    wz: number,
-    chunkRandom: number,
-    treeIndex: number,
-    noise: ImprovedNoise
-  ): void {
-    const seed = chunkRandom * 10 + treeIndex;
-    const heightRand = (Math.sin(seed * 789.012) * 43758.5453) % 1;
-    const absHeight = Math.abs(heightRand);
-    const treeHeight = 4 + Math.floor(absHeight * 2); // 4 to 5
-    TreeStructureGenerator.growTree(
-      writer,
-      wx,
-      wy,
-      wz,
-      BLOCK_TYPES.WOOD,
-      BLOCK_TYPES.LEAF,
-      treeHeight,
-      TreeStyle.OAK,
-      (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
-    );
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {

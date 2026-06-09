@@ -6,7 +6,8 @@ import { TreeStyle } from './biome/Biome';
 import { sound } from '@game/systems/Sound';
 import { LootTableHelper } from '@game/loot/LootTableHelper';
 import type { BlockType } from '@type';
-import { WorldBlockWriter, TreeStructureGenerator } from './TreeStructureGenerator';
+import { WorldBlockWriter } from './TreeStructureGenerator';
+import { FeatureRegistry } from './feature/WorldFeature';
 
 export class WorldTickManager {
   private world: World;
@@ -239,22 +240,23 @@ export class WorldTickManager {
     x: number,
     y: number,
     z: number,
-    trunkBlock: number,
-    leafBlock: number,
+    _trunkBlock: number,
+    _leafBlock: number,
     style: TreeStyle
   ): void {
-    const height = 4 + Math.floor(Math.random() * 3);
-    const writer = new WorldBlockWriter(this.world);
-    TreeStructureGenerator.growTree(
-      writer,
-      x,
-      y - 1,
-      z,
-      trunkBlock,
-      leafBlock,
-      height,
-      style,
-      () => Math.random()
-    );
+    let featureId = 'oak_tree';
+    if (style === TreeStyle.BIRCH) {
+      featureId = 'birch_tree';
+    } else if (style === TreeStyle.SPRUCE) {
+      featureId = 'spruce_tree';
+    } else if (style === TreeStyle.JUNGLE) {
+      featureId = 'jungle_tree';
+    }
+
+    const feature = FeatureRegistry.get(featureId);
+    if (feature) {
+      const writer = new WorldBlockWriter(this.world);
+      feature.generate(writer, x, y - 1, z, () => Math.random());
+    }
   }
 }

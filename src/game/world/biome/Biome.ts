@@ -2,6 +2,7 @@ import { ImprovedNoise } from '../Noise';
 import type { BlockWriter } from '../TreeStructureGenerator';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { WORLD_CONFIG } from '../WorldConfig';
+import { FeatureRegistry, type ConfiguredFeature } from '../feature/WorldFeature';
 
 export const TreeStyle = {
   OAK: 'oak',
@@ -17,8 +18,9 @@ export interface Biome {
   name: string;
   targetTemp: number;       // 生态对应的目标温度点 (用于多噪波参数空间选择)
   targetMoisture: number;   // 生态对应的目标湿度点 (用于多噪波参数空间选择)
+  configuredFeatures: ConfiguredFeature[]; // 该生态所拥有的地表特征配置
 
-  // 根据当前列的各种参数，在此高度 y 填充方块类型，增加了 slope 坡度参数
+  // 根据当前列 of 各种参数，在此高度 y 填充方块类型，增加了 slope 坡度参数
   fillColumn(
     chunk: Uint8Array,
     lx: number,
@@ -37,7 +39,10 @@ export interface Biome {
   // 获取在该生态中长植物/树木的概率
   getTreeProbability(chunkRandom: number): number;
 
-  // 生态专属的装饰物（树木、仙人掌等）生成逻辑，使用统一的 BlockWriter 写入
+  // 获取在 16x16 区块中尝试生成树木的候选次数
+  getTreeAttempts(chunkRandom: number): number;
+
+  // 生态专属的装饰物（树木、仙人掌等）生成逻辑，使用统一 of BlockWriter 写入
   growDecorations(
     writer: BlockWriter,
     wx: number,
@@ -50,6 +55,43 @@ export interface Biome {
 
   // Decide what vegetation (flower/grass) grows at the given coordinates
   getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number;
+}
+
+/**
+ * 通用的生态特征生长分发函数，使用累积概率算法
+ */
+export function growBiomeDecorations(
+  configuredFeatures: ConfiguredFeature[],
+  writer: BlockWriter,
+  wx: number,
+  wy: number,
+  wz: number,
+  chunkRandom: number,
+  treeIndex: number,
+  noise: ImprovedNoise
+): void {
+  if (configuredFeatures.length === 0) return;
+
+  const seed = chunkRandom * 10 + treeIndex;
+  const spawnRand = Math.abs((Math.sin(seed * 123.456) * 43758.5453) % 1);
+
+  let currentProbSum = 0;
+  for (const conf of configuredFeatures) {
+    currentProbSum += conf.probability;
+    if (spawnRand <= currentProbSum) {
+      const feature = FeatureRegistry.get(conf.featureId);
+      if (feature) {
+        feature.generate(
+          writer,
+          wx,
+          wy,
+          wz,
+          (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
+        );
+      }
+      break;
+    }
+  }
 }
 
 export abstract class BaseSoilBiome implements Biome {
@@ -104,8 +146,15 @@ export abstract class BaseSoilBiome implements Biome {
     }
   }
 
+  public configuredFeatures: ConfiguredFeature[] = [];
+
   public abstract getTreeProbability(chunkRandom: number): number;
-  public abstract growDecorations(
+  
+  public getTreeAttempts(chunkRandom: number): number {
+    return Math.floor(chunkRandom * 12) % 3 + 1; // 默认 1~3 次尝试
+  }
+
+  public growDecorations(
     writer: BlockWriter,
     wx: number,
     wy: number,
@@ -113,6 +162,8 @@ export abstract class BaseSoilBiome implements Biome {
     chunkRandom: number,
     treeIndex: number,
     noise: ImprovedNoise
-  ): void;
+  ): void {
+    growBiomeDecorations(this.configuredFeatures, writer, wx, wy, wz, chunkRandom, treeIndex, noise);
+  }
   public abstract getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number;
 }

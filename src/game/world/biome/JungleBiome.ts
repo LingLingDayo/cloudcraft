@@ -1,7 +1,6 @@
-import { BaseSoilBiome, TreeStyle } from './Biome';
+import { BaseSoilBiome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class JungleBiome extends BaseSoilBiome {
   public id = 'jungle';
@@ -13,38 +12,18 @@ export class JungleBiome extends BaseSoilBiome {
     super();
     this.targetTemp = targetTemp;
     this.targetMoisture = targetMoisture;
+    this.configuredFeatures = [
+      { featureId: 'jungle_tree', probability: 1.0 }
+    ];
   }
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.4; // 繁茂的丛林，树木极多
   }
 
-  public growDecorations(
-    writer: BlockWriter,
-    wx: number,
-    wy: number,
-    wz: number,
-    chunkRandom: number,
-    treeIndex: number,
-    noise: ImprovedNoise
-  ): void {
-    const seed = chunkRandom * 40 + treeIndex;
-    const heightRand = (Math.sin(seed * 432.1) * 43758.5453) % 1;
-    const absHeight = Math.abs(heightRand);
-    // 树木很高：7 到 11 格
-    const treeHeight = 7 + Math.floor(absHeight * 5);
-
-    TreeStructureGenerator.growTree(
-      writer,
-      wx,
-      wy,
-      wz,
-      BLOCK_TYPES.JUNGLE_WOOD,
-      BLOCK_TYPES.JUNGLE_LEAVES,
-      treeHeight,
-      TreeStyle.JUNGLE,
-      (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
-    );
+  public override getTreeAttempts(chunkRandom: number): number {
+    // 丛林更密：8 ~ 14 次尝试
+    return 8 + Math.floor(chunkRandom * 24) % 7;
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {

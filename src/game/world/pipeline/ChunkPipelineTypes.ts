@@ -12,6 +12,24 @@ export interface ColumnTerrainData {
   slope: number;
 }
 
+/**
+ * 抽象出来的世界地形环境数据提供者接口，解耦流水线阶段对 Generator 的直接强绑定
+ */
+export interface WorldTerrainProvider {
+  getColumnTerrainData(wx: number, wz: number): ColumnTerrainData;
+  getGroundBlockType(
+    biome: Biome,
+    y: number,
+    waterLevel: number,
+    isDryLand: boolean,
+    wx: number,
+    wz: number,
+    slope: number
+  ): number;
+  getPrimaryBiome(wx: number, wz: number): Biome;
+  isWaterArea(wx: number, wz: number): boolean;
+}
+
 export type ChunkTerrainMap = ColumnTerrainData[][];
 
 export interface ChunkPipelineContext {
@@ -25,8 +43,7 @@ export interface ChunkPipelineContext {
   noise: ImprovedNoise;
   terrainMap: ChunkTerrainMap;
   biomeMap: Biome[][];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generator: any;
+  generator: WorldTerrainProvider;
 }
 
 export interface ChunkPipelineStage {
