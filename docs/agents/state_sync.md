@@ -1,5 +1,8 @@
 # 3D 引擎与 UI 状态解耦与同步规范
 
+> [!NOTE]
+> 该功能模块对应的源码路径为 `src/store/`。
+
 为了在维持 60 FPS+ 极致渲染性能的同时保证 UI 展现层的响应式更新，CloudCraft 的 3D 游戏引擎（基于 `requestAnimationFrame` 驱动的渲染、物理更新与输入检测）与 React UI 必须严格遵循以下解耦与同步架构规范：
 
 ---
