@@ -29,13 +29,13 @@ export class Controls {
   public get canControlView(): boolean {
     const store = useGameStore.getState();
     const isPlaying = store.gameState === GameState.PLAYING;
-    const isUIOpen = store.isInventoryOpen || store.isSettingsOpen || store.activeChest !== null;
+    const isUIOpen = store.isInventoryOpen || store.isSettingsOpen || store.activeChest !== null || store.isWorldLoading;
 
     if (!isPlaying || isUIOpen) {
       return false;
     }
 
-    const isActuallyLocked = document.pointerLockElement === this.domElement;
+    const isActuallyLocked = document.pointerLockElement === this.domElement || document.pointerLockElement === document.body;
     if (this.isMobile) {
       return true;
     }
@@ -74,6 +74,16 @@ export class Controls {
 
     this.initListeners();
     this.initHotkeys();
+
+    // If the pointer lock was already initiated (e.g. on document.body during the menu click gesture),
+    // transfer the pointer lock to this canvas element programmatically.
+    if (document.pointerLockElement && document.pointerLockElement !== this.domElement) {
+      try {
+        this.domElement.requestPointerLock();
+      } catch (err) {
+        console.warn('Failed to transfer pointer lock to canvas:', err);
+      }
+    }
   }
 
   private initListeners() {
@@ -130,7 +140,7 @@ export class Controls {
   };
 
   private onPointerLockChange = () => {
-    this.isLocked = document.pointerLockElement === this.domElement;
+    this.isLocked = document.pointerLockElement === this.domElement || document.pointerLockElement === document.body;
     this.onLockChangeCallbacks.forEach((cb) => cb(this.isLocked));
   };
 
@@ -159,7 +169,7 @@ export class Controls {
   };
 
   private onMouseMove = (e: MouseEvent) => {
-    const isActuallyLocked = document.pointerLockElement === this.domElement;
+    const isActuallyLocked = document.pointerLockElement === this.domElement || document.pointerLockElement === document.body;
     if (isActuallyLocked !== this.isLocked) {
       this.isLocked = isActuallyLocked;
     }
