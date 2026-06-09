@@ -212,8 +212,8 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       let foundHighPondWater = false;
       
       // With 100% probability, we can search in just the first few regions
-      for (const offset of [0, 64, 128]) {
-        const world = new World('webcraft-seed');
+      for (const offset of [-64, 192, 448]) {
+        const world = new World('cloudcraft-seed');
         world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
         
         for (let x = offset - 32; x < offset + 32; x++) {
@@ -245,8 +245,8 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       let checkedPondRegions = 0;
       let exposedWaterCount = 0;
 
-      for (const offset of [0, 64, 128]) {
-        const world = new World('webcraft-seed');
+      for (const offset of [-64, 192, 448]) {
+        const world = new World('cloudcraft-seed');
         // Load a 5x5 chunk area (80x80 blocks) centered around offset
         world.loadArea(offset, 150, offset, 2);
         
@@ -339,15 +339,15 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     config.pond.probability = 1.0; // Temporarily raise pond probability to 100%
 
     try {
-      const world = new World('webcraft-seed');
-      const generator = new WorldGenerator('webcraft-seed');
+      const world = new World('cloudcraft-seed');
+      const generator = new WorldGenerator('cloudcraft-seed');
       
       const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
       const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
 
       let checkedWaterBlocks = 0;
       // With 100% probability, we can verify this safety distance in just a couple of regions
-      for (const offset of [0, 64]) {
+      for (const offset of [-64, 192]) {
         world.loadArea(offset, 150, offset, 2);
         
         const checkMin = offset - 32;
