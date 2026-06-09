@@ -5,7 +5,7 @@ import { Physics } from '@game/physics/Physics';
 import { Controls } from '@game/systems/Controls';
 import { sound } from '@game/systems/Sound';
 import { FPSCounter } from './FPSCounter';
-import { ParticleSystem } from '@game/systems/Particles';
+import { ParticleSystem } from '@game/systems/particles';
 import { Player } from '@game/entities/Player';
 import { GameState, GameMode, type DebugMetrics } from '@type';
 import { useGameStore } from '@store/useGameStore';
