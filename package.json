@@ -10,7 +10,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "node scripts/deploy.js",
     "prepare": "husky"
   },
   "dependencies": {
