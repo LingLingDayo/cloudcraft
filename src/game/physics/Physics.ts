@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { World } from '@game/world/World';
-import { VoxelPhysics } from './voxel/VoxelPhysics';
+import { VoxelCollider } from './voxel/VoxelCollider';
+import { CharacterController } from './voxel/CharacterController';
+import { FluidPhysics } from './voxel/FluidPhysics';
 import { RapierPhysicsPlaceholder } from './rigidbody/RapierPhysicsPlaceholder';
 import { PHYSICS_CONFIG } from './PhysicsConfig';
 
@@ -8,14 +10,16 @@ import { PHYSICS_CONFIG } from './PhysicsConfig';
  * 物理引擎管理器 (Physics Manager)
  * 
  * 采用 「自研体素物理 + 局部物理引擎辅助」 的混合架构：
- * 1. 自研体素物理 (VoxelPhysics)：处理玩家、常规实体与 3D 方块世界的碰撞，保证原生沙盒游戏的极高帧率与手感。
+ * 1. 自研体素物理：使用 VoxelCollider 处理静态碰撞，CharacterController 处理实体运动逻辑。
  * 2. 局部物理引擎 (RapierPhysics)：处理复杂的刚体仿真、绳索、关节、爆炸碎片等高性能碰撞。
  */
 export class Physics {
-  private voxelPhysics: VoxelPhysics;
+  private collider: VoxelCollider;
+  private characterController: CharacterController;
   private rigidbodyPhysics: RapierPhysicsPlaceholder;
+  private world: World;
 
-  // 物理配置参数（公共字段，允许运行时动态修改，VoxelPhysics 引用此处的实时参数）
+  // 物理配置参数（公共字段，允许运行时动态修改）
   public playerSize = { ...PHYSICS_CONFIG.playerSize };
   public gravity: number = PHYSICS_CONFIG.gravity;
   public terminalVelocity: number = PHYSICS_CONFIG.terminalVelocity;
@@ -25,8 +29,9 @@ export class Physics {
   public stepHeight: number = PHYSICS_CONFIG.stepHeight;
 
   constructor(world: World) {
-    // 传入 this 作为 settings 引用，支持动态属性修改的实时更新
-    this.voxelPhysics = new VoxelPhysics(world, this);
+    this.world = world;
+    this.collider = new VoxelCollider(world);
+    this.characterController = new CharacterController(world, this.collider);
     this.rigidbodyPhysics = new RapierPhysicsPlaceholder(world);
   }
 
@@ -34,21 +39,21 @@ export class Physics {
    * 判断方块是否为实体碰撞方块
    */
   public isSolid(blockId: number): boolean {
-    return this.voxelPhysics.isSolid(blockId);
+    return this.collider.isSolid(blockId);
   }
 
   /**
    * 获取玩家/实体的 AABB 碰撞盒
    */
   public getPlayerBox(position: THREE.Vector3): THREE.Box3 {
-    return this.voxelPhysics.getPlayerBox(position);
+    return VoxelCollider.getBoundingBox(position, this.playerSize);
   }
 
   /**
    * 检测实体当前是否处于水中/流体中
    */
   public checkInWater(position: THREE.Vector3): boolean {
-    return this.voxelPhysics.checkInWater(position);
+    return FluidPhysics.checkInWater(this.world, position, false);
   }
 
   /**
@@ -69,12 +74,12 @@ export class Physics {
     isJumping: boolean,
     isShiftLeft: boolean,
     isFlying: boolean,
-    state: { onGround: boolean; inWater: boolean },
+    state: { onGround: boolean; inWater: boolean; swimTime?: number },
     autoJump: boolean = true,
     cameraDirection?: THREE.Vector3
   ) {
     // 1. 优先更新基于 Voxel 碰撞网格的玩家及核心实体运动
-    this.voxelPhysics.update(
+    this.characterController.move(
       position,
       velocity,
       dt,
@@ -83,6 +88,7 @@ export class Physics {
       isShiftLeft,
       isFlying,
       state,
+      this, // passing `this` as settings since it contains walkSpeed, jumpSpeed, etc.
       autoJump,
       cameraDirection
     );
@@ -99,6 +105,6 @@ export class Physics {
     direction: THREE.Vector3,
     maxDistance: number
   ) {
-    return this.voxelPhysics.raycast(origin, direction, maxDistance);
+    return this.collider.raycast(origin, direction, maxDistance);
   }
 }
