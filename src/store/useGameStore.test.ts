@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { useGameStore } from './useGameStore';
 import { GameState, GameMode, type DebugMetrics, ItemType } from '@type';
+import { getSystemSettings } from '@utils/settings';
 
 describe('useGameStore', () => {
   beforeEach(() => {
@@ -18,7 +19,7 @@ describe('useGameStore', () => {
       debugOverlay: false,
       debugMetrics: null,
       isDamaged: false,
-      renderDistance: 3,
+      renderDistance: 4,
       fov: 75,
       gameMode: GameMode.ADVENTURE,
       isInventoryOpen: false,
@@ -48,7 +49,7 @@ describe('useGameStore', () => {
     expect(state.debugOverlay).toBe(false);
     expect(state.debugMetrics).toBeNull();
     expect(state.isDamaged).toBe(false);
-    expect(state.renderDistance).toBe(3);
+    expect(state.renderDistance).toBe(4);
     expect(state.fov).toBe(75);
     expect(state.gameMode).toBe(GameMode.ADVENTURE);
     expect(state.isInventoryOpen).toBe(false);
@@ -172,8 +173,20 @@ describe('useGameStore', () => {
     const metrics: DebugMetrics = {
       fps: 60,
       chunksLoaded: 9,
+      chunkLoadSpeed: 0,
       isFlying: false,
       targetBlock: null,
+      playerPosition: { x: 0, y: 0, z: 0 },
+      playerDirection: 'North',
+      playerRotation: { yaw: 0, pitch: 0 },
+      chunkCoords: { cx: 0, cy: 0, cz: 0, lx: 0, ly: 0, lz: 0 },
+      biome: null,
+      landform: null,
+      slope: 0,
+      terrainHeight: 0,
+      gameTime: { time: 0, formatted: '00:00' },
+      entities: { droppedItems: 0, animals: 0 },
+      renderer: { drawCalls: 0, triangles: 0, geometries: 0, textures: 0, gpu: 'Test GPU' },
     };
     useGameStore.getState().setDebugMetrics(metrics);
     expect(useGameStore.getState().debugMetrics).toEqual(metrics);
@@ -219,13 +232,22 @@ describe('useGameStore', () => {
   test('should add items to inventory if hotbar is full in adventure mode', () => {
     // Fill hotbar
     useGameStore.setState({
-      hotbar: Array(9).fill({ type: ItemType.DIRT, count: 64 }),
+      hotbar: Array(9).fill({ type: ItemType.DIRT, count: 100 }),
     });
 
     const success = useGameStore.getState().addToHotbar(ItemType.STONE, 10);
     expect(success).toBe(true);
     // Should be in inventory
     expect(useGameStore.getState().inventory[0]).toEqual({ type: ItemType.STONE, count: 10 });
+  });
+
+  test('should respect maxStackSize (100) when adding items to hotbar and inventory', () => {
+    // Add 150 STONE
+    // Since maxStackSize is 100, it should fill first hotbar slot with 100 and second hotbar slot with 50
+    const success = useGameStore.getState().addToHotbar(ItemType.STONE, 150);
+    expect(success).toBe(true);
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.STONE, count: 100 });
+    expect(useGameStore.getState().hotbar[1]).toEqual({ type: ItemType.STONE, count: 50 });
   });
 
   test('should set language via setLanguage', () => {
@@ -275,13 +297,17 @@ describe('useGameStore', () => {
       '2,2': false,
     });
 
-    // Load one chunk (1 out of 4 is 25% progress of chunks stage: 30 + 0.25 * 70 = 48% approximately)
+    // Load one chunk (1 out of 4 chunks, which is 50% of the 45% target (2 chunks): 30 + 0.5 * 70 = 65%)
     store.setChunkLoadingState('1,1', true);
     expect(useGameStore.getState().chunkLoadingStates['1,1']).toBe(true);
-    expect(useGameStore.getState().worldLoadingProgress).toBe(Math.round(30 + 0.25 * 70)); // 48%
+    expect(useGameStore.getState().worldLoadingProgress).toBe(Math.round(30 + 0.5 * 70)); // 65%
 
-    // Load all chunks
+    // Load second chunk (2 out of 4 chunks, reaching the 45% target of 2 chunks: progress reaches 100%)
     store.setChunkLoadingState('1,2', true);
+    expect(useGameStore.getState().chunkLoadingStates['1,2']).toBe(true);
+    expect(useGameStore.getState().worldLoadingProgress).toBe(100);
+
+    // Load remaining chunks (progress remains 100%)
     store.setChunkLoadingState('2,1', true);
     store.setChunkLoadingState('2,2', true);
     expect(useGameStore.getState().worldLoadingProgress).toBe(100);
@@ -293,5 +319,19 @@ describe('useGameStore', () => {
 
     useGameStore.getState().setShowMinimap(true);
     expect(useGameStore.getState().showMinimap).toBe(true);
+  });
+
+  test('should set setting generic via setSetting', () => {
+    useGameStore.getState().setSetting('renderDistance', 8);
+    expect(useGameStore.getState().renderDistance).toBe(8);
+    expect(getSystemSettings().renderDistance).toBe(8);
+
+    useGameStore.getState().setSetting('fov', 85);
+    expect(useGameStore.getState().fov).toBe(85);
+    expect(getSystemSettings().fov).toBe(85);
+
+    useGameStore.getState().setSetting('debugOverlay', true);
+    expect(useGameStore.getState().debugOverlay).toBe(true);
+    expect(getSystemSettings().debugOverlay).toBe(true);
   });
 });

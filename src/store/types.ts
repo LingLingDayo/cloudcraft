@@ -1,4 +1,5 @@
-import type { GameState, DebugMetrics, GameMode, Language, HotbarItem, ItemType } from '@type';
+import type { GameState, DebugMetrics, GameMode, Language, HotbarItem, ItemType, Vector3D } from '@type';
+import type { SystemSettings } from '@utils/settings';
 export type { HotbarItem } from '@type';
 
 export interface GameSlice {
@@ -30,6 +31,7 @@ export interface GameSlice {
   setDpadSize: (size: number) => void;
   setMiningProgress: (progress: number | null) => void;
   setShowMinimap: (show: boolean) => void;
+  setSetting: <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) => void;
   setIsSettingsOpen: (open: boolean, source?: 'hud' | 'menu' | null) => void;
   
   // Loading actions
@@ -46,11 +48,11 @@ export interface PlayerSlice {
   hotbar: (HotbarItem | null)[];
   life: number;
   hunger: number;
-  position: { x: number; y: number; z: number };
+  position: Vector3D;
   onGround: boolean;
   inWater: boolean;
   isDamaged: boolean;
-  activeChest: { x: number; y: number; z: number } | null;
+  activeChest: Vector3D | null;
   chestInventory: (HotbarItem | null)[];
   isInventoryOpen: boolean;
   inventory: (HotbarItem | null)[];
@@ -61,7 +63,7 @@ export interface PlayerSlice {
   resetHotbar: (mode: GameMode) => void;
   setLife: (life: number) => void;
   setPlayerState: (
-    position: { x: number; y: number; z: number },
+    position: Vector3D,
     onGround: boolean,
     inWater: boolean,
     life?: number,

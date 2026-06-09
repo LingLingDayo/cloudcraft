@@ -2,6 +2,9 @@
 import { vi, describe, test, expect } from 'vitest';
 import { World } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
+
+// Bypass slow WebGL mesh updates globally in this test suite
+World.prototype.updateChunkMesh = () => {};
 import { ItemType } from '@type';
 import { BlockRegistry } from './BlockRegistry';
 import { ChestBlockEntity } from './BlockEntity';
@@ -39,7 +42,7 @@ describe('Block Registry and Entity System', () => {
 
     const stone = BlockRegistry.get(BLOCK_TYPES.STONE);
     expect(stone).toBeDefined();
-    expect(stone.properties.allowVegetationBase).toBe(true);
+    expect(stone.properties.allowVegetationBase).toBeFalsy();
 
     const air = BlockRegistry.get(BLOCK_TYPES.AIR);
     expect(air).toBeDefined();

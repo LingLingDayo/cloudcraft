@@ -1,5 +1,5 @@
 import { describe, test, expect, afterEach, beforeEach, vi, type Mock } from 'vitest';
-import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock, setDevModeForTesting, clearCacheForTesting } from './device';
+import { isMobileDevice, getRealDeviceType, requestFullscreenAndLandscape, exitFullscreenAndUnlock, clearCacheForTesting } from './device';
 
 describe('isMobileDevice', () => {
   const originalUserAgent = navigator.userAgent;
@@ -10,7 +10,6 @@ describe('isMobileDevice', () => {
       get: () => 1024,
       configurable: true,
     });
-    setDevModeForTesting(true);
     clearCacheForTesting();
   });
 
@@ -25,7 +24,6 @@ describe('isMobileDevice', () => {
     });
     // Delete override to restore the original window.innerWidth getter
     delete (window as { innerWidth?: number }).innerWidth;
-    setDevModeForTesting(true);
     clearCacheForTesting();
   });
 
@@ -78,7 +76,6 @@ describe('isMobileDevice', () => {
   });
 
   test('should return true for small screen width in development mode even if user agent is desktop', () => {
-    setDevModeForTesting(true);
     Object.defineProperty(window, 'innerWidth', {
       get: () => 800,
       configurable: true,
@@ -90,8 +87,7 @@ describe('isMobileDevice', () => {
     expect(isMobileDevice()).toBe(true);
   });
 
-  test('should return false for small screen width in production mode if user agent is desktop', () => {
-    setDevModeForTesting(false);
+  test('should return true for small screen width in production mode if user agent is desktop', () => {
     Object.defineProperty(window, 'innerWidth', {
       get: () => 800,
       configurable: true,
@@ -100,7 +96,67 @@ describe('isMobileDevice', () => {
       value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
       configurable: true,
     });
-    expect(isMobileDevice()).toBe(false);
+    expect(isMobileDevice()).toBe(true);
+  });
+});
+
+describe('getRealDeviceType', () => {
+  const originalUserAgent = navigator.userAgent;
+
+  beforeEach(() => {
+    // 设置一个较小的屏幕宽度，以测试该方法是否确实忽略了宽度
+    Object.defineProperty(window, 'innerWidth', {
+      get: () => 500,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: originalUserAgent,
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      value: 0,
+      configurable: true,
+    });
+    delete (window as { innerWidth?: number }).innerWidth;
+  });
+
+  test('should return mobile for Android user agent even with small screen', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Linux; Android 10; SM-A205U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Mobile Safari/537.36',
+      configurable: true,
+    });
+    expect(getRealDeviceType()).toBe('mobile');
+  });
+
+  test('should return mobile for iPhone user agent', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+      configurable: true,
+    });
+    expect(getRealDeviceType()).toBe('mobile');
+  });
+
+  test('should return desktop for desktop Windows Chrome even on small screens', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+      configurable: true,
+    });
+    expect(getRealDeviceType()).toBe('desktop');
+  });
+
+  test('should return mobile for iPadOS Safari with touch points', () => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15',
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'maxTouchPoints', {
+      value: 5,
+      configurable: true,
+    });
+    expect(getRealDeviceType()).toBe('mobile');
   });
 });
 
@@ -116,7 +172,6 @@ describe('fullscreen and orientation lock helpers', () => {
     exitFullscreenMock = vi.fn().mockResolvedValue(undefined);
     lockMock = vi.fn().mockResolvedValue(undefined);
     unlockMock = vi.fn().mockResolvedValue(undefined);
-    setDevModeForTesting(false);
     clearCacheForTesting();
 
     // Mock document element methods
@@ -196,34 +251,6 @@ describe('fullscreen and orientation lock helpers', () => {
 
     expect(unlockMock).toHaveBeenCalledTimes(1);
     expect(exitFullscreenMock).toHaveBeenCalledTimes(1);
-  });
-
-  test('should bypass requestFullscreenAndLandscape in development mode', async () => {
-    setDevModeForTesting(true);
-    // Mock mobile device
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
-      configurable: true,
-    });
-
-    await requestFullscreenAndLandscape(document.documentElement);
-
-    expect(lockMock).not.toHaveBeenCalled();
-    expect(requestFullscreenMock).not.toHaveBeenCalled();
-  });
-
-  test('should bypass exitFullscreenAndUnlock in development mode', async () => {
-    setDevModeForTesting(true);
-    // Mock mobile device
-    Object.defineProperty(navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
-      configurable: true,
-    });
-
-    await exitFullscreenAndUnlock();
-
-    expect(unlockMock).not.toHaveBeenCalled();
-    expect(exitFullscreenMock).not.toHaveBeenCalled();
   });
 });
 

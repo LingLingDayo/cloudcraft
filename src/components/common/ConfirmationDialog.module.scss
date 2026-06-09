@@ -1,0 +1,32 @@
+@use '@styles/variables' as vars;
+
+.confirmContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.message {
+  font-family: var(--font-family-active);
+  font-size: vars.$confirm-dialog-msg-font-size;
+  color: var(--ui-dialog-text-color);
+  text-align: center;
+  margin: vars.$confirm-dialog-margin-y 0 vars.$confirm-dialog-margin-bottom 0;
+  line-height: 1.6;
+  text-shadow: var(--ui-dialog-title-shadow);
+  word-break: break-word;
+}
+
+.actions {
+  display: flex;
+  gap: vars.$confirm-dialog-gap;
+  justify-content: center;
+  width: 100%;
+}
+
+.button {
+  flex: 1;
+  min-width: vars.$confirm-dialog-btn-min-width;
+}

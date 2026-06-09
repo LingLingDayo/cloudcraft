@@ -3,15 +3,22 @@ import { GameManager } from './GameManager';
 import { Animal } from '../entities/Animal';
 import { Pig } from '../entities/Pig';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
-import { sound } from '@game/systems/Sound';
-import { WORLD_HEIGHT } from '@game/world/World';
+import { World, WORLD_HEIGHT } from '@game/world/World';
+
+export type AnimalCreator = (id: string, spawnPos: THREE.Vector3, world: World) => Animal;
 
 export class AnimalManager {
+  private static registry = new Map<string, AnimalCreator>();
+
   private game: GameManager;
   private animals: Animal[] = [];
   private maxAnimals = 8;
   private spawnCheckTimer = 0;
   private spawnCheckInterval = 3.0; // check spawn every 3 seconds
+
+  public static register(type: string, creator: AnimalCreator) {
+    this.registry.set(type, creator);
+  }
 
   constructor(game: GameManager) {
     this.game = game;
@@ -32,12 +39,9 @@ export class AnimalManager {
       const animal = this.animals[i];
       
       if (animal.isDead) {
-        // Play death visual & audio effects
-        sound.playPigDeath();
-        
         // Spawn death smoke particles
         const particlePos = animal.position.clone().add(new THREE.Vector3(0, 0.45, 0));
-        this.game.particles.spawn(particlePos, 0xeeeeee, 18);
+        this.game.particles.spawn('cloudcraft:smoke', particlePos, 0xeeeeee, 18);
         
         // Remove from scene and manager list
         this.game.scene.remove(animal.mesh);
@@ -105,10 +109,18 @@ export class AnimalManager {
           
           if (space1 === BLOCK_TYPES.AIR && space2 === BLOCK_TYPES.AIR) {
             const spawnPos = new THREE.Vector3(x + 0.5, y + 1, z + 0.5);
-            const pig = new Pig(Math.random().toString(36).substring(2, 9), spawnPos, this.game.world);
             
-            this.game.scene.add(pig.mesh);
-            this.animals.push(pig);
+            // Choose random animal type from static registry
+            const registeredTypes = Array.from(AnimalManager.registry.keys());
+            if (registeredTypes.length > 0) {
+              const randType = registeredTypes[Math.floor(Math.random() * registeredTypes.length)];
+              const creator = AnimalManager.registry.get(randType)!;
+              const animalId = Math.random().toString(36).substring(2, 9);
+              const animal = creator(animalId, spawnPos, this.game.world);
+              
+              this.game.scene.add(animal.mesh);
+              this.animals.push(animal);
+            }
             break; // Spawn 1 animal per check maximum
           }
         }
@@ -132,11 +144,11 @@ export class AnimalManager {
         // Find owner animal
         const animal = this.getAnimalByMesh(hit.object);
         if (animal) {
-          animal.takeDamage(2); // Take 2 HP (1 Heart) damage
-          sound.playPigHurt();
+          animal.takeDamage(2); // Take 2 HP (1 Heart) damage, sounds are played automatically inside takeDamage()
 
           // Spawn hit/crit particles (red/pink colors)
           this.game.particles.spawn(
+            'cloudcraft:crit',
             hit.point,
             0xff2a4a, // Blood red
             10
@@ -149,7 +161,7 @@ export class AnimalManager {
     return false;
   }
 
-  private getAnimalMeshes(): THREE.Object3D[] {
+  public getAnimalMeshes(): THREE.Object3D[] {
     const list: THREE.Object3D[] = [];
     this.animals.forEach(a => {
       list.push(...a.mesh.children);
@@ -170,6 +182,10 @@ export class AnimalManager {
     return null;
   }
 
+  public getCount(): number {
+    return this.animals.length;
+  }
+
   public dispose() {
     this.animals.forEach(a => {
       this.game.scene.remove(a.mesh);
@@ -184,3 +200,6 @@ export class AnimalManager {
     this.animals = [];
   }
 }
+
+// Register default animals
+AnimalManager.register('pig', (id, spawnPos, world) => new Pig(id, spawnPos, world));

@@ -43,3 +43,9 @@ Object.defineProperty(window, 'webkitAudioContext', {
   value: MockAudioContext,
   writable: true,
 });
+
+// Mock HTMLCanvasElement.prototype.toDataURL to prevent jsdom from logging warnings about missing native canvas npm package
+HTMLCanvasElement.prototype.toDataURL = function() {
+  return '';
+};
+

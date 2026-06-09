@@ -140,6 +140,14 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   };
 
   const handleStart = (loadSave: boolean, customSeed?: string) => {
+    // Attempt to lock pointer immediately on document.body during the user gesture.
+    // This will later be transferred to the canvas when the game loads.
+    try {
+      document.body.requestPointerLock();
+    } catch (err) {
+      console.warn('Failed to request initial pointer lock on document.body:', err);
+    }
+
     // Attempt to enter fullscreen (requires user activation)
     // Avoid triggering fullscreen and orientation lock in dev environments completely
     if (!import.meta.env.DEV) {
@@ -184,7 +192,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
             <Slider
               label={t('startMenu.renderDistance')}
               min={2}
-              max={5}
+              max={10}
               value={renderDistance}
               onChange={setRenderDistance}
               valueFormatter={(val) => t('startMenu.renderDistanceValue', { val })}

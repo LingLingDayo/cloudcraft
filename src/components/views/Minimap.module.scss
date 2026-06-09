@@ -82,43 +82,11 @@
   transform: translateY(-50%);
 }
 
-.minimapInfo {
-  background: rgba(15, 20, 35, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  color: #cbd5e1;
-  text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  pointer-events: none;
-  
-  .coords {
-    white-space: nowrap;
-    color: #e2e8f0;
-  }
-
-  .facing {
-    color: #38bdf8;
-  }
-}
-
 // Language adaptivity for zh
 :global(.lang-zh) {
   .compassDir {
     font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
     font-size: 10px !important;
-  }
-  .minimapInfo {
-    font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
-    font-size: 11px !important;
-    font-weight: bold;
   }
 }
 
@@ -138,10 +106,6 @@
     &::after {
       box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.4), inset -1px -1px 0px rgba(0, 0, 0, 0.6);
     }
-  }
-
-  .minimapInfo {
-    display: none; // Hide coordinates to save vertical space on mobile devices
   }
 
   .compassDir {

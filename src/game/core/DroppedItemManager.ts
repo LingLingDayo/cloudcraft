@@ -6,6 +6,7 @@ import { useGameStore } from '@store/useGameStore';
 import { ItemType } from '@type';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import { BlockItem } from '@game/item/Item';
+import { VoxelCollider } from '@game/physics/voxel/VoxelCollider';
 
 export class DroppedItemManager {
   private game: GameManager;
@@ -53,59 +54,14 @@ export class DroppedItemManager {
         item.velocity.x *= Math.max(0, 1 - 2 * dt);
         item.velocity.z *= Math.max(0, 1 - 2 * dt);
 
-        // X axis
-        item.position.x += item.velocity.x * dt;
-        let box = this.getDroppedItemBox(item.position);
-        let colliders = this.getDroppedItemColliders(box);
-        for (const block of colliders) {
-          const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
-          if (overlapX > 0) {
-            if (item.velocity.x > 0) item.position.x -= overlapX;
-            else if (item.velocity.x < 0) item.position.x += overlapX;
-            item.velocity.x = 0;
-            box = this.getDroppedItemBox(item.position);
-          }
-        }
-
-        // Z axis
-        item.position.z += item.velocity.z * dt;
-        box = this.getDroppedItemBox(item.position);
-        colliders = this.getDroppedItemColliders(box);
-        for (const block of colliders) {
-          const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
-          if (overlapZ > 0) {
-            if (item.velocity.z > 0) item.position.z -= overlapZ;
-            else if (item.velocity.z < 0) item.position.z += overlapZ;
-            item.velocity.z = 0;
-            box = this.getDroppedItemBox(item.position);
-          }
-        }
-
-        // Y axis
-        item.position.y += item.velocity.y * dt;
-        box = this.getDroppedItemBox(item.position);
-        colliders = this.getDroppedItemColliders(box);
-        item.onGround = false;
-        for (const block of colliders) {
-          const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
-          if (overlapY > 0) {
-            if (item.velocity.y > 0) {
-              item.position.y -= overlapY;
-              item.velocity.y = 0;
-            } else if (item.velocity.y < 0) {
-              item.position.y += overlapY;
-              item.velocity.y = 0;
-              item.onGround = true;
-            }
-            box = this.getDroppedItemBox(item.position);
-          }
-        }
-
-        if (item.position.y < 0) {
-          item.position.y = 0;
-          item.velocity.set(0, 0, 0);
-          item.onGround = true;
-        }
+        const { onGround } = VoxelCollider.resolveMove(
+          this.game.world,
+          item.position,
+          item.velocity,
+          { width: 0.2, height: 0.2, depth: 0.2 },
+          dt
+        );
+        item.onGround = onGround;
       }
 
       // 3. Render update: bobbing + rotation
@@ -123,8 +79,8 @@ export class DroppedItemManager {
     void count;
     const item = ItemRegistry.get(itemType);
     let isTrans = true;
-    if (item instanceof BlockItem) {
-      const blockProps = getBlockProperties(item.blockId);
+    if (item.isBlockItem) {
+      const blockProps = getBlockProperties((item as BlockItem).blockId);
       isTrans = blockProps.opacity < 1.0;
     }
     
@@ -165,51 +121,6 @@ export class DroppedItemManager {
     return geom;
   }
 
-  private getDroppedItemBox(pos: THREE.Vector3): THREE.Box3 {
-    const size = 0.25;
-    const half = size / 2;
-    return new THREE.Box3(
-      new THREE.Vector3(pos.x - half, pos.y, pos.z - half),
-      new THREE.Vector3(pos.x + half, pos.y + size, pos.z + half)
-    );
-  }
-
-  private getDroppedItemColliders(box: THREE.Box3): { x: number; y: number; z: number }[] {
-    const colliders = [];
-    const minX = Math.floor(box.min.x);
-    const maxX = Math.floor(box.max.x);
-    const minY = Math.floor(box.min.y);
-    const maxY = Math.floor(box.max.y);
-    const minZ = Math.floor(box.min.z);
-    const maxZ = Math.floor(box.max.z);
-
-    const eps = 1e-4;
-
-    for (let x = minX; x <= maxX; x++) {
-      for (let y = minY; y <= maxY; y++) {
-        for (let z = minZ; z <= maxZ; z++) {
-          const id = this.game.world.getBlock(x, y, z);
-          const props = getBlockProperties(id);
-          const isCollidable = props.isCollidable ?? props.isSolid;
-          if (isCollidable) {
-            const isIntersect = (
-              box.min.x + eps < x + 1 &&
-              box.max.x - eps > x &&
-              box.min.y + eps < y + 1 &&
-              box.max.y - eps > y &&
-              box.min.z + eps < z + 1 &&
-              box.max.z - eps > z
-            );
-            if (isIntersect) {
-              colliders.push({ x, y, z });
-            }
-          }
-        }
-      }
-    }
-    return colliders;
-  }
-
   private createCrossItemGeometry(itemType: ItemType): THREE.BufferGeometry {
     const geom = new THREE.BufferGeometry();
     const size = 0.25;
@@ -244,37 +155,41 @@ export class DroppedItemManager {
     ];
 
     const item = ItemRegistry.get(itemType);
-    const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+    const blockProps = item.isBlockItem ? getBlockProperties((item as BlockItem).blockId) : null;
     const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
     const atlasIndex = textureFaces?.side ?? textureFaces?.top ?? 3;
     const tx = atlasIndex % 8;
     const ty = 7 - Math.floor(atlasIndex / 8);
     const uMin = tx * 0.125;
-    const uMax = (tx + 1) * 0.125;
     const vMin = ty * 0.125;
-    const vMax = (ty + 1) * 0.125;
 
     const uvs: number[] = [
-      // 面 1 (Z是水平，Y是垂直，Z: -h->uMin, h->uMax; Y: -h->vMin, h->vMax)
-      uMin, vMin,
-      uMin, vMax,
-      uMax, vMax,
-      uMin, vMin,
-      uMax, vMax,
-      uMax, vMin,
+      // 面 1
+      0, 0,
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 1,
+      1, 0,
 
-      // 面 2 (X是水平，Y是垂直，X: -h->uMin, h->uMax; Y: -h->vMin, h->vMax)
-      uMin, vMin,
-      uMin, vMax,
-      uMax, vMax,
-      uMin, vMin,
-      uMax, vMax,
-      uMax, vMin,
+      // 面 2
+      0, 0,
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 1,
+      1, 0,
     ];
+
+    const atlasOffsets: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      atlasOffsets.push(uMin, vMin);
+    }
 
     geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(atlasOffsets, 2));
     geom.computeBoundingSphere();
     geom.computeBoundingBox();
 
@@ -300,8 +215,9 @@ export class DroppedItemManager {
     const uvs: number[] = [];
 
     const item = ItemRegistry.get(itemType);
-    const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+    const blockProps = item.isBlockItem ? getBlockProperties((item as BlockItem).blockId) : null;
     const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
+    const atlasOffsets: number[] = [];
 
     for (const face of faces) {
       const corners = face.corners;
@@ -321,28 +237,35 @@ export class DroppedItemManager {
       const tx = atlasIndex % 8;
       const ty = 7 - Math.floor(atlasIndex / 8);
       const uMin = tx * 0.125;
-      const uMax = (tx + 1) * 0.125;
       const vMin = ty * 0.125;
-      const vMax = (ty + 1) * 0.125;
 
-      const uv0 = [uMin, vMin];
-      const uv1 = [uMin, vMax];
-      const uv2 = [uMax, vMax];
-      const uv3 = [uMax, vMin];
+      const uv0 = [0, 0];
+      const uv1 = [0, 1];
+      const uv2 = [1, 1];
+      const uv3 = [1, 0];
 
       uvs.push(
         ...uv0, ...uv1, ...uv2,
         ...uv0, ...uv2, ...uv3
       );
+
+      for (let i = 0; i < 6; i++) {
+        atlasOffsets.push(uMin, vMin);
+      }
     }
 
     geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(atlasOffsets, 2));
     geom.computeBoundingSphere();
     geom.computeBoundingBox();
 
     return geom;
+  }
+
+  public getCount(): number {
+    return this.droppedItems.length;
   }
 
   public dispose() {

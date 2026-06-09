@@ -20,7 +20,8 @@ function App() {
   const [gameParams, setGameParams] = useState<{ seed: string; loadSave: boolean } | null>(null);
 
   useEffect(() => {
-    document.documentElement.className = language === 'zh' ? 'lang-zh' : 'lang-en';
+    document.documentElement.className = `lang-${language}`;
+    document.documentElement.lang = language;
   }, [language]);
 
   // Prevent zoom and pinch gesture on mobile devices, and attempt silent fullscreen
@@ -67,12 +68,18 @@ function App() {
 
   // Clean up game parameters when returning to the start menu (unmounting GameStage)
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (gameState === GameState.MENU) {
       // Defer state update to avoid cascading synchronous renders warning
-      setTimeout(() => {
+      timer = setTimeout(() => {
         setGameParams(null);
       }, 0);
     }
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
   }, [gameState]);
 
   // Prefetch the GameStage chunk (which contains Three.js) in the background during idle time
@@ -83,11 +90,23 @@ function App() {
       });
     };
 
+    let idleId: number | undefined;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+
     if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(() => prefetch());
+      idleId = window.requestIdleCallback(() => prefetch());
     } else {
-      setTimeout(prefetch, 2000); // Fallback: prefetch after 2 seconds
+      timerId = setTimeout(prefetch, 2000); // Fallback: prefetch after 2 seconds
     }
+
+    return () => {
+      if (idleId !== undefined) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timerId !== undefined) {
+        clearTimeout(timerId);
+      }
+    };
   }, []);
 
   // Start game handler

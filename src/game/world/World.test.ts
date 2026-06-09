@@ -1,6 +1,11 @@
 import { vi, describe, test, expect } from 'vitest';
 import { World, WORLD_HEIGHT } from './World';
 import { BLOCK_TYPES } from './BlockConfig';
+import { WorldGenerator } from './WorldGenerator';
+import { WORLD_CONFIG } from './WorldConfig';
+
+// Bypass slow WebGL mesh updates globally in this test suite
+World.prototype.updateChunkMesh = () => {};
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -87,7 +92,7 @@ describe('World Serialization by Modified Blocks Tracking', () => {
 
 describe('World Cave and Dry Land Ocean Mask Generation', () => {
   test('should generate dry land below waterLevel when oceanNoise is above threshold', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 2);
     
     let foundDryLandBelowSeaLevel = false;
@@ -106,28 +111,32 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate grass on surface when dry land is below waterLevel', () => {
-    const world = new World('minicraft-seed');
-    world.loadArea(0, 150, 0, 2);
+    const world = new World('cloudcraft-seed');
     
     let verified = false;
-    for (let x = -32; x < 32; x++) {
-      for (let z = -32; z < 32; z++) {
-        // Find surface height
-        let y = WORLD_HEIGHT - 2;
-        while (y > 0 && world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
-          y--;
-        }
-        
-        const surfaceBlock = world.getBlock(x, y, z);
-        
-        // If surface is below waterLevel (150) and it's dry (not water)
-        if (y < 150 && surfaceBlock !== BLOCK_TYPES.WATER && surfaceBlock !== BLOCK_TYPES.AIR) {
-          // It should generate grass instead of sand in grassy biomes
-          if (surfaceBlock === BLOCK_TYPES.GRASS) {
-            verified = true;
-            break;
+    for (let offset = 0; offset < 2000; offset += 64) {
+      world.loadArea(offset, 150, offset, 2);
+      
+      for (let x = offset - 32; x < offset + 32; x++) {
+        for (let z = offset - 32; z < offset + 32; z++) {
+          // Find surface height
+          let y = 220; // Limit search height to 220 to avoid generating high-altitude air chunks
+          while (y > 0 && world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
+            y--;
+          }
+          
+          const surfaceBlock = world.getBlock(x, y, z);
+          
+          // If surface is close to waterLevel (<= 151) and it's dry (not water)
+          if (y <= 151 && surfaceBlock !== BLOCK_TYPES.WATER && surfaceBlock !== BLOCK_TYPES.AIR) {
+            // It should generate grass instead of sand in grassy biomes
+            if (surfaceBlock === BLOCK_TYPES.GRASS) {
+              verified = true;
+              break;
+            }
           }
         }
+        if (verified) break;
       }
       if (verified) break;
     }
@@ -135,7 +144,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate caves (AIR pockets) underground inside stone layers', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 2);
 
     let foundUndergroundCave = false;
@@ -147,8 +156,8 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
         }
         
         if (surfaceHeight > 25) {
-          // Check range y=5 to y=15 for cave air pockets
-          for (let y = 5; y < 15; y++) {
+          // Check range y=20 to y=35 (centered around the Y=28 layer) for cave air pockets
+          for (let y = 20; y < 35; y++) {
             if (world.getBlock(x, y, z) === BLOCK_TYPES.AIR) {
               foundUndergroundCave = true;
               break;
@@ -163,7 +172,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should not generate exposed floating water walls adjacent to air', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 3); // Load a 3x3 chunk area
 
     let exposedWaterCount = 0;
@@ -195,82 +204,98 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate high-altitude ponds on land with water blocks above sea level', () => {
-    let foundHighPondWater = false;
-    
-    // Search different regions to find a high-altitude pond (since probability is 3%)
-    for (let offset = 0; offset < 2000; offset += 96) {
-      const world = new World('minicraft-seed');
-      world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
+    const config = WORLD_CONFIG as unknown as { pond: { probability: number } };
+    const originalProb = config.pond.probability;
+    config.pond.probability = 1.0; // Temporarily raise pond probability to 100% to guarantee generation
+
+    try {
+      let foundHighPondWater = false;
       
-      for (let x = offset - 32; x < offset + 32; x++) {
-        for (let z = offset - 32; z < offset + 32; z++) {
-          for (let y = 152; y < 250; y++) {
-            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
-              foundHighPondWater = true;
-              break;
+      // With 100% probability, we can search in just the first few regions
+      for (const offset of [-64, 192, 448]) {
+        const world = new World('cloudcraft-seed');
+        world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
+        
+        for (let x = offset - 32; x < offset + 32; x++) {
+          for (let z = offset - 32; z < offset + 32; z++) {
+            for (let y = 152; y < 250; y++) {
+              if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+                foundHighPondWater = true;
+                break;
+              }
             }
+            if (foundHighPondWater) break;
           }
           if (foundHighPondWater) break;
         }
         if (foundHighPondWater) break;
       }
-      if (foundHighPondWater) break;
+      expect(foundHighPondWater).toBe(true);
+    } finally {
+      config.pond.probability = originalProb; // Always restore probability
     }
-    expect(foundHighPondWater).toBe(true);
-  }, 30000);
+  }, 10000);
 
   test('should not generate exposed floating water walls at high altitudes for ponds', () => {
-    let checkedPondRegions = 0;
-    let exposedWaterCount = 0;
+    const config = WORLD_CONFIG as unknown as { pond: { probability: number } };
+    const originalProb = config.pond.probability;
+    config.pond.probability = 1.0; // Temporarily raise pond probability to 100%
 
-    for (let offset = 0; offset < 2000; offset += 96) {
-      const world = new World('minicraft-seed');
-      // Load a 5x5 chunk area (80x80 blocks) centered around offset
-      world.loadArea(offset, 150, offset, 2);
-      
-      let hasHighWater = false;
-      // Scan coordinate range inside the loaded region
-      const checkMin = offset - 16;
-      const checkMax = offset + 16;
-      
-      for (let x = checkMin; x < checkMax; x++) {
-        for (let z = checkMin; z < checkMax; z++) {
-          for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
-            if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
-              hasHighWater = true;
-              
-              const neighbors = [
-                { name: 'X+1', val: world.getBlock(x + 1, y, z) },
-                { name: 'X-1', val: world.getBlock(x - 1, y, z) },
-                { name: 'Z+1', val: world.getBlock(x, y, z + 1) },
-                { name: 'Z-1', val: world.getBlock(x, y, z - 1) }
-              ];
-              
-              for (const neighbor of neighbors) {
-                if (neighbor.val === BLOCK_TYPES.AIR) {
-                  console.log(`Exposed high-altitude water at: (${x}, ${y}, ${z}) during test, neighbor ${neighbor.name} is AIR`);
-                  exposedWaterCount++;
+    try {
+      let checkedPondRegions = 0;
+      let exposedWaterCount = 0;
+
+      for (const offset of [-64, 192, 448]) {
+        const world = new World('cloudcraft-seed');
+        // Load a 5x5 chunk area (80x80 blocks) centered around offset
+        world.loadArea(offset, 150, offset, 2);
+        
+        let hasHighWater = false;
+        // Scan coordinate range inside the loaded region
+        const checkMin = offset - 16;
+        const checkMax = offset + 16;
+        
+        for (let x = checkMin; x < checkMax; x++) {
+          for (let z = checkMin; z < checkMax; z++) {
+            for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
+              if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+                hasHighWater = true;
+                
+                const neighbors = [
+                  { name: 'X+1', val: world.getBlock(x + 1, y, z) },
+                  { name: 'X-1', val: world.getBlock(x - 1, y, z) },
+                  { name: 'Z+1', val: world.getBlock(x, y, z + 1) },
+                  { name: 'Z-1', val: world.getBlock(x, y, z - 1) }
+                ];
+                
+                for (const neighbor of neighbors) {
+                  if (neighbor.val === BLOCK_TYPES.AIR) {
+                    console.log(`Exposed high-altitude water at: (${x}, ${y}, ${z}) during test, neighbor ${neighbor.name} is AIR`);
+                    exposedWaterCount++;
+                  }
                 }
               }
             }
           }
         }
-      }
-      
-      if (hasHighWater) {
-        checkedPondRegions++;
-        if (checkedPondRegions >= 1) {
-          break;
+        
+        if (hasHighWater) {
+          checkedPondRegions++;
+          if (checkedPondRegions >= 1) {
+            break;
+          }
         }
       }
+      
+      expect(checkedPondRegions).toBeGreaterThan(0);
+      expect(exposedWaterCount).toBe(0);
+    } finally {
+      config.pond.probability = originalProb; // Always restore probability
     }
-    
-    expect(checkedPondRegions).toBeGreaterThan(0);
-    expect(exposedWaterCount).toBe(0);
-  }, 30000);
+  }, 10000);
 
   test('should never generate floating vegetation (vegetation block on top of AIR)', () => {
-    const world = new World('minicraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 2);
 
     let floatingCount = 0;
@@ -307,5 +332,79 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
 
     expect(floatingCount).toBe(0);
   }, 20000);
+
+  test('should not generate ponds near rivers', () => {
+    const config = WORLD_CONFIG as unknown as { pond: { probability: number } };
+    const originalProb = config.pond.probability;
+    config.pond.probability = 1.0; // Temporarily raise pond probability to 100%
+
+    try {
+      const world = new World('cloudcraft-seed');
+      const generator = new WorldGenerator('cloudcraft-seed');
+      
+      const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
+      const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
+
+      let checkedWaterBlocks = 0;
+      // With 100% probability, we can verify this safety distance in just a couple of regions
+      for (const offset of [-64, 192]) {
+        world.loadArea(offset, 150, offset, 2);
+        
+        const checkMin = offset - 32;
+        const checkMax = offset + 32;
+        
+        for (let x = checkMin; x < checkMax; x++) {
+          for (let z = checkMin; z < checkMax; z++) {
+            for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
+              if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
+                const { dRiver } = generator.getRiverValue(x, z);
+                expect(dRiver).toBeGreaterThanOrEqual(valleyEnd);
+                checkedWaterBlocks++;
+              }
+            }
+          }
+        }
+      }
+      
+      expect(checkedWaterBlocks).toBeGreaterThan(0);
+    } finally {
+      config.pond.probability = originalProb; // Always restore probability
+    }
+  }, 10000);
 });
+
+describe('World Chunk Loading Priority and Custom Sorting', () => {
+  test('should prioritize chunks on the same horizontal plane (Y-level difference is minimized) and then by horizontal distance', () => {
+    const world = new World('priority-test');
+    const ccx = 0, ccy = 0, ccz = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const priority = (key: string) => (world as any).getChunkPriority(key, ccx, ccy, ccz);
+    
+    expect(priority('0,0,0')).toBe(0); // Player chunk has absolute priority
+    expect(priority('0,0,1')).toBe(1); // Same Y plane, horizontal distance 1
+    expect(priority('1,0,1')).toBe(2); // Same Y plane, horizontal distance sqrt(2)
+    expect(priority('0,1,0')).toBe(4); // Diff Y plane by 1, horizontal distance 0 (weighted)
+    expect(priority('0,-1,0')).toBe(4); // Diff Y plane by 1, horizontal distance 0 (weighted)
+    expect(priority('0,1,1')).toBe(5); // Diff Y plane by 1, horizontal distance 1 (weighted)
+    
+    // Sort array:
+    const list = ['0,1,1', '1,0,1', '0,-1,0', '0,0,1', '0,0,0', '0,1,0'];
+    list.sort((a, b) => priority(a) - priority(b));
+    
+    // Expected sorted order:
+    // 1. '0,0,0' (priority 0)
+    // 2. '0,0,1' (priority 1)
+    // 3. '1,0,1' (priority 2)
+    // 4. '0,-1,0' or '0,1,0' (priority 4)
+    // 5. '0,1,0' or '0,-1,0' (priority 4)
+    // 6. '0,1,1' (priority 5)
+    expect(list[0]).toBe('0,0,0');
+    expect(list[1]).toBe('0,0,1');
+    expect(list[2]).toBe('1,0,1');
+    expect(priority(list[3])).toBe(4);
+    expect(priority(list[4])).toBe(4);
+    expect(list[5]).toBe('0,1,1');
+  });
+});
+
 

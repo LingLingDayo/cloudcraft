@@ -14,8 +14,8 @@ export const createGameSlice: StateCreator<
 
   return {
     gameState: GameState.MENU,
-    renderDistance: 3,
-    fov: 75,
+    renderDistance: settings.renderDistance,
+    fov: settings.fov,
     gameMode: GameMode.ADVENTURE,
     language: settings.language,
     autoJump: settings.autoJump,
@@ -33,8 +33,14 @@ export const createGameSlice: StateCreator<
 
     setGameState: (gameState) => set({ gameState }),
     setIsSettingsOpen: (isSettingsOpen, settingsSource = null) => set({ isSettingsOpen, settingsSource }),
-    setRenderDistance: (renderDistance) => set({ renderDistance }),
-    setFov: (fov) => set({ fov }),
+    setRenderDistance: (renderDistance) => set(() => {
+      saveSystemSetting('renderDistance', renderDistance);
+      return { renderDistance };
+    }),
+    setFov: (fov) => set(() => {
+      saveSystemSetting('fov', fov);
+      return { fov };
+    }),
     setGameMode: (gameMode) => set(() => {
       if (gameMode === GameMode.CREATIVE) {
         return {
@@ -69,6 +75,10 @@ export const createGameSlice: StateCreator<
       saveSystemSetting('showMinimap', showMinimap);
       return { showMinimap };
     }),
+    setSetting: (key, value) => set(() => {
+      saveSystemSetting(key, value);
+      return { [key]: value } as unknown as Partial<GameStoreState>;
+    }),
 
   // Loading actions implementation
   setWorldLoading: (isWorldLoading) => set({ isWorldLoading }),
@@ -84,8 +94,10 @@ export const createGameSlice: StateCreator<
     
     let progress = state.worldLoadingProgress;
     if (state.worldLoadingStage === 'chunks' && total > 0) {
-      // Chunk generation progress maps from 30% to 100%
-      progress = Math.round(30 + (loadedCount / total) * 70);
+      // Chunk generation progress maps from 30% to 100% when 45% of chunks are loaded
+      const targetCount = Math.ceil(total * 0.45);
+      const ratio = Math.min(1, loadedCount / targetCount);
+      progress = Math.round(30 + ratio * 70);
     }
     
     return {

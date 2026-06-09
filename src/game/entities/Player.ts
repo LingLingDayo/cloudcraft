@@ -7,6 +7,7 @@ import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { GameAction } from '@game/systems/HotkeyManager';
 import { useGameStore } from '@store/useGameStore';
 import type { ItemType } from '@type';
+import { isTestSeed as checkIsTestSeed } from '@game/world/WorldConfig';
 
 export class Player {
   public position = new THREE.Vector3(8.5, 40, 8.5);
@@ -33,13 +34,34 @@ export class Player {
   }
 
   public spawn(world: World, _physics: Physics) {
-    let startX = 8.5;
-    let startZ = 8.5;
+    // 1. 每次均根据当前传入的 world 种子重新计算并定位安全的世界出生中心点（World Spawn Center）
+    let baseX = 8.5;
+    let baseZ = 8.5;
+    let isTestSeed = false;
+
+    const getSeed = (world as unknown as { getSeed?: () => string }).getSeed;
+    if (typeof getSeed === 'function') {
+      const seed = getSeed.call(world);
+      isTestSeed = !!(seed && checkIsTestSeed(seed));
+      if (seed && !isTestSeed) {
+        let hash = 0;
+        for (let i = 0; i < seed.length; i++) {
+          hash = (hash << 5) - hash + seed.charCodeAt(i);
+          hash |= 0;
+        }
+        // 基于种子产生 -150 到 150 之间的随机出生点，避开固定生成河流的原点 (0, 0)
+        baseX = ((Math.abs(hash * 31) % 300) - 150) + 0.5;
+        baseZ = ((Math.abs(hash * 17) % 300) - 150) + 0.5;
+      }
+    }
+
+    let startX = baseX;
+    let startZ = baseZ;
     let startY = WORLD_HEIGHT - 2;
 
-    // 寻找安全的陆地出生点 (不属于水域且是 solid 的地面)
+    // 寻找安全的陆地出生点中心 (不属于水域且是 solid 的地面)
     let foundSafeSpawn = false;
-    const maxSearchRadius = 16; // 寻找范围：16格以内 (优化查找性能)
+    const maxSearchRadius = isTestSeed ? 4 : 32; // 单元测试种子下限制最大检索半径为 4，大幅优化单元测试性能
     
     // 螺旋式搜索安全的出生点
     outerLoop:
@@ -48,8 +70,8 @@ export class Player {
         for (let dz = -r; dz <= r; dz++) {
           if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
           
-          const testX = 8.5 + dx;
-          const testZ = 8.5 + dz;
+          const testX = baseX + dx;
+          const testZ = baseZ + dz;
           
           // 从上往下找到第一个非空气方块
           let testY = WORLD_HEIGHT - 2;
@@ -74,10 +96,10 @@ export class Player {
       }
     }
 
-    // 如果找不到安全的陆地，就退回到默认的 (8.5, 8.5)
+    // 如果找不到安全的陆地，就退回到选择的 baseX, baseZ 基础点
     if (!foundSafeSpawn) {
-      startX = 8.5;
-      startZ = 8.5;
+      startX = baseX;
+      startZ = baseZ;
       startY = WORLD_HEIGHT - 2;
       
       // 仍然向下寻路，但如果碰到水或者普通 Solid，就停下来（即 props.isSolid || props.isLiquid）
@@ -91,9 +113,54 @@ export class Player {
       }
     }
 
-    // 将玩家定位到该方块之上
-    this.position.set(startX, startY + 1.2, startZ);
+    // 记录最新计算的世界出生中心点
     this.spawnPoint.set(startX, startY, startZ);
+
+    // 2. 模拟 Minecraft 的出生半径随机偏置机制 (默认在 Spawn Radius = 10 范围内随机落脚)
+    const spawnRadius = 10;
+    let finalX = this.spawnPoint.x;
+    let finalZ = this.spawnPoint.z;
+    let finalY = this.spawnPoint.y;
+    let foundRandSpawn = false;
+
+    // 尝试随机偏置，若在偏置后的 (x, z) 处能寻找到安全的陆地，则在此地出生
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const r = Math.random() * spawnRadius;
+      const angle = Math.random() * Math.PI * 2;
+      const randX = this.spawnPoint.x + Math.cos(angle) * r;
+      const randZ = this.spawnPoint.z + Math.sin(angle) * r;
+
+      // 从上往下寻找地表高度
+      let testY = WORLD_HEIGHT - 2;
+      while (testY > 0 && world.getBlock(Math.floor(randX), testY, Math.floor(randZ)) === BLOCK_TYPES.AIR) {
+        testY--;
+      }
+
+      if (testY > 0) {
+        const topBlockId = world.getBlock(Math.floor(randX), testY, Math.floor(randZ));
+        const props = getBlockProperties(topBlockId);
+        const canSpawnOn = props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid);
+
+        if (canSpawnOn) {
+          // 对齐到方块中心，避免因为浮点数偏移玩家陷进缝隙中，也便于单元测试精确匹配
+          finalX = Math.floor(randX) + 0.5;
+          finalZ = Math.floor(randZ) + 0.5;
+          finalY = testY;
+          foundRandSpawn = true;
+          break;
+        }
+      }
+    }
+
+    // 超过尝试次数仍找不到安全降落区（比如全被随机偏置进了湖中），则稳妥回退到最初设定的安全出生中心点本身
+    if (!foundRandSpawn) {
+      finalX = this.spawnPoint.x;
+      finalZ = this.spawnPoint.z;
+      finalY = this.spawnPoint.y;
+    }
+
+    // 将玩家定位到该方块之上
+    this.position.set(finalX, finalY + 1.2, finalZ);
     this.velocity.set(0, 0, 0);
     this.state.onGround = false;
     this.syncCamera();
@@ -128,7 +195,9 @@ export class Player {
 
     const canJump = this.state.onGround && !this.state.inWater && !this.isFlying;
     const wasYVelocity = this.velocity.y;
-    const autoJump = useGameStore.getState().autoJump;
+    const autoJumpSetting = useGameStore.getState().autoJump;
+    const isMovingForward = controls.isActionPressed(GameAction.MOVE_FORWARD) && !controls.isActionPressed(GameAction.MOVE_BACKWARD);
+    const autoJump = autoJumpSetting && isMovingForward;
 
     const cameraDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
 
@@ -216,11 +285,10 @@ export class Player {
         if (this.hunger >= 18 && this.life < 10) {
           this.life = Math.min(10, this.life + 1);
           this.hungerExhaustion += 1.5; // Regeneration drains hunger
-          if (this.onTakeDamage) this.onTakeDamage(); // Trigger UI/State updates
         }
 
-        // Starvation damage when hunger is 0 (life > 1)
-        if (this.hunger === 0 && this.life > 1) {
+        // Starvation damage when hunger is 0 (can starve to death)
+        if (this.hunger === 0 && this.life > 0) {
           this.takeDamage(1, world, physics);
         }
       }

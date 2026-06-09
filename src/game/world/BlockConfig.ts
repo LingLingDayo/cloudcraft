@@ -17,8 +17,10 @@ export interface BlockProperties {
   showBreakCracks?: boolean;  // 破坏过程中是否显示裂纹，默认 true
   color?: string;             // UI preview color (hex string like '#56a032' or rgba)
   colorHex?: number;          // 3D particle/material color (number like 0x56a032)
+  particleEffect?: string;    // Custom particle effect ID (e.g. 'cloudcraft:leaf', 'cloudcraft:sand', etc.)
   border?: string;            // UI preview border (optional)
   allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
+  allowedBaseBlocks?: BlockType[]; // 该植被/植物方块只能放置/生长在指定的这些方块类型上
   textureFaces?: { top: number; bottom: number; side: number };
   droppedModelType?: 'block' | 'cross';
   renderAdjacentSameType?: boolean; // 当相邻方块是相同类型时是否依然渲染邻面 (例如树叶)
@@ -29,6 +31,13 @@ export interface BlockProperties {
   enableCrossOffset?: boolean;       // 是否启用斜对角平面随机微调偏移 (避免完美网格对齐)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
+  lootTableId?: string;       // 新增 of LootTable 绑定 ID，例如 'cloudcraft:blocks/oak_leaves'
+  lootTable?: {
+    itemType: string;
+    probability: number;
+    minCount?: number;
+    maxCount?: number;
+  }[];
 }
 
 // ─── AIR 默认属性（propertiesResolver 初始化前的回退值）───
@@ -89,4 +98,16 @@ export function getBlockProperties(blockId: number): BlockProperties & { transla
     isCollidable: props.isCollidable ?? props.isSolid,
     canSpawnOn: props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid)
   };
+}
+
+/**
+ * 校验某个方块类型（如花、草等植物）是否可以种植/生长在指定的底座方块类型上
+ */
+export function canBlockGrowOn(plantId: number, baseId: number): boolean {
+  const plantProps = getBlockProperties(plantId);
+  if (plantProps.allowedBaseBlocks) {
+    return plantProps.allowedBaseBlocks.includes(baseId as BlockType);
+  }
+  const baseProps = getBlockProperties(baseId);
+  return baseProps.allowVegetationBase === true;
 }

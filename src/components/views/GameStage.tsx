@@ -5,7 +5,7 @@ import { PauseMenu } from './PauseMenu';
 import { useGameStore } from '@store/useGameStore';
 import styles from './GameStage.module.scss';
 import { GameState, GameMode, type ItemType } from '@type';
-import { GameProvider } from '../../context/GameContext';
+import { GameProvider } from '@context/GameContext';
 import { SaveManager } from '@game/systems/SaveManager';
 import { useTranslation } from '@i18n';
 
@@ -101,6 +101,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         gameManagerRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed, loadSave]);
 
   // Synchronize selected item to GameManager
@@ -126,6 +127,8 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
       gm.setFov(fov);
     }
   }, [fov]);
+
+
 
   // Synchronize game mode and disable flying if not creative
   useEffect(() => {

@@ -25,12 +25,12 @@ export const ItemIcon: React.FC<ItemIconProps> = ({ blockId, itemId, size, class
   const cubeSize = typeof size === 'number' ? `${size}px` : size;
 
   // Resolve properties if it's a BlockItem to get complete configuration (including textureFaces)
-  const blockProps = item instanceof BlockItem ? getBlockProperties(item.blockId) : null;
+  const blockProps = item.isBlockItem ? getBlockProperties((item as BlockItem).blockId) : null;
   const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
 
   // Render as a 2D flat icon if it is not a placeable block item,
   // or if it uses a custom cross model (like saplings).
-  if (!(item instanceof BlockItem) || item.droppedModelType === 'cross') {
+  if (!item.isBlockItem || item.droppedModelType === 'cross') {
     const atlasIndex = textureFaces?.side ?? textureFaces?.top ?? 32;
     let style: React.CSSProperties;
     try {
