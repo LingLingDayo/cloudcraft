@@ -21,21 +21,28 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
     style={{ imageRendering: 'pixelated' }}
     className={styles.pixelHeart}
   >
+    {/* Black Outline */}
     <path
-      d="M1,0h2v1h-2z M6,0h2v1h-2z M0,1h1v1h-1z M3,1h1v1h-1z M5,1h1v1h-1z M8,1h1v1h-1z M0,2h1v1h-1z M8,2h1v1h-1z M0,3h1v1h-1z M8,3h1v1h-1z M1,4h1v1h-1z M7,4h1v1h-1z M2,5h1v1h-1z M6,5h1v1h-1z M3,6h1v1h-1z M5,6h1v1h-1z M4,7h1v1h-1z"
+      d="M2,0h1v1h-1z M6,0h1v1h-1z M1,1h1v1h-1z M3,1h1v1h-1z M5,1h1v1h-1z M7,1h1v1h-1z M0,2h1v1h-1z M4,2h1v1h-1z M8,2h1v1h-1z M0,3h1v1h-1z M8,3h1v1h-1z M1,4h1v1h-1z M7,4h1v1h-1z M2,5h1v1h-1z M6,5h1v1h-1z M3,6h1v1h-1z M5,6h1v1h-1z M4,7h1v1h-1z"
       fill="#000000"
     />
     {filled ? (
       <>
+        {/* Heart Fill (Red) */}
         <path
-          d="M2,1h1v1h-1z M6,1h2v1h-2z M1,2h7v1h-7z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
+          d="M6,1h1v1h-1z M2,2h2v1h-2z M5,2h3v1h-3z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
           fill="#ff2222"
         />
-        <path d="M1,1h1v1h-1z" fill="#ffffff" />
+        {/* Highlight (White) */}
+        <path
+          d="M2,1h1v1h-1z M1,2h1v1h-1z"
+          fill="#ffffff"
+        />
       </>
     ) : (
+      /* Empty Heart Fill (Grey) */
       <path
-        d="M1,1h2v1h-2z M6,1h2v1h-2z M1,2h7v1h-7z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
+        d="M2,1h1v1h-1z M6,1h1v1h-1z M1,2h3v1h-3z M5,2h3v1h-3z M1,3h7v1h-7z M2,4h5v1h-5z M3,5h3v1h-3z M4,6h1v1h-1z"
         fill="#434343"
       />
     )}
@@ -43,59 +50,61 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
 );
 
 
-const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 9 9"
-    style={{ imageRendering: 'pixelated' }}
-    className={styles.pixelHunger}
-  >
-    {/* Black Outline */}
-    <path
-      d="M4,0h3v1h-3z M3,1h1v1h-1z M7,1h1v1h-1z M2,2h1v1h-1z M8,2h1v1h-1z M2,3h1v1h-1z M8,3h1v1h-1z M3,4h1v1h-1z M7,4h1v1h-1z M4,5h1v1h-1z M6,5h1v1h-1z M3,6h1v1h-1z M5,6h1v1h-1z M1,7h2v1h-2z M4,7h1v1h-1z M0,8h2v1h-2z M3,8h1v1h-1z"
-      fill="#000000"
-    />
-    {filled === 2 ? (
-      <>
-        {/* Bone (White) */}
-        <path
-          d="M5,5h1v1h-1z M4,6h1v1h-1z M2,7h2v1h-2z M1,8h2v1h-2z"
-          fill="#e0e0e0"
-        />
-        {/* Meat Shadow (Dark Brown) */}
-        <path
-          d="M3,2h2v1h-2z M3,3h2v1h-2z M4,4h2v1h-2z"
-          fill="#703811"
-        />
-        {/* Meat Main (Brown) */}
-        <path
-          d="M4,1h3v1h-3z M5,2h3v1h-3z M5,3h3v1h-3z M6,4h1v1h-1z"
-          fill="#ab6026"
-        />
-      </>
-    ) : filled === 1 ? (
-      <>
-        {/* Empty part (Grey) */}
-        <path
-          d="M4,1h1v1h-1z M3,2h3v1h-3z M3,3h3v1h-3z M4,4h2v1h-2z M5,5h1v1h-1z M4,6h1v1h-1z M2,7h2v1h-2z M1,8h2v1h-2z"
-          fill="#434343"
-        />
-        {/* Half Meat (Brown) */}
-        <path
-          d="M5,1h2v1h-2z M6,2h2v1h-2z M6,3h2v1h-2z M6,4h1v1h-1z"
-          fill="#ab6026"
-        />
-      </>
-    ) : (
-      /* Entirely Empty (Grey) */
-      <path
-        d="M4,1h3v1h-3z M3,2h5v1h-5z M3,3h5v1h-5z M4,4h3v1h-3z M5,5h1v1h-1z M4,6h1v1h-1z M2,7h2v1h-2z M1,8h2v1h-2z"
-        fill="#434343"
-      />
-    )}
-  </svg>
-);
+const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => {
+  // 0: transparent, 1: black outline, 2: bone, 3: light meat, 4: dark meat
+  const grid = [
+    [0, 0, 0, 0, 0, 1, 1, 1, 0], // y=0: top outline (5,6,7)
+    [0, 0, 0, 0, 1, 3, 3, 4, 1], // y=1: outline (4,8), meat (5,6,7)
+    [0, 0, 0, 1, 3, 3, 3, 4, 1], // y=2: outline (3,8), meat (4,5,6,7)
+    [0, 0, 1, 3, 3, 3, 4, 4, 1], // y=3: outline (2,8), meat (3,4,5,6,7)
+    [0, 0, 1, 3, 3, 4, 4, 1, 0], // y=4: outline (2,7), meat (3,4,5,6)
+    [0, 0, 1, 2, 4, 4, 1, 0, 0], // y=5: outline (2,6), bone (3), meat (4,5)
+    [1, 1, 2, 1, 1, 1, 0, 0, 0], // y=6: outline (0,1,3,4,5), bone (2)
+    [2, 2, 1, 0, 0, 0, 0, 0, 0], // y=7: outline (2), bone (0,1)
+    [1, 2, 1, 0, 0, 0, 0, 0, 0], // y=8: outline (0,2), bone (1)
+  ];
+
+  const getColor = (val: number) => {
+    switch (val) {
+      case 1:
+        return '#000000';
+      case 2:
+        return filled > 0 ? '#e0e0e0' : '#434343';
+      case 3:
+        return filled === 2 ? '#ab6026' : '#434343';
+      case 4:
+        return filled >= 1 ? '#703811' : '#434343';
+      default:
+        return 'transparent';
+    }
+  };
+
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 9 9"
+      style={{ imageRendering: 'pixelated' }}
+      className={styles.pixelHunger}
+    >
+      {grid.flatMap((row, y) =>
+        row.map((val, x) => {
+          if (val === 0) return null;
+          return (
+            <rect
+              key={`${x}-${y}`}
+              x={x}
+              y={y}
+              width="1"
+              height="1"
+              fill={getColor(val)}
+            />
+          );
+        })
+      )}
+    </svg>
+  );
+};
 
 
 
