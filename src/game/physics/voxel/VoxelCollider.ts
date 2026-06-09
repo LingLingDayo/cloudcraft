@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { World, getBlockProperties } from '@game/world/World';
+import { type Size3D } from '@type';
 
 /**
  * 核心体素碰撞器 (Voxel Collider)
@@ -30,7 +31,7 @@ export class VoxelCollider {
   /**
    * 获取实体的 AABB 碰撞盒
    */
-  public static getBoundingBox(position: THREE.Vector3, size: { width: number; height: number; depth: number }): THREE.Box3 {
+  public static getBoundingBox(position: THREE.Vector3, size: Size3D): THREE.Box3 {
     const halfW = size.width / 2;
     const halfD = size.depth / 2;
     return new THREE.Box3(
@@ -90,7 +91,7 @@ export class VoxelCollider {
     world: World,
     position: THREE.Vector3,
     velocity: THREE.Vector3,
-    size: { width: number; height: number; depth: number },
+    size: Size3D,
     dt: number
   ): { collidedX: boolean; collidedZ: boolean; onGround: boolean } {
     let collidedX = false;

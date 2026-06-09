@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ItemType } from '@type';
+import { ItemType, type ItemStack } from '@type';
 import type { World } from '../world/World';
 
 export interface LootContext {
@@ -7,11 +7,6 @@ export interface LootContext {
   position: THREE.Vector3;
   tool?: unknown;   // 挖掘/攻击时手持的物品/工具
   killer?: unknown; // 击杀者实体
-}
-
-export interface ItemStack {
-  type: ItemType;
-  count: number;
 }
 
 export interface LootCondition {

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { World } from '@game/world/World';
+import { type Size3D } from '@type';
 
 export interface MovementContext {
   position: THREE.Vector3;
@@ -10,7 +11,7 @@ export interface MovementContext {
   isShiftLeft: boolean;
   state: { onGround: boolean; inWater: boolean; swimTime?: number };
   settings: {
-    playerSize: { width: number; height: number; depth: number };
+    playerSize: Size3D;
     gravity: number;
     terminalVelocity: number;
     jumpSpeed: number;

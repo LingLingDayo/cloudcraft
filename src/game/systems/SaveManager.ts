@@ -1,4 +1,4 @@
-import { GameMode, type HotbarItem } from '@type';
+import { GameMode, type HotbarItem, type Vector3D } from '@type';
 import pkg from '@package';
 
 export interface SaveMetadata {
@@ -13,7 +13,7 @@ export interface SaveMetadata {
 
 export interface SaveData {
   world: string;
-  player: { x: number; y: number; z: number };
+  player: Vector3D;
   hotbar: (HotbarItem | null)[];
   inventory: (HotbarItem | null)[];
   activeSlot: number;
