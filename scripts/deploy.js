@@ -24,11 +24,21 @@ function cleanGitDir() {
   }
 }
 
-try {
-  console.log('正在获取远程仓库 URL...');
-  const remoteUrl = getOutput('git remote get-url origin');
-  console.log(`远程仓库 URL: ${remoteUrl}`);
+const args = process.argv.slice(2);
+let deployGithub = true;
+let deployCloudflare = true;
 
+if (args.includes('--github') || args.includes('github') || args.includes('--platform=github')) {
+  deployGithub = true;
+  deployCloudflare = false;
+} else if (args.includes('--cloudflare') || args.includes('cloudflare') || args.includes('--platform=cloudflare')) {
+  deployGithub = false;
+  deployCloudflare = true;
+}
+
+console.log(`部署目标: ${deployGithub ? 'GitHub Pages' : ''}${deployGithub && deployCloudflare ? ' & ' : ''}${deployCloudflare ? 'Cloudflare' : ''}`);
+
+try {
   console.log('正在执行打包...');
   // 设置环境变量，指示打包使用 /cloudcraft/ 作为 base 路径
   process.env.DEPLOY_BASE = 'true';
@@ -38,17 +48,28 @@ try {
     throw new Error('未找到打包生成的 dist 目录！');
   }
 
-  cleanGitDir();
+  if (deployGithub) {
+    console.log('正在获取远程仓库 URL...');
+    const remoteUrl = getOutput('git remote get-url origin');
+    console.log(`远程仓库 URL: ${remoteUrl}`);
 
-  console.log('正在初始化临时 Git 仓库并推送...');
-  run('git init', distDir);
+    cleanGitDir();
 
-  run('git checkout -b gh-pages', distDir);
-  run('git add -A', distDir);
-  run('git commit -m "deploy: force deploy page"', distDir);
-  
-  console.log(`正在强制推送至 ${remoteUrl} 的 gh-pages 分支...`);
-  run(`git push -f ${remoteUrl} gh-pages`, distDir);
+    console.log('正在初始化临时 Git 仓库并推送...');
+    run('git init', distDir);
+
+    run('git checkout -b gh-pages', distDir);
+    run('git add -A', distDir);
+    run('git commit -m "deploy: force deploy page"', distDir);
+    
+    console.log(`正在推送至 ${remoteUrl} 的 gh-pages 分支...`);
+    run(`git push -f ${remoteUrl} gh-pages`, distDir);
+  }
+
+  if (deployCloudflare) {
+    console.log('正在部署至 Cloudflare...');
+    run('npx wrangler deploy');
+  }
 
   console.log('部署成功！');
 } catch (error) {
