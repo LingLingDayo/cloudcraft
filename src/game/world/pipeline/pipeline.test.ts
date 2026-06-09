@@ -29,7 +29,7 @@ vi.mock('@game/world/biome/BiomeRegistry', () => ({
 import { vi, describe, test, expect } from 'vitest';
 import '@game/world/block/BlockRegistry';
 import { ChunkPipeline } from './ChunkPipeline';
-import type { ChunkPipelineContext, ChunkPipelineStage } from './ChunkPipelineTypes';
+import type { ChunkPipelineContext, ChunkPipelineStage, WorldTerrainProvider } from './ChunkPipelineTypes';
 import { ImprovedNoise } from '../Noise';
 import { TerrainHeightMapStage } from './stages/TerrainHeightMapStage';
 import { BaseTerrainFillerStage } from './stages/BaseTerrainFillerStage';
@@ -68,7 +68,7 @@ describe('ChunkPipeline Extensions', () => {
       noise: {} as ImprovedNoise,
       terrainMap: [],
       biomeMap: [],
-      generator: {}
+      generator: {} as WorldTerrainProvider
     };
 
     pipeline.execute(mockContext);
@@ -112,7 +112,7 @@ describe('ChunkPipeline Extensions', () => {
       noise: mockNoise,
       terrainMap: [],
       biomeMap: [],
-      generator: mockGenerator
+      generator: mockGenerator as unknown as WorldTerrainProvider
     };
 
     pipeline.execute(context);
@@ -170,7 +170,7 @@ describe('ChunkPipeline Extensions', () => {
       noise: mockNoise,
       terrainMap: [],
       biomeMap: [],
-      generator: mockGenerator
+      generator: mockGenerator as unknown as WorldTerrainProvider
     };
 
     pipeline.execute(context);
@@ -228,7 +228,7 @@ describe('ChunkPipeline Extensions', () => {
       noise: mockNoise,
       terrainMap: [],
       biomeMap: [],
-      generator: mockGenerator
+      generator: mockGenerator as unknown as WorldTerrainProvider
     };
 
     pipeline.execute(context);
@@ -285,7 +285,7 @@ describe('ChunkPipeline Extensions', () => {
       noise: mockNoise,
       terrainMap: [],
       biomeMap: [],
-      generator: mockGenerator
+      generator: mockGenerator as unknown as WorldTerrainProvider
     };
 
     pipeline.execute(context);
@@ -343,7 +343,7 @@ describe('ChunkPipeline Extensions', () => {
       noise: mockNoise,
       terrainMap: [],
       biomeMap: [],
-      generator: mockGenerator
+      generator: mockGenerator as unknown as WorldTerrainProvider
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -387,7 +387,7 @@ describe('ChunkPipeline Extensions', () => {
       noise: mockNoise,
       terrainMap: [],
       biomeMap: Array.from({ length: 16 }, () => Array(16).fill(mockBiome)),
-      generator: {}
+      generator: {} as WorldTerrainProvider
     };
 
     pipeline.execute(context);
