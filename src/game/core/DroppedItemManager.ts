@@ -161,31 +161,35 @@ export class DroppedItemManager {
     const tx = atlasIndex % 8;
     const ty = 7 - Math.floor(atlasIndex / 8);
     const uMin = tx * 0.125;
-    const uMax = (tx + 1) * 0.125;
     const vMin = ty * 0.125;
-    const vMax = (ty + 1) * 0.125;
 
     const uvs: number[] = [
-      // 面 1 (Z是水平，Y是垂直，Z: -h->uMin, h->uMax; Y: -h->vMin, h->vMax)
-      uMin, vMin,
-      uMin, vMax,
-      uMax, vMax,
-      uMin, vMin,
-      uMax, vMax,
-      uMax, vMin,
+      // 面 1
+      0, 0,
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 1,
+      1, 0,
 
-      // 面 2 (X是水平，Y是垂直，X: -h->uMin, h->uMax; Y: -h->vMin, h->vMax)
-      uMin, vMin,
-      uMin, vMax,
-      uMax, vMax,
-      uMin, vMin,
-      uMax, vMax,
-      uMax, vMin,
+      // 面 2
+      0, 0,
+      0, 1,
+      1, 1,
+      0, 0,
+      1, 1,
+      1, 0,
     ];
+
+    const atlasOffsets: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      atlasOffsets.push(uMin, vMin);
+    }
 
     geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(atlasOffsets, 2));
     geom.computeBoundingSphere();
     geom.computeBoundingBox();
 
@@ -213,6 +217,7 @@ export class DroppedItemManager {
     const item = ItemRegistry.get(itemType);
     const blockProps = item.isBlockItem ? getBlockProperties((item as BlockItem).blockId) : null;
     const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
+    const atlasOffsets: number[] = [];
 
     for (const face of faces) {
       const corners = face.corners;
@@ -232,24 +237,27 @@ export class DroppedItemManager {
       const tx = atlasIndex % 8;
       const ty = 7 - Math.floor(atlasIndex / 8);
       const uMin = tx * 0.125;
-      const uMax = (tx + 1) * 0.125;
       const vMin = ty * 0.125;
-      const vMax = (ty + 1) * 0.125;
 
-      const uv0 = [uMin, vMin];
-      const uv1 = [uMin, vMax];
-      const uv2 = [uMax, vMax];
-      const uv3 = [uMax, vMin];
+      const uv0 = [0, 0];
+      const uv1 = [0, 1];
+      const uv2 = [1, 1];
+      const uv3 = [1, 0];
 
       uvs.push(
         ...uv0, ...uv1, ...uv2,
         ...uv0, ...uv2, ...uv3
       );
+
+      for (let i = 0; i < 6; i++) {
+        atlasOffsets.push(uMin, vMin);
+      }
     }
 
     geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(atlasOffsets, 2));
     geom.computeBoundingSphere();
     geom.computeBoundingBox();
 
