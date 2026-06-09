@@ -50,20 +50,21 @@ const PixelHeart: React.FC<{ filled: boolean }> = ({ filled }) => (
 );
 
 
-const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => {
-  // 0: transparent, 1: black outline, 2: bone, 3: light meat, 4: dark meat
-  const grid = [
-    [0, 0, 0, 0, 0, 1, 1, 1, 0], // y=0: top outline (5,6,7)
-    [0, 0, 0, 0, 1, 3, 3, 4, 1], // y=1: outline (4,8), meat (5,6,7)
-    [0, 0, 0, 1, 3, 3, 3, 4, 1], // y=2: outline (3,8), meat (4,5,6,7)
-    [0, 0, 1, 3, 3, 3, 4, 4, 1], // y=3: outline (2,8), meat (3,4,5,6,7)
-    [0, 0, 1, 3, 3, 4, 4, 1, 0], // y=4: outline (2,7), meat (3,4,5,6)
-    [0, 0, 1, 2, 4, 4, 1, 0, 0], // y=5: outline (2,6), bone (3), meat (4,5)
-    [1, 1, 2, 1, 1, 1, 0, 0, 0], // y=6: outline (0,1,3,4,5), bone (2)
-    [2, 2, 1, 0, 0, 0, 0, 0, 0], // y=7: outline (2), bone (0,1)
-    [1, 2, 1, 0, 0, 0, 0, 0, 0], // y=8: outline (0,2), bone (1)
-  ];
+// Hunger bar icon pixel layout mapping
+// 0: transparent, 1: black outline, 2: bone, 3: light meat, 4: dark meat
+const HUNGER_GRID = [
+  [0, 0, 0, 0, 0, 1, 1, 1, 0], // y=0: top outline (5,6,7)
+  [0, 0, 0, 0, 1, 3, 3, 4, 1], // y=1: outline (4,8), meat (5,6,7)
+  [0, 0, 0, 1, 3, 3, 3, 4, 1], // y=2: outline (3,8), meat (4,5,6,7)
+  [0, 0, 1, 3, 3, 3, 4, 4, 1], // y=3: outline (2,8), meat (3,4,5,6,7)
+  [0, 0, 1, 3, 3, 4, 4, 1, 0], // y=4: outline (2,7), meat (3,4,5,6)
+  [0, 0, 1, 2, 4, 4, 1, 0, 0], // y=5: outline (2,6), bone (3), meat (4,5)
+  [1, 1, 2, 1, 1, 1, 0, 0, 0], // y=6: outline (0,1,3,4,5), bone (2)
+  [2, 2, 1, 0, 0, 0, 0, 0, 0], // y=7: outline (2), bone (0,1)
+  [1, 2, 1, 0, 0, 0, 0, 0, 0], // y=8: outline (0,2), bone (1)
+];
 
+const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => {
   const getColor = (val: number) => {
     switch (val) {
       case 1:
@@ -87,7 +88,7 @@ const PixelHunger: React.FC<{ filled: number }> = ({ filled }) => {
       style={{ imageRendering: 'pixelated' }}
       className={styles.pixelHunger}
     >
-      {grid.flatMap((row, y) =>
+      {HUNGER_GRID.flatMap((row, y) =>
         row.map((val, x) => {
           if (val === 0) return null;
           return (

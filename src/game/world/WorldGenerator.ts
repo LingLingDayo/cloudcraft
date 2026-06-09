@@ -9,7 +9,7 @@ import { WaterConnectionSolver } from './WaterConnectionSolver';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from './World';
 import { WORLD_CONFIG } from './WorldConfig';
 import { ChunkPipeline } from './pipeline/ChunkPipeline';
-import type { ChunkPipelineContext } from './pipeline/ChunkPipelineTypes';
+import type { ChunkPipelineContext, WorldTerrainProvider, ColumnTerrainData } from './pipeline/ChunkPipelineTypes';
 import { TerrainHeightMapStage } from './pipeline/stages/TerrainHeightMapStage';
 import { BaseTerrainFillerStage } from './pipeline/stages/BaseTerrainFillerStage';
 import { OreGeneratorStage } from './pipeline/stages/OreGeneratorStage';
@@ -17,7 +17,7 @@ import { CaveCarverStage } from './pipeline/stages/CaveCarverStage';
 import { SurfaceDecorationStage } from './pipeline/stages/SurfaceDecorationStage';
 import { TreeDecorationStage } from './pipeline/stages/TreeDecorationStage';
 
-export class WorldGenerator {
+export class WorldGenerator implements WorldTerrainProvider {
   private noise: ImprovedNoise;
 
   constructor(seed: string) {
@@ -278,16 +278,7 @@ export class WorldGenerator {
     return TerrainShaper.getHeight(wx, wz, this.noise, c, e);
   }
 
-  // 统一解析任意全局坐标 (wx, wz) 下的地形高度、水体属性及矿洞高度偏好
-  public getColumnTerrainData(wx: number, wz: number): {
-    adjustedHeight: number;
-    finalHeight: number;
-    localWaterLevel: number;
-    isDryLand: boolean;
-    isPond: boolean;
-    maxHeightOffset: number;
-    slope: number;
-  } {
+  public getColumnTerrainData(wx: number, wz: number): ColumnTerrainData {
     const primaryLandform = getLandformAt(wx, wz, this.noise);
     
     // 计算坡度
@@ -410,6 +401,7 @@ export class WorldGenerator {
     }
 
     return {
+      interpolatedHeight: adjustedHeight,
       adjustedHeight,
       finalHeight,
       localWaterLevel,

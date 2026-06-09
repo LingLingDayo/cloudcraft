@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { PauseMenuProps } from '@type';
 import { Button } from '@components/common/Button';
 import { Dialog } from '@components/common/Dialog';
@@ -15,15 +15,27 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
 }) => {
   const { t } = useTranslation();
   const [saveStatusKey, setSaveStatusKey] = useState<'save' | 'saved'>('save');
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const isSettingsOpen = useGameStore((state) => state.isSettingsOpen);
   const setIsSettingsOpen = useGameStore((state) => state.setIsSettingsOpen);
   const settingsSource = useGameStore((state) => state.settingsSource);
 
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSave = () => {
     onSave();
     setSaveStatusKey('saved');
-    setTimeout(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
       setSaveStatusKey('save');
     }, 1500);
   };
