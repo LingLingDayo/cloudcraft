@@ -1,4 +1,4 @@
-import { Item, BlockItem, FoodItem } from './Item';
+import { Item, BlockItem, FoodItem, type ItemCategory } from './Item';
 import { ItemType, BlockType, BLOCK_TYPES } from '@type';
 import { BlockRegistry } from '@game/world/block/BlockRegistry';
 
@@ -136,7 +136,7 @@ export class ItemRegistry {
   }
 
   /** 按分类获取所有物品 */
-  public static getByCategory(category: import('./Item').ItemCategory): Item[] {
+  public static getByCategory(category: ItemCategory): Item[] {
     this.ensureInitialized();
     return Array.from(this.items.values()).filter(i => i.category === category);
   }

@@ -9,8 +9,6 @@ export const translations: Record<string, any> = {
   en,
 };
 
-export type LanguageType = 'zh' | 'en';
-
 export const useTranslation = () => {
   const language = useGameStore((state) => state.language);
   

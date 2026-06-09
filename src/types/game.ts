@@ -10,3 +10,15 @@ export const GameMode = {
   CREATIVE: 'creative',
 } as const;
 export type GameMode = typeof GameMode[keyof typeof GameMode];
+
+export interface Vector3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface Size3D {
+  width: number;
+  height: number;
+  depth: number;
+}

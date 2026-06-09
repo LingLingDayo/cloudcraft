@@ -9,7 +9,7 @@ import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
 import { Dialog } from '@components/common/Dialog';
 import { SaveManager } from '@game/systems/SaveManager';
-import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from '@utils/device';
+import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock, type FullscreenDocument } from '@utils/device';
 import { getSystemSettings, saveSystemSetting } from '@utils/settings';
 import styles from './SettingsDialog.module.scss';
 
@@ -19,15 +19,6 @@ interface SettingsDialogProps {
 }
 
 type TabType = 'general' | 'graphics' | 'controls';
-
-interface FullscreenDocument extends Document {
-  webkitExitFullscreen?: () => Promise<void>;
-  mozCancelFullScreen?: () => Promise<void>;
-  msExitFullscreen?: () => Promise<void>;
-  webkitFullscreenElement?: Element;
-  mozFullScreenElement?: Element;
-  msFullscreenElement?: Element;
-}
 
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ 
   onClose, 
