@@ -39,16 +39,15 @@ if (args.includes('--github') || args.includes('github') || args.includes('--pla
 console.log(`部署目标: ${deployGithub ? 'GitHub Pages' : ''}${deployGithub && deployCloudflare ? ' & ' : ''}${deployCloudflare ? 'Cloudflare' : ''}`);
 
 try {
-  console.log('正在执行打包...');
-  // 设置环境变量，指示打包使用 /cloudcraft/ 作为 base 路径
-  process.env.DEPLOY_BASE = 'true';
-  run('npm run build');
-
-  if (!existsSync(distDir)) {
-    throw new Error('未找到打包生成的 dist 目录！');
-  }
-
   if (deployGithub) {
+    console.log('正在为 GitHub Pages 执行打包...');
+    process.env.DEPLOY_BASE = 'true';
+    run('npm run build');
+
+    if (!existsSync(distDir)) {
+      throw new Error('未找到打包生成的 dist 目录！');
+    }
+
     console.log('正在获取远程仓库 URL...');
     const remoteUrl = getOutput('git remote get-url origin');
     console.log(`远程仓库 URL: ${remoteUrl}`);
@@ -67,6 +66,14 @@ try {
   }
 
   if (deployCloudflare) {
+    console.log('正在为 Cloudflare 执行打包...');
+    delete process.env.DEPLOY_BASE;
+    run('npm run build');
+
+    if (!existsSync(distDir)) {
+      throw new Error('未找到打包生成的 dist 目录！');
+    }
+
     console.log('正在部署至 Cloudflare...');
     run('npx wrangler deploy');
   }
