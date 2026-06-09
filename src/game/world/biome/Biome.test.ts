@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest';
 import { ImprovedNoise } from '../Noise';
 import { BiomeRegistry } from './BiomeRegistry';
 import { TerrainShaper } from '../landform/TerrainShaper';
+import { BLOCK_TYPES } from '../BlockConfig';
 
 describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
   const mockNoise = new ImprovedNoise('test-seed');
@@ -57,5 +58,73 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
     expect(plateauH1).toBeLessThanOrEqual(180);
     expect(plateauH2).toBeGreaterThanOrEqual(160);
     expect(plateauH2).toBeLessThanOrEqual(180);
+  });
+
+  test('在有水列且低于水面高度时，BaseSoilBiome 应该将原本的草方块替换为泥土', () => {
+    const plainsBiome = BiomeRegistry.PLAINS;
+    const chunk = new Uint8Array(4096);
+    const lx = 0;
+    const lz = 0;
+    const y = 60;
+    const finalHeight = 60;
+    const waterLevel = 64; // y < waterLevel
+    const depthBelowSurface = 1;
+    const slope = 0.5;
+
+    const index = lx + lz * 16 + (y % 16) * 256;
+
+    // 1. 当是干陆地时 (isDryLand = true)，即使 y < waterLevel，由于没有水，也应该生成草方块 (GRASS)
+    plainsBiome.fillColumn(
+      chunk,
+      lx,
+      lz,
+      y,
+      finalHeight,
+      waterLevel,
+      depthBelowSurface,
+      mockNoise,
+      0, // wx
+      0, // wz
+      true, // isDryLand
+      slope
+    );
+    expect(chunk[index]).toBe(BLOCK_TYPES.GRASS);
+
+    // 2. 当不是干陆地时 (isDryLand = false)，且 y < waterLevel，原本是草方块的顶层应该自动变泥土 (DIRT)
+    plainsBiome.fillColumn(
+      chunk,
+      lx,
+      lz,
+      y,
+      finalHeight,
+      waterLevel,
+      depthBelowSurface,
+      mockNoise,
+      0, // wx
+      0, // wz
+      false, // isDryLand = false
+      slope
+    );
+    expect(chunk[index]).toBe(BLOCK_TYPES.DIRT);
+
+    // 3. 如果在水面以上 (y >= waterLevel)，即使不是干陆地，也应当继续使用草方块
+    const yAbove = 65;
+    const finalHeightAbove = 65;
+    const indexAbove = lx + lz * 16 + (yAbove % 16) * 256;
+    plainsBiome.fillColumn(
+      chunk,
+      lx,
+      lz,
+      yAbove,
+      finalHeightAbove,
+      waterLevel,
+      depthBelowSurface,
+      mockNoise,
+      0,
+      0,
+      false, // isDryLand = false
+      slope
+    );
+    expect(chunk[indexAbove]).toBe(BLOCK_TYPES.GRASS);
   });
 });
