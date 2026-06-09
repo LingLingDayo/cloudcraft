@@ -92,7 +92,7 @@ describe('World Serialization by Modified Blocks Tracking', () => {
 
 describe('World Cave and Dry Land Ocean Mask Generation', () => {
   test('should generate dry land below waterLevel when oceanNoise is above threshold', () => {
-    const world = new World('webcraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 2);
     
     let foundDryLandBelowSeaLevel = false;
@@ -111,7 +111,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate grass on surface when dry land is below waterLevel', () => {
-    const world = new World('webcraft-seed');
+    const world = new World('cloudcraft-seed');
     
     let verified = false;
     for (let offset = 0; offset < 2000; offset += 64) {
@@ -144,7 +144,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should generate caves (AIR pockets) underground inside stone layers', () => {
-    const world = new World('webcraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 2);
 
     let foundUndergroundCave = false;
@@ -172,7 +172,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 20000);
 
   test('should not generate exposed floating water walls adjacent to air', () => {
-    const world = new World('webcraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 3); // Load a 3x3 chunk area
 
     let exposedWaterCount = 0;
@@ -295,7 +295,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
   }, 10000);
 
   test('should never generate floating vegetation (vegetation block on top of AIR)', () => {
-    const world = new World('webcraft-seed');
+    const world = new World('cloudcraft-seed');
     world.loadArea(0, 150, 0, 2);
 
     let floatingCount = 0;

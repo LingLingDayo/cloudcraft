@@ -41,7 +41,7 @@ export class AnimalManager {
       if (animal.isDead) {
         // Spawn death smoke particles
         const particlePos = animal.position.clone().add(new THREE.Vector3(0, 0.45, 0));
-        this.game.particles.spawn('webcraft:smoke', particlePos, 0xeeeeee, 18);
+        this.game.particles.spawn('cloudcraft:smoke', particlePos, 0xeeeeee, 18);
         
         // Remove from scene and manager list
         this.game.scene.remove(animal.mesh);
@@ -148,7 +148,7 @@ export class AnimalManager {
 
           // Spawn hit/crit particles (red/pink colors)
           this.game.particles.spawn(
-            'webcraft:crit',
+            'cloudcraft:crit',
             hit.point,
             0xff2a4a, // Blood red
             10

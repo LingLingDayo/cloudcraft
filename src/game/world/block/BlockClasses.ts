@@ -32,7 +32,7 @@ export class SandBlock extends Block {
       hardness: 0.5, affectedByGravity: true, lightLevel: 0, isInteractable: false, opacity: 1.0,
       soundType: 'sand',
       color: '#dccd8c', colorHex: 0xdccd8c,
-      particleEffect: 'webcraft:sand',
+      particleEffect: 'cloudcraft:sand',
       allowVegetationBase: true,
       textureFaces: { top: 10, bottom: 10, side: 10 }
     });

@@ -6,7 +6,7 @@ import { BlockBreakParticle } from './impl/BlockBreakParticle';
 import { SmokeParticle } from './impl/SmokeParticle';
 import { BLOCK_TYPES } from '../../world/BlockConfig';
 
-// Mock WorldConfig or BlockConfig if needed, but in webcraft it uses real implementation
+// Mock WorldConfig or BlockConfig if needed, but in cloudcraft it uses real implementation
 // We create a mock scene so scene.add() and scene.remove() won't throw
 class MockScene extends THREE.Scene {
   public addedObjects: THREE.Object3D[] = [];
@@ -30,7 +30,7 @@ describe('Particles System Refactored', () => {
   describe('ParticlePool', () => {
     it('should create new particle instance when pool is empty', () => {
       const pool = new ParticlePool(scene);
-      const particle = pool.get('webcraft:smoke');
+      const particle = pool.get('cloudcraft:smoke');
 
       expect(particle).toBeInstanceOf(SmokeParticle);
       expect(particle.mesh.visible).toBe(true);
@@ -39,23 +39,23 @@ describe('Particles System Refactored', () => {
 
     it('should recycle particle instances on release and get', () => {
       const pool = new ParticlePool(scene);
-      const p1 = pool.get('webcraft:smoke');
+      const p1 = pool.get('cloudcraft:smoke');
       expect(p1.mesh.visible).toBe(true);
 
       // Release particle
-      pool.release('webcraft:smoke', p1);
+      pool.release('cloudcraft:smoke', p1);
       expect(p1.mesh.visible).toBe(false);
 
       // Get again - should be same instance
-      const p2 = pool.get('webcraft:smoke');
+      const p2 = pool.get('cloudcraft:smoke');
       expect(p2).toBe(p1);
       expect(p2.mesh.visible).toBe(true);
     });
 
     it('should handle different particle types correctly', () => {
       const pool = new ParticlePool(scene);
-      const smoke = pool.get('webcraft:smoke');
-      const breakPart = pool.get('webcraft:block_break');
+      const smoke = pool.get('cloudcraft:smoke');
+      const breakPart = pool.get('cloudcraft:block_break');
 
       expect(smoke).toBeInstanceOf(SmokeParticle);
       expect(breakPart).toBeInstanceOf(BlockBreakParticle);
@@ -67,7 +67,7 @@ describe('Particles System Refactored', () => {
       const system = new ParticleSystem(scene);
       const pos = new THREE.Vector3(0, 0, 0);
 
-      system.spawn('webcraft:smoke', pos, 0xffffff, 5);
+      system.spawn('cloudcraft:smoke', pos, 0xffffff, 5);
 
       // Active particles list is private, but we can verify through scene count and tick update
       expect(scene.addedObjects.length).toBe(5);
@@ -100,7 +100,7 @@ describe('Particles System Refactored', () => {
       const pos = new THREE.Vector3(0, 0, 0);
 
       // Max active is 350
-      system.spawn('webcraft:smoke', pos, 0xffffff, 400);
+      system.spawn('cloudcraft:smoke', pos, 0xffffff, 400);
 
       // Verify that excess particles are recycled and active objects count is bounded
       // Since objects are not immediately removed from scene (they are set visible = false and stored in pool),

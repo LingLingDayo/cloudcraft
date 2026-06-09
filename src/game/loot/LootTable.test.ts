@@ -21,7 +21,7 @@ describe('Loot Table Engine', () => {
     const table = new LootTable([
       new LootPool(1, [new LootEntry(ItemType.DIAMOND)])
     ]);
-    const testId = 'webcraft:blocks/test_custom_block';
+    const testId = 'cloudcraft:blocks/test_custom_block';
     
     LootTableRegistry.register(testId, table);
     const retrieved = LootTableRegistry.get(testId);

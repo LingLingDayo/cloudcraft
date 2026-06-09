@@ -7,7 +7,7 @@ export const en = {
     confirmQuitMessage: 'Are you sure you want to save and quit to the main menu?',
   },
   startMenu: {
-    title: 'WEBCRAFT',
+    title: 'CLOUDCRAFT',
     subtitle: 'Lightweight 3D Browser Minecraft',
     seedLabel: 'World Seed',
     seedPlaceholder: 'Random Seed...',

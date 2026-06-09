@@ -61,28 +61,28 @@ export class ParticlePool {
   private createParticleInstance(type: string): Particle {
     let p: Particle;
     switch (type) {
-      case 'webcraft:leaf':
+      case 'cloudcraft:leaf':
         p = new LeafFallParticle(this.planeGeom);
         break;
-      case 'webcraft:grass':
+      case 'cloudcraft:grass':
         p = new GrassBreakParticle(this.planeGeom);
         break;
-      case 'webcraft:sand':
+      case 'cloudcraft:sand':
         p = new SandDustParticle(this.boxGeom);
         break;
-      case 'webcraft:glass':
+      case 'cloudcraft:glass':
         p = new GlassShardParticle(this.planeGeom);
         break;
-      case 'webcraft:smoke':
+      case 'cloudcraft:smoke':
         p = new SmokeParticle(this.boxGeom);
         break;
-      case 'webcraft:crit':
+      case 'cloudcraft:crit':
         p = new CritParticle(this.boxGeom);
         break;
-      case 'webcraft:eat':
+      case 'cloudcraft:eat':
         p = new EatParticle(this.boxGeom);
         break;
-      case 'webcraft:block_break':
+      case 'cloudcraft:block_break':
       default:
         p = new BlockBreakParticle(this.boxGeom);
         break;

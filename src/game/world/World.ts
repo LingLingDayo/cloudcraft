@@ -38,7 +38,7 @@ export class World {
   public chunkManager: WorldChunkManager;
   public tickManager: WorldTickManager;
 
-  constructor(seed = 'webcraft', game?: any) {
+  constructor(seed = 'cloudcraft', game?: any) {
     this.seed = seed;
     this.game = game;
     this.blockEntities = new BlockEntityManager();

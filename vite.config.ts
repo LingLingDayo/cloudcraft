@@ -7,7 +7,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), cloudflare()],
-  base: process.env.GITHUB_ACTIONS || process.env.DEPLOY_BASE ? '/webcraft/' : '/',
+  base: process.env.GITHUB_ACTIONS || process.env.DEPLOY_BASE ? '/cloudcraft/' : '/',
   resolve: {
     alias: {
       '@assets': path.resolve(__dirname, './src/assets'),

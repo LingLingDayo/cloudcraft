@@ -7,7 +7,7 @@ export const zh = {
     confirmQuitMessage: '你确定要保存并退出到主菜单吗？',
   },
   startMenu: {
-    title: 'WEBCRAFT',
+    title: 'CLOUDCRAFT',
     subtitle: '轻量版 3D 浏览器“我的世界”',
     seedLabel: '世界种子',
     seedPlaceholder: '随机世界种子...',
