@@ -6,7 +6,7 @@ import { useGameStore } from '@store/useGameStore';
 import { ItemType } from '@type';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import { BlockItem } from '@game/item/Item';
-import { VoxelPhysics } from '@game/physics/voxel/VoxelPhysics';
+import { VoxelCollider } from '@game/physics/voxel/VoxelCollider';
 
 export class DroppedItemManager {
   private game: GameManager;
@@ -54,11 +54,11 @@ export class DroppedItemManager {
         item.velocity.x *= Math.max(0, 1 - 2 * dt);
         item.velocity.z *= Math.max(0, 1 - 2 * dt);
 
-        const { onGround } = VoxelPhysics.resolveMove(
+        const { onGround } = VoxelCollider.resolveMove(
           this.game.world,
           item.position,
           item.velocity,
-          { width: 0.25, height: 0.25, depth: 0.25 },
+          { width: 0.2, height: 0.2, depth: 0.2 },
           dt
         );
         item.onGround = onGround;

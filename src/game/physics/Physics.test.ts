@@ -2,6 +2,7 @@ import { describe, test, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
 import { Physics } from './Physics';
 import { World, BLOCK_TYPES } from '@game/world/World';
+import { FluidPhysics } from './voxel/FluidPhysics';
 
 describe('Physics System', () => {
   let mockBlockMap: Map<string, number>;
@@ -65,10 +66,8 @@ describe('Physics System', () => {
     mockBlockMap.set('10,4,10', BLOCK_TYPES.WATER);
     
     // If not onGround, should detect water below
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((physics as any).voxelPhysics.checkInWater(pos, false)).toBe(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect((physics as any).voxelPhysics.checkInWater(pos, true)).toBe(false);
+    expect(FluidPhysics.checkInWater(mockWorld, pos, false)).toBe(true);
+    expect(FluidPhysics.checkInWater(mockWorld, pos, true)).toBe(false);
   });
 
   test('gravity pulls player down in air', () => {

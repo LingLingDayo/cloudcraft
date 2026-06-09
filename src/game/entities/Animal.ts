@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { World } from '@game/world/World';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
-import { VoxelPhysics } from '@game/physics/voxel/VoxelPhysics';
+import { VoxelCollider } from '@game/physics/voxel/VoxelCollider';
 import { sound } from '@game/systems/Sound';
 import { LootTableHelper } from '../loot/LootTableHelper';
 
@@ -68,7 +68,7 @@ export abstract class Animal {
   }
 
   public getBoundingBox(pos = this.position): THREE.Box3 {
-    return VoxelPhysics.getBoundingBox(pos, { width: this.width, height: this.height, depth: this.depth });
+    return VoxelCollider.getBoundingBox(pos, { width: this.width, height: this.height, depth: this.depth });
   }
 
   public checkInWater(): boolean {
@@ -167,8 +167,8 @@ export abstract class Animal {
     const velXBefore = this.velocity.x;
     const velZBefore = this.velocity.z;
 
-    // Delegate movement and collision resolution to VoxelPhysics.resolveMove
-    const { collidedX, collidedZ, onGround } = VoxelPhysics.resolveMove(
+    // Delegate movement and collision resolution to VoxelCollider.resolveMove
+    const { collidedX, collidedZ, onGround } = VoxelCollider.resolveMove(
       this.world,
       this.position,
       this.velocity,
