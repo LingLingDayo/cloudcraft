@@ -1,70 +1,29 @@
-import { type Biome, type GrowTreeFn, TreeStyle, getOreType } from './Biome';
+import { BaseSoilBiome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { WORLD_CONFIG } from '../WorldConfig';
 
-export class TaigaBiome implements Biome {
+export class TaigaBiome extends BaseSoilBiome {
   public id = 'taiga';
   public name = '针叶林';
+  public targetTemp: number;
+  public targetMoisture: number;
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 针叶林作为丘陵地形，起伏较明显，既有靠近海平面的低洼处，也有最高约 170 的丘陵高地
-    return Math.floor(158 + noise.fbm(wx * 0.012, wz * 0.012, 3, 0.4) * 12);
+  constructor(targetTemp = 0.15, targetMoisture = 0.7) {
+    super();
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+    this.configuredFeatures = [
+      { featureId: 'spruce_tree', probability: 1.0 }
+    ];
   }
-
-  public fillColumn(
-    chunk: Uint8Array,
-    lx: number,
-    lz: number,
-    y: number,
-    finalHeight: number,
-    waterLevel: number,
-    depthBelowSurface: number,
-    noise: ImprovedNoise,
-    wx: number,
-    wz: number,
-    isDryLand: boolean
-  ): void {
-    const index = lx + lz * 16 + (y % 16) * 256;
-    if (y === finalHeight) {
-      if (y < waterLevel + 2 && !isDryLand) {
-        chunk[index] = BLOCK_TYPES.SAND;
-      } else {
-        chunk[index] = BLOCK_TYPES.GRASS;
-      }
-    } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2 && !isDryLand) {
-        chunk[index] = BLOCK_TYPES.SAND;
-      } else {
-        chunk[index] = BLOCK_TYPES.DIRT;
-      }
-    } else {
-      // 矿石脉生成
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
-    }
-  }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.3; // 针叶林树木稍微密集一些
   }
 
-  public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
-    chunkRandom: number,
-    treeIndex: number,
-    growTree: GrowTreeFn
-  ): void {
-    const seed = chunkRandom * 20 + treeIndex;
-    const heightRand = (Math.sin(seed * 543.21) * 43758.5453) % 1;
-    const absHeight = Math.abs(heightRand);
-    const treeHeight = 6 + Math.floor(absHeight * 3); // 6 to 8
-
-    // 只生成松木/云杉
-    growTree(chunk, tx, ty, tz, BLOCK_TYPES.SPRUCE_WOOD, BLOCK_TYPES.SPRUCE_LEAVES, treeHeight, TreeStyle.SPRUCE);
+  public override getTreeAttempts(chunkRandom: number): number {
+    // 针叶林：4 ~ 7 次尝试
+    return 4 + Math.floor(chunkRandom * 12) % 4;
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {

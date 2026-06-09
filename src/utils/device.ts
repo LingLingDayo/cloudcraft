@@ -1,7 +1,5 @@
 import variables from '@styles/variables.module.scss';
 
-let devMode = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.DEV : false;
-
 let cachedIsMobile: boolean | null = null;
 
 const checkIsMobile = (): boolean => {
@@ -12,10 +10,10 @@ const checkIsMobile = (): boolean => {
   // 针对 iPadOS 上的 Safari 浏览器（其 userAgent 默认伪装为 Macintosh）
   const isMaciPad = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
 
-  // 页面宽度小于 variables.breakpointMobile (默认 1024px) 且在开发环境下判定为移动端
+  // 页面宽度小于 variables.breakpointMobile (默认 1024px) 判定为移动端
   const parsedBreakpoint = parseInt(variables?.breakpointMobile, 10);
   const breakpoint = isNaN(parsedBreakpoint) ? 1024 : parsedBreakpoint;
-  const isSmallScreen = devMode && (window.innerWidth < breakpoint);
+  const isSmallScreen = window.innerWidth < breakpoint;
 
   return isMobileUA || isMaciPad || isSmallScreen;
 };
@@ -37,6 +35,22 @@ export const isMobileDevice = (): boolean => {
     cachedIsMobile = checkIsMobile();
   }
   return cachedIsMobile;
+};
+
+/**
+ * 获取设备的真实类型
+ * 仅通过设备标识（User Agent 及特定触控属性）来判断，排除了屏幕宽度的判定。
+ * @returns 'mobile' | 'desktop'
+ */
+export const getRealDeviceType = (): 'mobile' | 'desktop' => {
+  if (typeof window === 'undefined') return 'desktop';
+  const ua = navigator.userAgent;
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  
+  // 针对 iPadOS 上的 Safari 浏览器（其 userAgent 默认伪装为 Macintosh）
+  const isMaciPad = /Macintosh/i.test(ua) && navigator.maxTouchPoints > 1;
+
+  return (isMobileUA || isMaciPad) ? 'mobile' : 'desktop';
 };
 
 /**
@@ -66,23 +80,13 @@ export interface SafeScreenOrientation {
   unlock?: () => void;
 }
 
-export const setDevModeForTesting = (val: boolean) => {
-  devMode = val;
-};
-
 /**
  * 尝试让移动端设备进入横屏，再触发全屏
  */
 export const requestFullscreenAndLandscape = async (element: HTMLElement = document.documentElement) => {
-  if (devMode) {
-    console.warn('[DEV] requestFullscreenAndLandscape bypassed in development environment');
-    return;
-  }
-  const isMobile = isMobileDevice();
+  const isMobile = getRealDeviceType() === 'mobile';
 
   const orientation = (typeof window !== 'undefined' && window.screen && window.screen.orientation) as unknown as SafeScreenOrientation | undefined;
-
-
 
   // 1. 如果是移动端，先尝试触发横屏锁定
   if (isMobile && orientation && orientation.lock) {
@@ -125,15 +129,9 @@ export const requestFullscreenAndLandscape = async (element: HTMLElement = docum
  * 退出全屏并解除屏幕锁定
  */
 export const exitFullscreenAndUnlock = async () => {
-  if (devMode) {
-    console.warn('[DEV] exitFullscreenAndUnlock bypassed in development environment');
-    return;
-  }
-  const isMobile = isMobileDevice();
+  const isMobile = getRealDeviceType() === 'mobile';
 
   const orientation = (typeof window !== 'undefined' && window.screen && window.screen.orientation) as unknown as SafeScreenOrientation | undefined;
-
-
 
   // 1. 解锁屏幕方向
   if (isMobile && orientation && orientation.unlock) {

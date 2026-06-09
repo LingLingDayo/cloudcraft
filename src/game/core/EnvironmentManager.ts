@@ -11,6 +11,14 @@ export class EnvironmentManager {
   public dirLight!: THREE.DirectionalLight;
   public hemiLight!: THREE.HemisphereLight;
 
+  public getGameTime(): number {
+    return this.gameTime;
+  }
+
+  public getDayDuration(): number {
+    return this.dayDuration;
+  }
+
   constructor(game: GameManager) {
     this.game = game;
     this.initLights();

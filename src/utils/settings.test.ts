@@ -27,8 +27,11 @@ describe('settings utility', () => {
         dpadSize: 200,
         showMinimap: false,
         playerName: 'Alex',
+        renderDistance: 5,
+        fov: 80,
+        debugOverlay: false,
       };
-      localStorage.setItem('minicraft_settings', JSON.stringify(saved));
+      localStorage.setItem('cloudcraft_settings', JSON.stringify(saved));
 
       const settings = getSystemSettings();
       expect(settings).toEqual(saved);
@@ -37,7 +40,7 @@ describe('settings utility', () => {
 
   test('should recover gracefully and return defaults if stored JSON is invalid', () => {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('minicraft_settings', 'invalid-json-{');
+      localStorage.setItem('cloudcraft_settings', 'invalid-json-{');
       
       const settings = getSystemSettings();
       expect(settings).toEqual(DEFAULT_SETTINGS);

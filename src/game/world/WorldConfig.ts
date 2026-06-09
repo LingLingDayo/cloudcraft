@@ -9,19 +9,27 @@ export interface OreConfig {
 export const WORLD_CONFIG = {
   waterLevel: 150,
   ocean: {
-    scale: 0.001,
-    threshold: -0.30, // 低于此噪波值为海洋
-    transitionWidth: 0.15,
-    shoreWidth: 0.05,
-    baseHeight: 80,
+    threshold: 0.23, // 大陆度低于此阈值为海洋
+    transitionWidth: 0.18, // 拓宽过渡带，降低下潜坡度
+    shoreWidth: 0.06,      // 适当加宽陆地侧的平滑下降带
+    baseHeight: 100,       // 海底基准高度在 100 左右
+    variance: 12,          // 海底起伏振幅，类似平原丘陵的起伏幅度
   },
   river: {
     scale: 0.0025,
     threshold: 0.04,
     transitionWidth: 0.03,
     bedHeight: 142,
-    valleyInfluenceWidth: 0.10, // 新增：河谷扁平化过渡宽度
-    valleyTargetHeight: 153,    // 新增：目标河谷地表高度，比海平面高 3 格
+    valleyInfluenceWidth: 0.10, // 河谷扁平化过渡宽度
+    valleyTargetHeight: 153,    // 目标河谷地表高度，比海平面高 3 格
+    oceanFadeWidth: 0.05,       // 河流在海洋内部的淡出宽度
+    bankOffsets: {
+      mountains: 6.0,
+      plateau: 4.5,
+      hills: 3.5,
+      plains: 1.5,
+      default: 2.0,
+    } as const,
   },
   pond: {
     probability: 0.03, // 3% of cells have a pond
@@ -34,15 +42,28 @@ export const WORLD_CONFIG = {
     scaleY: 0.06,
     threshold: 0.08,
     minHeight: 10,
+    maxHeight: 200,
     maxHeightOffset: 20, // 低于地表几格开始生成矿洞
     baseThreshold: 0.12, // 矿洞基础阈值
     maxHeightOffsetDefault: 12, // 默认限制高度
     maxHeightOffsetEntrance: -3, // 露天入口限制高度
     warpScale: 0.05, // 坐标扭曲噪波频率
     warpStrength: 5.0, // 坐标扭曲偏移强度
+    layerSpacing: 28, // 水平层间距
+    verticalScale: 0.35, // 垂直层约束系数（控制隧道高度）
+    layerOffsetScale: 0.01, // 水平起伏噪波频率
+    layerOffsetStrength: 4.0, // 水平起伏最大偏移
+    shaftNoiseScale: 0.015, // 垂直竖井噪波频率
+    shaftThreshold: 0.35, // 垂直竖井阈值
+    shaftBlendRange: 0.25, // 垂直竖井混合范围
   },
   biomeScale: 0.003,
   biomeOffset: 2000,
+  landform: {
+    scale: 0.003,
+    offsetC: 4000,
+    offsetE: 6000,
+  },
   biomeTempThresholds: {
     hot: 0.65,
     cold: 0.35,
@@ -68,3 +89,10 @@ export const WORLD_CONFIG = {
     ] as const,
   },
 } as const;
+
+export const TEST_SEED_IDENTIFIER = 'test';
+
+export function isTestSeed(seed: string): boolean {
+  const lower = seed.toLowerCase();
+  return lower.includes(TEST_SEED_IDENTIFIER) || lower.endsWith('-seed');
+}

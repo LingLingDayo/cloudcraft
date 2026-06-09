@@ -1,112 +1,21 @@
 @use '@styles/mixins' as *;
 
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(8px);
+.dialogInner {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1200; // Above Pause Menu (1100)
-  pointer-events: auto;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
-
-.container {
-  position: relative;
-  width: 640px;
-  height: 480px; // Maintain 4:3 aspect ratio
-  background: #c6c6c6;
-  border: 4px solid #000;
-  box-shadow: 
-    inset 4px 4px 0px #ffffff,
-    inset -4px -4px 0px #555555,
-    0 12px 30px rgba(0, 0, 0, 0.6);
-  display: flex;
-  image-rendering: pixelated;
-
-  @include fit-scale(640px, 480px);
-}
-
-.closeBtn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: #c6c6c6;
-  border: 2px solid #000;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: monospace;
-  font-size: 14px;
-  color: #3f3f3f;
-  font-weight: bold;
-  cursor: pointer;
-  outline: none;
-  box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555;
-  transition: none;
-  z-index: 10;
-
-  &:hover {
-    color: #ffff00;
-    text-shadow: 1px 1px 0px #000;
-    background: #ef4444; // Give it a red glow on hover for better visual appeal
-    color: #ffffff;
-    box-shadow: 
-      inset 2px 2px 0px #ffffff,
-      inset -2px -2px 0px #7f1d1d;
-  }
-
-  &:active {
-    box-shadow: 
-      inset -2px -2px 0px #ffffff,
-      inset 2px 2px 0px #555555;
-    padding-top: 2px;
-    padding-left: 2px;
-  }
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .sidebar {
-  width: 200px;
-  background: #a8a8a8;
-  border-right: 4px solid #000;
-  padding: 20px 16px;
+  width: 180px;
+  background: transparent;
+  border-right: 2px dashed #999;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  box-shadow: 
-    inset 4px 4px 0px #ffffff,
-    inset -4px 0px 0px #555555;
   box-sizing: border-box;
-}
-
-.sidebarTitle {
-  color: #2b2b2b;
-  margin: 0 0 20px 0;
-  font-size: 12px;
-  text-align: center;
-  text-shadow: 1px 1px 0px #fff;
-  border-bottom: 2px dashed #777;
-  padding-bottom: 12px;
-  user-select: none;
 }
 
 .tabList {
@@ -116,52 +25,44 @@
 }
 
 .tabBtn {
-  background: #c6c6c6;
-  border: 2px solid #000;
+  background: var(--ui-control-light-bg);
+  border: var(--ui-control-border);
   padding: 0 12px;
-  height: 34px;
+  height: var(--ui-control-height);
   cursor: pointer;
   text-align: left;
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 12px;
-  color: #3f3f3f;
-  box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555;
+  color: var(--ui-control-light-text-color);
+  box-shadow: var(--ui-control-light-shadow);
   transition: none;
   width: 100%;
   outline: none;
 
   &:hover {
-    color: #ffffff;
-    background: #909090;
-    text-shadow: 1px 1px 0px #000;
-    box-shadow: 
-      inset 2px 2px 0px #ffffff,
-      inset -2px -2px 0px #303030;
+    color: var(--ui-control-light-hover-text-color);
+    background: var(--ui-control-light-hover-bg);
+    text-shadow: var(--ui-control-light-text-shadow);
+    box-shadow: var(--ui-control-light-hover-shadow);
   }
 
   &:active {
-    box-shadow: 
-      inset -2px -2px 0px #ffffff,
-      inset 2px 2px 0px #555555;
+    box-shadow: var(--ui-control-light-active-shadow);
     padding-left: 14px;
     padding-top: 2px;
   }
 }
 
 .activeTabBtn {
-  background: #555555;
-  color: #ffff00;
+  background: var(--ui-control-light-active-bg);
+  color: var(--ui-control-light-active-text-color);
   text-shadow: 1px 1px 0px #000;
-  box-shadow: 
-    inset -2px -2px 0px #ffffff,
-    inset 2px 2px 0px #000;
+  box-shadow: var(--ui-control-light-active-shadow);
   pointer-events: none; // Prevent clicking again
 
   &:hover {
-    background: #555555;
-    color: #ffff00;
+    background: var(--ui-control-light-active-bg);
+    color: var(--ui-control-light-active-text-color);
   }
 }
 
@@ -169,25 +70,24 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 16px 20px;
   box-sizing: border-box;
-  background: #c6c6c6;
-  box-shadow: inset 4px 4px 0px #ffffff;
+  background: transparent;
   overflow: hidden;
 }
 
 .tabPanel {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 12px;
-  padding-right: 8px;
+  padding-right: 4px;
 }
 
 .groupTitle {
-  color: #3f3f3f;
-  margin: 0 0 20px 0;
-  font-size: 12px;
-  text-shadow: 1px 1px 0px #fff;
+  color: var(--ui-dialog-text-color);
+  font-family: var(--font-family-sans);
+  margin: 0;
+  font-size: 16px;
+  text-shadow: var(--ui-dialog-title-shadow);
   border-bottom: 2px dashed #999;
   padding-bottom: 8px;
   user-select: none;
@@ -196,7 +96,7 @@
 .settingsGroup {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .optionItem {
@@ -214,10 +114,10 @@
 }
 
 .label {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 12px;
-  color: #3f3f3f;
-  text-shadow: 1px 1px 0px #fff;
+  color: var(--ui-dialog-text-color);
+  text-shadow: var(--ui-dialog-title-shadow);
   font-weight: bold;
   user-select: none;
 }
@@ -226,23 +126,23 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 250px;
   overflow-y: auto;
   padding-right: 8px;
 }
 
 .controlSection {
-  background: #a8a8a8;
-  border: 2px solid #000;
-  box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555;
-  padding: 12px;
+  background: var(--ui-section-bg);
+  border: var(--ui-section-border);
+  box-shadow: var(--ui-section-shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .sectionTitle {
   color: #2b2b2b;
-  margin: 0 0 12px 0;
+  margin: 0;
   font-size: 10px;
   text-shadow: 1px 1px 0px #fff;
   border-bottom: 2px dashed #777;
@@ -262,10 +162,10 @@
 }
 
 .controlLabel {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 10px;
-  color: #3f3f3f;
-  text-shadow: 1px 1px 0px #fff;
+  color: var(--ui-dialog-text-color);
+  text-shadow: var(--ui-dialog-title-shadow);
 }
 
 .controlKeys {
@@ -281,15 +181,14 @@
   min-width: 22px;
   height: 22px;
   padding: 0 5px;
-  background: #c6c6c6;
-  border: 2px solid #000;
+  background: var(--ui-control-light-bg);
+  border: var(--ui-control-border);
   box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555,
+    var(--ui-control-light-shadow),
     0 2px 0px #555555;
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 8px;
-  color: #000000;
+  color: var(--ui-control-light-text-color);
   border-radius: 2px;
   text-shadow: none;
   user-select: none;
@@ -297,14 +196,14 @@
 }
 
 .keySeparator {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 8px;
   color: #555555;
   text-shadow: 1px 1px 0px #fff;
 }
 
 .mouseAction {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 10px;
   color: #0000d3;
   text-shadow: 1px 1px 0px #fff;
@@ -313,7 +212,7 @@
 
 .versionInfo {
   margin-top: auto;
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 8px;
   color: #777777;
   text-align: center;
@@ -334,7 +233,5 @@
   }
   .versionInfo {
     font-size: 10px !important;
-    font-family: 'Press Start 2P', 'Segoe UI', Arial, sans-serif;
   }
 }
-

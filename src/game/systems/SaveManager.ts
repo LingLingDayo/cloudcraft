@@ -1,5 +1,5 @@
-import { GameMode, type HotbarItem } from '@type';
-import pkg from '../../../package.json';
+import { GameMode, type HotbarItem, type Vector3D } from '@type';
+import pkg from '@package';
 
 export interface SaveMetadata {
   id: string;
@@ -13,7 +13,7 @@ export interface SaveMetadata {
 
 export interface SaveData {
   world: string;
-  player: { x: number; y: number; z: number };
+  player: Vector3D;
   hotbar: (HotbarItem | null)[];
   inventory: (HotbarItem | null)[];
   activeSlot: number;
@@ -23,15 +23,15 @@ export interface SaveData {
 
 export class SaveManager {
   public static GAME_VERSION = pkg.version;
-  private static INDEX_KEY = 'minicraft_saves_index';
-  private static SAVE_PREFIX = 'minicraft_save_';
+  private static INDEX_KEY = 'cloudcraft_saves_index';
+  private static SAVE_PREFIX = 'cloudcraft_save_';
 
   // Detect environment support for IndexedDB (fallback to localStorage in Vitest Node environment)
   private static useLocalStorage = typeof indexedDB === 'undefined';
 
   private static getDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('minicraft_db', 1);
+      const request = indexedDB.open('cloudcraft_db', 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
       request.onupgradeneeded = (event) => {
@@ -109,7 +109,7 @@ export class SaveManager {
           createdAt: now,
           updatedAt: now,
           gameMode: data.gameMode,
-          seed: 'minicraft',
+          seed: 'cloudcraft',
           version: data.version,
         });
       }
@@ -132,7 +132,7 @@ export class SaveManager {
       createdAt: now,
       updatedAt: now,
       gameMode: data.gameMode,
-      seed: 'minicraft',
+      seed: 'cloudcraft',
       version: data.version,
     };
 

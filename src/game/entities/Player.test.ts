@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Player } from './Player';
 import { useGameStore } from '@store/useGameStore';
 import { BLOCK_TYPES } from '@game/world/World';
+import { GameAction } from '@game/systems/HotkeyManager';
 import type { Physics } from '@game/physics/Physics';
 import type { Controls } from '@game/systems/Controls';
 import type { World } from '@game/world/World';
@@ -214,5 +215,201 @@ describe('Player', () => {
     expect(player.position.x).toBeCloseTo(11.5);
     expect(player.position.z).toBeCloseTo(8.5);
     expect(player.position.y).toBeCloseTo(23.2);
+  });
+
+  test('should offset spawn center dynamically for non-test seeds to prevent starting on rivers', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    // 1. 测试普通非测试种子：应该发生偏置
+    const mockWorldReal = {
+      getBlock: vi.fn((_x, y, _z) => {
+        if (y === 50) return BLOCK_TYPES.GRASS;
+        if (y < 50) return BLOCK_TYPES.STONE;
+        return BLOCK_TYPES.AIR;
+      }),
+      getSeed: vi.fn(() => 'real-game-seed-123')
+    } as unknown as World;
+
+    const playerReal = new Player(camera);
+    playerReal.spawn(mockWorldReal, mockPhysics);
+    // 应该偏置，不在默认的 8.5 附近
+    expect(playerReal.position.x).not.toBeCloseTo(8.5, 1);
+    expect(playerReal.position.z).not.toBeCloseTo(8.5, 1);
+
+    // 2. 测试以 -seed 结尾的测试种子：应该保持 8.5
+    const mockWorldTest = {
+      getBlock: vi.fn((_x, y, _z) => {
+        if (y === 50) return BLOCK_TYPES.GRASS;
+        if (y < 50) return BLOCK_TYPES.STONE;
+        return BLOCK_TYPES.AIR;
+      }),
+      getSeed: vi.fn(() => 'adventure-seed')
+    } as unknown as World;
+
+    const playerTest = new Player(camera);
+    playerTest.spawn(mockWorldTest, mockPhysics);
+    // 应该保持在 8.5 默认原点
+    expect(playerTest.position.x).toBeCloseTo(8.5, 1);
+    expect(playerTest.position.z).toBeCloseTo(8.5, 1);
+
+    randomSpy.mockRestore();
+  });
+
+  describe('autoJump control conditions', () => {
+    beforeEach(() => {
+      useGameStore.setState({ autoJump: true });
+    });
+
+    test('should autoJump = true when moving purely forward', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return true;
+        if (action === GameAction.MOVE_BACKWARD) return false;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        true,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = true when moving diagonally forward', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return true;
+        if (action === GameAction.MOVE_LEFT) return true;
+        if (action === GameAction.MOVE_BACKWARD) return false;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        true,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = false when moving purely sideways (left/right)', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return false;
+        if (action === GameAction.MOVE_LEFT) return true;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        false,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = false when moving backwards', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return false;
+        if (action === GameAction.MOVE_BACKWARD) return true;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        false,
+        expect.any(THREE.Vector3)
+      );
+    });
+
+    test('should autoJump = false when both MOVE_FORWARD and MOVE_BACKWARD are pressed (canceled out)', () => {
+      mockIsActionPressed.mockImplementation((action) => {
+        if (action === GameAction.MOVE_FORWARD) return true;
+        if (action === GameAction.MOVE_BACKWARD) return true;
+        return false;
+      });
+
+      player.update(0.1, mockPhysics, mockControls, mockWorld);
+
+      expect(mockPhysics.update).toHaveBeenCalledWith(
+        expect.any(THREE.Vector3),
+        expect.any(THREE.Vector3),
+        0.1,
+        expect.any(THREE.Vector3),
+        false,
+        false,
+        false,
+        expect.any(Object),
+        false,
+        expect.any(THREE.Vector3)
+      );
+    });
+  });
+
+  describe('Hunger and Starvation', () => {
+    test('should take damage when hunger is 0 and life is greater than 1', () => {
+      player.hunger = 0;
+      player.life = 2;
+      
+      // Update by 4 seconds to trigger starvation tick
+      player.update(4.0, mockPhysics, mockControls, mockWorld);
+      
+      expect(player.life).toBe(1);
+    });
+
+    test('should take damage and die (respawn) when hunger is 0 and life is 1', () => {
+      player.hunger = 0;
+      player.life = 1;
+      
+      // Update by 4 seconds to trigger starvation tick
+      player.update(4.0, mockPhysics, mockControls, mockWorld);
+      
+      // Since taking 1 damage when life is 1 causes death, the player should respawn
+      // (which resets life to 10 and hunger to 20)
+      expect(player.life).toBe(10);
+      expect(player.hunger).toBe(20);
+    });
+
+    test('should regenerate health when hunger is high (>= 18) and health is less than 10', () => {
+      player.hunger = 19;
+      player.life = 5;
+      
+      // Update by 4 seconds to trigger regeneration tick
+      player.update(4.0, mockPhysics, mockControls, mockWorld);
+      
+      expect(player.life).toBe(6);
+      expect(player['hungerExhaustion']).toBeCloseTo(1.512, 3);
+    });
   });
 });

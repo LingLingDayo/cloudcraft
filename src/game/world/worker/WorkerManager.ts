@@ -1,0 +1,152 @@
+import type { WorkerTask, WorkerResult, WorkerTaskType } from './WorkerTypes';
+
+interface QueuedTask {
+  task: WorkerTask;
+  transfers: Transferable[];
+}
+
+export class WorkerManager {
+  private static instance: WorkerManager | null = null;
+  private workers: Worker[] = [];
+  private activeTasks = new Map<Worker, string | null>(); // worker -> active taskId
+  private callbacks = new Map<string, { resolve: (val: unknown) => void; reject: (err: Error) => void }>();
+  private taskQueue: QueuedTask[] = [];
+  private nextTaskId = 0;
+  private maxWorkers = 4;
+
+  private constructor() {
+    this.maxWorkers = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
+    this.initWorkers();
+  }
+
+  public static getInstance(): WorkerManager {
+    if (!WorkerManager.instance) {
+      WorkerManager.instance = new WorkerManager();
+    }
+    return WorkerManager.instance;
+  }
+
+  private initWorkers(): void {
+    if (typeof Worker === 'undefined') {
+      console.warn('Web Workers are not supported in this environment. Running in fallback mode.');
+      return;
+    }
+
+    for (let i = 0; i < this.maxWorkers; i++) {
+      try {
+        // Vite support for worker loading via ESM URL syntax
+        const worker = new Worker(
+          new URL('./world.worker.ts', import.meta.url),
+          { type: 'module' }
+        );
+        worker.onmessage = (e: MessageEvent<WorkerResult>) => this.handleWorkerMessage(worker, e.data);
+        worker.onerror = (e) => this.handleWorkerError(worker, e);
+        this.workers.push(worker);
+        this.activeTasks.set(worker, null);
+      } catch (err) {
+        console.error('Failed to initialize Web Worker', err);
+      }
+    }
+  }
+
+  public execute<TResult>(type: WorkerTaskType, payload: unknown, transferables?: Transferable[]): Promise<TResult> {
+    return new Promise<TResult>((resolve, reject) => {
+      const id = `${type}_${this.nextTaskId++}_${Date.now()}`;
+      const task: WorkerTask = { id, type, payload };
+      const transfers = transferables || [];
+
+      this.callbacks.set(id, { 
+        resolve: (val) => resolve(val as TResult), 
+        reject 
+      });
+      this.taskQueue.push({ task, transfers });
+      this.dispatchNext();
+    });
+  }
+
+  private dispatchNext(): void {
+    if (this.taskQueue.length === 0) return;
+
+    // Find first idle worker
+    const idleWorker = this.workers.find(w => this.activeTasks.get(w) === null);
+    if (!idleWorker) return;
+
+    const queued = this.taskQueue.shift()!;
+    const { task, transfers } = queued;
+    this.activeTasks.set(idleWorker, task.id);
+
+    // If generating chunk, check if payload contains a chunk buffer that needs transfer
+    const isGenerateChunk = task.type === 'GENERATE_CHUNK';
+    if (isGenerateChunk && task.payload && typeof task.payload === 'object') {
+      const p = task.payload as { chunk?: Uint8Array };
+      if (p.chunk instanceof Uint8Array) {
+        transfers.push(p.chunk.buffer);
+      }
+    }
+
+    idleWorker.postMessage(task, transfers);
+  }
+
+  private handleWorkerMessage(worker: Worker, result: WorkerResult): void {
+    const { id, success, payload, error } = result;
+    this.activeTasks.set(worker, null);
+
+    const cb = this.callbacks.get(id);
+    if (cb) {
+      this.callbacks.delete(id);
+      if (success) {
+        cb.resolve(payload);
+      } else {
+        cb.reject(new Error(error || 'Unknown error inside worker'));
+      }
+    }
+
+    this.dispatchNext();
+  }
+
+  private handleWorkerError(worker: Worker, event: ErrorEvent): void {
+    console.error('Web Worker general error', event);
+    const activeTaskId = this.activeTasks.get(worker);
+    this.activeTasks.set(worker, null);
+
+    if (activeTaskId) {
+      const cb = this.callbacks.get(activeTaskId);
+      if (cb) {
+        this.callbacks.delete(activeTaskId);
+        cb.reject(new Error(event.message || 'Worker thread crashed'));
+      }
+    }
+
+    // Try to restart this worker
+    const index = this.workers.indexOf(worker);
+    if (index !== -1) {
+      worker.terminate();
+      try {
+        const newWorker = new Worker(
+          new URL('./world.worker.ts', import.meta.url),
+          { type: 'module' }
+        );
+        newWorker.onmessage = (e: MessageEvent<WorkerResult>) => this.handleWorkerMessage(newWorker, e.data);
+        newWorker.onerror = (e) => this.handleWorkerError(newWorker, e);
+        this.workers[index] = newWorker;
+        this.activeTasks.set(newWorker, null);
+      } catch (err) {
+        console.error('Failed to recreate worker after crash', err);
+      }
+    }
+
+    this.dispatchNext();
+  }
+
+  public getQueueLength(): number {
+    return this.taskQueue.length;
+  }
+
+  public dispose(): void {
+    this.workers.forEach(w => w.terminate());
+    this.workers = [];
+    this.callbacks.clear();
+    this.taskQueue = [];
+    WorkerManager.instance = null;
+  }
+}

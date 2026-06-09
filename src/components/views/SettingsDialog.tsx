@@ -7,35 +7,23 @@ import { Slider } from '@components/common/Slider';
 import { Switch } from '@components/common/Switch';
 import { Input } from '@components/common/Input';
 import { Select } from '@components/common/Select';
+import { Dialog } from '@components/common/Dialog';
 import { SaveManager } from '@game/systems/SaveManager';
-import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock } from '@utils/device';
-import { useBackToClose } from '@hooks/useBackToClose';
+import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock, type FullscreenDocument } from '@utils/device';
 import { getSystemSettings, saveSystemSetting } from '@utils/settings';
 import styles from './SettingsDialog.module.scss';
 
 interface SettingsDialogProps {
   onClose: () => void;
-  onSave?: () => void;
   closeOnBack?: boolean;
 }
 
 type TabType = 'general' | 'graphics' | 'controls';
 
-interface FullscreenDocument extends Document {
-  webkitExitFullscreen?: () => Promise<void>;
-  mozCancelFullScreen?: () => Promise<void>;
-  msExitFullscreen?: () => Promise<void>;
-  webkitFullscreenElement?: Element;
-  mozFullScreenElement?: Element;
-  msFullscreenElement?: Element;
-}
-
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ 
   onClose, 
-  onSave,
   closeOnBack = true
 }) => {
-  useBackToClose({ onClose, enabled: closeOnBack });
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('general');
 
@@ -77,10 +65,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   }, []);
 
   const toggleFullscreen = (checked: boolean) => {
-    if (import.meta.env.DEV) {
-      console.warn('[DEV] Fullscreen toggle ignored in development environment.');
-      return;
-    }
     if (checked) {
       requestFullscreenAndLandscape().catch((err: unknown) => console.warn('Failed to enter fullscreen:', err));
     } else {
@@ -116,35 +100,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     saveSystemSetting('playerName', name);
   };
 
-  const handleExport = async () => {
-    if (onSave) {
-      try {
-        await onSave();
-      } catch (err) {
-        console.error('Failed to auto-save before export:', err);
-      }
-    }
-    try {
-      const saveData = await SaveManager.getSave('default_world');
-      if (!saveData) {
-        alert(t('settings.noSaveData'));
-        return;
-      }
-      const saveDataStr = JSON.stringify(saveData);
-      const blob = new Blob([saveDataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `minicraft_save_${Date.now()}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      alert(t('settings.exportFailed'));
-    }
-  };
+
 
   const gameModeOptions = [
     { label: t('pauseMenu.gameModeAdventure'), value: GameMode.ADVENTURE },
@@ -158,23 +114,17 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   ];
 
   return (
-    <div className={`settings-dialog-overlay ${styles.overlay}`}>
-      <div className={`settings-dialog-container ${styles.container}`}>
-        {/* Close Button at top-right */}
-        <button
-          type="button"
-          className={styles.closeBtn}
-          onClick={onClose}
-          aria-label="Close"
-        >
-          ✕
-        </button>
-
+    <Dialog
+      title={t('settings.title')}
+      onClose={onClose}
+      width={640}
+      height={480}
+      closeOnBack={closeOnBack}
+      noPadding={true}
+    >
+      <div className={styles.dialogInner}>
         {/* Left grouping sidebar */}
         <div className={styles.sidebar}>
-          <h2 className={`pixel-text-sm ${styles.sidebarTitle}`}>
-            {t('settings.title')}
-          </h2>
           <div className={styles.tabList}>
             {tabs.map((tab) => (
               <button
@@ -204,51 +154,44 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   {t('settings.general')}
                 </h3>
                 
-                <div className={styles.optionItem}>
-                  <Select
-                    label={t('pauseMenu.language')}
-                    value={language}
-                    options={[
-                      { label: '简体中文', value: 'zh' },
-                      { label: 'English', value: 'en' },
-                    ]}
-                    onChange={(val) => setLanguage(val as Language)}
-                  />
-                </div>
+                <div className={styles.controlSection}>
+                  <div className={styles.optionItem}>
+                    <Select
+                      label={t('pauseMenu.language')}
+                      value={language}
+                      options={[
+                        { label: '简体中文', value: 'zh' },
+                        { label: 'English', value: 'en' },
+                      ]}
+                      onChange={(val) => setLanguage(val as Language)}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Input
-                    label={t('pauseMenu.playerName')}
-                    value={playerName}
-                    onChange={handlePlayerNameChange}
-                    placeholder={t('pauseMenu.playerNamePlaceholder')}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Input
+                      label={t('pauseMenu.playerName')}
+                      value={playerName}
+                      onChange={handlePlayerNameChange}
+                      placeholder={t('pauseMenu.playerNamePlaceholder')}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Select
-                    label={t('pauseMenu.gameMode')}
-                    value={gameMode}
-                    options={gameModeOptions}
-                    onChange={(val) => setGameMode(val as GameMode)}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Select
+                      label={t('pauseMenu.gameMode')}
+                      value={gameMode}
+                      options={gameModeOptions}
+                      onChange={(val) => setGameMode(val as GameMode)}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('pauseMenu.autoJump')}
-                    checked={autoJump}
-                    onChange={(checked) => setAutoJump(checked)}
-                  />
-                </div>
-
-                <div className={styles.optionItem}>
-                  <span className={styles.label} style={{ marginBottom: '8px' }}>
-                    {t('settings.saveData')}
-                  </span>
-                  <Button variant="secondary" onClick={handleExport}>
-                    {t('settings.exportSave')}
-                  </Button>
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('pauseMenu.autoJump')}
+                      checked={autoJump}
+                      onChange={(checked) => setAutoJump(checked)}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -259,51 +202,54 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   {t('settings.graphics')}
                 </h3>
 
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('settings.fullscreen')}
-                    checked={isFullscreen}
-                    onChange={toggleFullscreen}
-                  />
-                </div>
+                <div className={styles.controlSection}>
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('settings.fullscreen')}
+                      checked={isFullscreen}
+                      onChange={toggleFullscreen}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('pauseMenu.debugOverlay')}
-                    checked={debugOverlay}
-                    onChange={(checked) => setDebugOverlay(checked)}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('pauseMenu.debugOverlay')}
+                      checked={debugOverlay}
+                      onChange={(checked) => setDebugOverlay(checked)}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Switch
-                    label={t('hud.minimap')}
-                    checked={showMinimap}
-                    onChange={(checked) => setShowMinimap(checked)}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Switch
+                      label={t('hud.minimap')}
+                      checked={showMinimap}
+                      onChange={(checked) => setShowMinimap(checked)}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Slider
-                    label={t('pauseMenu.renderDistance')}
-                    min={2}
-                    max={5}
-                    value={renderDistance}
-                    onChange={setRenderDistance}
-                    valueFormatter={(val) => t('pauseMenu.renderDistanceValue', { val })}
-                  />
-                </div>
+                  <div className={styles.optionItem}>
+                    <Slider
+                      label={t('pauseMenu.renderDistance')}
+                      min={2}
+                      max={10}
+                      value={renderDistance}
+                      onChange={setRenderDistance}
+                      valueFormatter={(val) => t('pauseMenu.renderDistanceValue', { val })}
+                    />
+                  </div>
 
-                <div className={styles.optionItem}>
-                  <Slider
-                    label={t('pauseMenu.fov')}
-                    min={60}
-                    max={90}
-                    step={5}
-                    value={fov}
-                    onChange={setFov}
-                    valueFormatter={(val) => t('pauseMenu.fovValue', { val })}
-                  />
+                  <div className={styles.optionItem}>
+                    <Slider
+                      label={t('pauseMenu.fov')}
+                      min={60}
+                      max={90}
+                      step={5}
+                      value={fov}
+                      onChange={setFov}
+                      valueFormatter={(val) => t('pauseMenu.fovValue', { val })}
+                    />
+                  </div>
+
                 </div>
               </div>
             )}
@@ -462,6 +408,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };

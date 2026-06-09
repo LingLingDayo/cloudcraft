@@ -2,7 +2,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
   cursor: pointer;
   user-select: none;
   width: 100%;
@@ -14,10 +13,10 @@
 }
 
 .label {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-family-active);
   font-size: 12px;
-  color: #3f3f3f;
-  text-shadow: 1px 1px 0px #fff;
+  color: var(--ui-dialog-text-color);
+  text-shadow: var(--ui-dialog-title-shadow);
   font-weight: bold;
 }
 
@@ -25,11 +24,9 @@
   position: relative;
   width: 48px;
   height: 24px;
-  background-color: #2e2e2e;
-  border: 2px solid #000;
-  box-shadow: 
-    inset -2px -2px 0px #4a4a4a,
-    inset 2px 2px 0px #1c1c1c;
+  background-color: var(--ui-track-bg);
+  border: var(--ui-control-border);
+  box-shadow: var(--ui-track-shadow);
   display: flex;
   align-items: center;
   padding: 2px;
@@ -37,17 +34,13 @@
   transition: background-color 0.1s;
 
   &.checked {
-    background-color: #3b8b3b;
-    box-shadow: 
-      inset -2px -2px 0px #5ebf5e,
-      inset 2px 2px 0px #1a3e1a;
+    background-color: var(--ui-switch-checked-bg);
+    box-shadow: var(--ui-switch-checked-shadow);
       
     .thumb {
       transform: translateX(20px);
-      background-color: #c6c6c6;
-      box-shadow: 
-        inset 2px 2px 0px #ffffff,
-        inset -2px -2px 0px #555555;
+      background-color: var(--ui-control-light-bg);
+      box-shadow: var(--ui-control-light-shadow);
     }
   }
 }
@@ -55,10 +48,8 @@
 .thumb {
   width: 20px;
   height: 16px;
-  background-color: #c6c6c6;
-  border: 2px solid #000;
-  box-shadow: 
-    inset 2px 2px 0px #ffffff,
-    inset -2px -2px 0px #555555;
+  background-color: var(--ui-control-light-bg);
+  border: var(--ui-control-border);
+  box-shadow: var(--ui-control-light-shadow);
   transition: transform 0.1s;
 }

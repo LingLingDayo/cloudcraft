@@ -1,5 +1,5 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { BLOCK_TYPES } from '../../BlockConfig';
+import { BLOCK_TYPES } from '@game/world/BlockConfig';
 
 export class BaseTerrainFillerStage implements ChunkPipelineStage {
   public name = 'BaseTerrainFiller';
@@ -33,7 +33,8 @@ export class BaseTerrainFillerStage implements ChunkPipelineStage {
               noise,
               wx,
               wz,
-              col.isDryLand && !col.isPond
+              col.isDryLand && !col.isPond,
+              col.slope
             );
           } else if (y <= col.localWaterLevel && (!col.isDryLand || col.isPond)) {
             chunk[index] = BLOCK_TYPES.WATER;

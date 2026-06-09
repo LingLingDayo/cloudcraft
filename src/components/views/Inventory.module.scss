@@ -14,13 +14,11 @@
 }
 
 .tabBtn {
-  background: #c6c6c6;
-  border: 2px solid #373737;
-  box-shadow: 
-    inset 2px 2px 0 #fff,
-    inset -2px -2px 0 #555;
-  color: #3f3f3f;
-  font-family: monospace;
+  background: var(--ui-control-light-bg);
+  border: var(--ui-control-border);
+  box-shadow: var(--ui-control-light-shadow);
+  color: var(--ui-control-light-text-color);
+  font-family: var(--font-family-active);
   font-size: 11px;
   font-weight: bold;
   padding: 6px 12px;
@@ -28,16 +26,14 @@
   outline: none;
 
   &:hover {
-    background: #a8a8a8;
-    color: #000;
+    background: var(--ui-control-light-hover-bg);
+    color: var(--ui-control-light-hover-text-color);
   }
 
   &.activeTab {
-    background: #8b8b8b;
-    box-shadow: 
-      inset -2px -2px 0 #fff,
-      inset 2px 2px 0 #3f3f3f;
-    color: #ffff00;
+    background: var(--ui-control-light-active-bg);
+    box-shadow: var(--ui-control-light-active-shadow);
+    color: var(--ui-control-light-active-text-color);
     text-shadow: 1px 1px 0 #000;
   }
 }
@@ -50,8 +46,8 @@
 }
 
 .creativeSection {
-  background: #a8a8a8;
-  border: 2px solid #373737;
+  background: var(--ui-section-bg);
+  border: var(--ui-control-border);
   padding: 10px;
 }
 
@@ -68,15 +64,15 @@
     width: 8px;
   }
   &::-webkit-scrollbar-track {
-    background: #8b8b8b;
-    border-left: 2px solid #373737;
+    background: var(--ui-control-light-active-bg);
+    border-left: var(--ui-control-border);
   }
   &::-webkit-scrollbar-thumb {
-    background: #c6c6c6;
-    border: 2px solid #373737;
+    background: var(--ui-control-light-bg);
+    border: var(--ui-control-border);
     box-shadow: inset 1px 1px 0 #fff;
     &:hover {
-      background: #a8a8a8;
+      background: var(--ui-control-light-hover-bg);
     }
   }
 }
@@ -89,17 +85,17 @@
 
 .labelRow {
   font-size: 11px;
-  color: #444444;
+  color: var(--ui-dialog-text-color);
   font-weight: bold;
-  text-shadow: 1px 1px 0 #fff;
+  text-shadow: var(--ui-dialog-title-shadow);
 }
 
 .inventoryGrid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 6px;
-  background: #a8a8a8;
-  border: 2px solid #373737;
+  background: var(--ui-section-bg);
+  border: var(--ui-control-border);
   padding: 8px;
   max-height: 172px; /* Displays exactly 4 rows cleanly, scroll for more */
   overflow-y: auto;
@@ -110,22 +106,22 @@
     width: 8px;
   }
   &::-webkit-scrollbar-track {
-    background: #8b8b8b;
-    border-left: 2px solid #373737;
+    background: var(--ui-control-light-active-bg);
+    border-left: var(--ui-control-border);
   }
   &::-webkit-scrollbar-thumb {
-    background: #c6c6c6;
-    border: 2px solid #373737;
+    background: var(--ui-control-light-bg);
+    border: var(--ui-control-border);
     box-shadow: inset 1px 1px 0 #fff;
     &:hover {
-      background: #a8a8a8;
+      background: var(--ui-control-light-hover-bg);
     }
   }
 }
 
 .divider {
   height: 2px;
-  background: #373737;
+  background: var(--ui-control-border);
   margin: 4px 0;
 }
 
@@ -139,8 +135,8 @@
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: 6px;
-  background: #a8a8a8;
-  border: 2px solid #373737;
+  background: var(--ui-section-bg);
+  border: var(--ui-control-border);
   padding: 8px;
   box-sizing: border-box;
 }
@@ -151,7 +147,7 @@
   width: 32px;
   height: 32px;
   background: rgba(0, 0, 0, 0.12);
-  border: 2px solid #373737;
+  border: var(--ui-control-border);
   box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
   display: flex;
@@ -221,4 +217,36 @@
   color: #555555;
   text-align: center;
   margin-top: 4px;
+}
+
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: rgba(16, 8, 24, 0.95);
+  border: 2px solid #2e0854;
+  outline: 2px solid #000;
+  padding: 8px 10px;
+  border-radius: 2px;
+  color: #fff;
+  z-index: 1400; /* Higher than floating items */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: monospace;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.6);
+  max-width: 200px;
+  
+  .tooltipTitle {
+    color: #ffff55;
+    font-weight: bold;
+    font-size: 11px;
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
+  }
+  
+  .tooltipDesc {
+    color: #a9a9a9;
+    font-size: 9px;
+    line-height: 1.4;
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
+  }
 }

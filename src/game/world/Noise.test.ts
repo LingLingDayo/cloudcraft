@@ -23,7 +23,7 @@ describe('ImprovedNoise', () => {
   });
 
   test('should compute fbm within reasonable range', () => {
-    const noiseGen = new ImprovedNoise('minicraft');
+    const noiseGen = new ImprovedNoise('cloudcraft');
     
     // Test multiple sample coordinates
     for (let x = 0; x < 100; x += 10) {

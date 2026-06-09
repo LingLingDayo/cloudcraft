@@ -1,61 +1,7 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
-import { BLOCK_TYPES, getBlockProperties } from '../../BlockConfig';
-import { WORLD_CONFIG } from '../../WorldConfig';
-import { ImprovedNoise } from '../../Noise';
-
-// 纯噪波的矿洞状态预测，判断在全局坐标 (wx, wy, wz) 处是否应当是洞穴(被挖空为空气)
-export function isCaveAt(
-  wx: number,
-  wy: number,
-  wz: number,
-  finalHeight: number,
-  maxHeightOffset: number,
-  localWaterLevel: number,
-  noise: ImprovedNoise,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generator: any
-): boolean {
-  if (wy >= WORLD_CONFIG.caves.minHeight && wy <= finalHeight - maxHeightOffset) {
-    const warpScale = WORLD_CONFIG.caves.warpScale;
-    const warpStrength = WORLD_CONFIG.caves.warpStrength;
-    const wxWarped = wx + noise.noise3d(wx * warpScale, wy * warpScale, wz * warpScale) * warpStrength;
-    const wyWarped = wy + noise.noise3d(wx * warpScale + 100, wy * warpScale + 100, wz * warpScale + 100) * warpStrength;
-    const wzWarped = wz + noise.noise3d(wx * warpScale + 200, wy * warpScale + 200, wz * warpScale + 200) * warpStrength;
-
-    const baseThreshold = WORLD_CONFIG.caves.baseThreshold;
-    const chamberNoise = noise.noise3d(wx * 0.01, wy * 0.015, wz * 0.01);
-    const currentThreshold = baseThreshold + chamberNoise * 0.08;
-
-    const n1 = noise.noise3d(
-      wxWarped * WORLD_CONFIG.caves.scaleXZ,
-      wyWarped * WORLD_CONFIG.caves.scaleY,
-      wzWarped * WORLD_CONFIG.caves.scaleXZ
-    );
-    const n2 = noise.noise3d(
-      wxWarped * WORLD_CONFIG.caves.scaleXZ + 100,
-      wyWarped * WORLD_CONFIG.caves.scaleY + 100,
-      wzWarped * WORLD_CONFIG.caves.scaleXZ + 100
-    );
-
-    if (n1 * n1 + n2 * n2 < currentThreshold * currentThreshold) {
-      let adjacentToWater = false;
-      if (wy <= localWaterLevel) {
-        const neighbors = [
-          [wx + 1, wz], [wx - 1, wz],
-          [wx, wz + 1], [wx, wz - 1]
-        ];
-        for (const [nx, nz] of neighbors) {
-          if (generator.isWaterArea(nx, nz)) {
-            adjacentToWater = true;
-            break;
-          }
-        }
-      }
-      return !adjacentToWater;
-    }
-  }
-  return false;
-}
+import { BLOCK_TYPES, getBlockProperties, canBlockGrowOn } from '@game/world/BlockConfig';
+import { isCaveAt } from './CaveCarverStage';
+export { isCaveAt };
 
 export class SurfaceDecorationStage implements ChunkPipelineStage {
   public name = 'SurfaceDecoration';
@@ -97,11 +43,17 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
                 col.localWaterLevel,
                 col.isDryLand && !col.isPond,
                 wx,
-                wz
+                wz,
+                col.slope
               );
               const groundProps = getBlockProperties(groundType);
               if (groundProps.allowVegetationBase) {
-                chunk[index] = biome.getVegetationType(wx, wz, noise);
+                const vegType = biome.getVegetationType(wx, wz, noise);
+                if (vegType !== BLOCK_TYPES.AIR && canBlockGrowOn(vegType, groundType)) {
+                  chunk[index] = vegType;
+                } else {
+                  chunk[index] = BLOCK_TYPES.AIR;
+                }
               } else {
                 chunk[index] = BLOCK_TYPES.AIR;
               }

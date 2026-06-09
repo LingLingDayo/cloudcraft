@@ -1,16 +1,22 @@
-import { type Biome, getOreType } from './Biome';
+import { type Biome, growBiomeDecorations } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { WORLD_CONFIG } from '../WorldConfig';
-import { CHUNK_SIZE_Y } from '../World';
+import type { BlockWriter } from '../TreeStructureGenerator';
+import type { ConfiguredFeature } from '../feature/WorldFeature';
 
 export class DesertBiome implements Biome {
   public id = 'desert';
   public name = '沙漠';
+  public targetTemp: number;
+  public targetMoisture: number;
+  public configuredFeatures: ConfiguredFeature[];
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 极其平缓，有微弱的沙丘起伏，比海平面(150)高出约 1-10 格
-    return Math.floor(154 + noise.noise(wx * 0.05, wz * 0.05) * 4);
+  constructor(targetTemp = 0.9, targetMoisture = 0.1) {
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+    this.configuredFeatures = [
+      { featureId: 'cactus', probability: 1.0 }
+    ];
   }
 
   public fillColumn(
@@ -21,54 +27,53 @@ export class DesertBiome implements Biome {
     finalHeight: number,
     _waterLevel: number,
     depthBelowSurface: number,
-    noise: ImprovedNoise,
-    wx: number,
-    wz: number,
-    _isDryLand: boolean
+    _noise: ImprovedNoise,
+    _wx: number,
+    _wz: number,
+    _isDryLand: boolean,
+    slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
     if (y === 0) {
       chunk[index] = BLOCK_TYPES.STONE; // 基岩
     } else if (y <= finalHeight) {
-      if (depthBelowSurface <= 4) {
-        chunk[index] = BLOCK_TYPES.SAND; // 地表沙子
-      } else if (depthBelowSurface <= 8) {
-        chunk[index] = BLOCK_TYPES.SANDSTONE; // 深层砂岩
+      if (slope > 3.5) {
+        // 陡坡上砂石裸露
+        if (depthBelowSurface <= 4) {
+          chunk[index] = BLOCK_TYPES.SANDSTONE;
+        } else {
+          chunk[index] = BLOCK_TYPES.STONE;
+        }
       } else {
-        // 最深层是石头加矿石
-        chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
+        if (depthBelowSurface <= 4) {
+          chunk[index] = BLOCK_TYPES.SAND; // 地表沙子
+        } else if (depthBelowSurface <= 8) {
+          chunk[index] = BLOCK_TYPES.SANDSTONE; // 深层砂岩
+        } else {
+          chunk[index] = BLOCK_TYPES.STONE;
+        }
       }
     }
   }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.12; // 较低的植物生存率
   }
 
-  public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
-    chunkRandom: number,
-    treeIndex: number
-  ): void {
-    // 在地表长出 1~3 层高的仙人掌
-    const seed = chunkRandom * 30 + treeIndex;
-    const heightRand = (Math.sin(seed * 321.09) * 43758.5453) % 1;
-    const absHeight = Math.abs(heightRand);
-    const cactusHeight = 1 + Math.floor(absHeight * 3);
+  public getTreeAttempts(chunkRandom: number): number {
+    return Math.floor(chunkRandom * 12) % 3 + 1; // 沙漠维持 1~3 次
+  }
 
-    for (let h = 1; h <= cactusHeight; h++) {
-      const cy = ty + h;
-      if (cy < CHUNK_SIZE_Y) {
-        const idx = tx + tz * 16 + cy * 256;
-        if (chunk[idx] === BLOCK_TYPES.AIR) {
-          chunk[idx] = BLOCK_TYPES.CACTUS;
-        }
-      }
-    }
+  public growDecorations(
+    writer: BlockWriter,
+    wx: number,
+    wy: number,
+    wz: number,
+    chunkRandom: number,
+    treeIndex: number,
+    noise: ImprovedNoise
+  ): void {
+    growBiomeDecorations(this.configuredFeatures, writer, wx, wy, wz, chunkRandom, treeIndex, noise);
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {

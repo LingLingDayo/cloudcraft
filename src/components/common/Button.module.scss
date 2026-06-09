@@ -1,11 +1,13 @@
 .btn {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 11px; /* MC text in buttons is relatively small but readable */
+  font-family: var(--font-family-active);
+  font-size: var(--btn-font-size);
   color: #e0e0e0;
-  text-shadow: 2px 2px 0px #000;
-  border: 2px solid #000;
+  text-shadow: var(--ui-text-shadow);
+  border: var(--ui-control-border);
   image-rendering: pixelated;
-  padding: 12px 20px;
+  height: calc(var(--ui-control-height) + 4px);
+  padding: 0 20px;
+  box-sizing: border-box;
   cursor: pointer;
   outline: none;
   user-select: none;
@@ -18,101 +20,76 @@
 
   &:hover:not(:disabled) {
     color: #ffffa0;
-    text-shadow: 2px 2px 0px #000;
+    text-shadow: var(--ui-text-shadow);
   }
 
   &:active:not(:disabled) {
-    padding-top: 14px;
-    padding-bottom: 10px;
+    padding-top: 2px;
   }
 
   &:disabled {
     cursor: not-allowed;
     color: #a0a0a0;
-    text-shadow: 2px 2px 0px #202020;
+    text-shadow: var(--ui-text-shadow-disabled, var(--ui-text-shadow));
   }
 }
 
 .primary {
   @extend .btn;
-  background: #7c7c7c;
-  box-shadow: 
-    inset 2px 2px 0px #aeaeae,
-    inset -2px -2px 0px #5c5c5c;
+  background: var(--btn-primary-bg);
+  box-shadow: var(--btn-primary-shadow);
 
   &:hover:not(:disabled) {
-    background: #8c8c8c;
-    box-shadow: 
-      inset 2px 2px 0px #bebebe,
-      inset -2px -2px 0px #6c6c6c;
+    background: var(--btn-primary-hover-bg);
+    box-shadow: var(--btn-primary-hover-shadow);
   }
 
   &:active:not(:disabled) {
-    box-shadow: 
-      inset -2px -2px 0px #bebebe,
-      inset 2px 2px 0px #5c5c5c;
+    box-shadow: var(--btn-primary-active-shadow);
   }
 
   &:disabled {
-    background: #555555;
-    box-shadow: 
-      inset 2px 2px 0px #777777,
-      inset -2px -2px 0px #3f3f3f;
+    background: var(--btn-primary-disabled-bg);
+    box-shadow: var(--btn-primary-disabled-shadow);
   }
 }
 
 .secondary {
   @extend .btn;
-  background: #4c4c4c;
-  box-shadow: 
-    inset 2px 2px 0px #7c7c7c,
-    inset -2px -2px 0px #2c2c2c;
+  background: var(--btn-secondary-bg);
+  box-shadow: var(--btn-secondary-shadow);
 
   &:hover:not(:disabled) {
-    background: #5c5c5c;
-    box-shadow: 
-      inset 2px 2px 0px #8c8c8c,
-      inset -2px -2px 0px #3c3c3c;
+    background: var(--btn-secondary-hover-bg);
+    box-shadow: var(--btn-secondary-hover-shadow);
   }
 
   &:active:not(:disabled) {
-    box-shadow: 
-      inset -2px -2px 0px #8c8c8c,
-      inset 2px 2px 0px #2c2c2c;
+    box-shadow: var(--btn-secondary-active-shadow);
   }
 
   &:disabled {
-    background: #333333;
-    box-shadow: 
-      inset 2px 2px 0px #555555,
-      inset -2px -2px 0px #1a1a1a;
+    background: var(--btn-secondary-disabled-bg);
+    box-shadow: var(--btn-secondary-disabled-shadow);
   }
 }
 
 .danger {
   @extend .btn;
-  background: #a82e2e;
-  box-shadow: 
-    inset 2px 2px 0px #df5c5c,
-    inset -2px -2px 0px #701c1c;
+  background: var(--btn-danger-bg);
+  box-shadow: var(--btn-danger-shadow);
 
   &:hover:not(:disabled) {
-    background: #be3b3b;
-    box-shadow: 
-      inset 2px 2px 0px #ef6c6c,
-      inset -2px -2px 0px #802323;
+    background: var(--btn-danger-hover-bg);
+    box-shadow: var(--btn-danger-hover-shadow);
   }
 
   &:active:not(:disabled) {
-    box-shadow: 
-      inset -2px -2px 0px #ef6c6c,
-      inset 2px 2px 0px #701c1c;
+    box-shadow: var(--btn-danger-active-shadow);
   }
 
   &:disabled {
-    background: #5c2020;
-    box-shadow: 
-      inset 2px 2px 0px #7c3a3a,
-      inset -2px -2px 0px #3a1515;
+    background: var(--btn-danger-disabled-bg);
+    box-shadow: var(--btn-danger-disabled-shadow);
   }
 }

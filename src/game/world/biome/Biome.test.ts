@@ -1,6 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import { ImprovedNoise } from '../Noise';
 import { BiomeRegistry } from './BiomeRegistry';
+import { TerrainShaper } from '../landform/TerrainShaper';
+import { BLOCK_TYPES } from '../BlockConfig';
 
 describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
   const mockNoise = new ImprovedNoise('test-seed');
@@ -32,37 +34,97 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
     expect(BiomeRegistry.PLAINS.name).toBe('平原');
   });
 
-  test('不同生态在特定坐标计算的高度应符合设计预期范围', () => {
-    // 沙漠地形应极度平缓 (高度波动应很小，基本在 150 ~ 158)
-    const desertH1 = BiomeRegistry.DESERT.getHeight(0, 0, mockNoise);
-    const desertH2 = BiomeRegistry.DESERT.getHeight(100, 100, mockNoise);
-    expect(desertH1).toBeGreaterThanOrEqual(150);
-    expect(desertH1).toBeLessThanOrEqual(158);
-    expect(desertH2).toBeGreaterThanOrEqual(150);
-    expect(desertH2).toBeLessThanOrEqual(158);
+  test('不同地貌特性在特定坐标计算的高度应符合设计预期范围', () => {
+    // 平原特性 (Continentality 0.5, Erosion 0.8): 地势平缓
+    const plainsH1 = TerrainShaper.getHeight(0, 0, mockNoise, 0.5, 0.8);
+    const plainsH2 = TerrainShaper.getHeight(100, 100, mockNoise, 0.5, 0.8);
+    expect(plainsH1).toBeGreaterThanOrEqual(150);
+    expect(plainsH1).toBeLessThanOrEqual(170);
+    expect(plainsH2).toBeGreaterThanOrEqual(150);
+    expect(plainsH2).toBeLessThanOrEqual(170);
 
-    // 平原地形应非常平缓 (高度在 151 ~ 159 之间)
-    const plainsH1 = BiomeRegistry.PLAINS.getHeight(0, 0, mockNoise);
-    const plainsH2 = BiomeRegistry.PLAINS.getHeight(100, 100, mockNoise);
-    expect(plainsH1).toBeGreaterThanOrEqual(151);
-    expect(plainsH1).toBeLessThanOrEqual(159);
-    expect(plainsH2).toBeGreaterThanOrEqual(151);
-    expect(plainsH2).toBeLessThanOrEqual(159);
+    // 山地特性 (Continentality 0.85, Erosion 0.2): 地势高耸起伏大
+    const mountainH1 = TerrainShaper.getHeight(0, 0, mockNoise, 0.85, 0.2);
+    const mountainH2 = TerrainShaper.getHeight(50, 50, mockNoise, 0.85, 0.2);
+    expect(mountainH1).toBeGreaterThanOrEqual(180);
+    expect(mountainH1).toBeLessThanOrEqual(280);
+    expect(mountainH2).toBeGreaterThanOrEqual(180);
+    expect(mountainH2).toBeLessThanOrEqual(280);
 
-    // 石头山地势应高耸且波动起伏大 (高度大约在 200 ~ 280)
-    const stonyH1 = BiomeRegistry.STONY_PEAKS.getHeight(0, 0, mockNoise);
-    const stonyH2 = BiomeRegistry.STONY_PEAKS.getHeight(50, 50, mockNoise);
-    expect(stonyH1).toBeGreaterThanOrEqual(195);
-    expect(stonyH1).toBeLessThanOrEqual(285);
-    expect(stonyH2).toBeGreaterThanOrEqual(195);
-    expect(stonyH2).toBeLessThanOrEqual(285);
+    // 高原特性 (Continentality 0.7, Erosion 0.7): 较高海拔但平缓
+    const plateauH1 = TerrainShaper.getHeight(0, 0, mockNoise, 0.7, 0.7);
+    const plateauH2 = TerrainShaper.getHeight(200, 200, mockNoise, 0.7, 0.7);
+    expect(plateauH1).toBeGreaterThanOrEqual(160);
+    expect(plateauH1).toBeLessThanOrEqual(180);
+    expect(plateauH2).toBeGreaterThanOrEqual(160);
+    expect(plateauH2).toBeLessThanOrEqual(180);
+  });
 
-    // 高原高度应该稳定维持在高海拔区 (大约在 190 ~ 230)
-    const plateauH1 = BiomeRegistry.PLATEAU.getHeight(0, 0, mockNoise);
-    const plateauH2 = BiomeRegistry.PLATEAU.getHeight(200, 200, mockNoise);
-    expect(plateauH1).toBeGreaterThanOrEqual(185);
-    expect(plateauH1).toBeLessThanOrEqual(235);
-    expect(plateauH2).toBeGreaterThanOrEqual(185);
-    expect(plateauH2).toBeLessThanOrEqual(235);
+  test('在有水列且低于水面高度时，BaseSoilBiome 应该将原本的草方块替换为泥土', () => {
+    const plainsBiome = BiomeRegistry.PLAINS;
+    const chunk = new Uint8Array(4096);
+    const lx = 0;
+    const lz = 0;
+    const y = 60;
+    const finalHeight = 60;
+    const waterLevel = 64; // y < waterLevel
+    const depthBelowSurface = 1;
+    const slope = 0.5;
+
+    const index = lx + lz * 16 + (y % 16) * 256;
+
+    // 1. 当是干陆地时 (isDryLand = true)，即使 y < waterLevel，由于没有水，也应该生成草方块 (GRASS)
+    plainsBiome.fillColumn(
+      chunk,
+      lx,
+      lz,
+      y,
+      finalHeight,
+      waterLevel,
+      depthBelowSurface,
+      mockNoise,
+      0, // wx
+      0, // wz
+      true, // isDryLand
+      slope
+    );
+    expect(chunk[index]).toBe(BLOCK_TYPES.GRASS);
+
+    // 2. 当不是干陆地时 (isDryLand = false)，且 y < waterLevel，原本是草方块的顶层应该自动变泥土 (DIRT)
+    plainsBiome.fillColumn(
+      chunk,
+      lx,
+      lz,
+      y,
+      finalHeight,
+      waterLevel,
+      depthBelowSurface,
+      mockNoise,
+      0, // wx
+      0, // wz
+      false, // isDryLand = false
+      slope
+    );
+    expect(chunk[index]).toBe(BLOCK_TYPES.DIRT);
+
+    // 3. 如果在水面以上 (y >= waterLevel)，即使不是干陆地，也应当继续使用草方块
+    const yAbove = 65;
+    const finalHeightAbove = 65;
+    const indexAbove = lx + lz * 16 + (yAbove % 16) * 256;
+    plainsBiome.fillColumn(
+      chunk,
+      lx,
+      lz,
+      yAbove,
+      finalHeightAbove,
+      waterLevel,
+      depthBelowSurface,
+      mockNoise,
+      0,
+      0,
+      false, // isDryLand = false
+      slope
+    );
+    expect(chunk[indexAbove]).toBe(BLOCK_TYPES.GRASS);
   });
 });

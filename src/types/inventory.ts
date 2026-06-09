@@ -1,6 +1,8 @@
 import { ItemType } from './item';
 
-export interface HotbarItem {
+export interface ItemStack {
   type: ItemType;
   count: number;
 }
+
+export type HotbarItem = ItemStack;

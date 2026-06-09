@@ -1,15 +1,23 @@
 import type { StateCreator } from 'zustand';
 import type { GameStoreState, DebugSlice } from '../types';
+import { getSystemSettings, saveSystemSetting } from '@utils/settings';
 
 export const createDebugSlice: StateCreator<
   GameStoreState,
   [],
   [],
   DebugSlice
-> = (set) => ({
-  debugOverlay: false,
-  debugMetrics: null,
+> = (set) => {
+  const settings = getSystemSettings();
 
-  setDebugOverlay: (debugOverlay) => set({ debugOverlay }),
-  setDebugMetrics: (debugMetrics) => set({ debugMetrics }),
-});
+  return {
+    debugOverlay: settings.debugOverlay,
+    debugMetrics: null,
+
+    setDebugOverlay: (debugOverlay) => set(() => {
+      saveSystemSetting('debugOverlay', debugOverlay);
+      return { debugOverlay };
+    }),
+    setDebugMetrics: (debugMetrics) => set({ debugMetrics }),
+  };
+};

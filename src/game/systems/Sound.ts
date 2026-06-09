@@ -260,7 +260,7 @@ class SoundManager {
 
         const gain = this.ctx.createGain();
         const duration = 0.1;
-        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.setValueAtTime(0.156, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         source.connect(filter);
@@ -280,7 +280,7 @@ class SoundManager {
         osc.frequency.setValueAtTime(260, now);
         osc.frequency.exponentialRampToValueAtTime(160, now + duration);
 
-        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.setValueAtTime(0.195, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         osc.start(now);
@@ -296,7 +296,7 @@ class SoundManager {
         osc.frequency.setValueAtTime(120, now);
         osc.frequency.exponentialRampToValueAtTime(70, now + duration);
 
-        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.setValueAtTime(0.234, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         osc.start(now);
@@ -312,7 +312,7 @@ class SoundManager {
         osc.frequency.setValueAtTime(220, now);
         osc.frequency.exponentialRampToValueAtTime(120, now + duration);
 
-        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.setValueAtTime(0.234, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         osc.start(now);
@@ -325,7 +325,7 @@ class SoundManager {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(260, this.ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(160, this.ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.26, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
         osc.start();
         osc.stop(this.ctx.currentTime + 0.08);
@@ -475,6 +475,79 @@ class SoundManager {
       osc.stop(this.ctx.currentTime + 0.08);
     } catch (e) {
       console.warn('Audio play failed', e);
+    }
+  }
+
+  public playEat() {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      if (!this.noiseBuffer) return;
+
+      // Eating crunch sound (simulating crunching noise)
+      const source = this.ctx.createBufferSource();
+      source.buffer = this.noiseBuffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(250 + Math.random() * 150, now);
+      filter.Q.setValueAtTime(3.0, now);
+
+      const gain = this.ctx.createGain();
+      const duration = 0.06 + Math.random() * 0.04;
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      source.start(now);
+      source.stop(now + duration);
+    } catch (e) {
+      console.warn('Audio play failed', e);
+    }
+  }
+
+  public playBurp() {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+
+      // Burp sound: a low, coarse sound with a low-pass filter
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      
+      osc.type = 'sawtooth';
+      const duration = 0.22;
+      osc.frequency.setValueAtTime(75, now);
+      osc.frequency.linearRampToValueAtTime(55, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(35, now + duration);
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(250, now);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {
+      console.warn('Audio play failed', e);
+    }
+  }
+
+  public play(soundName: string, ...args: any[]) {
+    const fn = (this as any)[soundName];
+    if (typeof fn === 'function') {
+      fn.apply(this, args);
     }
   }
 }

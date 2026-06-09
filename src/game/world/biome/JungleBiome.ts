@@ -1,70 +1,29 @@
-import { type Biome, type GrowTreeFn, TreeStyle, getOreType } from './Biome';
+import { BaseSoilBiome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { WORLD_CONFIG } from '../WorldConfig';
 
-export class JungleBiome implements Biome {
+export class JungleBiome extends BaseSoilBiome {
   public id = 'jungle';
   public name = '丛林';
+  public targetTemp: number;
+  public targetMoisture: number;
 
-  public getHeight(wx: number, wz: number, noise: ImprovedNoise): number {
-    // 丛林地表也比较平缓，比海平面(150)高出约 1-10 格
-    return Math.floor(155 + noise.fbm(wx * 0.02, wz * 0.02, 2, 0.4) * 5);
+  constructor(targetTemp = 0.8, targetMoisture = 0.85) {
+    super();
+    this.targetTemp = targetTemp;
+    this.targetMoisture = targetMoisture;
+    this.configuredFeatures = [
+      { featureId: 'jungle_tree', probability: 1.0 }
+    ];
   }
-
-  public fillColumn(
-    chunk: Uint8Array,
-    lx: number,
-    lz: number,
-    y: number,
-    finalHeight: number,
-    waterLevel: number,
-    depthBelowSurface: number,
-    noise: ImprovedNoise,
-    wx: number,
-    wz: number,
-    isDryLand: boolean
-  ): void {
-    const index = lx + lz * 16 + (y % 16) * 256;
-    if (y === finalHeight) {
-      if (y < waterLevel + 2 && !isDryLand) {
-        chunk[index] = BLOCK_TYPES.SAND;
-      } else {
-        chunk[index] = BLOCK_TYPES.GRASS;
-      }
-    } else if (depthBelowSurface <= 4) {
-      if (y < waterLevel + 2 && !isDryLand) {
-        chunk[index] = BLOCK_TYPES.SAND;
-      } else {
-        chunk[index] = BLOCK_TYPES.DIRT;
-      }
-    } else {
-      // 矿石脉
-      chunk[index] = getOreType(y, WORLD_CONFIG.oreGeneration.default, BLOCK_TYPES.STONE, noise, wx, wz);
-    }
-  }
-
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.4; // 繁茂的丛林，树木极多
   }
 
-  public growDecorations(
-    chunk: Uint8Array,
-    tx: number,
-    ty: number,
-    tz: number,
-    chunkRandom: number,
-    treeIndex: number,
-    growTree: GrowTreeFn
-  ): void {
-    const seed = chunkRandom * 40 + treeIndex;
-    const heightRand = (Math.sin(seed * 432.1) * 43758.5453) % 1;
-    const absHeight = Math.abs(heightRand);
-    // 树木很高：7 到 11 格
-    const treeHeight = 7 + Math.floor(absHeight * 5);
-
-    growTree(chunk, tx, ty, tz, BLOCK_TYPES.JUNGLE_WOOD, BLOCK_TYPES.JUNGLE_LEAVES, treeHeight, TreeStyle.JUNGLE);
+  public override getTreeAttempts(chunkRandom: number): number {
+    // 丛林更密：8 ~ 14 次尝试
+    return 8 + Math.floor(chunkRandom * 24) % 7;
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {

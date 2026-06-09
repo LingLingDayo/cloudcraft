@@ -62,7 +62,7 @@ export abstract class Item {
     this.id = properties.id;
     this.name = properties.name;
     this.category = properties.category ?? 'misc';
-    this.maxStackSize = properties.maxStackSize ?? 64;
+    this.maxStackSize = properties.maxStackSize ?? 100;
     this.textureFaces = properties.textureFaces;
     this.droppedModelType = properties.droppedModelType ?? 'cross';
     this.color = properties.color;
