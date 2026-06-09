@@ -4,6 +4,7 @@ vi.mock('../biome/BiomeRegistry', () => ({
     name: '森林',
     fillColumn: () => {},
     getTreeProbability: () => 1.0,
+    getTreeAttempts: () => 3,
     growDecorations: () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (globalThis as any).mockGrowDecorationsCalled = true;
@@ -17,6 +18,7 @@ vi.mock('@game/world/biome/BiomeRegistry', () => ({
     name: '森林',
     fillColumn: () => {},
     getTreeProbability: () => 1.0,
+    getTreeAttempts: () => 3,
     growDecorations: () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (globalThis as any).mockGrowDecorationsCalled = true;
@@ -335,8 +337,8 @@ describe('ChunkPipeline Extensions', () => {
 
     const chunk = new Uint8Array(4096);
     const context: ChunkPipelineContext = {
-      cx: 0, cy: 0, cz: 0,
-      worldStartX: 0, worldStartY: 0, worldStartZ: 0,
+      cx: 0, cy: 10, cz: 0,
+      worldStartX: 0, worldStartY: 160, worldStartZ: 0,
       chunk,
       noise: mockNoise,
       terrainMap: [],

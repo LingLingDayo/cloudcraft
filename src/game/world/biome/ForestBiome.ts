@@ -1,7 +1,6 @@
-import { BaseSoilBiome, TreeStyle } from './Biome';
+import { BaseSoilBiome } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
-import { TreeStructureGenerator, type BlockWriter } from '../TreeStructureGenerator';
 
 export class ForestBiome extends BaseSoilBiome {
   public id = 'forest';
@@ -13,56 +12,19 @@ export class ForestBiome extends BaseSoilBiome {
     super();
     this.targetTemp = targetTemp;
     this.targetMoisture = targetMoisture;
+    this.configuredFeatures = [
+      { featureId: 'oak_tree', probability: 0.45 },
+      { featureId: 'birch_tree', probability: 0.55 },
+    ];
   }
 
   public getTreeProbability(_chunkRandom: number): number {
     return 0.25;
   }
 
-  public growDecorations(
-    writer: BlockWriter,
-    wx: number,
-    wy: number,
-    wz: number,
-    chunkRandom: number,
-    treeIndex: number,
-    noise: ImprovedNoise
-  ): void {
-    const seed = chunkRandom * 10 + treeIndex;
-    const treeTypeVal = (Math.sin(seed * 123.456) * 43758.5453) % 1;
-    const heightRand = (Math.sin(seed * 789.012) * 43758.5453) % 1;
-    const absType = Math.abs(treeTypeVal);
-    const absHeight = Math.abs(heightRand);
-
-    if (absType < 0.45) {
-      // Oak tree
-      const treeHeight = 4 + Math.floor(absHeight * 2);
-      TreeStructureGenerator.growTree(
-        writer,
-        wx,
-        wy,
-        wz,
-        BLOCK_TYPES.WOOD,
-        BLOCK_TYPES.LEAF,
-        treeHeight,
-        TreeStyle.OAK,
-        (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
-      );
-    } else {
-      // Birch tree
-      const treeHeight = 5 + Math.floor(absHeight * 3);
-      TreeStructureGenerator.growTree(
-        writer,
-        wx,
-        wy,
-        wz,
-        BLOCK_TYPES.BIRCH_WOOD,
-        BLOCK_TYPES.BIRCH_LEAVES,
-        treeHeight,
-        TreeStyle.BIRCH,
-        (wlx, wly, wlz) => noise.pseudoRandom2d(wlx * 17 + wx, wlz * 23 + wz + wly)
-      );
-    }
+  public override getTreeAttempts(chunkRandom: number): number {
+    // 森林：5 ~ 9 次尝试
+    return 5 + Math.floor(chunkRandom * 12) % 5;
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {

@@ -1,17 +1,22 @@
-import { type Biome } from './Biome';
+import { type Biome, growBiomeDecorations } from './Biome';
 import { ImprovedNoise } from '../Noise';
 import { BLOCK_TYPES } from '../BlockConfig';
 import type { BlockWriter } from '../TreeStructureGenerator';
+import type { ConfiguredFeature } from '../feature/WorldFeature';
 
 export class DesertBiome implements Biome {
   public id = 'desert';
   public name = '沙漠';
   public targetTemp: number;
   public targetMoisture: number;
+  public configuredFeatures: ConfiguredFeature[];
 
   constructor(targetTemp = 0.9, targetMoisture = 0.1) {
     this.targetTemp = targetTemp;
     this.targetMoisture = targetMoisture;
+    this.configuredFeatures = [
+      { featureId: 'cactus', probability: 1.0 }
+    ];
   }
 
   public fillColumn(
@@ -55,6 +60,10 @@ export class DesertBiome implements Biome {
     return 0.12; // 较低的植物生存率
   }
 
+  public getTreeAttempts(chunkRandom: number): number {
+    return Math.floor(chunkRandom * 12) % 3 + 1; // 沙漠维持 1~3 次
+  }
+
   public growDecorations(
     writer: BlockWriter,
     wx: number,
@@ -62,22 +71,9 @@ export class DesertBiome implements Biome {
     wz: number,
     chunkRandom: number,
     treeIndex: number,
-    _noise: ImprovedNoise
+    noise: ImprovedNoise
   ): void {
-    // 在地表长出 1~3 层高的仙人掌
-    const seed = chunkRandom * 30 + treeIndex;
-    const heightRand = (Math.sin(seed * 321.09) * 43758.5453) % 1;
-    const absHeight = Math.abs(heightRand);
-    const cactusHeight = 1 + Math.floor(absHeight * 3);
-
-    for (let h = 1; h <= cactusHeight; h++) {
-      const cy = wy + h;
-      if (cy < 512) { // WORLD_HEIGHT is 512
-        if (writer.getBlock(wx, cy, wz) === BLOCK_TYPES.AIR) {
-          writer.setBlock(wx, cy, wz, BLOCK_TYPES.CACTUS);
-        }
-      }
-    }
+    growBiomeDecorations(this.configuredFeatures, writer, wx, wy, wz, chunkRandom, treeIndex, noise);
   }
 
   public getVegetationType(wx: number, wz: number, noise: ImprovedNoise): number {
