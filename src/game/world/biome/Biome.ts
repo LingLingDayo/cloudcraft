@@ -114,7 +114,7 @@ export abstract class BaseSoilBiome implements Biome {
     noise: ImprovedNoise,
     wx: number,
     wz: number,
-    _isDryLand: boolean,
+    isDryLand: boolean,
     slope: number
   ): void {
     const index = lx + lz * 16 + (y % 16) * 256;
@@ -131,7 +131,11 @@ export abstract class BaseSoilBiome implements Biome {
         // 从水底到水上 2 格均填充沙滩，形成自然的沙滩带
         chunk[index] = BLOCK_TYPES.SAND;
       } else {
-        chunk[index] = this.topBlockType;
+        if (!isDryLand && y < waterLevel) {
+          chunk[index] = this.underBlockType; // 水中（水底）草方块自动变泥土
+        } else {
+          chunk[index] = this.topBlockType;
+        }
       }
     } else if (depthBelowSurface <= 4) {
       if (slope > 3.0) {
