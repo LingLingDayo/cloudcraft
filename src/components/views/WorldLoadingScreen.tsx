@@ -93,8 +93,8 @@ export const WorldLoadingScreen: React.FC = () => {
     }
 
     const loaded = keys.filter((k) => chunkStates[k]).length;
-    // Align with the 50% target threshold used in gameSlice for worldLoadingProgress
-    const targetCount = Math.ceil(total * 0.5);
+    // Align with the 45% target threshold used in gameSlice for worldLoadingProgress
+    const targetCount = Math.ceil(total * 0.45);
 
     return {
       loadedCount: Math.min(targetCount, loaded),
