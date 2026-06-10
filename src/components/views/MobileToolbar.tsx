@@ -59,7 +59,7 @@ export const MobileToolbar: React.FC = () => {
           onClick={() => {
             if (!isMobile) setToolbarExpanded(!toolbarExpanded);
           }}
-          title={toolbarExpanded ? "Close Menu" : "Open Menu"}
+          title={toolbarExpanded ? t('hud.closeMenu') : t('hud.openMenu')}
         >
           <PixelHamburgerIcon />
         </button>

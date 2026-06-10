@@ -170,7 +170,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
               {t('startMenu.title')}
             </h1>
             <span className={`pixel-text-sm ${styles.splashText}`}>
-              Web Edition!
+              {t('startMenu.splashText')}
             </span>
           </div>
           <p className={styles.subtitle}>

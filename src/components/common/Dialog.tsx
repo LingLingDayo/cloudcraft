@@ -1,5 +1,6 @@
 import React from 'react';
 import { useBackToClose } from '@hooks/useBackToClose';
+import { useTranslation } from '@i18n';
 import styles from './Dialog.module.scss';
 
 interface DialogProps {
@@ -23,6 +24,7 @@ export const Dialog: React.FC<DialogProps> = ({
   noPadding = false,
   showCloseBtn = true
 }) => {
+  const { t } = useTranslation();
   useBackToClose({ onClose, enabled: closeOnBack });
   const style: React.CSSProperties = {
     ...(width !== undefined ? { width } : {}),
@@ -47,7 +49,7 @@ export const Dialog: React.FC<DialogProps> = ({
               type="button" 
               className={styles.closeBtn} 
               onClick={onClose}
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               ✕
             </button>
