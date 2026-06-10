@@ -421,4 +421,23 @@ describe('Physics System', () => {
       expect(pos.y).toBeGreaterThan(39.0);
     });
   });
+
+  describe('Custom Collision Shapes', () => {
+    test('cactus collision is smaller than 1x1x1 (shrunk horizontally)', () => {
+      mockBlockMap.set('11,5,10', BLOCK_TYPES.CACTUS);
+
+      // Player half-width is 0.3.
+      // Cactus box min.x is 11 + 0.0625 = 11.0625.
+      // Player moving +X should be stopped at x = 11.0625 - 0.3 = 10.7625.
+      const pos = new THREE.Vector3(10.5, 5.0, 10.5);
+      const vel = new THREE.Vector3(5.0, 0, 0);
+      const state = { onGround: true, inWater: false };
+
+      physics.update(pos, vel, 0.1, new THREE.Vector3(1, 0, 0), false, false, false, state, false);
+
+      expect(pos.x).toBeCloseTo(10.7625);
+      expect(vel.x).toBe(0);
+    });
+  });
 });
+

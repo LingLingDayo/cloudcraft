@@ -38,7 +38,9 @@ export interface BlockProperties {
     minCount?: number;
     maxCount?: number;
   }[];
+  collisionBoxes?: { min: [number, number, number]; max: [number, number, number] }[];
 }
+
 
 // ─── AIR 默认属性（propertiesResolver 初始化前的回退值）───
 

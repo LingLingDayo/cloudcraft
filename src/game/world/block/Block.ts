@@ -39,6 +39,32 @@ export abstract class Block {
   }
 
   /**
+   * 获取该方块在世界坐标 (x, y, z) 处的物理碰撞盒列表。
+   * 支持多碰撞盒。如果返回空数组，则表示该位置无物理碰撞。
+   */
+  public getCollisionBoxes(x: number, y: number, z: number): THREE.Box3[] {
+    const isCollidable = this.properties.isCollidable ?? this.properties.isSolid;
+    if (!isCollidable) {
+      return [];
+    }
+
+    if (this.properties.collisionBoxes && this.properties.collisionBoxes.length > 0) {
+      return this.properties.collisionBoxes.map(box => new THREE.Box3(
+        new THREE.Vector3(x + box.min[0], y + box.min[1], z + box.min[2]),
+        new THREE.Vector3(x + box.max[0], y + box.max[1], z + box.max[2])
+      ));
+    }
+
+    return [
+      new THREE.Box3(
+        new THREE.Vector3(x, y, z),
+        new THREE.Vector3(x + 1, y + 1, z + 1)
+      )
+    ];
+  }
+
+
+  /**
    * 玩家右键交互
    * @returns 返回 true 拦截后续 of 物品放置
    */
