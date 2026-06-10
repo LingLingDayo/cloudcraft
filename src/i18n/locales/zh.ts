@@ -5,6 +5,7 @@ export const zh = {
     cancel: '取消',
     confirmQuitTitle: '确认退出',
     confirmQuitMessage: '你确定要保存并退出到主菜单吗？',
+    close: '关闭',
   },
   startMenu: {
     title: 'CLOUDCRAFT',
@@ -25,6 +26,7 @@ export const zh = {
     importSuccess: '存档导入成功！',
     importFailed: '导入存档失败',
     parseFailed: '解析存档文件失败',
+    splashText: 'Web Edition!',
   },
   pauseMenu: {
     title: '游戏已暂停',
@@ -116,6 +118,12 @@ export const zh = {
     renderer: '渲染器',
     drawCalls: 'Draw Calls',
     triangles: '三角面数',
+    closeMenu: '关闭菜单',
+    openMenu: '打开菜单',
+    tempMoist: '温度 / 湿度',
+    contErosSlope: '大陆度 / 侵蚀度 / 坡度',
+    yawPitch: '偏航角 / 俯仰角',
+    geometriesTextures: '几何体 / 贴图',
   },
   inventory: {
     titleCreative: '创造模式物品栏',

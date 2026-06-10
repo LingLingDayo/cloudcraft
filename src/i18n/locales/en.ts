@@ -5,6 +5,7 @@ export const en = {
     cancel: 'Cancel',
     confirmQuitTitle: 'Confirm Quit',
     confirmQuitMessage: 'Are you sure you want to save and quit to the main menu?',
+    close: 'Close',
   },
   startMenu: {
     title: 'CLOUDCRAFT',
@@ -25,6 +26,7 @@ export const en = {
     importSuccess: 'Save imported successfully!',
     importFailed: 'Failed to import save',
     parseFailed: 'Failed to parse save file',
+    splashText: 'Web Edition!',
   },
   pauseMenu: {
     title: 'Game Paused',
@@ -116,6 +118,12 @@ export const en = {
     renderer: 'Renderer',
     drawCalls: 'Draw Calls',
     triangles: 'Triangles',
+    closeMenu: 'Close Menu',
+    openMenu: 'Open Menu',
+    tempMoist: 'Temp / Moist',
+    contErosSlope: 'Cont / Eros / Slope',
+    yawPitch: 'Yaw / Pitch',
+    geometriesTextures: 'Geometries / Textures',
   },
   inventory: {
     titleCreative: 'Creative Inventory',

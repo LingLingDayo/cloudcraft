@@ -357,7 +357,7 @@ export const HUD: React.FC = () => {
               {t('hud.facing')}: <span className={styles.directionValue}>{debugMetrics.playerDirection}</span>
             </div>
             <div>
-              Yaw / Pitch: <span className={styles.rotationValue}>{debugMetrics.playerRotation.yaw.toFixed(1)}° / {debugMetrics.playerRotation.pitch.toFixed(1)}°</span>
+              {t('hud.yawPitch')}: <span className={styles.rotationValue}>{debugMetrics.playerRotation.yaw.toFixed(1)}° / {debugMetrics.playerRotation.pitch.toFixed(1)}°</span>
             </div>
           </div>
 
@@ -368,7 +368,7 @@ export const HUD: React.FC = () => {
             </div>
             {debugMetrics.biome && (
               <div>
-                Temp / Moist: <span className={styles.biomeDetail}>{debugMetrics.biome.temp.toFixed(2)} / {debugMetrics.biome.moisture.toFixed(2)}</span>
+                {t('hud.tempMoist')}: <span className={styles.biomeDetail}>{debugMetrics.biome.temp.toFixed(2)} / {debugMetrics.biome.moisture.toFixed(2)}</span>
               </div>
             )}
             <div>
@@ -376,7 +376,7 @@ export const HUD: React.FC = () => {
             </div>
             {debugMetrics.landform && (
               <div>
-                Cont / Eros / Slope: <span className={styles.biomeDetail}>{debugMetrics.landform.continentalness.toFixed(2)} / {debugMetrics.landform.erosion.toFixed(2)} / {debugMetrics.slope.toFixed(2)}</span>
+                {t('hud.contErosSlope')}: <span className={styles.biomeDetail}>{debugMetrics.landform.continentalness.toFixed(2)} / {debugMetrics.landform.erosion.toFixed(2)} / {debugMetrics.slope.toFixed(2)}</span>
               </div>
             )}
             <div>
@@ -399,7 +399,7 @@ export const HUD: React.FC = () => {
               {t('hud.triangles')}: <span className={styles.renderValue}>{debugMetrics.renderer.triangles.toLocaleString()}</span>
             </div>
             <div>
-              Geometries / Textures: <span className={styles.renderValue}>{debugMetrics.renderer.geometries} / {debugMetrics.renderer.textures}</span>
+              {t('hud.geometriesTextures')}: <span className={styles.renderValue}>{debugMetrics.renderer.geometries} / {debugMetrics.renderer.textures}</span>
             </div>
             <div>
               GPU: <span className={styles.renderValue} style={{ fontSize: '10px', wordBreak: 'break-all' }}>{debugMetrics.renderer.gpu}</span>

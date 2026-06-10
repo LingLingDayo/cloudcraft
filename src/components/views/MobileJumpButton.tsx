@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { hotkeyManager, GameAction } from '@game/systems/HotkeyManager';
 import { PixelSolidDiamondIcon } from '@components/common/PixelIcons';
+import { useTranslation } from '@i18n';
 import styles from './MobileControls.module.scss';
 
 export const MobileJumpButton: React.FC = () => {
+  const { t } = useTranslation();
   const [isJumpActive, setIsJumpActive] = useState(false);
 
   const handleJumpTouchStart = (e: React.TouchEvent) => {
@@ -25,7 +27,7 @@ export const MobileJumpButton: React.FC = () => {
       onTouchEnd={handleJumpTouchEnd}
       onTouchCancel={handleJumpTouchEnd}
     >
-      <div className={`${styles.jumpBtn} ${isJumpActive ? styles.active : ''}`} title="Jump">
+      <div className={`${styles.jumpBtn} ${isJumpActive ? styles.active : ''}`} title={t('controls.jump')}>
         <PixelSolidDiamondIcon />
       </div>
     </div>
