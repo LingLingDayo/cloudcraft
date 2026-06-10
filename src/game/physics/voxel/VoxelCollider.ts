@@ -1,6 +1,16 @@
 import * as THREE from 'three';
 import { World, getBlockProperties } from '@game/world/World';
 import { type Size3D } from '@type';
+import { BlockRegistry } from '@game/world/block/BlockRegistry';
+
+export interface CollidingBlock {
+  x: number;
+  y: number;
+  z: number;
+  id: number;
+  box: THREE.Box3;
+}
+
 
 /**
  * 核心体素碰撞器 (Voxel Collider)
@@ -43,8 +53,8 @@ export class VoxelCollider {
   /**
    * 静态方法：获取与碰撞盒相交的所有可碰撞方块
    */
-  public static getCollidingBlocks(world: World, box: THREE.Box3): { x: number; y: number; z: number; id: number }[] {
-    const colliders = [];
+  public static getCollidingBlocks(world: World, box: THREE.Box3): CollidingBlock[] {
+    const colliders: CollidingBlock[] = [];
     const minX = Math.floor(box.min.x);
     const maxX = Math.floor(box.max.x);
     const minY = Math.floor(box.min.y);
@@ -53,22 +63,47 @@ export class VoxelCollider {
     const maxZ = Math.floor(box.max.z);
 
     const eps = 1e-4;
+    const checkBox = new THREE.Box3(
+      new THREE.Vector3(box.min.x + eps, box.min.y + eps, box.min.z + eps),
+      new THREE.Vector3(box.max.x - eps, box.max.y - eps, box.max.z - eps)
+    );
 
     for (let x = minX; x <= maxX; x++) {
       for (let y = minY; y <= maxY; y++) {
         for (let z = minZ; z <= maxZ; z++) {
           const id = world.getBlock(x, y, z);
-          if (VoxelCollider.isCollidable(id)) {
+          const block = BlockRegistry.get(id);
+
+          const isCollidable = block.properties.isCollidable ?? block.properties.isSolid;
+          if (!isCollidable) continue;
+
+          const hasCustom = block.properties.collisionBoxes && block.properties.collisionBoxes.length > 0;
+          if (!hasCustom) {
+            // Performance optimization: use fast scalar checks for standard blocks without object allocations
             const isIntersect = (
-              box.min.x + eps < x + 1 &&
-              box.max.x - eps > x &&
-              box.min.y + eps < y + 1 &&
-              box.max.y - eps > y &&
-              box.min.z + eps < z + 1 &&
-              box.max.z - eps > z
+              checkBox.min.x < x + 1 &&
+              checkBox.max.x > x &&
+              checkBox.min.y < y + 1 &&
+              checkBox.max.y > y &&
+              checkBox.min.z < z + 1 &&
+              checkBox.max.z > z
             );
             if (isIntersect) {
-              colliders.push({ x, y, z, id });
+              colliders.push({
+                x, y, z, id,
+                box: new THREE.Box3(
+                  new THREE.Vector3(x, y, z),
+                  new THREE.Vector3(x + 1, y + 1, z + 1)
+                )
+              });
+            }
+          } else {
+            // Use custom block-level precision checks
+            const boxes = block.getCollisionBoxes(x, y, z);
+            for (const blockBox of boxes) {
+              if (checkBox.intersectsBox(blockBox)) {
+                colliders.push({ x, y, z, id, box: blockBox });
+              }
             }
           }
         }
@@ -77,10 +112,11 @@ export class VoxelCollider {
     return colliders;
   }
 
+
   /**
    * 实例方法：获取与碰撞盒相交的所有可碰撞方块
    */
-  public getCollidingBlocks(box: THREE.Box3): { x: number; y: number; z: number; id: number }[] {
+  public getCollidingBlocks(box: THREE.Box3): CollidingBlock[] {
     return VoxelCollider.getCollidingBlocks(this.world, box);
   }
 
@@ -103,7 +139,7 @@ export class VoxelCollider {
     let box = VoxelCollider.getBoundingBox(position, size);
     let colliders = VoxelCollider.getCollidingBlocks(world, box);
     for (const block of colliders) {
-      const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
+      const overlapX = Math.min(box.max.x - block.box.min.x, block.box.max.x - box.min.x);
       if (overlapX > 0) {
         if (velocity.x > 0) position.x -= overlapX;
         else if (velocity.x < 0) position.x += overlapX;
@@ -118,7 +154,7 @@ export class VoxelCollider {
     box = VoxelCollider.getBoundingBox(position, size);
     colliders = VoxelCollider.getCollidingBlocks(world, box);
     for (const block of colliders) {
-      const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
+      const overlapZ = Math.min(box.max.z - block.box.min.z, block.box.max.z - box.min.z);
       if (overlapZ > 0) {
         if (velocity.z > 0) position.z -= overlapZ;
         else if (velocity.z < 0) position.z += overlapZ;
@@ -133,7 +169,7 @@ export class VoxelCollider {
     box = VoxelCollider.getBoundingBox(position, size);
     colliders = VoxelCollider.getCollidingBlocks(world, box);
     for (const block of colliders) {
-      const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
+      const overlapY = Math.min(box.max.y - block.box.min.y, block.box.max.y - box.min.y);
       if (overlapY > 0) {
         if (velocity.y > 0) {
           position.y -= overlapY;
@@ -156,6 +192,7 @@ export class VoxelCollider {
 
     return { collidedX, collidedZ, onGround };
   }
+
 
   /**
    * 使用高效的 DDA 算法在体素网格中执行射线追踪

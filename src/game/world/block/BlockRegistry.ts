@@ -180,8 +180,12 @@ export class BlockRegistry {
       hardness: 0.4, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'grass',
       color: '#2d7823', colorHex: 0x2d7823,
       textureFaces: { top: 23, bottom: 23, side: 22 },
-      allowedBaseBlocks: [BLOCK_TYPES.SAND]
+      allowedBaseBlocks: [BLOCK_TYPES.SAND],
+      collisionBoxes: [
+        { min: [0.0625, 0, 0.0625], max: [0.9375, 1.0, 0.9375] }
+      ]
     }));
+
 
     this.register(new SimpleSolidBlock({
       id: BLOCK_TYPES.JUNGLE_WOOD, name: '丛林木', isSolid: true, isTransparent: false, isLiquid: false,

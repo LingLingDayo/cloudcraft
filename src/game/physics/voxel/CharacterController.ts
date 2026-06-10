@@ -74,7 +74,7 @@ export class CharacterController {
     let colliders = this.collider.getCollidingBlocks(box);
     let collidedX = false;
     for (const block of colliders) {
-      const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
+      const overlapX = Math.min(box.max.x - block.box.min.x, block.box.max.x - box.min.x);
       if (overlapX > 0) {
         if (velocity.x > 0) position.x -= overlapX;
         else if (velocity.x < 0) position.x += overlapX;
@@ -89,7 +89,7 @@ export class CharacterController {
     colliders = this.collider.getCollidingBlocks(box);
     let collidedZ = false;
     for (const block of colliders) {
-      const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
+      const overlapZ = Math.min(box.max.z - block.box.min.z, block.box.max.z - box.min.z);
       if (overlapZ > 0) {
         if (velocity.z > 0) position.z -= overlapZ;
         else if (velocity.z < 0) position.z += overlapZ;
@@ -112,7 +112,7 @@ export class CharacterController {
       box = VoxelCollider.getBoundingBox(position, settings.playerSize);
       colliders = this.collider.getCollidingBlocks(box);
       for (const block of colliders) {
-        const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
+        const overlapY = Math.min(box.max.y - block.box.min.y, block.box.max.y - box.min.y);
         if (overlapY > 0) {
           position.y -= overlapY;
           box = VoxelCollider.getBoundingBox(position, settings.playerSize);
@@ -128,7 +128,7 @@ export class CharacterController {
         colliders = this.collider.getCollidingBlocks(box);
         let stepCollidedX = false;
         for (const block of colliders) {
-          const overlapX = Math.min(box.max.x - block.x, block.x + 1 - box.min.x);
+          const overlapX = Math.min(box.max.x - block.box.min.x, block.box.max.x - box.min.x);
           if (overlapX > 0) {
             if (oldVelX > 0) position.x -= overlapX;
             else if (oldVelX < 0) position.x += overlapX;
@@ -142,7 +142,7 @@ export class CharacterController {
         colliders = this.collider.getCollidingBlocks(box);
         let stepCollidedZ = false;
         for (const block of colliders) {
-          const overlapZ = Math.min(box.max.z - block.z, block.z + 1 - box.min.z);
+          const overlapZ = Math.min(box.max.z - block.box.min.z, block.box.max.z - box.min.z);
           if (overlapZ > 0) {
             if (oldVelZ > 0) position.z -= overlapZ;
             else if (oldVelZ < 0) position.z += overlapZ;
@@ -155,7 +155,7 @@ export class CharacterController {
         box = VoxelCollider.getBoundingBox(position, settings.playerSize);
         colliders = this.collider.getCollidingBlocks(box);
         for (const block of colliders) {
-          const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
+          const overlapY = Math.min(box.max.y - block.box.min.y, block.box.max.y - box.min.y);
           if (overlapY > 0) {
             position.y += overlapY;
             box = VoxelCollider.getBoundingBox(position, settings.playerSize);
@@ -235,7 +235,7 @@ export class CharacterController {
     
     state.onGround = false;
     for (const block of colliders) {
-      const overlapY = Math.min(box.max.y - block.y, block.y + 1 - box.min.y);
+      const overlapY = Math.min(box.max.y - block.box.min.y, block.box.max.y - box.min.y);
       if (overlapY > 0) {
         if (velocity.y > 0) {
           position.y -= overlapY;
