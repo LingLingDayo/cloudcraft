@@ -1,73 +1,122 @@
 import * as THREE from 'three';
 import type { IWeather, SkyColors } from './EnvironmentTypes';
 
-// Helper to determine time phase and return blend factor
-function getAltitudeInfo(timeRatio: number) {
-  const angle = timeRatio * Math.PI * 2;
-  const sunAltitude = Math.sin(angle);
-  const thresholdHot = 0.1;
-  const thresholdCold = -0.1;
+interface Keyframe {
+  time: number;
+  skyStart: THREE.Color;
+  skyEnd: THREE.Color;
+  fogColor: THREE.Color;
+  lightColor: THREE.Color;
+  ambientIntensity: number;
+  dirLightIntensity: number;
+}
 
-  if (sunAltitude > thresholdHot) {
-    return { phase: 'day' as const, blend: (sunAltitude - thresholdHot) / (1.0 - thresholdHot), sunAltitude };
-  } else if (sunAltitude < thresholdCold) {
-    return { phase: 'night' as const, blend: (-sunAltitude + thresholdCold) / (1.0 + thresholdCold), sunAltitude };
-  } else {
-    return { phase: 'transition' as const, blend: (sunAltitude - thresholdCold) / (thresholdHot - thresholdCold), sunAltitude };
+function interpolateKeyframes(timeRatio: number, keyframes: Keyframe[]): Omit<Keyframe, 'time'> {
+  const t = Math.max(0, Math.min(1, timeRatio));
+
+  let lower = keyframes[0];
+  let upper = keyframes[keyframes.length - 1];
+
+  for (let i = 0; i < keyframes.length - 1; i++) {
+    if (t >= keyframes[i].time && t <= keyframes[i + 1].time) {
+      lower = keyframes[i];
+      upper = keyframes[i + 1];
+      break;
+    }
   }
+
+  const range = upper.time - lower.time;
+  const blend = range > 0 ? (t - lower.time) / range : 0;
+  const smoothBlend = (1 - Math.cos(blend * Math.PI)) / 2;
+
+  return {
+    skyStart: lower.skyStart.clone().lerp(upper.skyStart, smoothBlend),
+    skyEnd: lower.skyEnd.clone().lerp(upper.skyEnd, smoothBlend),
+    fogColor: lower.fogColor.clone().lerp(upper.fogColor, smoothBlend),
+    lightColor: lower.lightColor.clone().lerp(upper.lightColor, smoothBlend),
+    ambientIntensity: lower.ambientIntensity + (upper.ambientIntensity - lower.ambientIntensity) * smoothBlend,
+    dirLightIntensity: lower.dirLightIntensity + (upper.dirLightIntensity - lower.dirLightIntensity) * smoothBlend,
+  };
 }
 
 export class ClearWeather implements IWeather {
   public id = 'clear';
+  private lastTimeRatio = -1;
+  private cachedData?: Omit<Keyframe, 'time'>;
+
+  private keyframes: Keyframe[] = [
+    {
+      time: 0.0,
+      skyStart: new THREE.Color(0x0e0e20),
+      skyEnd: new THREE.Color(0xfb9062),
+      fogColor: new THREE.Color(0xfb9062),
+      lightColor: new THREE.Color(0xffaa66),
+      ambientIntensity: 0.3,
+      dirLightIntensity: 0.5,
+    },
+    {
+      time: 0.25,
+      skyStart: new THREE.Color(0x7ec0ee),
+      skyEnd: new THREE.Color(0x7ec0ee),
+      fogColor: new THREE.Color(0x7ec0ee),
+      lightColor: new THREE.Color(0xffffff),
+      ambientIntensity: 0.7,
+      dirLightIntensity: 1.4,
+    },
+    {
+      time: 0.5,
+      skyStart: new THREE.Color(0x0e0e20),
+      skyEnd: new THREE.Color(0xfb9062),
+      fogColor: new THREE.Color(0xfb9062),
+      lightColor: new THREE.Color(0xffaa66),
+      ambientIntensity: 0.3,
+      dirLightIntensity: 0.5,
+    },
+    {
+      time: 0.75,
+      skyStart: new THREE.Color(0x0a0a14),
+      skyEnd: new THREE.Color(0x0a0a14),
+      fogColor: new THREE.Color(0x0a0a14),
+      lightColor: new THREE.Color(0xaabbff),
+      ambientIntensity: 0.15,
+      dirLightIntensity: 0.2,
+    },
+    {
+      time: 1.0,
+      skyStart: new THREE.Color(0x0e0e20),
+      skyEnd: new THREE.Color(0xfb9062),
+      fogColor: new THREE.Color(0xfb9062),
+      lightColor: new THREE.Color(0xffaa66),
+      ambientIntensity: 0.3,
+      dirLightIntensity: 0.5,
+    },
+  ];
+
+  private getInterpolatedData(timeRatio: number): Omit<Keyframe, 'time'> {
+    if (this.lastTimeRatio === timeRatio && this.cachedData) {
+      return this.cachedData;
+    }
+    this.lastTimeRatio = timeRatio;
+    this.cachedData = interpolateKeyframes(timeRatio, this.keyframes);
+    return this.cachedData;
+  }
 
   public getSkyColors(timeRatio: number): SkyColors {
-    const { phase, blend } = getAltitudeInfo(timeRatio);
-
-    let skyStart: THREE.Color;
-    let skyEnd: THREE.Color;
-    let fogColor: THREE.Color;
-    let lightColor: THREE.Color;
-
-    if (phase === 'day') {
-      skyStart = new THREE.Color(0xfb9062).lerp(new THREE.Color(0x7ec0ee), blend);
-      skyEnd = new THREE.Color(0x7ec0ee);
-      fogColor = skyStart.clone();
-      lightColor = new THREE.Color(0xffffff);
-    } else if (phase === 'night') {
-      skyStart = new THREE.Color(0x191932).lerp(new THREE.Color(0x0a0a14), blend);
-      skyEnd = new THREE.Color(0x0a0a14);
-      fogColor = skyStart.clone();
-      lightColor = new THREE.Color(0xaabbff);
-    } else {
-      skyStart = new THREE.Color(0x0e0e20).lerp(new THREE.Color(0xfb9062), blend);
-      skyEnd = skyStart.clone();
-      fogColor = skyStart.clone();
-      lightColor = new THREE.Color(0xffaa66).lerp(new THREE.Color(0xffffff), blend);
-    }
-
-    return { skyStart, skyEnd, fogColor, lightColor };
+    const data = this.getInterpolatedData(timeRatio);
+    return {
+      skyStart: data.skyStart,
+      skyEnd: data.skyEnd,
+      fogColor: data.fogColor,
+      lightColor: data.lightColor,
+    };
   }
 
   public getAmbientIntensity(timeRatio: number): number {
-    const { phase, blend } = getAltitudeInfo(timeRatio);
-    if (phase === 'day') {
-      return 0.5 + blend * 0.2; // 0.5 to 0.7
-    } else if (phase === 'night') {
-      return 0.15;
-    } else {
-      return 0.15 + blend * 0.35; // 0.15 to 0.5
-    }
+    return this.getInterpolatedData(timeRatio).ambientIntensity;
   }
 
   public getDirLightIntensity(timeRatio: number): number {
-    const { phase, blend } = getAltitudeInfo(timeRatio);
-    if (phase === 'day') {
-      return 1.0 + blend * 0.4; // 1.0 to 1.4
-    } else if (phase === 'night') {
-      return 0.2;
-    } else {
-      return 0.2 + blend * 0.8; // 0.2 to 1.0
-    }
+    return this.getInterpolatedData(timeRatio).dirLightIntensity;
   }
 
   public getFogDensity(_timeRatio: number): number {
@@ -77,106 +126,170 @@ export class ClearWeather implements IWeather {
 
 export class RainWeather implements IWeather {
   public id = 'rain';
+  private lastTimeRatio = -1;
+  private cachedData?: Omit<Keyframe, 'time'>;
+
+  private keyframes: Keyframe[] = [
+    {
+      time: 0.0,
+      skyStart: new THREE.Color(0x2a3038),
+      skyEnd: new THREE.Color(0x3a424d),
+      fogColor: new THREE.Color(0x30363f),
+      lightColor: new THREE.Color(0x888888),
+      ambientIntensity: 0.15,
+      dirLightIntensity: 0.15,
+    },
+    {
+      time: 0.25,
+      skyStart: new THREE.Color(0x444f5a),
+      skyEnd: new THREE.Color(0x5a6978),
+      fogColor: new THREE.Color(0x4c5865),
+      lightColor: new THREE.Color(0xcccccc),
+      ambientIntensity: 0.25,
+      dirLightIntensity: 0.35,
+    },
+    {
+      time: 0.5,
+      skyStart: new THREE.Color(0x2a3038),
+      skyEnd: new THREE.Color(0x3a424d),
+      fogColor: new THREE.Color(0x30363f),
+      lightColor: new THREE.Color(0x888888),
+      ambientIntensity: 0.15,
+      dirLightIntensity: 0.15,
+    },
+    {
+      time: 0.75,
+      skyStart: new THREE.Color(0x0a0c10),
+      skyEnd: new THREE.Color(0x101318),
+      fogColor: new THREE.Color(0x0c0e12),
+      lightColor: new THREE.Color(0x556688),
+      ambientIntensity: 0.08,
+      dirLightIntensity: 0.05,
+    },
+    {
+      time: 1.0,
+      skyStart: new THREE.Color(0x2a3038),
+      skyEnd: new THREE.Color(0x3a424d),
+      fogColor: new THREE.Color(0x30363f),
+      lightColor: new THREE.Color(0x888888),
+      ambientIntensity: 0.15,
+      dirLightIntensity: 0.15,
+    },
+  ];
+
+  private getInterpolatedData(timeRatio: number): Omit<Keyframe, 'time'> {
+    if (this.lastTimeRatio === timeRatio && this.cachedData) {
+      return this.cachedData;
+    }
+    this.lastTimeRatio = timeRatio;
+    this.cachedData = interpolateKeyframes(timeRatio, this.keyframes);
+    return this.cachedData;
+  }
 
   public getSkyColors(timeRatio: number): SkyColors {
-    const { phase, blend } = getAltitudeInfo(timeRatio);
-
-    // Rain sky is generally dark grey and overcast
-    const rainSkyStart = new THREE.Color(0x444f5a);
-    const rainSkyEnd = new THREE.Color(0x5a6978);
-    const nightRainStart = new THREE.Color(0x0a0c10);
-    const nightRainEnd = new THREE.Color(0x101318);
-
-    let skyStart: THREE.Color;
-    let skyEnd: THREE.Color;
-    let lightColor: THREE.Color;
-
-    if (phase === 'day') {
-      skyStart = rainSkyStart.clone().lerp(rainSkyEnd, blend * 0.3);
-      skyEnd = rainSkyEnd;
-      lightColor = new THREE.Color(0xcccccc);
-    } else if (phase === 'night') {
-      skyStart = nightRainStart.clone().lerp(nightRainEnd, blend);
-      skyEnd = nightRainEnd;
-      lightColor = new THREE.Color(0x556688);
-    } else {
-      skyStart = nightRainEnd.clone().lerp(rainSkyStart, blend);
-      skyEnd = skyStart.clone();
-      lightColor = new THREE.Color(0x888888).lerp(new THREE.Color(0xcccccc), blend);
-    }
-
+    const data = this.getInterpolatedData(timeRatio);
     return {
-      skyStart,
-      skyEnd,
-      fogColor: skyStart.clone(),
-      lightColor
+      skyStart: data.skyStart,
+      skyEnd: data.skyEnd,
+      fogColor: data.fogColor,
+      lightColor: data.lightColor,
     };
   }
 
   public getAmbientIntensity(timeRatio: number): number {
-    const { phase } = getAltitudeInfo(timeRatio);
-    return phase === 'night' ? 0.08 : 0.25; // Darker ambient due to clouds
+    return this.getInterpolatedData(timeRatio).ambientIntensity;
   }
 
   public getDirLightIntensity(timeRatio: number): number {
-    const { phase } = getAltitudeInfo(timeRatio);
-    return phase === 'night' ? 0.05 : 0.35; // Sun light is heavily blocked
+    return this.getInterpolatedData(timeRatio).dirLightIntensity;
   }
 
   public getFogDensity(_timeRatio: number): number {
-    return 0.03; // Thicker fog during rain
+    return 0.03;
   }
 }
 
 export class StormWeather implements IWeather {
   public id = 'storm';
+  private lastTimeRatio = -1;
+  private cachedData?: Omit<Keyframe, 'time'>;
+
+  private keyframes: Keyframe[] = [
+    {
+      time: 0.0,
+      skyStart: new THREE.Color(0x121418),
+      skyEnd: new THREE.Color(0x1b1d24),
+      fogColor: new THREE.Color(0x15171c),
+      lightColor: new THREE.Color(0x555555),
+      ambientIntensity: 0.08,
+      dirLightIntensity: 0.08,
+    },
+    {
+      time: 0.25,
+      skyStart: new THREE.Color(0x22252c),
+      skyEnd: new THREE.Color(0x2d323b),
+      fogColor: new THREE.Color(0x282b33),
+      lightColor: new THREE.Color(0x888888),
+      ambientIntensity: 0.15,
+      dirLightIntensity: 0.15,
+    },
+    {
+      time: 0.5,
+      skyStart: new THREE.Color(0x121418),
+      skyEnd: new THREE.Color(0x1b1d24),
+      fogColor: new THREE.Color(0x15171c),
+      lightColor: new THREE.Color(0x555555),
+      ambientIntensity: 0.08,
+      dirLightIntensity: 0.08,
+    },
+    {
+      time: 0.75,
+      skyStart: new THREE.Color(0x030406),
+      skyEnd: new THREE.Color(0x06080b),
+      fogColor: new THREE.Color(0x040508),
+      lightColor: new THREE.Color(0x334466),
+      ambientIntensity: 0.04,
+      dirLightIntensity: 0.02,
+    },
+    {
+      time: 1.0,
+      skyStart: new THREE.Color(0x121418),
+      skyEnd: new THREE.Color(0x1b1d24),
+      fogColor: new THREE.Color(0x15171c),
+      lightColor: new THREE.Color(0x555555),
+      ambientIntensity: 0.08,
+      dirLightIntensity: 0.08,
+    },
+  ];
+
+  private getInterpolatedData(timeRatio: number): Omit<Keyframe, 'time'> {
+    if (this.lastTimeRatio === timeRatio && this.cachedData) {
+      return this.cachedData;
+    }
+    this.lastTimeRatio = timeRatio;
+    this.cachedData = interpolateKeyframes(timeRatio, this.keyframes);
+    return this.cachedData;
+  }
 
   public getSkyColors(timeRatio: number): SkyColors {
-    const { phase, blend } = getAltitudeInfo(timeRatio);
-
-    // Storm sky is very dark green/greyish black
-    const stormSkyStart = new THREE.Color(0x22252c);
-    const stormSkyEnd = new THREE.Color(0x2d323b);
-    const nightStormStart = new THREE.Color(0x030406);
-    const nightStormEnd = new THREE.Color(0x06080b);
-
-    let skyStart: THREE.Color;
-    let skyEnd: THREE.Color;
-    let lightColor: THREE.Color;
-
-    if (phase === 'day') {
-      skyStart = stormSkyStart.clone().lerp(stormSkyEnd, blend * 0.2);
-      skyEnd = stormSkyEnd;
-      lightColor = new THREE.Color(0x888888);
-    } else if (phase === 'night') {
-      skyStart = nightStormStart.clone().lerp(nightStormEnd, blend);
-      skyEnd = nightStormEnd;
-      lightColor = new THREE.Color(0x334466);
-    } else {
-      skyStart = nightStormEnd.clone().lerp(stormSkyStart, blend);
-      skyEnd = skyStart.clone();
-      lightColor = new THREE.Color(0x555555).lerp(new THREE.Color(0x888888), blend);
-    }
-
+    const data = this.getInterpolatedData(timeRatio);
     return {
-      skyStart,
-      skyEnd,
-      fogColor: skyStart.clone(),
-      lightColor
+      skyStart: data.skyStart,
+      skyEnd: data.skyEnd,
+      fogColor: data.fogColor,
+      lightColor: data.lightColor,
     };
   }
 
   public getAmbientIntensity(timeRatio: number): number {
-    const { phase } = getAltitudeInfo(timeRatio);
-    return phase === 'night' ? 0.04 : 0.15;
+    return this.getInterpolatedData(timeRatio).ambientIntensity;
   }
 
   public getDirLightIntensity(timeRatio: number): number {
-    const { phase } = getAltitudeInfo(timeRatio);
-    return phase === 'night' ? 0.02 : 0.15;
+    return this.getInterpolatedData(timeRatio).dirLightIntensity;
   }
 
   public getFogDensity(_timeRatio: number): number {
-    return 0.045; // Very dense storm fog
+    return 0.045;
   }
 }
