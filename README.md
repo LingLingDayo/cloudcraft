@@ -48,7 +48,7 @@ CloudCraft 是一个仿照经典游戏《我的世界 (Minecraft)》构建出来
 
 ### 1. 克隆并安装依赖
 ```bash
-git clone https://github.com/your-username/cloudcraft.git
+git clone https://github.com/LingLingDayo/cloudcraft.git
 cd cloudcraft
 npm install
 ```
