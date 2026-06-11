@@ -20,6 +20,36 @@ export class ParticlePool {
     // 实例化共享的几何体，所有粒子复用这两个几何体，彻底消除 Geometry 重复申请与 GC 开销
     this.boxGeom = new THREE.BoxGeometry(0.12, 0.12, 0.12);
     this.planeGeom = new THREE.PlaneGeometry(0.14, 0.14);
+    
+    // 预热粒子池，消除游戏中生成粒子的瞬时卡顿
+    this.preWarm();
+  }
+
+  /**
+   * 预热粒子池。在游戏加载阶段提前将主要类型的粒子全部实例化并加入场景，设为不可见。
+   * 彻底消除游戏进行中动态创建 Mesh、材质以及调用 scene.add 带来的 WebGL 绑定开销。
+   */
+  private preWarm() {
+    const targets = [
+      { type: 'cloudcraft:block_break', count: 60 },
+      { type: 'cloudcraft:grass', count: 30 },
+      { type: 'cloudcraft:sand', count: 30 },
+      { type: 'cloudcraft:leaf', count: 30 },
+      { type: 'cloudcraft:smoke', count: 20 },
+      { type: 'cloudcraft:crit', count: 20 },
+      { type: 'cloudcraft:eat', count: 20 },
+      { type: 'cloudcraft:glass', count: 20 },
+    ];
+
+    for (const target of targets) {
+      const pool: Particle[] = [];
+      for (let i = 0; i < target.count; i++) {
+        const p = this.createParticleInstance(target.type);
+        p.mesh.visible = false;
+        pool.push(p);
+      }
+      this.pools.set(target.type, pool);
+    }
   }
 
   /**
