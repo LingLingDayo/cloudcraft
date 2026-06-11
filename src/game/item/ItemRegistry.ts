@@ -1,6 +1,7 @@
 import { Item, BlockItem, FoodItem, type ItemCategory } from './Item';
 import { ItemType, BlockType, BLOCK_TYPES } from '@type';
 import { BlockRegistry } from '@game/world/block/BlockRegistry';
+import { CrossBlockModel } from '@game/world/block/BlockModel';
 
 export class ItemRegistry {
   private static items = new Map<ItemType, Item>();
@@ -95,7 +96,7 @@ export class ItemRegistry {
           name: props.name,
           blockId: block.id,
           textureFaces: props.textureFaces,
-          droppedModelType: props.isCrossModel ? 'cross' : 'block',
+          droppedModelType: props.model instanceof CrossBlockModel ? 'cross' : 'block',
           color: props.color,
           colorHex: props.colorHex
         }));

@@ -2,6 +2,7 @@
 import { vi, describe, test, expect } from 'vitest';
 import { World } from '../World';
 import { BLOCK_TYPES } from '../BlockConfig';
+import { CrossBlockModel } from './BlockModel';
 
 // Bypass slow WebGL mesh updates globally in this test suite
 World.prototype.updateChunkMesh = () => {};
@@ -27,7 +28,7 @@ describe('Plant and Flower System', () => {
     const dandelion = BlockRegistry.get(BLOCK_TYPES.DANDELION);
     expect(dandelion).toBeDefined();
     expect(dandelion.name).toBe('蒲公英');
-    expect(dandelion.properties.isCrossModel).toBe(true);
+    expect(dandelion.properties.model instanceof CrossBlockModel).toBe(true);
 
     const poppy = BlockRegistry.get(BLOCK_TYPES.POPPY);
     expect(poppy).toBeDefined();

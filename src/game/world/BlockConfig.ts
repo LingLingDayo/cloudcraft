@@ -1,4 +1,5 @@
 import { BlockType, BLOCK_TYPES, SoundType } from '@type';
+import type { BlockModel } from './block/BlockModel';
 export { BlockType, BLOCK_TYPES };
 
 export interface BlockProperties {
@@ -23,12 +24,6 @@ export interface BlockProperties {
   allowedBaseBlocks?: BlockType[]; // 该植被/植物方块只能放置/生长在指定的这些方块类型上
   textureFaces?: { top: number; bottom: number; side: number };
   droppedModelType?: 'block' | 'cross';
-  renderAdjacentSameType?: boolean; // 当相邻方块是相同类型时是否依然渲染邻面 (例如树叶)
-  renderInternalCross?: boolean;     // 是否在方块内部渲染交叉的斜对角平面 (例如树叶的高级效果)
-  isCrossModel?: boolean;            // 是否作为交叉的斜对角平面模型渲染 (而非普通的立方体方块)
-  crossScaleW?: number;              // 交叉模型宽度缩放比例 (如 0.6)
-  crossScaleH?: number;              // 交叉模型高度缩放比例 (如 0.7)
-  enableCrossOffset?: boolean;       // 是否启用斜对角平面随机微调偏移 (避免完美网格对齐)
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
   lootTableId?: string;       // 新增 of LootTable 绑定 ID，例如 'cloudcraft:blocks/oak_leaves'
@@ -39,6 +34,7 @@ export interface BlockProperties {
     maxCount?: number;
   }[];
   collisionBoxes?: { min: [number, number, number]; max: [number, number, number] }[];
+  model?: BlockModel;         // 3D 几何渲染模型
 }
 
 
