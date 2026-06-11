@@ -184,8 +184,25 @@ export class World {
     newBlock.onPlaced(this, x, y, z);
     this.notifyNeighborsOfStateChange(x, y, z);
 
-    // Rebuild this chunk's mesh and its neighbors to ensure boundary faces are culled correctly
-    this.updateChunkMesh(cx, cy, cz, true);
+    // Rebuild only the current chunk's mesh
+    this.updateChunkMesh(cx, cy, cz, false);
+
+    // Rebuild adjacent chunks ONLY if the modified block is on the chunk boundary
+    if (lx === 0) this.updateNeighborChunkMesh(cx - 1, cy, cz);
+    else if (lx === CHUNK_SIZE_X - 1) this.updateNeighborChunkMesh(cx + 1, cy, cz);
+
+    if (ly === 0) this.updateNeighborChunkMesh(cx, cy - 1, cz);
+    else if (ly === CHUNK_SIZE_Y - 1) this.updateNeighborChunkMesh(cx, cy + 1, cz);
+
+    if (lz === 0) this.updateNeighborChunkMesh(cx, cy, cz - 1);
+    else if (lz === CHUNK_SIZE_Z - 1) this.updateNeighborChunkMesh(cx, cy, cz + 1);
+  }
+
+  private updateNeighborChunkMesh(ncx: number, ncy: number, ncz: number) {
+    const nkey = `${ncx},${ncy},${ncz}`;
+    if (this.renderer.hasChunkMesh(nkey)) {
+      this.updateChunkMesh(ncx, ncy, ncz, false);
+    }
   }
 
   public updateChunkMesh(cx: number, cy: number, cz: number, updateNeighbors = true) {
