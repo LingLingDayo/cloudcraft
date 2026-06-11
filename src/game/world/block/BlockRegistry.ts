@@ -14,17 +14,18 @@ import {
   DoublePlantTopBlock,
   CactusBlock
 } from './BlockClasses';
+import { CubeBlockModel, CrossBlockModel, ElementBlockModel } from './BlockModel';
 
 /** 花朵/植被通用属性工厂 */
 function flowerProps(id: BlockType, name: string, texture: number, opts?: Partial<BlockProperties>): BlockProperties {
   return {
     id, name, isSolid: true, isTransparent: true, isLiquid: false,
     hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
-    droppedModelType: 'cross', isCollidable: false, isCrossModel: true,
-    crossScaleW: 0.6, crossScaleH: 0.65, enableCrossOffset: true, canSpawnOn: false,
+    droppedModelType: 'cross', isCollidable: false, canSpawnOn: false,
     textureFaces: { top: texture, bottom: texture, side: texture },
     allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
     particleEffect: 'cloudcraft:grass',
+    model: new CrossBlockModel(0.6, 0.65, true),
     ...opts,
   };
 }
@@ -34,11 +35,11 @@ function doublePlantProps(id: BlockType, name: string, translationKey: string, t
   return {
     id, name, translationKey, isSolid: true, isTransparent: true, isLiquid: false,
     hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
-    droppedModelType: 'cross', isCollidable: false, isCrossModel: true,
-    crossScaleW: 0.85, crossScaleH: 1.0, enableCrossOffset: true, canSpawnOn: false,
+    droppedModelType: 'cross', isCollidable: false, canSpawnOn: false,
     textureFaces: { top: texture, bottom: texture, side: texture },
     allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
     particleEffect: 'cloudcraft:grass',
+    model: new CrossBlockModel(0.85, 1.0, true),
     ...opts,
   };
 }
@@ -48,6 +49,9 @@ export class BlockRegistry {
   private static defaultBlock: Block;
 
   public static register(block: Block) {
+    if (!block.properties.model) {
+      block.properties.model = new CubeBlockModel();
+    }
     this.blocks.set(block.id, block);
   }
 
@@ -89,7 +93,7 @@ export class BlockRegistry {
       color: '#2d7823', colorHex: 0x2d7823,
       particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 6, bottom: 6, side: 6 },
-      renderAdjacentSameType: true, renderInternalCross: true,
+      model: new CubeBlockModel(true, true),
       lootTableId: 'cloudcraft:blocks/oak_leaves'
     }));
 
@@ -106,7 +110,7 @@ export class BlockRegistry {
       color: '#8fc04e', colorHex: 0x8fc04e,
       particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 18, bottom: 18, side: 18 },
-      renderAdjacentSameType: true, renderInternalCross: true,
+      model: new CubeBlockModel(true, true),
       lootTableId: 'cloudcraft:blocks/birch_leaves'
     }));
 
@@ -123,7 +127,7 @@ export class BlockRegistry {
       color: '#2d5a27', colorHex: 0x2d5a27,
       particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 21, bottom: 21, side: 21 },
-      renderAdjacentSameType: true, renderInternalCross: true,
+      model: new CubeBlockModel(true, true),
       lootTableId: 'cloudcraft:blocks/spruce_leaves'
     }));
 
@@ -183,7 +187,36 @@ export class BlockRegistry {
       allowedBaseBlocks: [BLOCK_TYPES.SAND],
       collisionBoxes: [
         { min: [0.0625, 0, 0.0625], max: [0.9375, 1.0, 0.9375] }
-      ]
+      ],
+      model: new ElementBlockModel([
+        // Element 1: Y 完整，Z 收缩 (1/16 到 15/16) -> 对应 North & South 面
+        {
+          from: [0, 0, 1],
+          to: [16, 16, 15],
+          faces: {
+            north: { texture: 'side' },
+            south: { texture: 'side' }
+          }
+        },
+        // Element 2: Y 完整，X 收缩 (1/16 到 15/16) -> 对应 West & East 面
+        {
+          from: [1, 0, 0],
+          to: [15, 16, 16],
+          faces: {
+            west: { texture: 'side' },
+            east: { texture: 'side' }
+          }
+        },
+        // Element 3: Y=0 & Y=16 的 Top/Bottom 面 -> 对应 Up & Down 面 (X, Z 均完整)
+        {
+          from: [0, 0, 0],
+          to: [16, 16, 16],
+          faces: {
+            up: { texture: 'top' },
+            down: { texture: 'bottom' }
+          }
+        }
+      ])
     }));
 
 
@@ -200,7 +233,7 @@ export class BlockRegistry {
       color: '#1a5f12', colorHex: 0x1a5f12,
       particleEffect: 'cloudcraft:leaf',
       textureFaces: { top: 26, bottom: 26, side: 26 },
-      renderAdjacentSameType: true, renderInternalCross: true,
+      model: new CubeBlockModel(true, true),
       lootTableId: 'cloudcraft:blocks/jungle_leaves'
     }));
 
@@ -216,9 +249,10 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#4c9436', colorHex: 0x4c9436,
       textureFaces: { top: 28, bottom: 28, side: 28 },
-      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
+      droppedModelType: 'cross', isCollidable: false,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'cloudcraft:grass'
+      particleEffect: 'cloudcraft:grass',
+      model: new CrossBlockModel(0.6, 0.7, true)
     }));
 
     this.register(new SaplingBlock({
@@ -226,9 +260,10 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#8fc04e', colorHex: 0x8fc04e,
       textureFaces: { top: 29, bottom: 29, side: 29 },
-      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
+      droppedModelType: 'cross', isCollidable: false,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'cloudcraft:grass'
+      particleEffect: 'cloudcraft:grass',
+      model: new CrossBlockModel(0.6, 0.7, true)
     }));
 
     this.register(new SaplingBlock({
@@ -236,9 +271,10 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#2d5a27', colorHex: 0x2d5a27,
       textureFaces: { top: 30, bottom: 30, side: 30 },
-      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
+      droppedModelType: 'cross', isCollidable: false,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'cloudcraft:grass'
+      particleEffect: 'cloudcraft:grass',
+      model: new CrossBlockModel(0.6, 0.7, true)
     }));
 
     this.register(new SaplingBlock({
@@ -246,9 +282,10 @@ export class BlockRegistry {
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.5, soundType: 'grass',
       color: '#1a5f12', colorHex: 0x1a5f12,
       textureFaces: { top: 31, bottom: 31, side: 31 },
-      droppedModelType: 'cross', isCollidable: false, isCrossModel: true, crossScaleW: 0.6, crossScaleH: 0.7, enableCrossOffset: true,
+      droppedModelType: 'cross', isCollidable: false,
       allowedBaseBlocks: [BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT],
-      particleEffect: 'cloudcraft:grass'
+      particleEffect: 'cloudcraft:grass',
+      model: new CrossBlockModel(0.6, 0.7, true)
     }));
 
     // ─── Flowers (使用 flowerProps 工厂) ────────────────────
@@ -257,9 +294,9 @@ export class BlockRegistry {
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.BLUE_ORCHID, '兰花', 36, { color: '#2196f3', colorHex: 0x2196f3 })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.ALLIUM, '绒球葱', 37, { color: '#e040fb', colorHex: 0xe040fb })));
     this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.OXEYE_DAISY, '雏菊', 38, { color: '#eeeeee', colorHex: 0xeeeeee })));
-    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.TALL_GRASS, '草丛', 39, { color: '#4caf50', colorHex: 0x4caf50, crossScaleW: 0.85, crossScaleH: 0.85, lootTableId: 'cloudcraft:blocks/tall_grass' })));
-    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.FERN, '蕨', 40, { color: '#388e3c', colorHex: 0x388e3c, crossScaleW: 0.85, crossScaleH: 0.85 })));
-    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.DEAD_BUSH, '枯萎的灌木', 41, { color: '#a08060', colorHex: 0xa08060, crossScaleW: 0.75, crossScaleH: 0.75, allowedBaseBlocks: [BLOCK_TYPES.SAND, BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT] })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.TALL_GRASS, '草丛', 39, { color: '#4caf50', colorHex: 0x4caf50, lootTableId: 'cloudcraft:blocks/tall_grass', model: new CrossBlockModel(0.85, 0.85, true) })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.FERN, '蕨', 40, { color: '#388e3c', colorHex: 0x388e3c, model: new CrossBlockModel(0.85, 0.85, true) })));
+    this.register(new FlowerBlock(flowerProps(BLOCK_TYPES.DEAD_BUSH, '枯萎的灌木', 41, { color: '#a08060', colorHex: 0xa08060, allowedBaseBlocks: [BLOCK_TYPES.SAND, BLOCK_TYPES.GRASS, BLOCK_TYPES.DIRT], model: new CrossBlockModel(0.75, 0.75, true) })));
 
     // ─── Double height plants (使用 doublePlantProps 工厂) ──
     this.register(new DoublePlantBottomBlock(doublePlantProps(BLOCK_TYPES.SUNFLOWER_BOTTOM, '向日葵(底)', 'sunflower', 42, { color: '#4caf50', colorHex: 0x4caf50 }), BLOCK_TYPES.SUNFLOWER_TOP));

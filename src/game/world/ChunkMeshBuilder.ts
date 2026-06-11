@@ -1,4 +1,5 @@
 import { BLOCK_TYPES, getBlockProperties } from './BlockConfig';
+import { CubeBlockModel } from './block/BlockModel';
 
 export const CHUNK_SIZE_X = 16;
 export const CHUNK_SIZE_Y = 16;
@@ -105,8 +106,6 @@ export class ChunkMeshBuilder {
       { axis: 2, dir: -1, c: [[0,0,0], [0,1,0], [1,1,0], [1,0,0]], d1: 1, d2: 0, uvFace: 'side' },
     ];
 
-    const SQRT1_2 = 0.7071067811865476; // Match Math.SQRT1_2 without importing Math if not necessary
-
     for (const face of GreedyFaces) {
       const { axis, dir, d1, d2, uvFace } = face;
       const d0 = axis;
@@ -128,7 +127,8 @@ export class ChunkMeshBuilder {
 
             if (blockType !== BLOCK_TYPES.AIR) {
               const props = getBlockProperties(blockType);
-              if (!props.isCrossModel) {
+              const model = props.model;
+              if (model && model.useGreedyMesh) {
                 const nx = x[0] + q[0];
                 const ny = x[1] + q[1];
                 const nz = x[2] + q[2];
@@ -136,7 +136,8 @@ export class ChunkMeshBuilder {
                 
                 let drawFace = false;
                 if (this.isTransparent(neighbor)) {
-                  if (blockType === neighbor && !props.renderAdjacentSameType) {
+                  const renderAdjacentSameType = model instanceof CubeBlockModel ? (model as CubeBlockModel).renderAdjacentSameType : false;
+                  if (blockType === neighbor && !renderAdjacentSameType) {
                     drawFace = false;
                   } else {
                     drawFace = true;
@@ -274,7 +275,8 @@ export class ChunkMeshBuilder {
       }
     }
 
-    // Cross Models Pass
+
+    // Custom Models Pass
     for (let x = 0; x < CHUNK_SIZE_X; x++) {
       for (let z = 0; z < CHUNK_SIZE_Z; z++) {
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
@@ -283,64 +285,27 @@ export class ChunkMeshBuilder {
           const blockType = rBase & 0x3F;
           if (blockType === BLOCK_TYPES.AIR) continue;
           const props = getBlockProperties(blockType);
-          
-          if (props.renderInternalCross || props.isCrossModel) {
-            const atlasIndex = props.textureFaces?.side ?? 3;
-            const tx = atlasIndex % 8;
-            const ty = 7 - Math.floor(atlasIndex / 8);
-            const uMin = tx * 0.125;
-            const vMin = ty * 0.125;
-
-            const uv0 = [0, 0];
-            const uv1 = [0, 1];
-            const uv2 = [1, 1];
-            const uv3 = [1, 0];
-
-            let dx = 0, dz = 0, hw = 0.5, h = 1.0;
-            const wx = worldStartX + x;
-            const wz = worldStartZ + z;
-
-            if (props.isCrossModel) {
-              if (props.enableCrossOffset) {
-                const sinX = Math.sin(wx * 12.9898 + wz * 78.233) * 43758.5453123;
-                const sinZ = Math.sin(wx * 26.543 + wz * 19.854) * 43758.5453123;
-                dx = (sinX - Math.floor(sinX)) * 0.3 - 0.15;
-                dz = (sinZ - Math.floor(sinZ)) * 0.3 - 0.15;
-              }
-              hw = 0.5 * (props.crossScaleW ?? 1.0);
-              h = props.crossScaleH ?? 1.0;
-            }
-
-            const cxStr = wx + 0.5;
-            const czStr = wz + 0.5;
-
-            const p1_0 = [cxStr - hw + dx, worldStartY + y, czStr - hw + dz];
-            const p1_1 = [cxStr - hw + dx, worldStartY + y + h, czStr - hw + dz];
-            const p1_2 = [cxStr + hw + dx, worldStartY + y + h, czStr + hw + dz];
-            const p1_3 = [cxStr + hw + dx, worldStartY + y, czStr + hw + dz];
-
-            cutoutData.positions.push(...p1_0, ...p1_1, ...p1_2, ...p1_0, ...p1_2, ...p1_3);
-            cutoutData.uvs.push(...uv0, ...uv1, ...uv2, ...uv0, ...uv2, ...uv3);
-            for (let i = 0; i < 6; i++) {
-              cutoutData.normals.push(-SQRT1_2, 0, SQRT1_2);
-              cutoutData.atlasOffsets.push(uMin, vMin);
-            }
-
-            const p2_0 = [cxStr + hw + dx, worldStartY + y, czStr - hw + dz];
-            const p2_1 = [cxStr + hw + dx, worldStartY + y + h, czStr - hw + dz];
-            const p2_2 = [cxStr - hw + dx, worldStartY + y + h, czStr + hw + dz];
-            const p2_3 = [cxStr - hw + dx, worldStartY + y, czStr + hw + dz];
-
-            cutoutData.positions.push(...p2_0, ...p2_1, ...p2_2, ...p2_0, ...p2_2, ...p2_3);
-            cutoutData.uvs.push(...uv0, ...uv1, ...uv2, ...uv0, ...uv2, ...uv3);
-            for (let i = 0; i < 6; i++) {
-              cutoutData.normals.push(SQRT1_2, 0, SQRT1_2);
-              cutoutData.atlasOffsets.push(uMin, vMin);
-            }
+          const model = props.model;
+          if (model && !model.useGreedyMesh && model.renderCustom) {
+            const orientation = rBase >> 6;
+            model.renderCustom({
+              x, y, z,
+              wx: worldStartX + x,
+              wy: worldStartY + y,
+              wz: worldStartZ + z,
+              orientation,
+              solid: solidData,
+              trans: transData,
+              cutout: cutoutData,
+              getNeighbor,
+              isTransparent: ChunkMeshBuilder.isTransparent
+            }, props);
           }
         }
       }
     }
+
+
 
     const packageGeometry = (data: {
       positions: number[];
