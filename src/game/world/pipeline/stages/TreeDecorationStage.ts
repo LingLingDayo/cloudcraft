@@ -1,6 +1,6 @@
 import type { ChunkPipelineContext, ChunkPipelineStage } from '../ChunkPipelineTypes';
 import { getBiomeAt } from '@game/world/biome/BiomeRegistry';
-import { getBlockProperties } from '@game/world/BlockConfig';
+import { getBlockProperties, BLOCK_TYPES } from '@game/world/BlockConfig';
 import { isCaveAt } from './SurfaceDecorationStage';
 import { ChunkBlockWriter } from '@game/world/TreeStructureGenerator';
 
@@ -66,6 +66,12 @@ export class TreeDecorationStage implements ChunkPipelineStage {
             }
 
             const groundType = generator.getGroundBlockType(biome, finalHeight, col.localWaterLevel, col.isDryLand && !col.isPond, wx, wz, col.slope);
+            
+            // 如果是沙子，且不是沙漠生态，则不允许在其上方生成任何树木/装饰物
+            if (groundType === BLOCK_TYPES.SAND && biome.id !== 'desert') {
+              continue;
+            }
+
             const isValidGround = getBlockProperties(groundType).allowVegetationBase === true;
 
             if (isValidGround && ty > col.localWaterLevel - 2) {

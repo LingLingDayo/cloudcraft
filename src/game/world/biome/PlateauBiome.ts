@@ -26,11 +26,7 @@ export class PlateauBiome extends BaseSoilBiome {
     const r = noise.pseudoRandom2d(wx, wz);
     // 4% 概率生成植被
     if (r < 0.04) {
-      if (r < 0.02) {
-        return BLOCK_TYPES.DEAD_BUSH;
-      } else {
-        return BLOCK_TYPES.TALL_GRASS;
-      }
+      return BLOCK_TYPES.TALL_GRASS;
     }
     return BLOCK_TYPES.AIR;
   }
