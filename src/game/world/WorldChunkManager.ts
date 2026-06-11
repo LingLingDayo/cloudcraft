@@ -211,11 +211,13 @@ export class WorldChunkManager {
                 nz: this.world.chunks.get(`${cx},${cy},${cz - 1}`),
               };
 
+              const version = this.world.getRenderer().getNextVersion(key);
+
               this.workerManager.execute<ChunkMeshResult>('GENERATE_MESH', {
                 cx, cy, cz, chunk, neighbors
               }).then(meshResult => {
                 this.generatingMeshes.delete(key);
-                this.world.getRenderer().applyMeshResult(cx, cy, cz, meshResult);
+                this.world.getRenderer().applyMeshResult(cx, cy, cz, meshResult, version);
 
                 // Update chunk loading progress in store
                 if (store.isWorldLoading) {

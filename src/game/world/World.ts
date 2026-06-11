@@ -11,6 +11,7 @@ import { useGameStore } from '@store/useGameStore';
 import { WorkerManager } from './worker/WorkerManager';
 import { WorldChunkManager } from './WorldChunkManager';
 import { WorldTickManager } from './WorldTickManager';
+import type { ChunkNeighbors, ChunkMeshResult } from './ChunkMeshBuilder';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -184,24 +185,55 @@ export class World {
     newBlock.onPlaced(this, x, y, z);
     this.notifyNeighborsOfStateChange(x, y, z);
 
-    // Rebuild only the current chunk's mesh
-    this.updateChunkMesh(cx, cy, cz, false);
+    // Rebuild only the current chunk's mesh asynchronously
+    this.updateChunkMeshAsync(cx, cy, cz);
 
-    // Rebuild adjacent chunks ONLY if the modified block is on the chunk boundary
-    if (lx === 0) this.updateNeighborChunkMesh(cx - 1, cy, cz);
-    else if (lx === CHUNK_SIZE_X - 1) this.updateNeighborChunkMesh(cx + 1, cy, cz);
+    // Rebuild adjacent chunks asynchronously ONLY if the modified block is on the chunk boundary
+    if (lx === 0) this.updateNeighborChunkMeshAsync(cx - 1, cy, cz);
+    else if (lx === CHUNK_SIZE_X - 1) this.updateNeighborChunkMeshAsync(cx + 1, cy, cz);
 
-    if (ly === 0) this.updateNeighborChunkMesh(cx, cy - 1, cz);
-    else if (ly === CHUNK_SIZE_Y - 1) this.updateNeighborChunkMesh(cx, cy + 1, cz);
+    if (ly === 0) this.updateNeighborChunkMeshAsync(cx, cy - 1, cz);
+    else if (ly === CHUNK_SIZE_Y - 1) this.updateNeighborChunkMeshAsync(cx, cy + 1, cz);
 
-    if (lz === 0) this.updateNeighborChunkMesh(cx, cy, cz - 1);
-    else if (lz === CHUNK_SIZE_Z - 1) this.updateNeighborChunkMesh(cx, cy, cz + 1);
+    if (lz === 0) this.updateNeighborChunkMeshAsync(cx, cy, cz - 1);
+    else if (lz === CHUNK_SIZE_Z - 1) this.updateNeighborChunkMeshAsync(cx, cy, cz + 1);
   }
 
-  private updateNeighborChunkMesh(ncx: number, ncy: number, ncz: number) {
+  public updateChunkMeshAsync(cx: number, cy: number, cz: number) {
+    const key = `${cx},${cy},${cz}`;
+    const chunk = this.chunks.get(key);
+    if (!chunk) return;
+
+    // Fallback: If Web Workers are not supported (e.g. inside unit tests), run sync meshing
+    if (typeof Worker === 'undefined') {
+      this.updateChunkMesh(cx, cy, cz, false);
+      return;
+    }
+
+    const neighbors: ChunkNeighbors = {
+      px: this.chunks.get(`${cx + 1},${cy},${cz}`),
+      nx: this.chunks.get(`${cx - 1},${cy},${cz}`),
+      py: this.chunks.get(`${cx},${cy + 1},${cz}`),
+      ny: this.chunks.get(`${cx},${cy - 1},${cz}`),
+      pz: this.chunks.get(`${cx},${cy},${cz + 1}`),
+      nz: this.chunks.get(`${cx},${cy},${cz - 1}`),
+    };
+
+    const version = this.renderer.getNextVersion(key);
+
+    this.workerManager.execute<ChunkMeshResult>('GENERATE_MESH', {
+      cx, cy, cz, chunk, neighbors
+    }).then(meshResult => {
+      this.renderer.applyMeshResult(cx, cy, cz, meshResult, version);
+    }).catch(err => {
+      console.error(`Failed to generate mesh asynchronously for chunk ${key}`, err);
+    });
+  }
+
+  private updateNeighborChunkMeshAsync(ncx: number, ncy: number, ncz: number) {
     const nkey = `${ncx},${ncy},${ncz}`;
     if (this.renderer.hasChunkMesh(nkey)) {
-      this.updateChunkMesh(ncx, ncy, ncz, false);
+      this.updateChunkMeshAsync(ncx, ncy, ncz);
     }
   }
 

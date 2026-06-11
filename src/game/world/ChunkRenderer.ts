@@ -10,6 +10,14 @@ export class ChunkRenderer {
   public materials: { solid: THREE.Material; transparent: THREE.Material; cutout: THREE.Material };
   private chunkMeshes: Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }>;
   private loadedTimestamps: number[] = [];
+  private meshVersions = new Map<string, number>();
+
+  public getNextVersion(key: string): number {
+    const current = this.meshVersions.get(key) ?? 0;
+    const next = current + 1;
+    this.meshVersions.set(key, next);
+    return next;
+  }
 
   constructor(world: World) {
     this.world = world;
@@ -91,9 +99,17 @@ export class ChunkRenderer {
     cx: number,
     cy: number,
     cz: number,
-    meshResult: ChunkMeshResult
+    meshResult: ChunkMeshResult,
+    version?: number
   ): void {
     const key = `${cx},${cy},${cz}`;
+    if (version !== undefined) {
+      const currentVersion = this.meshVersions.get(key) ?? 0;
+      if (version < currentVersion) {
+        return;
+      }
+    }
+
     const isNewChunk = !this.chunkMeshes.has(key);
     if (isNewChunk) {
       this.loadedTimestamps.push(performance.now());
