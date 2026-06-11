@@ -48,6 +48,12 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
               );
               const groundProps = getBlockProperties(groundType);
               if (groundProps.allowVegetationBase) {
+                // 如果是沙子，且不是沙漠生态，则不允许在该沙子上生成任何地表植被/枯木/枯花等
+                if (groundType === BLOCK_TYPES.SAND && biome.id !== 'desert') {
+                  chunk[index] = BLOCK_TYPES.AIR;
+                  continue;
+                }
+
                 const vegType = biome.getVegetationType(wx, wz, noise);
                 if (vegType !== BLOCK_TYPES.AIR && canBlockGrowOn(vegType, groundType)) {
                   chunk[index] = vegType;

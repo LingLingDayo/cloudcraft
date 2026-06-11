@@ -416,4 +416,125 @@ describe('ChunkPipeline Extensions', () => {
     const result = isCaveAt(0, 201, 0, 300, 12, 150, mockNoise, mockGenerator);
     expect(result).toBe(false);
   });
+
+  test('TreeDecorationStage should skip tree generation on sand in non-desert biomes', () => {
+    const pipeline = new ChunkPipeline();
+    pipeline.addStage(new TerrainHeightMapStage());
+    pipeline.addStage(new BaseTerrainFillerStage());
+    pipeline.addStage(new TreeDecorationStage());
+
+    const mockNoise = {
+      noise: vi.fn().mockReturnValue(0.1),
+      noise3d: vi.fn().mockReturnValue(0.1),
+      pseudoRandom2d: vi.fn().mockReturnValue(0.001), // triggers low random check (e.g. tree grows)
+    } as unknown as ImprovedNoise;
+
+    const mockBiome = {
+      id: 'forest',
+      name: '森林',
+      fillColumn: (chunk: Uint8Array, lx: number, lz: number, y: number) => {
+        const index = lx + lz * 16 + (y % 16) * 256;
+        chunk[index] = BLOCK_TYPES.SAND; // sand
+      },
+      getTreeProbability: vi.fn().mockReturnValue(1.0),
+    };
+
+    const mockGenerator = {
+      getPrimaryBiome: vi.fn().mockReturnValue(mockBiome),
+      getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0, riverWeight: 1.0 }),
+      getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
+      getWaterLevelAt: vi.fn().mockReturnValue(0),
+      getGroundBlockType: vi.fn().mockReturnValue(BLOCK_TYPES.SAND), // sand
+      getColumnTerrainData: vi.fn().mockReturnValue({
+        adjustedHeight: 160,
+        finalHeight: 160,
+        localWaterLevel: 150,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: 12,
+        slope: 0
+      })
+    };
+
+    const chunk = new Uint8Array(4096);
+    const context: ChunkPipelineContext = {
+      cx: 0, cy: 10, cz: 0,
+      worldStartX: 0, worldStartY: 160, worldStartZ: 0,
+      chunk,
+      noise: mockNoise,
+      terrainMap: [],
+      biomeMap: [],
+      generator: mockGenerator as unknown as WorldTerrainProvider
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).mockGrowDecorationsCalled = false;
+
+    pipeline.execute(context);
+
+    // It should NOT invoke growDecorations on the biome (since it is sand in a forest biome)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((globalThis as any).mockGrowDecorationsCalled).toBe(false);
+  });
+
+  test('SurfaceDecorationStage should not generate vegetation on sand in non-desert biomes', () => {
+    const pipeline = new ChunkPipeline();
+    pipeline.addStage(new TerrainHeightMapStage());
+    pipeline.addStage(new BaseTerrainFillerStage());
+    pipeline.addStage(new SurfaceDecorationStage());
+
+    const mockNoise = {
+      noise: vi.fn().mockReturnValue(0.1),
+      noise3d: vi.fn().mockReturnValue(0.1),
+      pseudoRandom2d: vi.fn().mockReturnValue(0.001),
+    } as unknown as ImprovedNoise;
+
+    const mockBiome = {
+      id: 'forest',
+      name: '森林',
+      fillColumn: (chunk: Uint8Array, lx: number, lz: number, y: number) => {
+        const index = lx + lz * 16 + (y % 16) * 256;
+        chunk[index] = BLOCK_TYPES.SAND;
+      },
+      getVegetationType: vi.fn().mockReturnValue(BLOCK_TYPES.DEAD_BUSH),
+    };
+
+    const mockGenerator = {
+      getPrimaryBiome: vi.fn().mockReturnValue(mockBiome),
+      getRiverValue: vi.fn().mockReturnValue({ t: 0, bedHeight: 142, dRiver: 1.0, riverWeight: 1.0 }),
+      getPondValue: vi.fn().mockReturnValue({ isPond: false, bedHeight: 170, centerT: 0, waterLevel: 150 }),
+      getWaterLevelAt: vi.fn().mockReturnValue(0),
+      getGroundBlockType: vi.fn().mockReturnValue(BLOCK_TYPES.SAND),
+      getColumnTerrainData: vi.fn().mockReturnValue({
+        adjustedHeight: 160,
+        finalHeight: 160,
+        localWaterLevel: 150,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: 12,
+        slope: 0
+      })
+    };
+
+    const chunk = new Uint8Array(4096);
+    // Fill the ground with sand
+    const groundIdx = 0 + 0 * 16 + 0 * 256; // x=0, z=0, y=160 (which is ly=0 in sub-chunk 10)
+    chunk[groundIdx] = BLOCK_TYPES.SAND;
+
+    const context: ChunkPipelineContext = {
+      cx: 0, cy: 10, cz: 0,
+      worldStartX: 0, worldStartY: 160, worldStartZ: 0,
+      chunk,
+      noise: mockNoise,
+      terrainMap: [],
+      biomeMap: [],
+      generator: mockGenerator as unknown as WorldTerrainProvider
+    };
+
+    pipeline.execute(context);
+
+    // The block above sand (y = 161, ly = 1) should remain AIR, not DEAD_BUSH
+    const indexAboveGround = 0 + 0 * 16 + 1 * 256;
+    expect(chunk[indexAboveGround]).toBe(BLOCK_TYPES.AIR);
+  });
 });
