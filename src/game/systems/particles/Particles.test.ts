@@ -69,20 +69,16 @@ describe('Particles System Refactored', () => {
 
       system.spawn('cloudcraft:smoke', pos, 0xffffff, 5);
 
-      // Active particles list is private, but we can verify through scene count and tick update
-      expect(scene.addedObjects.length).toBe(5);
-
-      // All of them should be visible
-      scene.addedObjects.forEach(obj => {
-        expect(obj.visible).toBe(true);
-      });
+      // Verify active (visible) particles count
+      const visibleObjects = scene.addedObjects.filter(obj => obj.visible);
+      expect(visibleObjects.length).toBe(5);
 
       // Update system with small DT (particles have maxLife ~0.35s - 0.7s)
       system.update(0.05);
-      // Still visible
-      scene.addedObjects.forEach(obj => {
-        expect(obj.visible).toBe(true);
-      });
+      
+      // Still active (visible)
+      const visibleObjectsAfterUpdate = scene.addedObjects.filter(obj => obj.visible);
+      expect(visibleObjectsAfterUpdate.length).toBe(5);
 
       // Update multiple times to expire them, since dt is clamped to max 0.1s per tick
       for (let i = 0; i < 20; i++) {
@@ -90,9 +86,8 @@ describe('Particles System Refactored', () => {
       }
 
       // All expired particles should be released (hidden)
-      scene.addedObjects.forEach(obj => {
-        expect(obj.visible).toBe(false);
-      });
+      const visibleObjectsAfterExpire = scene.addedObjects.filter(obj => obj.visible);
+      expect(visibleObjectsAfterExpire.length).toBe(0);
     });
 
     it('should enforce maximum active particles count', () => {

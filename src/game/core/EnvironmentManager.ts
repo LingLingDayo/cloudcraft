@@ -1,164 +1,112 @@
 import * as THREE from 'three';
 import { GameManager } from './GameManager';
-import { ENVIRONMENT_CONFIG } from './EnvironmentConfig';
-import { getBlockProperties } from '@game/world/World';
+import { EnvironmentState } from '../environment/EnvironmentState';
+import { WeatherBlender } from '../environment/WeatherBlender';
+import { EnvironmentRenderer } from '../environment/EnvironmentRenderer';
+import { SunBody, MoonBody } from '../environment/CelestialBodies';
 
 export class EnvironmentManager {
   private game: GameManager;
-  private gameTime: number = ENVIRONMENT_CONFIG.dayNightCycle.startGameTime;
-  private dayDuration: number = ENVIRONMENT_CONFIG.dayNightCycle.dayDuration;
+  
+  // Core Subsystems
+  public state: EnvironmentState;
+  public blender: WeatherBlender;
+  public renderer: EnvironmentRenderer;
+  public sun: SunBody;
+  public moon: MoonBody;
 
-  public dirLight!: THREE.DirectionalLight;
-  public hemiLight!: THREE.HemisphereLight;
-
-  public getGameTime(): number {
-    return this.gameTime;
-  }
-
-  public getDayDuration(): number {
-    return this.dayDuration;
-  }
+  // Backward-compatible properties
+  public dirLight: THREE.DirectionalLight;
+  public hemiLight: THREE.HemisphereLight;
 
   constructor(game: GameManager) {
     this.game = game;
-    this.initLights();
+
+    // 1. Initialize State and Logic
+    this.state = new EnvironmentState();
+    this.blender = new WeatherBlender();
+
+    // 2. Initialize Renderer
+    this.renderer = new EnvironmentRenderer(this.game.scene, this.game.renderer);
+
+    // 3. Initialize Celestial Bodies
+    this.sun = new SunBody(this.game.scene);
+    this.moon = new MoonBody(this.game.scene);
+
+    // 4. Bind references for backward compatibility
+    this.dirLight = this.sun.light;
+    this.hemiLight = this.renderer.hemiLight;
   }
 
-  private initLights() {
-    this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-    this.hemiLight.position.set(0, 50, 0);
-    this.game.scene.add(this.hemiLight);
+  public getGameTime(): number {
+    return this.state.gameTime;
+  }
 
-    this.dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    this.dirLight.position.set(20, 40, 20);
-    this.dirLight.castShadow = true;
-    
-    this.dirLight.shadow.mapSize.width = 1024;
-    this.dirLight.shadow.mapSize.height = 1024;
-    this.dirLight.shadow.camera.near = 0.5;
-    this.dirLight.shadow.camera.far = 150;
-    const d = 40;
-    this.dirLight.shadow.camera.left = -d;
-    this.dirLight.shadow.camera.right = d;
-    this.dirLight.shadow.camera.top = d;
-    this.dirLight.shadow.camera.bottom = -d;
-    this.dirLight.shadow.bias = -0.0005;
-    this.game.scene.add(this.dirLight);
+  public getDayDuration(): number {
+    return this.state.dayDuration;
+  }
+
+  /**
+   * Sets the active dimension (e.g. overworld, nether, cave)
+   */
+  public setDimension(dimensionId: string) {
+    this.state.setDimension(dimensionId);
+  }
+
+  /**
+   * Instantly changes the weather
+   */
+  public setWeather(weatherId: string) {
+    this.state.setWeather(weatherId);
+  }
+
+  /**
+   * Smoothly transitions to a new weather condition
+   */
+  public transitionToWeather(weatherId: string, speedFactor?: number) {
+    this.state.transitionToWeather(weatherId, speedFactor);
   }
 
   public update(dt: number) {
-    this.updateDayNight(dt);
-    this.updateUnderwaterEffect();
-  }
-
-  private updateDayNight(dt: number) {
-    this.gameTime = (this.gameTime + dt) % this.dayDuration;
-    const t = this.gameTime / this.dayDuration; // 0 to 1
-
-    // Angle of the sun/moon
-    const angle = t * Math.PI * 2;
-    
-    // Position sun
-    this.dirLight.position.set(
-      Math.sin(angle) * ENVIRONMENT_CONFIG.dayNightCycle.sunOrbitRadius,
-      Math.cos(angle) * ENVIRONMENT_CONFIG.dayNightCycle.sunOrbitRadius,
-      ENVIRONMENT_CONFIG.dayNightCycle.sunOrbitZOffset
+    // 1. Update overall environmental state (time, camera medium detection)
+    this.state.update(
+      dt, 
+      this.game.camera.position, 
+      (x, y, z) => this.game.world.getBlock(x, y, z)
     );
 
-    // Calculate light intensities and colors based on time
-    const sunAltitude = Math.sin(angle);
+    const timeRatio = this.state.getTimeRatio();
 
-    let skyColor: THREE.Color;
-    let fogColor: THREE.Color;
-    let lightColor: THREE.Color;
-    let intensity: number;
+    // 2. Blend active weather configurations
+    const blended = this.blender.blend(timeRatio, this.state.weatherWeights);
 
-    const thresholdHot = ENVIRONMENT_CONFIG.lightIntensity.day.altitudeThreshold;
-    const thresholdCold = ENVIRONMENT_CONFIG.lightIntensity.night.altitudeThreshold;
+    // 3. Apply background, clear colors and fog changes to scene
+    this.renderer.render(this.state, blended);
 
-    if (sunAltitude > thresholdHot) {
-      // Day
-      const blend = (sunAltitude - thresholdHot) / (1.0 - thresholdHot);
-      skyColor = new THREE.Color().lerpColors(
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.daySkyStart),
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.daySkyEnd),
-        blend
-      );
-      fogColor = skyColor.clone();
-      lightColor = new THREE.Color(ENVIRONMENT_CONFIG.colors.sunriseSunsetLightEnd);
-      intensity = ENVIRONMENT_CONFIG.lightIntensity.day.intensityBase + blend * ENVIRONMENT_CONFIG.lightIntensity.day.intensityScale;
-      this.hemiLight.intensity = ENVIRONMENT_CONFIG.lightIntensity.day.hemiIntensityBase + blend * ENVIRONMENT_CONFIG.lightIntensity.day.hemiIntensityScale;
-    } else if (sunAltitude < thresholdCold) {
-      // Night
-      const blend = (-sunAltitude + thresholdCold) / (1.0 + thresholdCold);
-      skyColor = new THREE.Color().lerpColors(
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.nightSkyStart),
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.nightSkyEnd),
-        blend
-      );
-      fogColor = skyColor.clone();
-      lightColor = new THREE.Color(ENVIRONMENT_CONFIG.colors.nightLightColor);
-      intensity = ENVIRONMENT_CONFIG.lightIntensity.night.intensity;
-      this.hemiLight.intensity = ENVIRONMENT_CONFIG.lightIntensity.night.hemiIntensity;
-    } else {
-      // Sunset/Sunrise transition
-      const blend = (sunAltitude - thresholdCold) / (thresholdHot - thresholdCold);
-      skyColor = new THREE.Color().lerpColors(
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.dawnDuskStart),
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.dawnDuskEnd),
-        blend
-      );
-      fogColor = skyColor.clone();
-      lightColor = new THREE.Color().lerpColors(
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.sunriseSunsetLightStart),
-        new THREE.Color(ENVIRONMENT_CONFIG.colors.sunriseSunsetLightEnd),
-        blend
-      );
-      intensity = ENVIRONMENT_CONFIG.lightIntensity.sunriseSunset.intensityBase + blend * ENVIRONMENT_CONFIG.lightIntensity.sunriseSunset.intensityScale;
-      this.hemiLight.intensity = ENVIRONMENT_CONFIG.lightIntensity.sunriseSunset.hemiIntensityBase + blend * ENVIRONMENT_CONFIG.lightIntensity.sunriseSunset.hemiIntensityScale;
-    }
+    const playerPos = this.game.player.position;
 
-    // Apply lighting and backgrounds
-    this.game.renderer.setClearColor(skyColor);
-    this.game.scene.background = skyColor;
-    if (this.game.scene.fog) {
-      (this.game.scene.fog as THREE.FogExp2).color.copy(fogColor);
-    }
+    // 4. Update orbits of Celestial Bodies
+    this.sun.update(timeRatio, playerPos);
+    this.moon.update(timeRatio, playerPos);
 
-    this.dirLight.intensity = intensity;
-    this.dirLight.color.copy(lightColor);
-  }
+    // 5. Update light colors and intensities based on altitude & blending
+    const angle = timeRatio * Math.PI * 2;
+    const sunSin = Math.sin(angle);
 
-  private updateUnderwaterEffect() {
-    const cameraPos = this.game.camera.position;
-    const blockId = this.game.world.getBlock(
-      Math.floor(cameraPos.x),
-      Math.floor(cameraPos.y),
-      Math.floor(cameraPos.z)
-    );
-    const cameraInWater = getBlockProperties(blockId).isLiquid;
+    // Scale Sun light by its altitude
+    const sunWeight = Math.max(0, sunSin);
+    this.sun.light.intensity = blended.dirLightIntensity * sunWeight;
+    this.sun.light.color.copy(blended.dirLightColor);
 
-    if (cameraInWater) {
-      const waterColor = new THREE.Color(ENVIRONMENT_CONFIG.colors.waterColor);
-      this.game.renderer.setClearColor(waterColor);
-      this.game.scene.background = waterColor;
-      if (this.game.scene.fog && this.game.scene.fog instanceof THREE.FogExp2) {
-        this.game.scene.fog.color.copy(waterColor);
-        this.game.scene.fog.density = ENVIRONMENT_CONFIG.fog.underwaterDensity;
-      }
-    } else {
-      if (this.game.scene.fog && this.game.scene.fog instanceof THREE.FogExp2) {
-        this.game.scene.fog.density = ENVIRONMENT_CONFIG.fog.normalDensity;
-      }
-    }
+    // Scale Moon light by its altitude
+    const moonWeight = Math.max(0, -sunSin);
+    this.moon.light.intensity = (blended.dirLightIntensity * 0.4) * moonWeight;
+    this.moon.light.color.copy(blended.dirLightColor);
   }
 
   public dispose() {
-    if (this.hemiLight) {
-      this.game.scene.remove(this.hemiLight);
-    }
-    if (this.dirLight) {
-      this.game.scene.remove(this.dirLight);
-    }
+    this.renderer.dispose();
+    this.sun.dispose(this.game.scene);
+    this.moon.dispose(this.game.scene);
   }
 }
