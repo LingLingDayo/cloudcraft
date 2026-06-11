@@ -189,31 +189,16 @@ export class BlockRegistry {
         { min: [0.0625, 0, 0.0625], max: [0.9375, 1.0, 0.9375] }
       ],
       model: new ElementBlockModel([
-        // Element 1: Y 完整，Z 收缩 (1/16 到 15/16) -> 对应 North & South 面
         {
-          from: [0, 0, 1],
-          to: [16, 16, 15],
+          from: [1, 0, 1],
+          to: [15, 16, 15],
           faces: {
-            north: { texture: 'side' },
-            south: { texture: 'side' }
-          }
-        },
-        // Element 2: Y 完整，X 收缩 (1/16 到 15/16) -> 对应 West & East 面
-        {
-          from: [1, 0, 0],
-          to: [15, 16, 16],
-          faces: {
-            west: { texture: 'side' },
-            east: { texture: 'side' }
-          }
-        },
-        // Element 3: Y=0 & Y=16 的 Top/Bottom 面 -> 对应 Up & Down 面 (X, Z 均完整)
-        {
-          from: [0, 0, 0],
-          to: [16, 16, 16],
-          faces: {
-            up: { texture: 'top' },
-            down: { texture: 'bottom' }
+            north: { texture: 'side', uv: [1, 0, 15, 16] },
+            south: { texture: 'side', uv: [1, 0, 15, 16] },
+            west: { texture: 'side', uv: [1, 0, 15, 16] },
+            east: { texture: 'side', uv: [1, 0, 15, 16] },
+            up: { texture: 'top', uv: [1, 1, 15, 15] },
+            down: { texture: 'bottom', uv: [1, 1, 15, 15] }
           }
         }
       ])
