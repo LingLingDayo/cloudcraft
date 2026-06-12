@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import type { SettingsConfig, SettingsData } from './types';
 import { SettingsRenderer } from './SettingsRenderer';
 import { SettingsUtils } from './utils';
 import { Button } from '../Button';
 import { ConfirmationDialog } from '../ConfirmationDialog';
+import { useBackToClose } from '@hooks/useBackToClose';
 import styles from './SettingsModal.module.scss';
 
 export interface SettingsModalProps<
@@ -24,6 +25,9 @@ export interface SettingsModalProps<
   resetText?: string;
   isMaskClosable?: boolean;
   children?: React.ReactNode; // 顶部可选的自定义组件
+  styleMode?: 'accordion' | 'classic';
+  sidebarFooter?: React.ReactNode;
+  closeOnBack?: boolean;
 
   onUpdate: (updates: Partial<TData>) => void;
   onClose?: (localData: TData, oldData: TData) => void;
@@ -45,6 +49,9 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
   resetText = '重置',
   isMaskClosable = false,
   children,
+  styleMode = 'accordion',
+  sidebarFooter,
+  closeOnBack = true,
   onUpdate,
   onClose,
   onConfirm,
@@ -54,10 +61,35 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
   const [prevData, setPrevData] = useState<TData>(data);
   const [localData, setLocalData] = useState<TData>(data);
 
-  // 监听外部 data 的改变同步到本地 data (React 官方推荐的 props-to-state 同步模式)
+  // 监听外部 data 的改变同步 to 本地 data (React 官方推荐 of props-to-state 同步模式)
   if (data !== prevData) {
     setPrevData(data);
     setLocalData(data);
+  }
+
+  // 仅在 dialog 模式且打开时启用返回键关闭
+  useBackToClose({
+    onClose: () => handleCancel(),
+    enabled: renderMode === 'dialog' && isOpen && closeOnBack
+  });
+
+  const hasPages = Array.isArray(settingsConfig.pages) && settingsConfig.pages.length > 0;
+  const [prevPages, setPrevPages] = useState(settingsConfig.pages);
+  const [activePageId, setActivePageId] = useState<string | undefined>(
+    hasPages ? settingsConfig.pages![0].id : undefined
+  );
+
+  // 保持 activePageId 与 pages 同步 (React 官方推荐 of props-to-state 同步模式)
+  if (settingsConfig.pages !== prevPages) {
+    setPrevPages(settingsConfig.pages);
+    if (hasPages && settingsConfig.pages) {
+      const hasActive = settingsConfig.pages.some(p => p.id === activePageId);
+      if (!hasActive) {
+        setActivePageId(settingsConfig.pages[0].id);
+      }
+    } else {
+      setActivePageId(undefined);
+    }
   }
 
   // 全局重置二次确认弹窗的开关
@@ -94,7 +126,10 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
   };
 
   const handleConfirmReset = () => {
-    const defaultData = SettingsUtils.extractDefaults(settingsConfig.groups);
+    const allGroups = hasPages
+      ? settingsConfig.pages!.flatMap(p => p.groups)
+      : (settingsConfig.groups || []);
+    const defaultData = SettingsUtils.extractDefaults(allGroups);
     if (isLiveUpdate) {
       onUpdate(defaultData);
     } else {
@@ -104,17 +139,70 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
     setIsResetConfirmOpen(false);
   };
 
+  // 获取当前活跃的配置分组
+  const activeGroups = useMemo(() => {
+    return hasPages
+      ? settingsConfig.pages!.find(p => p.id === activePageId)?.groups || []
+      : settingsConfig.groups || [];
+  }, [hasPages, settingsConfig, activePageId]);
+
+  const activeSettingsConfig = useMemo(() => {
+    return {
+      ...settingsConfig,
+      groups: activeGroups,
+    };
+  }, [settingsConfig, activeGroups]);
+
   // 渲染主体内容
   const mainContent = (
-    <>
-      {children}
-      <SettingsRenderer
-        data={isLiveUpdate ? data : localData}
-        onUpdate={handleUpdate}
-        settingsConfig={settingsConfig}
-        context={context}
-      />
-    </>
+    <div className={styles.modalBody}>
+      {hasPages && (
+        <div className={styles.sidebar}>
+          <div className={styles.tabList}>
+            {settingsConfig.pages!.map((page) => (
+              <button
+                key={page.id}
+                type="button"
+                className={`${styles.tabBtn} ${
+                  activePageId === page.id ? styles.activeTabBtn : ''
+                }`}
+                onClick={() => setActivePageId(page.id)}
+              >
+                {page.title}
+              </button>
+            ))}
+          </div>
+          {styleMode === 'classic' && sidebarFooter}
+        </div>
+      )}
+      <div className={styles.contentArea}>
+        {children}
+        <SettingsRenderer
+          data={isLiveUpdate ? data : localData}
+          onUpdate={handleUpdate}
+          settingsConfig={activeSettingsConfig}
+          context={context}
+          styleMode={styleMode}
+        />
+        {styleMode === 'classic' && (
+          <div className={styles.classicFooter}>
+            {isShowReset && (
+              <Button variant="danger" onClick={handleReset} className={styles.resetBtn}>
+                {resetText}
+              </Button>
+            )}
+            <Button variant="secondary" onClick={handleCancel}>
+              {isLiveUpdate ? '完成' : cancelText}
+            </Button>
+            {!isLiveUpdate && (
+              <Button variant="primary" onClick={handleSave}>
+                {confirmText}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 
   // Panel 模式 (作为面板组件直接嵌入 DOM)
@@ -124,7 +212,7 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
         <div className={styles.dialogContent} style={{ flex: 1 }}>
           {mainContent}
         </div>
-        {!isLiveUpdate && (
+        {!isLiveUpdate && styleMode !== 'classic' && (
           <div className={styles.dialogFooter}>
             {isShowReset && (
               <Button variant="danger" onClick={handleReset} className={styles.resetBtn}>
@@ -164,7 +252,7 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
       onClick={() => isMaskClosable && handleCancel()}
     >
       <div
-        className={styles.dialogWindow}
+        className={`${styles.dialogWindow} ${styleMode === 'classic' ? styles.classic : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -181,22 +269,23 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
         </div>
 
         {/* Footer */}
-        <div className={styles.dialogFooter}>
-          {isShowReset && (
-            <Button variant="danger" onClick={handleReset} className={styles.resetBtn}>
-              {resetText}
+        {styleMode !== 'classic' && (
+          <div className={styles.dialogFooter}>
+            {isShowReset && (
+              <Button variant="danger" onClick={handleReset} className={styles.resetBtn}>
+                {resetText}
+              </Button>
+            )}
+            <Button variant="secondary" onClick={handleCancel}>
+              {isLiveUpdate ? '关闭' : cancelText}
             </Button>
-          )}
-          {/* 非 Live 模式必须有取消和确定。Live 模式下用户可以直接关闭弹窗，但也可以显示取消/确认用作关闭功能 */}
-          <Button variant="secondary" onClick={handleCancel}>
-            {isLiveUpdate ? '关闭' : cancelText}
-          </Button>
-          {!isLiveUpdate && (
-            <Button variant="primary" onClick={handleSave}>
-              {confirmText}
-            </Button>
-          )}
-        </div>
+            {!isLiveUpdate && (
+              <Button variant="primary" onClick={handleSave}>
+                {confirmText}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <ConfirmationDialog

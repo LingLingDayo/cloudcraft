@@ -270,4 +270,70 @@ describe('SettingsModal component', () => {
     fireEvent.click(screen.getByText('Action Button'));
     expect(onUpdate).toHaveBeenCalledWith({ name: 'ButtonClicked' });
   });
+
+  it('should support pages config with Sidebar tab switching and ui-custom control rendering', () => {
+    const onUpdate = vi.fn();
+    const pagesConfig = {
+      pages: [
+        {
+          id: 'page1',
+          title: 'Tab 1',
+          groups: [
+            {
+              id: 'group1',
+              title: 'Group 1',
+              controls: [
+                {
+                  key: 'name',
+                  label: 'Name Input',
+                  type: 'text' as const,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'page2',
+          title: 'Tab 2',
+          groups: [
+            {
+              id: 'group2',
+              title: 'Group 2',
+              controls: [
+                {
+                  key: 'customField',
+                  type: 'ui-custom' as const,
+                  render: () => <div data-testid="my-custom-node">Custom Node</div>,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    render(
+      <SettingsModal
+        isOpen={true}
+        data={INITIAL_DATA}
+        settingsConfig={pagesConfig}
+        context={null}
+        onUpdate={onUpdate}
+      />
+    );
+
+    // 默认展示 Tab 1 的内容
+    expect(screen.getByText('Tab 1')).toBeInTheDocument();
+    expect(screen.getByText('Tab 2')).toBeInTheDocument();
+    expect(screen.getByText('Group 1')).toBeInTheDocument();
+    expect(screen.queryByText('Group 2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('my-custom-node')).not.toBeInTheDocument();
+
+    // 点击切换到 Tab 2
+    fireEvent.click(screen.getByText('Tab 2'));
+    expect(screen.queryByText('Group 1')).not.toBeInTheDocument();
+    expect(screen.getByText('Group 2')).toBeInTheDocument();
+    expect(screen.getByTestId('my-custom-node')).toBeInTheDocument();
+    expect(screen.getByText('Custom Node')).toBeInTheDocument();
+  });
 });

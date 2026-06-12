@@ -17,6 +17,7 @@ import {
   SelectControl,
   ButtonControl,
   ComputedInfoControl,
+  CustomControl,
 } from './controls';
 import styles from './SettingsModal.module.scss';
 
@@ -28,6 +29,7 @@ const CONTROL_MAPPING: Record<string, React.FC<any>> = {
   'select': SelectControl,
   'button': ButtonControl,
   'ui-computed-info': ComputedInfoControl,
+  'ui-custom': CustomControl,
 };
 
 interface DynamicControlProps<TData extends SettingsData, TContext = unknown> {
@@ -108,14 +110,16 @@ export function DynamicControl<TData extends SettingsData, TContext = unknown>({
   // 是否独占一行
   const isFullWidth =
     control.fullWidth ??
-    ['textarea', 'slider', 'ui-computed-info', 'button'].includes(control.type);
+    ['textarea', 'slider', 'ui-computed-info', 'button', 'ui-custom'].includes(control.type);
 
   return (
     <div
-      className={`${styles.controlWrapper} ${isFullWidth ? styles.fullWidth : styles.halfWidth}`}
+      className={`${styles.controlWrapper} ${isFullWidth ? styles.fullWidth : styles.halfWidth} ${
+        control.type === 'boolean' ? styles.booleanWrapper : ''
+      } ${control.type === 'slider' ? styles.sliderWrapper : ''}`}
     >
-      {/* 按钮与 computed-info 除外，其它显示 label */}
-      {control.type !== 'button' && (
+      {/* 按钮、computed-info 与 ui-custom 除外，其它显示 label */}
+      {control.type !== 'button' && control.type !== 'ui-computed-info' && control.type !== 'ui-custom' && (
         <ControlLabel label={control.label} tooltip={control.tooltip} disabled={isDisabled} />
       )}
       {control.description && <ControlDescription text={control.description} />}

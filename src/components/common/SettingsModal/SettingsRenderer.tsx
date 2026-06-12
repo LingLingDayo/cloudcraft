@@ -13,6 +13,7 @@ export interface SettingsRendererProps<
   onUpdate: (updates: Partial<TData>) => void;
   settingsConfig: SettingsConfig<TData, TContext>;
   context: TContext;
+  styleMode?: 'accordion' | 'classic';
 }
 
 export function SettingsRenderer<TData extends SettingsData, TContext = unknown>({
@@ -20,6 +21,7 @@ export function SettingsRenderer<TData extends SettingsData, TContext = unknown>
   onUpdate,
   settingsConfig,
   context,
+  styleMode = 'accordion',
 }: SettingsRendererProps<TData, TContext>) {
   const { groups = [], readonlyControls = [] } = settingsConfig;
 
@@ -67,48 +69,54 @@ export function SettingsRenderer<TData extends SettingsData, TContext = unknown>
           return null;
         }
 
-        const isCollapsible = group.defaultCollapsed !== undefined;
+        const isCollapsible = styleMode !== 'classic' && group.defaultCollapsed !== undefined;
         const isCollapsed = isCollapsible ? !!collapsedGroups[group.id] : false;
 
         return (
           <div key={group.id} className={styles.groupWrapper}>
             {/* 分组头部 */}
-            <div
-              className={styles.groupHeader}
-              onClick={() => isCollapsible && toggleGroup(group.id)}
-            >
-              <div className={styles.groupTitleContainer}>
-                <span
-                  className={styles.groupTitleIndicator}
-                  style={{ backgroundColor: group.color || '#ffff55' }}
-                />
-                <h4 className={styles.groupTitle} style={{ color: group.color || '#ffff55' }}>
-                  {group.title}
-                </h4>
-              </div>
+            {styleMode === 'classic' ? (
+              <h3 className={`pixel-text-sm ${styles.classicGroupTitle}`}>
+                {group.title}
+              </h3>
+            ) : (
+              <div
+                className={styles.groupHeader}
+                onClick={() => isCollapsible && toggleGroup(group.id)}
+              >
+                <div className={styles.groupTitleContainer}>
+                  <span
+                    className={styles.groupTitleIndicator}
+                    style={{ backgroundColor: group.color || '#ffff55' }}
+                  />
+                  <h4 className={styles.groupTitle} style={{ color: group.color || '#ffff55' }}>
+                    {group.title}
+                  </h4>
+                </div>
 
-              <div className={styles.groupActions}>
-                {group.isShowReset !== false && (
-                  <button
-                    type="button"
-                    className={styles.groupResetIcon}
-                    title="重置该分组"
-                    onClick={(e) => handleGroupResetClick(e, group)}
-                  >
-                    ⟲
-                  </button>
-                )}
-                {isCollapsible && (
-                  <span className={styles.groupChevron}>
-                    {isCollapsed ? '▼' : '▲'}
-                  </span>
-                )}
+                <div className={styles.groupActions}>
+                  {group.isShowReset !== false && (
+                    <button
+                      type="button"
+                      className={styles.groupResetIcon}
+                      title="重置该分组"
+                      onClick={(e) => handleGroupResetClick(e, group)}
+                    >
+                      ⟲
+                    </button>
+                  )}
+                  {isCollapsible && (
+                    <span className={styles.groupChevron}>
+                      {isCollapsed ? '▼' : '▲'}
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 分组内容 */}
             {!isCollapsed && (
-              <div className={styles.groupContent}>
+              <div className={styleMode === 'classic' ? styles.classicGroupContent : styles.groupContent}>
                 {group.controls.map((control) => {
                   const isReadOnly = readonlyControls.includes(control.key);
 
