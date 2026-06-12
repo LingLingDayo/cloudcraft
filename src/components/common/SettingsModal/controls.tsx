@@ -103,11 +103,9 @@ export const SwitchControl: React.FC<ControlRendererProps> = ({
       className={`${styles.switchContainer} ${disabled ? styles.disabled : ''}`}
       onClick={handleToggle}
     >
-      <span className={styles.switchTrack} style={{ pointerEvents: 'none' }}>
-        <div className={`${styles.switchTrack} ${value ? styles.checked : ''}`}>
-          <div className={styles.thumb} />
-        </div>
-      </span>
+      <div className={`${styles.switchTrack} ${value ? styles.checked : ''}`}>
+        <div className={styles.switchThumb} />
+      </div>
     </div>
   );
 };
@@ -129,7 +127,9 @@ export const SliderControl: React.FC<ControlRendererProps> = ({
   return (
     <div className={styles.sliderContainer}>
       <div className={styles.sliderHeader}>
-        <span className={styles.sliderValue}>{numericValue}</span>
+        <span className={styles.sliderValue}>
+          {ctrl.valueFormatter ? ctrl.valueFormatter(numericValue) : numericValue}
+        </span>
       </div>
       <input
         type="range"
@@ -297,4 +297,17 @@ export const ComputedInfoControl: React.FC<ControlRendererProps> = ({
       {value ?? ''}
     </div>
   );
+};
+
+// 8. 自定义内容 (ui-custom)
+export const CustomControl: React.FC<ControlRendererProps> = ({
+  control,
+  component,
+  context,
+}) => {
+  const ctrl = control as any;
+  if (typeof ctrl.render === 'function') {
+    return <>{ctrl.render(component, context)}</>;
+  }
+  return null;
 };

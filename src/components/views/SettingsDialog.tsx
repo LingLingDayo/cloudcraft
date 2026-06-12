@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from '@i18n';
 import { useGameStore } from '@store/useGameStore';
 import { GameMode, type Language } from '@type';
-import { Button } from '@components/common/Button';
-import { Slider } from '@components/common/Slider';
-import { Switch } from '@components/common/Switch';
-import { Input } from '@components/common/Input';
-import { Select } from '@components/common/Select';
-import { Dialog } from '@components/common/Dialog';
+import { SettingsModal } from '@components/common/SettingsModal';
+import type { SettingsConfig, SettingsPage } from '@components/common/SettingsModal/types';
 import { SaveManager } from '@game/systems/SaveManager';
 import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock, type FullscreenDocument } from '@utils/device';
 import { getSystemSettings, saveSystemSetting } from '@utils/settings';
@@ -18,14 +15,11 @@ interface SettingsDialogProps {
   closeOnBack?: boolean;
 }
 
-type TabType = 'general' | 'graphics' | 'controls';
-
 export const SettingsDialog: React.FC<SettingsDialogProps> = ({ 
   onClose, 
   closeOnBack = true
 }) => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabType>('general');
 
   // Fullscreen state and event listeners to keep state in sync
   const [isFullscreen, setIsFullscreen] = useState(() => {
@@ -38,7 +32,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     );
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleFullscreenChange = () => {
       const doc = document as FullscreenDocument;
       setIsFullscreen(
@@ -72,7 +66,6 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     }
   };
 
-
   // Load state and setters from store
   const renderDistance = useGameStore((state) => state.renderDistance);
   const setRenderDistance = useGameStore((state) => state.setRenderDistance);
@@ -100,314 +93,325 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     saveSystemSetting('playerName', name);
   };
 
+  // 装载合并数据对象供 SettingsModal 使用
+  const settingsData = useMemo(() => ({
+    language,
+    playerName,
+    gameMode,
+    autoJump,
+    fullscreen: isFullscreen,
+    debugOverlay,
+    showMinimap,
+    renderDistance,
+    fov,
+    dpadSize,
+  }), [
+    language,
+    playerName,
+    gameMode,
+    autoJump,
+    isFullscreen,
+    debugOverlay,
+    showMinimap,
+    renderDistance,
+    fov,
+    dpadSize
+  ]);
+
+  // 分发具体更改到 Zustand & localStorage 中
+  const handleUpdate = (updates: Partial<typeof settingsData>) => {
+    if (updates.language !== undefined) {
+      setLanguage(updates.language as Language);
+    }
+    if (updates.playerName !== undefined) {
+      handlePlayerNameChange(updates.playerName);
+    }
+    if (updates.gameMode !== undefined) {
+      setGameMode(updates.gameMode);
+    }
+    if (updates.autoJump !== undefined) {
+      setAutoJump(updates.autoJump);
+    }
+    if (updates.fullscreen !== undefined) {
+      toggleFullscreen(updates.fullscreen);
+    }
+    if (updates.debugOverlay !== undefined) {
+      setDebugOverlay(updates.debugOverlay);
+    }
+    if (updates.showMinimap !== undefined) {
+      setShowMinimap(updates.showMinimap);
+    }
+    if (updates.renderDistance !== undefined) {
+      setRenderDistance(updates.renderDistance);
+    }
+    if (updates.fov !== undefined) {
+      setFov(updates.fov);
+    }
+    if (updates.dpadSize !== undefined) {
+      setDpadSize(updates.dpadSize);
+    }
+  };
+
+  // 声明式的配置，分为常规、图像与控制三大 Pages
+  const settingsConfig: SettingsConfig<typeof settingsData> = useMemo(() => {
+    const pages: SettingsPage<typeof settingsData>[] = [
+      {
+        id: 'general',
+        title: t('settings.general'),
+        groups: [
+          {
+            id: 'generalGroup',
+            title: t('settings.general'),
+            controls: [
+              {
+                key: 'language',
+                label: t('pauseMenu.language'),
+                type: 'select',
+                options: [
+                  { label: '简体中文', value: 'zh' },
+                  { label: 'English', value: 'en' },
+                ],
+              },
+              {
+                key: 'playerName',
+                label: t('pauseMenu.playerName'),
+                type: 'text',
+                placeholder: t('pauseMenu.playerNamePlaceholder'),
+              },
+              {
+                key: 'gameMode',
+                label: t('pauseMenu.gameMode'),
+                type: 'select',
+                options: [
+                  { label: t('pauseMenu.gameModeAdventure'), value: GameMode.ADVENTURE },
+                  { label: t('pauseMenu.gameModeCreative'), value: GameMode.CREATIVE },
+                ],
+              },
+              {
+                key: 'autoJump',
+                label: t('pauseMenu.autoJump'),
+                type: 'boolean',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'graphics',
+        title: t('settings.graphics'),
+        groups: [
+          {
+            id: 'graphicsGroup',
+            title: t('settings.graphics'),
+            controls: [
+              {
+                key: 'fullscreen',
+                label: t('settings.fullscreen'),
+                type: 'boolean',
+              },
+              {
+                key: 'debugOverlay',
+                label: t('pauseMenu.debugOverlay'),
+                type: 'boolean',
+              },
+              {
+                key: 'showMinimap',
+                label: t('hud.minimap'),
+                type: 'boolean',
+              },
+              {
+                key: 'renderDistance',
+                label: t('pauseMenu.renderDistance'),
+                type: 'slider',
+                min: 2,
+                max: 10,
+                step: 1,
+                valueFormatter: (val) => t('pauseMenu.renderDistanceValue', { val }),
+              },
+              {
+                key: 'fov',
+                label: t('pauseMenu.fov'),
+                type: 'slider',
+                min: 60,
+                max: 90,
+                step: 5,
+                valueFormatter: (val) => t('pauseMenu.fovValue', { val }),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'controls',
+        title: t('settings.controlsTitle'),
+        groups: [
+          {
+            id: 'controlsGroup',
+            title: t('settings.controlsTitle'),
+            controls: [
+              ...(isMobileDevice()
+                ? [
+                    {
+                      key: 'dpadSize',
+                      label: t('settings.dpadSize'),
+                      type: 'slider',
+                      min: 120,
+                      max: 240,
+                      step: 10,
+                      valueFormatter: (val) => t('settings.dpadSizeValue', { val }),
+                    } as any,
+                  ]
+                : []),
+              {
+                key: 'keybindings',
+                type: 'ui-custom',
+                render: () => (
+                  <div className={styles.controlsGrid} style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                    {/* Keyboard Section */}
+                    <div className={styles.controlSection}>
+                      <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
+                        {t('controls.keyboard')}
+                      </h4>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.moveForward')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>W</kbd>
+                          <span className={styles.keySeparator}>/</span>
+                          <kbd className={styles.kbd}>↑</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.moveBackward')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>S</kbd>
+                          <span className={styles.keySeparator}>/</span>
+                          <kbd className={styles.kbd}>↓</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.moveLeft')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>A</kbd>
+                          <span className={styles.keySeparator}>/</span>
+                          <kbd className={styles.kbd}>←</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.moveRight')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>D</kbd>
+                          <span className={styles.keySeparator}>/</span>
+                          <kbd className={styles.kbd}>→</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.jump')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>Space</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.sneak')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>Shift</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.openInventory')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>E</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.toggleDebug')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>F3</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.toggleFly')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>F4</kbd>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.hotbar')}</span>
+                        <div className={styles.controlKeys}>
+                          <kbd className={styles.kbd}>1</kbd>
+                          <span className={styles.keySeparator}>-</span>
+                          <kbd className={styles.kbd}>9</kbd>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mouse Section */}
+                    <div className={styles.controlSection}>
+                      <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
+                        {t('controls.mouse')}
+                      </h4>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.mouseMove')}</span>
+                        <div className={styles.controlKeys}>
+                          <span className={styles.mouseAction}>{t('controls.mouseMoveAction')}</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.leftClick')}</span>
+                        <div className={styles.controlKeys}>
+                          <span className={styles.mouseAction}>{t('controls.leftClickAction')}</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.controlRow}>
+                        <span className={styles.controlLabel}>{t('controls.rightClick')}</span>
+                        <div className={styles.controlKeys}>
+                          <span className={styles.mouseAction}>{t('controls.rightClickAction')}</span>
+                        </div>
+                      </div>
+                    </div>
 
 
-  const gameModeOptions = [
-    { label: t('pauseMenu.gameModeAdventure'), value: GameMode.ADVENTURE },
-    { label: t('pauseMenu.gameModeCreative'), value: GameMode.CREATIVE },
-  ];
-
-  const tabs = [
-    { id: 'general' as const, label: t('settings.general') },
-    { id: 'graphics' as const, label: t('settings.graphics') },
-    { id: 'controls' as const, label: t('settings.controls') },
-  ];
+                  </div>
+                ),
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    return { pages };
+  }, [t]);
 
   return (
-    <Dialog
+    <SettingsModal
+      isOpen={true}
       title={t('settings.title')}
-      onClose={onClose}
-      width={640}
-      height={480}
+      data={settingsData}
+      settingsConfig={settingsConfig}
+      context={null}
+      isLiveUpdate={true}
+      isShowReset={false}
+      styleMode="classic"
       closeOnBack={closeOnBack}
-      noPadding={true}
-    >
-      <div className={styles.dialogInner}>
-        {/* Left grouping sidebar */}
-        <div className={styles.sidebar}>
-          <div className={styles.tabList}>
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`${styles.tabBtn} ${
-                  activeTab === tab.id ? styles.activeTabBtn : ''
-                }`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          
-          <div className={styles.versionInfo}>
-            {t('settings.version', { version: SaveManager.GAME_VERSION })}
-          </div>
+      sidebarFooter={
+        <div className={styles.versionInfo}>
+          {t('settings.version', { version: SaveManager.GAME_VERSION })}
         </div>
-
-        {/* Right content page */}
-        <div className={styles.contentArea}>
-          <div className={styles.tabPanel}>
-            {activeTab === 'general' && (
-              <div className={styles.settingsGroup}>
-                <h3 className={`pixel-text-sm ${styles.groupTitle}`}>
-                  {t('settings.general')}
-                </h3>
-                
-                <div className={styles.controlSection}>
-                  <div className={styles.optionItem}>
-                    <Select
-                      label={t('pauseMenu.language')}
-                      value={language}
-                      options={[
-                        { label: '简体中文', value: 'zh' },
-                        { label: 'English', value: 'en' },
-                      ]}
-                      onChange={(val) => setLanguage(val as Language)}
-                    />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <Input
-                      label={t('pauseMenu.playerName')}
-                      value={playerName}
-                      onChange={handlePlayerNameChange}
-                      placeholder={t('pauseMenu.playerNamePlaceholder')}
-                    />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <Select
-                      label={t('pauseMenu.gameMode')}
-                      value={gameMode}
-                      options={gameModeOptions}
-                      onChange={(val) => setGameMode(val as GameMode)}
-                    />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <Switch
-                      label={t('pauseMenu.autoJump')}
-                      checked={autoJump}
-                      onChange={(checked) => setAutoJump(checked)}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'graphics' && (
-              <div className={styles.settingsGroup}>
-                <h3 className={`pixel-text-sm ${styles.groupTitle}`}>
-                  {t('settings.graphics')}
-                </h3>
-
-                <div className={styles.controlSection}>
-                  <div className={styles.optionItem}>
-                    <Switch
-                      label={t('settings.fullscreen')}
-                      checked={isFullscreen}
-                      onChange={toggleFullscreen}
-                    />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <Switch
-                      label={t('pauseMenu.debugOverlay')}
-                      checked={debugOverlay}
-                      onChange={(checked) => setDebugOverlay(checked)}
-                    />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <Switch
-                      label={t('hud.minimap')}
-                      checked={showMinimap}
-                      onChange={(checked) => setShowMinimap(checked)}
-                    />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <Slider
-                      label={t('pauseMenu.renderDistance')}
-                      min={2}
-                      max={10}
-                      value={renderDistance}
-                      onChange={setRenderDistance}
-                      valueFormatter={(val) => t('pauseMenu.renderDistanceValue', { val })}
-                    />
-                  </div>
-
-                  <div className={styles.optionItem}>
-                    <Slider
-                      label={t('pauseMenu.fov')}
-                      min={60}
-                      max={90}
-                      step={5}
-                      value={fov}
-                      onChange={setFov}
-                      valueFormatter={(val) => t('pauseMenu.fovValue', { val })}
-                    />
-                  </div>
-
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'controls' && (
-              <div className={styles.settingsGroup}>
-                <h3 className={`pixel-text-sm ${styles.groupTitle}`}>
-                  {t('settings.controlsTitle')}
-                </h3>
-
-                <div className={styles.controlsGrid}>
-                  {/* Mobile Section */}
-                  {isMobileDevice() && (
-                    <div className={styles.controlSection} style={{ marginBottom: '12px' }}>
-                      <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
-                        {t('settings.mobileControls')}
-                      </h4>
-                      <div className={styles.optionItem}>
-                        <Slider
-                          label={t('settings.dpadSize')}
-                          min={120}
-                          max={240}
-                          step={10}
-                          value={dpadSize}
-                          onChange={setDpadSize}
-                          valueFormatter={(val) => t('settings.dpadSizeValue', { val })}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Keyboard Section */}
-                  <div className={styles.controlSection}>
-                    <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
-                      {t('controls.keyboard')}
-                    </h4>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.moveForward')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>W</kbd>
-                        <span className={styles.keySeparator}>/</span>
-                        <kbd className={styles.kbd}>↑</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.moveBackward')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>S</kbd>
-                        <span className={styles.keySeparator}>/</span>
-                        <kbd className={styles.kbd}>↓</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.moveLeft')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>A</kbd>
-                        <span className={styles.keySeparator}>/</span>
-                        <kbd className={styles.kbd}>←</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.moveRight')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>D</kbd>
-                        <span className={styles.keySeparator}>/</span>
-                        <kbd className={styles.kbd}>→</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.jump')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>Space</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.sneak')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>Shift</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.openInventory')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>E</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.toggleDebug')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>F3</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.toggleFly')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>F4</kbd>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.hotbar')}</span>
-                      <div className={styles.controlKeys}>
-                        <kbd className={styles.kbd}>1</kbd>
-                        <span className={styles.keySeparator}>-</span>
-                        <kbd className={styles.kbd}>9</kbd>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mouse Section */}
-                  <div className={styles.controlSection}>
-                    <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
-                      {t('controls.mouse')}
-                    </h4>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.mouseMove')}</span>
-                      <div className={styles.controlKeys}>
-                        <span className={styles.mouseAction}>{t('controls.mouseMoveAction')}</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.leftClick')}</span>
-                      <div className={styles.controlKeys}>
-                        <span className={styles.mouseAction}>{t('controls.leftClickAction')}</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.controlRow}>
-                      <span className={styles.controlLabel}>{t('controls.rightClick')}</span>
-                      <div className={styles.controlKeys}>
-                        <span className={styles.mouseAction}>{t('controls.rightClickAction')}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Done button */}
-          <div className={styles.footer}>
-            <Button variant="secondary" onClick={onClose}>
-              {t('settings.done')}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Dialog>
+      }
+      onUpdate={handleUpdate}
+      onClose={onClose}
+    />
   );
 };

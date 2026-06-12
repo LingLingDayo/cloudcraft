@@ -31,7 +31,7 @@ export type SettingsValidator<
   TData extends SettingsData = any,
   TContext = any,
   TValue = any,
-> = (value: any, component: TData, context: TContext) => string | boolean | null | undefined;
+> = (value: TValue, component: TData, context: TContext) => string | boolean | null | undefined;
 
 export type SettingsValueSetter<
   TData extends SettingsData = any,
@@ -52,7 +52,8 @@ export type ControlType =
   | 'slider'
   | 'select'
   | 'button'
-  | 'ui-computed-info';
+  | 'ui-computed-info'
+  | 'ui-custom';
 
 export interface SelectOption<
   TData extends SettingsData = any,
@@ -124,6 +125,7 @@ export interface SliderControlDefinition<
   min?: number;
   max?: number;
   step?: number;
+  valueFormatter?: (value: number) => string;
 }
 
 export interface SelectControlDefinition<
@@ -154,6 +156,13 @@ export interface UiComputedInfoControlDefinition<
   style?: CSSProperties;
 }
 
+export interface UiCustomControlDefinition<
+  TData extends SettingsData = any,
+  TContext = any,
+> extends BaseControlDefinition<TData, TContext, 'ui-custom'> {
+  render: (component: TData, context: TContext) => React.ReactNode;
+}
+
 export type ControlDefinition<
   TData extends SettingsData = any,
   TContext = any,
@@ -164,7 +173,8 @@ export type ControlDefinition<
   | SliderControlDefinition<TData, TContext>
   | SelectControlDefinition<TData, TContext>
   | ButtonControlDefinition<TData, TContext>
-  | UiComputedInfoControlDefinition<TData, TContext>;
+  | UiComputedInfoControlDefinition<TData, TContext>
+  | UiCustomControlDefinition<TData, TContext>;
 
 export interface SettingsGroup<
   TData extends SettingsData = any,
@@ -181,11 +191,21 @@ export interface SettingsGroup<
   isShowReset?: boolean;
 }
 
+export interface SettingsPage<
+  TData extends SettingsData = any,
+  TContext = any,
+> {
+  id: string;
+  title: string;
+  groups: SettingsGroup<TData, TContext>[];
+}
+
 export interface SettingsConfig<
   TData extends SettingsData = any,
   TContext = any,
 > {
-  groups: SettingsGroup<TData, TContext>[];
+  pages?: SettingsPage<TData, TContext>[];
+  groups?: SettingsGroup<TData, TContext>[];
   readonlyControls?: string[];
 }
 
