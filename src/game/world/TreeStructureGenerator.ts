@@ -39,7 +39,16 @@ export class ChunkBlockWriter implements BlockWriter {
       lcz >= 0 && lcz < 16
     ) {
       const idx = lcx + lcz * 16 + lcy * 256;
-      this.chunk[idx] = type;
+      const idxDouble = idx * 2;
+      this.chunk[idxDouble] = type;
+
+      // 树木或叶子生成时，适当减弱该格的初始天空光照
+      let skyLight = 15;
+      if (type !== BLOCK_TYPES.AIR) {
+        const isLeaves = type === BLOCK_TYPES.LEAF || type === BLOCK_TYPES.BIRCH_LEAVES || type === BLOCK_TYPES.SPRUCE_LEAVES || type === BLOCK_TYPES.JUNGLE_LEAVES;
+        skyLight = isLeaves ? 8 : 0;
+      }
+      this.chunk[idxDouble + 1] = (skyLight << 4);
     }
   }
 
@@ -53,7 +62,7 @@ export class ChunkBlockWriter implements BlockWriter {
       lcz >= 0 && lcz < 16
     ) {
       const idx = lcx + lcz * 16 + lcy * 256;
-      return this.chunk[idx];
+      return this.chunk[idx * 2];
     }
     return BLOCK_TYPES.AIR;
   }

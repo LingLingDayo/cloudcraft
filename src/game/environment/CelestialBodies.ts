@@ -12,8 +12,8 @@ export class SunBody implements ICelestialBody {
     this.light.castShadow = true;
 
     // Shadow Map Configuration
-    this.light.shadow.mapSize.width = 1024;
-    this.light.shadow.mapSize.height = 1024;
+    this.light.shadow.mapSize.width = 2048;
+    this.light.shadow.mapSize.height = 2048;
     this.light.shadow.camera.near = 0.5;
     this.light.shadow.camera.far = 160;
 
@@ -22,14 +22,15 @@ export class SunBody implements ICelestialBody {
     this.light.shadow.camera.right = d;
     this.light.shadow.camera.top = d;
     this.light.shadow.camera.bottom = -d;
-    this.light.shadow.bias = -0.0005;
+    this.light.shadow.bias = -0.001;
+    this.light.shadow.normalBias = 0.002;
 
     scene.add(this.light);
   }
 
   public update(timeRatio: number, playerPos: THREE.Vector3): void {
-    const angle = timeRatio * Math.PI * 2;
-    const sunAltitude = Math.cos(angle); // Noon at timeRatio = 0 or 1 depending on orbit
+    const angle = (timeRatio - 0.25) * Math.PI * 2; // Shift by 90 degrees to align noon with timeRatio = 0.25
+    const sunAltitude = Math.cos(angle); // Noon at orbitAngle = 0
 
     // Calculate position relative to player
     const x = playerPos.x + Math.sin(angle) * this.orbitRadius;
@@ -64,8 +65,8 @@ export class MoonBody implements ICelestialBody {
     this.light.castShadow = true;
 
     // Moon Shadow Map (can be lower res or similar)
-    this.light.shadow.mapSize.width = 1024;
-    this.light.shadow.mapSize.height = 1024;
+    this.light.shadow.mapSize.width = 2048;
+    this.light.shadow.mapSize.height = 2048;
     this.light.shadow.camera.near = 0.5;
     this.light.shadow.camera.far = 160;
 
@@ -74,14 +75,16 @@ export class MoonBody implements ICelestialBody {
     this.light.shadow.camera.right = d;
     this.light.shadow.camera.top = d;
     this.light.shadow.camera.bottom = -d;
-    this.light.shadow.bias = -0.0005;
+    this.light.shadow.bias = -0.001;
+    this.light.shadow.normalBias = 0.002;
 
     scene.add(this.light);
   }
 
   public update(timeRatio: number, playerPos: THREE.Vector3): void {
-    // Moon is opposite to the Sun in the sky
-    const angle = timeRatio * Math.PI * 2 + Math.PI;
+    // Moon is opposite to the Sun (180 degrees phase shift)
+    // Moon is at highest point at timeRatio = 0.75 (midnight)
+    const angle = (timeRatio - 0.75) * Math.PI * 2;
     const moonAltitude = Math.cos(angle);
 
     const x = playerPos.x + Math.sin(angle) * this.orbitRadius;

@@ -9,12 +9,13 @@ export interface BlockModelRenderContext {
   wz: number;
   orientation: number;
 
-  solid: { positions: number[]; normals: number[]; uvs: number[]; atlasOffsets: number[] };
-  trans: { positions: number[]; normals: number[]; uvs: number[]; atlasOffsets: number[] };
-  cutout: { positions: number[]; normals: number[]; uvs: number[]; atlasOffsets: number[] };
+  solid: { positions: number[]; normals: number[]; uvs: number[]; atlasOffsets: number[]; valLights: number[]; aos: number[] };
+  trans: { positions: number[]; normals: number[]; uvs: number[]; atlasOffsets: number[]; valLights: number[]; aos: number[] };
+  cutout: { positions: number[]; normals: number[]; uvs: number[]; atlasOffsets: number[]; valLights: number[]; aos: number[] };
 
   getNeighbor: (lx: number, ly: number, lz: number) => number;
   isTransparent: (blockId: number) => boolean;
+  getLightAt?: (lx: number, ly: number, lz: number) => number;
 }
 
 export interface BlockModel {
@@ -85,6 +86,10 @@ export class CrossBlockModel implements BlockModel {
     const cxStr = ctx.wx + 0.5;
     const czStr = ctx.wz + 0.5;
 
+    const lightVal = ctx.getLightAt ? ctx.getLightAt(ctx.x, ctx.y, ctx.z) : 240;
+    const sky = (lightVal >> 4) & 0x0F;
+    const block = lightVal & 0x0F;
+
     // First diagonal plane
     const p1_0 = [cxStr - hw + dx, ctx.wy, czStr - hw + dz];
     const p1_1 = [cxStr - hw + dx, ctx.wy + h, czStr - hw + dz];
@@ -96,6 +101,8 @@ export class CrossBlockModel implements BlockModel {
     for (let i = 0; i < 6; i++) {
       ctx.cutout.normals.push(-SQRT1_2, 0, SQRT1_2);
       ctx.cutout.atlasOffsets.push(uMin, vMin);
+      ctx.cutout.valLights.push(sky, block);
+      ctx.cutout.aos.push(3);
     }
 
     // Second diagonal plane
@@ -109,6 +116,8 @@ export class CrossBlockModel implements BlockModel {
     for (let i = 0; i < 6; i++) {
       ctx.cutout.normals.push(SQRT1_2, 0, SQRT1_2);
       ctx.cutout.atlasOffsets.push(uMin, vMin);
+      ctx.cutout.valLights.push(sky, block);
+      ctx.cutout.aos.push(3);
     }
   }
 }
@@ -161,6 +170,10 @@ export class ElementBlockModel implements BlockModel {
     const isTrans = props.opacity < 1.0 || props.isTransparent;
     const targetData = isTrans ? ctx.cutout : ctx.solid;
 
+    const lightVal = ctx.getLightAt ? ctx.getLightAt(ctx.x, ctx.y, ctx.z) : 240;
+    const sky = (lightVal >> 4) & 0x0F;
+    const block = lightVal & 0x0F;
+
     for (const el of this.elements) {
       const x0 = el.from[0] / 16;
       const y0 = el.from[1] / 16;
@@ -195,6 +208,8 @@ export class ElementBlockModel implements BlockModel {
           for (let i = 0; i < 6; i++) {
             targetData.normals.push(0, 1, 0);
             targetData.atlasOffsets.push(offset[0], offset[1]);
+            targetData.valLights.push(sky, block);
+            targetData.aos.push(3);
           }
         }
       }
@@ -225,6 +240,8 @@ export class ElementBlockModel implements BlockModel {
           for (let i = 0; i < 6; i++) {
             targetData.normals.push(0, -1, 0);
             targetData.atlasOffsets.push(offset[0], offset[1]);
+            targetData.valLights.push(sky, block);
+            targetData.aos.push(3);
           }
         }
       }
@@ -255,6 +272,8 @@ export class ElementBlockModel implements BlockModel {
           for (let i = 0; i < 6; i++) {
             targetData.normals.push(-1, 0, 0);
             targetData.atlasOffsets.push(offset[0], offset[1]);
+            targetData.valLights.push(sky, block);
+            targetData.aos.push(3);
           }
         }
       }
@@ -285,6 +304,8 @@ export class ElementBlockModel implements BlockModel {
           for (let i = 0; i < 6; i++) {
             targetData.normals.push(1, 0, 0);
             targetData.atlasOffsets.push(offset[0], offset[1]);
+            targetData.valLights.push(sky, block);
+            targetData.aos.push(3);
           }
         }
       }
@@ -315,6 +336,8 @@ export class ElementBlockModel implements BlockModel {
           for (let i = 0; i < 6; i++) {
             targetData.normals.push(0, 0, -1);
             targetData.atlasOffsets.push(offset[0], offset[1]);
+            targetData.valLights.push(sky, block);
+            targetData.aos.push(3);
           }
         }
       }
@@ -345,9 +368,12 @@ export class ElementBlockModel implements BlockModel {
           for (let i = 0; i < 6; i++) {
             targetData.normals.push(0, 0, 1);
             targetData.atlasOffsets.push(offset[0], offset[1]);
+            targetData.valLights.push(sky, block);
+            targetData.aos.push(3);
           }
         }
       }
     }
   }
 }
+

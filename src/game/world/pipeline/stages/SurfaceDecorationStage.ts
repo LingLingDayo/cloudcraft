@@ -28,7 +28,7 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
             if (groundY >= worldStartY && groundY < worldStartY + 16) {
               // 地表格就在当前 sub-chunk 中，直接读取实际方块状态
               const groundIdx = x + z * 16 + (groundY - worldStartY) * 256;
-              const actualGround = chunk[groundIdx];
+              const actualGround = chunk[groundIdx * 2];
               isGroundSecure = actualGround !== BLOCK_TYPES.AIR && actualGround !== BLOCK_TYPES.WATER;
             } else {
               // 地表格在下方 sub-chunk 中，需要通过 isCaveAt 预测
@@ -50,22 +50,22 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
               if (groundProps.allowVegetationBase) {
                 // 如果是沙子，且不是沙漠生态，则不允许在该沙子上生成任何地表植被/枯木/枯花等
                 if (groundType === BLOCK_TYPES.SAND && biome.id !== 'desert') {
-                  chunk[index] = BLOCK_TYPES.AIR;
+                  chunk[index * 2] = BLOCK_TYPES.AIR;
                   continue;
                 }
 
                 const vegType = biome.getVegetationType(wx, wz, noise);
                 if (vegType !== BLOCK_TYPES.AIR && canBlockGrowOn(vegType, groundType)) {
-                  chunk[index] = vegType;
+                  chunk[index * 2] = vegType;
                 } else {
-                  chunk[index] = BLOCK_TYPES.AIR;
+                  chunk[index * 2] = BLOCK_TYPES.AIR;
                 }
               } else {
-                chunk[index] = BLOCK_TYPES.AIR;
+                chunk[index * 2] = BLOCK_TYPES.AIR;
               }
             } else {
               // 地表已被洞穴掏空，严禁放置植被，填充为空气
-              chunk[index] = BLOCK_TYPES.AIR;
+              chunk[index * 2] = BLOCK_TYPES.AIR;
             }
           } else if (y === col.finalHeight + 2 && col.localWaterLevel <= col.finalHeight) {
             // 双格高的植物顶部块需要同样的安全依赖
@@ -73,7 +73,7 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
             let isGroundSecure: boolean;
             if (groundY >= worldStartY && groundY < worldStartY + 16) {
               const groundIdx = x + z * 16 + (groundY - worldStartY) * 256;
-              const actualGround = chunk[groundIdx];
+              const actualGround = chunk[groundIdx * 2];
               isGroundSecure = actualGround !== BLOCK_TYPES.AIR && actualGround !== BLOCK_TYPES.WATER;
             } else {
               const isCarved = isCaveAt(wx, groundY, wz, col.finalHeight, col.maxHeightOffset, col.localWaterLevel, noise, generator);
@@ -83,22 +83,22 @@ export class SurfaceDecorationStage implements ChunkPipelineStage {
             if (isGroundSecure) {
               // 双格植物下半部分必须还在
               const bottomIdx = x + z * 16 + ((col.finalHeight + 1 - worldStartY) % 16) * 256;
-              const belowType = chunk[bottomIdx];
+              const belowType = chunk[bottomIdx * 2];
               if (belowType === BLOCK_TYPES.SUNFLOWER_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.SUNFLOWER_TOP;
+                chunk[index * 2] = BLOCK_TYPES.SUNFLOWER_TOP;
               } else if (belowType === BLOCK_TYPES.ROSE_BUSH_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.ROSE_BUSH_TOP;
+                chunk[index * 2] = BLOCK_TYPES.ROSE_BUSH_TOP;
               } else if (belowType === BLOCK_TYPES.PEONY_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.PEONY_TOP;
+                chunk[index * 2] = BLOCK_TYPES.PEONY_TOP;
               } else if (belowType === BLOCK_TYPES.LILAC_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.LILAC_TOP;
+                chunk[index * 2] = BLOCK_TYPES.LILAC_TOP;
               } else if (belowType === BLOCK_TYPES.DOUBLE_TALL_GRASS_BOTTOM) {
-                chunk[index] = BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP;
+                chunk[index * 2] = BLOCK_TYPES.DOUBLE_TALL_GRASS_TOP;
               } else {
-                chunk[index] = BLOCK_TYPES.AIR;
+                chunk[index * 2] = BLOCK_TYPES.AIR;
               }
             } else {
-              chunk[index] = BLOCK_TYPES.AIR;
+              chunk[index * 2] = BLOCK_TYPES.AIR;
             }
           }
         }

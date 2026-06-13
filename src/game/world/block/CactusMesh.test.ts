@@ -20,11 +20,11 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
 describe('Cactus Block Geometry Compilation', () => {
   test('should compile cactus geometry into cutout mesh instead of solid mesh', () => {
     // Construct a chunk array
-    const chunk = new Uint8Array(CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z);
+    const chunk = new Uint8Array(CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z * 2);
     
     // Put a Cactus at local (2, 2, 2)
     const index = 2 + 2 * CHUNK_SIZE_X + 2 * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-    chunk[index] = BLOCK_TYPES.CACTUS;
+    chunk[index * 2] = BLOCK_TYPES.CACTUS;
 
     const neighbors = {
       px: new Uint8Array(chunk.length),

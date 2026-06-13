@@ -412,7 +412,7 @@ export class WorldGenerator implements WorldTerrainProvider {
 
   // Procedural chunk generation for a 3D sub-chunk
   public generateChunkData(cx: number, cy: number, cz: number): Uint8Array {
-    const chunk = new Uint8Array(CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z);
+    const chunk = new Uint8Array(CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z * 2);
     const worldStartX = cx * CHUNK_SIZE_X;
     const worldStartY = cy * CHUNK_SIZE_Y;
     const worldStartZ = cz * CHUNK_SIZE_Z;

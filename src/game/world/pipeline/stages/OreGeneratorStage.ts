@@ -23,10 +23,10 @@ export class OreGeneratorStage implements ChunkPipelineStage {
           const index = x + z * 16 + ly * 256;
 
           // 仅替换已经是 STONE 的方块，并且保留世界最底层的基底（y = 0）为基础石头，不生成矿物
-          if (chunk[index] === BLOCK_TYPES.STONE && y > 0) {
+          if (chunk[index * 2] === BLOCK_TYPES.STONE && y > 0) {
             const block = OreRegistry.generateOre(wx, y, wz, noise, biome.id);
             if (block !== BLOCK_TYPES.STONE) {
-              chunk[index] = block;
+              chunk[index * 2] = block;
             }
           }
         }

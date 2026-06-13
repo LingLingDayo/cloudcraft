@@ -97,7 +97,7 @@ export class CaveCarverStage implements ChunkPipelineStage {
           const index = x + z * 16 + ly * 256;
 
           if (isCaveAt(wx, y, wz, col.finalHeight, col.maxHeightOffset, col.localWaterLevel, noise, generator)) {
-            chunk[index] = BLOCK_TYPES.AIR;
+            chunk[index * 2] = BLOCK_TYPES.AIR;
           }
         }
       }

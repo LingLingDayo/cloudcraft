@@ -190,6 +190,16 @@ export class DroppedItemManager {
     geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(atlasOffsets, 2));
+
+    const valLights: number[] = [];
+    const aos: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      valLights.push(15, 0);
+      aos.push(3);
+    }
+    geom.setAttribute('aValLight', new THREE.Float32BufferAttribute(valLights, 2));
+    geom.setAttribute('aAo', new THREE.Float32BufferAttribute(aos, 1));
+
     geom.computeBoundingSphere();
     geom.computeBoundingBox();
 
@@ -258,6 +268,16 @@ export class DroppedItemManager {
     geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(atlasOffsets, 2));
+
+    const valLights: number[] = [];
+    const aos: number[] = [];
+    for (let i = 0; i < 36; i++) {
+      valLights.push(15, 0);
+      aos.push(3);
+    }
+    geom.setAttribute('aValLight', new THREE.Float32BufferAttribute(valLights, 2));
+    geom.setAttribute('aAo', new THREE.Float32BufferAttribute(aos, 1));
+
     geom.computeBoundingSphere();
     geom.computeBoundingBox();
 

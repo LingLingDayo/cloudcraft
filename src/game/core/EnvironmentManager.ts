@@ -102,6 +102,11 @@ export class EnvironmentManager {
     const moonWeight = Math.max(0, -sunSin);
     this.moon.light.intensity = (blended.dirLightIntensity * 0.4) * moonWeight;
     this.moon.light.color.copy(blended.dirLightColor);
+
+    // 6. Update custom voxel shading uniforms
+    const skyLightColor = new THREE.Color().copy(blended.dirLightColor).multiplyScalar(Math.min(1.0, this.sun.light.intensity / 1.2 + 0.15));
+    const torchColor = new THREE.Color(1.0, 0.85, 0.5);
+    this.game.world.getRenderer().updateLightingColors(skyLightColor, torchColor);
   }
 
   public dispose() {

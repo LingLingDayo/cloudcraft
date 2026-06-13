@@ -102,7 +102,7 @@ export class World {
     const lz = ((z % CHUNK_SIZE_Z) + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
     const index = lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
 
-    return chunk[index];
+    return chunk[index * 2];
   }
 
   // Set block at global x, y, z
@@ -126,7 +126,7 @@ export class World {
     const lz = ((z % CHUNK_SIZE_Z) + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
     const index = lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
 
-    const oldType = chunk[index];
+    const oldType = chunk[index * 2];
     if (oldType === type) return;
 
     // Track modification
@@ -141,7 +141,7 @@ export class World {
       const chunkModified = this.modifiedBlocks.get(key);
       if (chunkModified && chunkModified.has(posKey)) {
         const originalChunk = this.generator.generateChunkData(cx, cy, cz);
-        const originalType = originalChunk[index];
+        const originalType = originalChunk[index * 2];
         chunkOriginal.set(posKey, originalType);
       } else {
         chunkOriginal.set(posKey, oldType);
@@ -174,8 +174,11 @@ export class World {
     oldBlock.onDestroyed(this, x, y, z);
     this.blockEntities.removeEntity(x, y, z);
 
-    chunk[index] = type;
+    chunk[index * 2] = type;
     this.chunks.set(key, chunk);
+
+    // Recalculate sky light for the column affected
+    this.recalculateColumnSkyLight(x, z);
 
     const newBlock = BlockRegistry.get(type);
     if (newBlock.hasBlockEntity()) {
@@ -365,7 +368,56 @@ export class World {
     for (const [posKey, type] of chunkModified.entries()) {
       const [lx, y, lz] = posKey.split(',').map(Number);
       const index = lx + lz * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
-      chunk[index] = type;
+      chunk[index * 2] = type;
+    }
+  }
+
+  public recalculateColumnSkyLight(x: number, z: number): void {
+    let currentSkyLight = 15;
+    const chunksToUpdate = new Set<string>();
+
+    for (let y = WORLD_HEIGHT - 1; y >= 0; y--) {
+      const cx = Math.floor(x / CHUNK_SIZE_X);
+      const cy = Math.floor(y / CHUNK_SIZE_Y);
+      const cz = Math.floor(z / CHUNK_SIZE_Z);
+      const key = `${cx},${cy},${cz}`;
+
+      const chunk = this.chunks.get(key);
+      if (!chunk) continue;
+
+      const lx = ((x % CHUNK_SIZE_X) + CHUNK_SIZE_X) % CHUNK_SIZE_X;
+      const ly = ((y % CHUNK_SIZE_Y) + CHUNK_SIZE_Y) % CHUNK_SIZE_Y;
+      const lz = ((z % CHUNK_SIZE_Z) + CHUNK_SIZE_Z) % CHUNK_SIZE_Z;
+      const index = lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+
+      const blockRaw = chunk[index * 2];
+      const blockType = blockRaw & 0x3F;
+      const isTrans = blockType === BLOCK_TYPES.AIR || this.isTransparent(blockType);
+
+      if (!isTrans) {
+        currentSkyLight = Math.max(0, currentSkyLight - 3);
+      } else if (
+        blockType === BLOCK_TYPES.LEAF ||
+        blockType === BLOCK_TYPES.BIRCH_LEAVES ||
+        blockType === BLOCK_TYPES.SPRUCE_LEAVES ||
+        blockType === BLOCK_TYPES.JUNGLE_LEAVES
+      ) {
+        currentSkyLight = Math.max(0, currentSkyLight - 1);
+      }
+
+      const oldLight = chunk[index * 2 + 1];
+      const oldBlockLight = oldLight & 0x0F;
+      const nextLight = (currentSkyLight << 4) | oldBlockLight;
+
+      if (oldLight !== nextLight) {
+        chunk[index * 2 + 1] = nextLight;
+        chunksToUpdate.add(key);
+      }
+    }
+
+    for (const key of chunksToUpdate) {
+      const [cx, cy, cz] = key.split(',').map(Number);
+      this.updateChunkMeshAsync(cx, cy, cz);
     }
   }
 

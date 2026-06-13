@@ -62,7 +62,7 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
 
   test('在有水列且低于水面高度时，BaseSoilBiome 应该将原本的草方块替换为泥土', () => {
     const plainsBiome = BiomeRegistry.PLAINS;
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     const lx = 0;
     const lz = 0;
     const y = 60;
@@ -88,7 +88,7 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
       true, // isDryLand
       slope
     );
-    expect(chunk[index]).toBe(BLOCK_TYPES.GRASS);
+    expect(chunk[index * 2]).toBe(BLOCK_TYPES.GRASS);
 
     // 2. 当不是干陆地时 (isDryLand = false)，且 y < waterLevel，原本是草方块的顶层应该自动变泥土 (DIRT)
     plainsBiome.fillColumn(
@@ -105,7 +105,7 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
       false, // isDryLand = false
       slope
     );
-    expect(chunk[index]).toBe(BLOCK_TYPES.DIRT);
+    expect(chunk[index * 2]).toBe(BLOCK_TYPES.DIRT);
 
     // 3. 如果在水面以上 (y >= waterLevel)，即使不是干陆地，也应当继续使用草方块
     const yAbove = 65;
@@ -125,6 +125,6 @@ describe('生态系统判定与地形计算测试 (Biome System Tests)', () => {
       false, // isDryLand = false
       slope
     );
-    expect(chunk[indexAbove]).toBe(BLOCK_TYPES.GRASS);
+    expect(chunk[indexAbove * 2]).toBe(BLOCK_TYPES.GRASS);
   });
 });

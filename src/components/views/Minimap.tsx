@@ -22,7 +22,7 @@ const getBlockSafe = (world: World, x: number, y: number, z: number): number => 
   const ly = ((y % 16) + 16) % 16;
   const lz = ((z % 16) + 16) % 16;
   const index = lx + lz * 16 + ly * 16 * 16;
-  return chunk[index];
+  return chunk[index * 2] & 0x3F;
 };
 
 // Depth shading helper

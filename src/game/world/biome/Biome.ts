@@ -117,7 +117,7 @@ export abstract class BaseSoilBiome implements Biome {
     isDryLand: boolean,
     slope: number
   ): void {
-    const index = lx + lz * 16 + (y % 16) * 256;
+    const index = (lx + lz * 16 + (y % 16) * 256) * 2;
     
     // 计算大陆度以识别是否属于海洋及海岸沙滩带 (c < 0.28)
     const scale = WORLD_CONFIG.landform.scale;

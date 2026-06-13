@@ -64,7 +64,7 @@ describe('ChunkPipeline Extensions', () => {
     const mockContext: ChunkPipelineContext = {
       cx: 0, cy: 0, cz: 0,
       worldStartX: 0, worldStartY: 0, worldStartZ: 0,
-      chunk: new Uint8Array(4096),
+      chunk: new Uint8Array(8192),
       noise: {} as ImprovedNoise,
       terrainMap: [],
       biomeMap: [],
@@ -108,7 +108,7 @@ describe('ChunkPipeline Extensions', () => {
     const context: ChunkPipelineContext = {
       cx: 0, cy: 0, cz: 0,
       worldStartX: 0, worldStartY: 0, worldStartZ: 0,
-      chunk: new Uint8Array(4096),
+      chunk: new Uint8Array(8192),
       noise: mockNoise,
       terrainMap: [],
       biomeMap: [],
@@ -137,7 +137,7 @@ describe('ChunkPipeline Extensions', () => {
 
     const fillColumnSpy = vi.fn((chunk, lx, lz, y) => {
       const index = lx + lz * 16 + (y % 16) * 256;
-      chunk[index] = BLOCK_TYPES.GRASS;
+      chunk[index * 2] = BLOCK_TYPES.GRASS;
     });
 
     const mockBiome = {
@@ -162,7 +162,7 @@ describe('ChunkPipeline Extensions', () => {
       })
     };
 
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     const context: ChunkPipelineContext = {
       cx: 0, cy: 0, cz: 0,
       worldStartX: 0, worldStartY: 0, worldStartZ: 0,
@@ -176,12 +176,12 @@ describe('ChunkPipeline Extensions', () => {
     pipeline.execute(context);
 
     // Bedrock at y = 0
-    expect(chunk[0]).toBe(BLOCK_TYPES.STONE);
+    expect(chunk[0 * 2]).toBe(BLOCK_TYPES.STONE);
     // Biome filled blocks at y = 1..10
     expect(fillColumnSpy).toHaveBeenCalled();
-    expect(chunk[1 * 256]).toBe(BLOCK_TYPES.GRASS);
+    expect(chunk[1 * 256 * 2]).toBe(BLOCK_TYPES.GRASS);
     // Air at y > 10
-    expect(chunk[11 * 256]).toBe(BLOCK_TYPES.AIR);
+    expect(chunk[11 * 256 * 2]).toBe(BLOCK_TYPES.AIR);
   });
 
   test('CaveCarverStage should carve cave tunnels to AIR', () => {
@@ -199,7 +199,7 @@ describe('ChunkPipeline Extensions', () => {
       id: 'plains',
       name: '平原',
       fillColumn: (chunk: Uint8Array, lx: number, lz: number, y: number) => {
-        chunk[lx + lz * 16 + (y % 16) * 256] = BLOCK_TYPES.STONE;
+        chunk[(lx + lz * 16 + (y % 16) * 256) * 2] = BLOCK_TYPES.STONE;
       },
     };
 
@@ -220,7 +220,7 @@ describe('ChunkPipeline Extensions', () => {
       })
     };
 
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     const context: ChunkPipelineContext = {
       cx: 0, cy: 1, cz: 0,
       worldStartX: 0, worldStartY: 16, worldStartZ: 0,
@@ -234,7 +234,7 @@ describe('ChunkPipeline Extensions', () => {
     pipeline.execute(context);
 
     // Stone filled block at y = 28 (aligns with layerSpacing 28) should be carved to AIR (ly = 28 - 16 = 12)
-    expect(chunk[12 * 256]).toBe(BLOCK_TYPES.AIR);
+    expect(chunk[12 * 256 * 2]).toBe(BLOCK_TYPES.AIR);
   });
 
   test('SurfaceDecorationStage should not generate floating vegetation on carved surface', () => {
@@ -254,7 +254,7 @@ describe('ChunkPipeline Extensions', () => {
       name: '平原',
       fillColumn: (chunk: Uint8Array, lx: number, lz: number, y: number) => {
         const index = lx + lz * 16 + (y % 16) * 256;
-        chunk[index] = BLOCK_TYPES.GRASS;
+        chunk[index * 2] = BLOCK_TYPES.GRASS;
       },
       getVegetationType: vi.fn().mockReturnValue(BLOCK_TYPES.TALL_GRASS),
     };
@@ -277,7 +277,7 @@ describe('ChunkPipeline Extensions', () => {
       })
     };
 
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     const context: ChunkPipelineContext = {
       cx: 0, cy: 10, cz: 0,
       worldStartX: 0, worldStartY: 160, worldStartZ: 0,
@@ -291,9 +291,9 @@ describe('ChunkPipeline Extensions', () => {
     pipeline.execute(context);
 
     // Ground block at y = 168 (index 8 * 256, aligns with layerSpacing) should be carved to AIR
-    expect(chunk[8 * 256]).toBe(BLOCK_TYPES.AIR);
+    expect(chunk[8 * 256 * 2]).toBe(BLOCK_TYPES.AIR);
     // Vegetation at y = 169 (index 9 * 256) should NOT be TALL_GRASS (should be AIR) since ground is carved!
-    expect(chunk[9 * 256]).toBe(BLOCK_TYPES.AIR);
+    expect(chunk[9 * 256 * 2]).toBe(BLOCK_TYPES.AIR);
   });
 
   test('TreeDecorationStage should run without error and respect biome growth probabilities', () => {
@@ -313,7 +313,7 @@ describe('ChunkPipeline Extensions', () => {
       name: '森林',
       fillColumn: (chunk: Uint8Array, lx: number, lz: number, y: number) => {
         const index = lx + lz * 16 + (y % 16) * 256;
-        chunk[index] = BLOCK_TYPES.GRASS;
+        chunk[index * 2] = BLOCK_TYPES.GRASS;
       },
       getTreeProbability: vi.fn().mockReturnValue(1.0),
     };
@@ -335,7 +335,7 @@ describe('ChunkPipeline Extensions', () => {
       })
     };
 
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     const context: ChunkPipelineContext = {
       cx: 0, cy: 10, cz: 0,
       worldStartX: 0, worldStartY: 160, worldStartZ: 0,
@@ -370,15 +370,15 @@ describe('ChunkPipeline Extensions', () => {
       name: '平原',
     };
 
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     // y=0: Bedrock
-    chunk[0] = BLOCK_TYPES.STONE;
+    chunk[0 * 2] = BLOCK_TYPES.STONE;
     // y=1: Stone inside chunk
-    chunk[1 * 256] = BLOCK_TYPES.STONE;
+    chunk[1 * 256 * 2] = BLOCK_TYPES.STONE;
     // y=2: Grass
-    chunk[2 * 256] = BLOCK_TYPES.GRASS;
+    chunk[2 * 256 * 2] = BLOCK_TYPES.GRASS;
     // y=3: Air
-    chunk[3 * 256] = BLOCK_TYPES.AIR;
+    chunk[3 * 256 * 2] = BLOCK_TYPES.AIR;
 
     const context: ChunkPipelineContext = {
       cx: 0, cy: 0, cz: 0,
@@ -393,13 +393,13 @@ describe('ChunkPipeline Extensions', () => {
     pipeline.execute(context);
 
     // Bedrock should remain STONE
-    expect(chunk[0]).toBe(BLOCK_TYPES.STONE);
+    expect(chunk[0 * 2]).toBe(BLOCK_TYPES.STONE);
     // Rock at y=1 should be replaced with ores
-    expect(chunk[1 * 256]).not.toBe(BLOCK_TYPES.STONE);
-    expect([BLOCK_TYPES.DIAMOND, BLOCK_TYPES.IRON, BLOCK_TYPES.COAL]).toContain(chunk[1 * 256]);
+    expect(chunk[1 * 256 * 2]).not.toBe(BLOCK_TYPES.STONE);
+    expect([BLOCK_TYPES.DIAMOND, BLOCK_TYPES.IRON, BLOCK_TYPES.COAL]).toContain(chunk[1 * 256 * 2]);
     // Other blocks remain unchanged
-    expect(chunk[2 * 256]).toBe(BLOCK_TYPES.GRASS);
-    expect(chunk[3 * 256]).toBe(BLOCK_TYPES.AIR);
+    expect(chunk[2 * 256 * 2]).toBe(BLOCK_TYPES.GRASS);
+    expect(chunk[3 * 256 * 2]).toBe(BLOCK_TYPES.AIR);
   });
 
   test('isCaveAt should return false for heights above 200', () => {
@@ -434,7 +434,7 @@ describe('ChunkPipeline Extensions', () => {
       name: '森林',
       fillColumn: (chunk: Uint8Array, lx: number, lz: number, y: number) => {
         const index = lx + lz * 16 + (y % 16) * 256;
-        chunk[index] = BLOCK_TYPES.SAND; // sand
+        chunk[index * 2] = BLOCK_TYPES.SAND; // sand
       },
       getTreeProbability: vi.fn().mockReturnValue(1.0),
     };
@@ -456,7 +456,7 @@ describe('ChunkPipeline Extensions', () => {
       })
     };
 
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     const context: ChunkPipelineContext = {
       cx: 0, cy: 10, cz: 0,
       worldStartX: 0, worldStartY: 160, worldStartZ: 0,
@@ -494,7 +494,7 @@ describe('ChunkPipeline Extensions', () => {
       name: '森林',
       fillColumn: (chunk: Uint8Array, lx: number, lz: number, y: number) => {
         const index = lx + lz * 16 + (y % 16) * 256;
-        chunk[index] = BLOCK_TYPES.SAND;
+        chunk[index * 2] = BLOCK_TYPES.SAND;
       },
       getVegetationType: vi.fn().mockReturnValue(BLOCK_TYPES.DEAD_BUSH),
     };
@@ -516,10 +516,10 @@ describe('ChunkPipeline Extensions', () => {
       })
     };
 
-    const chunk = new Uint8Array(4096);
+    const chunk = new Uint8Array(8192);
     // Fill the ground with sand
     const groundIdx = 0 + 0 * 16 + 0 * 256; // x=0, z=0, y=160 (which is ly=0 in sub-chunk 10)
-    chunk[groundIdx] = BLOCK_TYPES.SAND;
+    chunk[groundIdx * 2] = BLOCK_TYPES.SAND;
 
     const context: ChunkPipelineContext = {
       cx: 0, cy: 10, cz: 0,
@@ -535,6 +535,6 @@ describe('ChunkPipeline Extensions', () => {
 
     // The block above sand (y = 161, ly = 1) should remain AIR, not DEAD_BUSH
     const indexAboveGround = 0 + 0 * 16 + 1 * 256;
-    expect(chunk[indexAboveGround]).toBe(BLOCK_TYPES.AIR);
+    expect(chunk[indexAboveGround * 2]).toBe(BLOCK_TYPES.AIR);
   });
 });

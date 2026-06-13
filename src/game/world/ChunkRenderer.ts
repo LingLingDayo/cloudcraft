@@ -55,24 +55,50 @@ export class ChunkRenderer {
       }),
     };
 
-    interface CustomShader {
-      vertexShader: string;
-      fragmentShader: string;
-    }
-
     // Extension Point: Inject Custom Shader for Greedy Meshing Tiling
-    const injectShader = (shader: CustomShader) => {
+    const injectShader = (shader: THREE.WebGLProgramParametersWithUniforms) => {
+      shader.uniforms.uSkyLightColor = { value: new THREE.Color(1, 1, 1) };
+      shader.uniforms.uBlockLightColor = { value: new THREE.Color(1, 0.85, 0.5) }; // warm torch light
+
       shader.vertexShader = `
+        attribute vec2 aValLight;
+        attribute float aAo;
+        varying vec2 vValLight;
+        varying float vAo;
+        varying float vFaceLight;
         attribute vec2 aAtlasOffset;
         varying vec2 vAtlasOffset;
         varying vec2 vLocalUv;
         ${shader.vertexShader}
       `.replace(
         `#include <uv_vertex>`,
-        `#include <uv_vertex>\n vAtlasOffset = aAtlasOffset;\n vLocalUv = uv;`
+        `#include <uv_vertex>
+         vAtlasOffset = aAtlasOffset;
+         vLocalUv = uv;
+         vValLight = aValLight;
+         vAo = aAo;
+         
+         // Calculate face light multiplier based on vertex normal (gives a strong 3D feel)
+         float faceLight = 0.85;
+         if (normal.y > 0.5) {
+           faceLight = 1.0;
+         } else if (normal.y < -0.5) {
+           faceLight = 0.5;
+         } else if (abs(normal.x) > 0.5) {
+           faceLight = 0.75;
+         } else if (abs(normal.z) > 0.5) {
+           faceLight = 0.85;
+         }
+         vFaceLight = faceLight;
+        `
       );
 
       shader.fragmentShader = `
+        varying vec2 vValLight;
+        varying float vAo;
+        varying float vFaceLight;
+        uniform vec3 uSkyLightColor;
+        uniform vec3 uBlockLightColor;
         varying vec2 vAtlasOffset;
         varying vec2 vLocalUv;
         ${shader.fragmentShader}
@@ -81,18 +107,57 @@ export class ChunkRenderer {
         `#ifdef USE_MAP
            vec2 tiledUv = fract(vLocalUv);
            vec2 finalUv = vAtlasOffset + tiledUv * 0.125;
-           vec4 sampledDiffuseColor = texture2D( map, finalUv );
+           
+           // Calculate manual derivatives based on the continuous vLocalUv (avoiding the fract() boundary jump)
+           vec2 dx = dFdx(vLocalUv) * 0.125;
+           vec2 dy = dFdy(vLocalUv) * 0.125;
+           vec4 sampledDiffuseColor = texture2DGradEXT( map, finalUv, dx, dy );
+           
            #ifdef DECODE_VIDEO_TEXTURE
              sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
            #endif
-           diffuseColor *= sampledDiffuseColor;
+           
+           // Calculate voxel lighting
+           float skyFactor = vValLight.x / 15.0;
+           float blockFactor = vValLight.y / 15.0;
+           float aoFactor = 0.2 + 0.8 * (vAo / 3.0);
+           
+           // Blend sky light and block light
+           vec3 mixedLight = uSkyLightColor * skyFactor + uBlockLightColor * blockFactor;
+           // Add a subtle minimum ambient light for deep caves
+           mixedLight = max(vec3(0.08), mixedLight);
+           
+           diffuseColor *= sampledDiffuseColor * vec4(mixedLight * vFaceLight * aoFactor, 1.0);
          #endif`
       );
     };
 
-    this.materials.solid.onBeforeCompile = injectShader;
-    this.materials.transparent.onBeforeCompile = injectShader;
-    this.materials.cutout.onBeforeCompile = injectShader;
+    this.materials.solid.onBeforeCompile = (shader) => {
+      this.materials.solid.userData.shader = shader;
+      injectShader(shader);
+    };
+    this.materials.transparent.onBeforeCompile = (shader) => {
+      this.materials.transparent.userData.shader = shader;
+      injectShader(shader);
+    };
+    this.materials.cutout.onBeforeCompile = (shader) => {
+      this.materials.cutout.userData.shader = shader;
+      injectShader(shader);
+    };
+  }
+
+  public updateLightingColors(skyColor: THREE.Color, blockColor: THREE.Color) {
+    [this.materials.solid, this.materials.transparent, this.materials.cutout].forEach(material => {
+      const shader = material.userData.shader as THREE.WebGLProgramParametersWithUniforms | undefined;
+      if (shader && shader.uniforms) {
+        if (shader.uniforms.uSkyLightColor) {
+          shader.uniforms.uSkyLightColor.value.copy(skyColor);
+        }
+        if (shader.uniforms.uBlockLightColor) {
+          shader.uniforms.uBlockLightColor.value.copy(blockColor);
+        }
+      }
+    });
   }
 
   public applyMeshResult(
@@ -127,6 +192,8 @@ export class ChunkRenderer {
         geom.setAttribute('normal', new THREE.Float32BufferAttribute(data.normals, 3));
         geom.setAttribute('uv', new THREE.Float32BufferAttribute(data.uvs, 2));
         geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(data.atlasOffsets, 2));
+        geom.setAttribute('aValLight', new THREE.Float32BufferAttribute(data.valLights, 2));
+        geom.setAttribute('aAo', new THREE.Float32BufferAttribute(data.aos, 1));
         geom.computeBoundingSphere();
       }
     };
@@ -139,10 +206,11 @@ export class ChunkRenderer {
     const transMesh = new THREE.Mesh(transGeom, this.materials.transparent);
     const cutoutMesh = new THREE.Mesh(cutoutGeom, this.materials.cutout);
 
-    solidMesh.castShadow = true;
-    solidMesh.receiveShadow = true;
-    cutoutMesh.castShadow = true;
-    cutoutMesh.receiveShadow = true;
+    // Turn off real-time shadows for chunk meshes to eliminate shadow mapping moire patterns!
+    solidMesh.castShadow = false;
+    solidMesh.receiveShadow = false;
+    cutoutMesh.castShadow = false;
+    cutoutMesh.receiveShadow = false;
 
     this.world.group.add(solidMesh);
     this.world.group.add(transMesh);
