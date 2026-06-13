@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { CSSProperties } from 'react';
 
@@ -43,7 +43,7 @@ export type SettingsValueChangeHandler<
   TData extends SettingsData = any,
   TContext = any,
   TValue = any,
-> = (newValue: any, component: TData, context: TContext) => SettingsPatch<TData>;
+> = (newValue: TValue, component: TData, context: TContext) => SettingsPatch<TData>;
 
 export type ControlType =
   | 'text'

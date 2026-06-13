@@ -163,11 +163,10 @@ export class WorldGenerator implements WorldTerrainProvider {
 
         const pondRadius = WORLD_CONFIG.pond.minRadius + randX * (WORLD_CONFIG.pond.maxRadius - WORLD_CONFIG.pond.minRadius);
 
-        // 避免水潭生成在河道或河谷附近
+        // 避免水潭生成在河道附近
         const { dRiver } = this.getRiverValue(cellCenterX, cellCenterZ);
         const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
-        const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
-        const safetyBuffer = valleyEnd + (pondRadius + 4) * WORLD_CONFIG.river.scale;
+        const safetyBuffer = valleyStart + (pondRadius + 4) * WORLD_CONFIG.river.scale;
         if (dRiver < safetyBuffer) {
           continue;
         }
@@ -279,8 +278,6 @@ export class WorldGenerator implements WorldTerrainProvider {
   }
 
   public getColumnTerrainData(wx: number, wz: number): ColumnTerrainData {
-    const primaryLandform = getLandformAt(wx, wz, this.noise);
-    
     // 计算坡度
     const hNorth = this.getRawHeightAt(wx, wz - 2);
     const hSouth = this.getRawHeightAt(wx, wz + 2);
@@ -302,50 +299,21 @@ export class WorldGenerator implements WorldTerrainProvider {
 
     const { bedHeight: riverBedHeight, dRiver, riverWeight } = this.getRiverValue(wx, wz, adjustedHeight);
     const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
-    const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
 
-    if (dRiver < valleyEnd) {
-      // 1. 根据当前地貌 (primaryLandform) 动态决定地貌河岸偏移量，支持峡谷或平缓过渡
-      let targetBankOffset: number = WORLD_CONFIG.river.bankOffsets.default;
-      const landformId = primaryLandform.id;
-      if (landformId in WORLD_CONFIG.river.bankOffsets) {
-        targetBankOffset = WORLD_CONFIG.river.bankOffsets[landformId as keyof typeof WORLD_CONFIG.river.bankOffsets];
-      }
-
-      // 添加有机河岸噪声，避免整条河岸高度水平一致
-      const bankNoise = this.noise.noise(wx * 0.03, wz * 0.03) * 1.0;
-      const bankHeight = Math.max(waterLevel + 1.0, waterLevel + targetBankOffset + bankNoise);
-
-      // 2. 计算水面边缘对应的 dRiver 阈值（即 riverT = 0.35 的那一刻）
-      const waterEdgeDRiver = valleyStart - 0.35 * WORLD_CONFIG.river.transitionWidth;
-
+    if (dRiver < valleyStart) {
       // 保存河流插值前的原始高度
       const heightBeforeRiver = adjustedHeight;
-      let riverAdjustedHeight: number;
 
-      // 3. 分段样条插值（一阶导数连续，完美平滑对接）
-      if (dRiver > valleyStart) {
-        // A 段：河谷边缘到河岸顶部 (dRiver 介于 valleyEnd 和 valleyStart 之间)
-        const u = (valleyEnd - dRiver) / (valleyEnd - valleyStart);
-        const w = u * u * (3 - 2 * u); // smoothstep
-        riverAdjustedHeight = Math.round(adjustedHeight * (1 - w) + bankHeight * w);
-      } else if (dRiver > waterEdgeDRiver) {
-        // B 段：河岸顶部到水面交界线 (dRiver 介于 valleyStart 和 waterEdgeDRiver 之间)
-        const u = (valleyStart - dRiver) / (valleyStart - waterEdgeDRiver);
-        const w = u * u * (3 - 2 * u);
-        riverAdjustedHeight = Math.round(bankHeight * (1 - w) + waterLevel * w);
-      } else {
-        // C 段：水面交界线到河道底中心 (dRiver 介于 waterEdgeDRiver 到 0 之间)
-        const u = (waterEdgeDRiver - dRiver) / waterEdgeDRiver;
-        const w = u * u * (3 - 2 * u);
-        riverAdjustedHeight = Math.round(waterLevel * (1 - w) + riverBedHeight * w);
-      }
+      // 正常侵蚀生成河逻辑：地形从原始高度直接平滑侵蚀到河床高度
+      const u = (valleyStart - dRiver) / valleyStart;
+      const w = u * u * (3 - 2 * u); // smoothstep
+      const riverAdjustedHeight = Math.round(adjustedHeight * (1 - w) + riverBedHeight * w);
 
       // 根据 riverWeight 插值最终的高度
       adjustedHeight = Math.round(heightBeforeRiver * (1 - riverWeight) + riverAdjustedHeight * riverWeight);
 
       // 更新陆地标记：处于水面边缘内侧且河流足够显著，即为水域
-      if (dRiver < waterEdgeDRiver && riverWeight > 0.35) {
+      if (adjustedHeight < waterLevel && riverWeight > 0.35) {
         isDryLand = false;
       }
     }

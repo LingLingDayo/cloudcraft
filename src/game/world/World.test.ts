@@ -343,7 +343,6 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       const generator = new WorldGenerator('cloudcraft-seed');
       
       const valleyStart = WORLD_CONFIG.river.threshold + WORLD_CONFIG.river.transitionWidth;
-      const valleyEnd = valleyStart + WORLD_CONFIG.river.valleyInfluenceWidth;
 
       let checkedWaterBlocks = 0;
       // With 100% probability, we can verify this safety distance in just a couple of regions
@@ -358,7 +357,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
             for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
               if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
                 const { dRiver } = generator.getRiverValue(x, z);
-                expect(dRiver).toBeGreaterThanOrEqual(valleyEnd);
+                expect(dRiver).toBeGreaterThanOrEqual(valleyStart);
                 checkedWaterBlocks++;
               }
             }

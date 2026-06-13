@@ -258,7 +258,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       min: 120,
                       max: 240,
                       step: 10,
-                      valueFormatter: (val) => t('settings.dpadSizeValue', { val }),
+                      valueFormatter: (val: any) => t('settings.dpadSizeValue', { val }),
                     } as any,
                   ]
                 : []),
