@@ -19,8 +19,14 @@ export class EnvironmentManager {
   public dirLight: THREE.DirectionalLight;
   public hemiLight: THREE.HemisphereLight;
 
+  // Pre-allocated objects to avoid garbage collection pressure in update loop
+  private tempSkyLightColor: THREE.Color;
+  private torchColor: THREE.Color;
+
   constructor(game: GameManager) {
     this.game = game;
+    this.tempSkyLightColor = new THREE.Color();
+    this.torchColor = new THREE.Color(1.0, 0.85, 0.5);
 
     // 1. Initialize State and Logic
     this.state = new EnvironmentState();
@@ -104,9 +110,8 @@ export class EnvironmentManager {
     this.moon.light.color.copy(blended.dirLightColor);
 
     // 6. Update custom voxel shading uniforms
-    const skyLightColor = new THREE.Color().copy(blended.dirLightColor).multiplyScalar(Math.min(1.0, this.sun.light.intensity / 1.2 + 0.15));
-    const torchColor = new THREE.Color(1.0, 0.85, 0.5);
-    this.game.world.getRenderer().updateLightingColors(skyLightColor, torchColor);
+    this.tempSkyLightColor.copy(blended.dirLightColor).multiplyScalar(Math.min(1.0, this.sun.light.intensity / 1.2 + 0.15));
+    this.game.world.getRenderer().updateLightingColors(this.tempSkyLightColor, this.torchColor);
   }
 
   public dispose() {

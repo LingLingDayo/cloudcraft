@@ -21,7 +21,9 @@ export class EnvironmentRenderer {
   }
 
   public render(state: EnvironmentState, blended: BlendedEnvironment) {
-    let finalSkyColor = blended.skyColors.skyStart;
+    // To prevent distant geometry from glowing or having silhouette mismatches against the sky background,
+    // the sky background color must exactly match the fog color.
+    let finalSkyColor = blended.skyColors.fogColor;
     let finalFogColor = blended.skyColors.fogColor;
     let finalFogDensity = blended.fogDensity;
 
