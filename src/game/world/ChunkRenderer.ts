@@ -56,6 +56,11 @@ export class ChunkRenderer {
     };
 
     // Extension Point: Inject Custom Shader for Greedy Meshing Tiling
+    const textureRes = 16; // 16px textures
+    const atlasCols = 8;   // 8x8 atlas grid
+    const margin = 0.5 / textureRes; // 0.03125 (half-texel inset)
+    const scale = 1.0 / atlasCols;   // 0.125
+
     const injectShader = (shader: THREE.WebGLProgramParametersWithUniforms) => {
       shader.uniforms.uSkyLightColor = { value: new THREE.Color(1, 1, 1) };
       shader.uniforms.uBlockLightColor = { value: new THREE.Color(1, 0.85, 0.5) }; // warm torch light
@@ -106,11 +111,12 @@ export class ChunkRenderer {
         `#include <map_fragment>`,
         `#ifdef USE_MAP
            vec2 tiledUv = fract(vLocalUv);
-           vec2 finalUv = vAtlasOffset + tiledUv * 0.125;
+           tiledUv = clamp(tiledUv, ${margin.toFixed(5)}, ${(1.0 - margin).toFixed(5)});
+           vec2 finalUv = vAtlasOffset + tiledUv * ${scale.toFixed(5)};
            
            // Calculate manual derivatives based on the continuous vLocalUv (avoiding the fract() boundary jump)
-           vec2 dx = dFdx(vLocalUv) * 0.125;
-           vec2 dy = dFdy(vLocalUv) * 0.125;
+           vec2 dx = dFdx(vLocalUv) * ${scale.toFixed(5)};
+           vec2 dy = dFdy(vLocalUv) * ${scale.toFixed(5)};
            vec4 sampledDiffuseColor = texture2DGradEXT( map, finalUv, dx, dy );
            
            #ifdef DECODE_VIDEO_TEXTURE
