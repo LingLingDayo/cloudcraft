@@ -176,6 +176,12 @@ export class GameManager {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+
+    const store = useGameStore.getState();
+    const isPaused = (store.gameState === GameState.PAUSED || store.isSettingsOpen) && !store.isWorldLoading;
+    if (isPaused && this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
   };
 
   private onMouseDown = (e: MouseEvent) => {
@@ -201,6 +207,13 @@ export class GameManager {
     let dt = (now - this.lastTime) / 1000;
     this.lastTime = now;
 
+    const store = useGameStore.getState();
+    const isPaused = (store.gameState === GameState.PAUSED || store.isSettingsOpen) && !store.isWorldLoading;
+
+    if (isPaused) {
+      return;
+    }
+
     if (dt > 0.15) dt = 0.15;
 
     this.fpsCounter.update();
@@ -209,7 +222,6 @@ export class GameManager {
       this.particles.update(dt);
     }
 
-    const store = useGameStore.getState();
     const isPlaying = store.gameState === GameState.PLAYING &&
       !store.isInventoryOpen &&
       !store.activeChest &&
@@ -219,7 +231,6 @@ export class GameManager {
       if (this.environment) this.environment.update(dt);
       
       this.player.update(dt, this.physics, this.controls, this.world);
-      const store = useGameStore.getState();
       const radius = store.isWorldLoading ? 2 : this.renderDistance;
       this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
 
@@ -250,7 +261,6 @@ export class GameManager {
       // Background continues when game is paused/menus open
       if (this.environment) this.environment.update(dt);
       if (this.player) {
-        const store = useGameStore.getState();
         const radius = store.isWorldLoading ? 2 : this.renderDistance;
         this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
       }
@@ -266,12 +276,23 @@ export class GameManager {
       const store = useGameStore.getState();
       const radius = store.isWorldLoading ? 2 : this.renderDistance;
       this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
+      
+      const isPaused = (store.gameState === GameState.PAUSED || store.isSettingsOpen) && !store.isWorldLoading;
+      if (isPaused && this.renderer && this.scene && this.camera) {
+        this.renderer.render(this.scene, this.camera);
+      }
     }
   }
 
   public setFov(fov: number) {
     this.camera.fov = fov;
     this.camera.updateProjectionMatrix();
+
+    const store = useGameStore.getState();
+    const isPaused = (store.gameState === GameState.PAUSED || store.isSettingsOpen) && !store.isWorldLoading;
+    if (isPaused && this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   private getBlockName(id: number): string {
