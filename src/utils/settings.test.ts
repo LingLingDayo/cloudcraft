@@ -30,6 +30,7 @@ describe('settings utility', () => {
         renderDistance: 5,
         fov: 80,
         debugOverlay: false,
+        nightBrightness: 1.5,
       };
       localStorage.setItem('cloudcraft_settings', JSON.stringify(saved));
 

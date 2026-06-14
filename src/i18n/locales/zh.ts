@@ -63,6 +63,8 @@ export const zh = {
     mobileControls: '移动端控制',
     dpadSize: '方向键大小',
     dpadSizeValue: '{{val}} 像素',
+    nightBrightness: '夜晚亮度',
+    nightBrightnessValue: '{{val}}倍',
   },
   controls: {
     keyboard: '键盘操作',

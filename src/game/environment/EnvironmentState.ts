@@ -56,6 +56,24 @@ export class EnvironmentState {
     return this.gameTime / this.dayDuration;
   }
 
+  public getNightFactor(): number {
+    const timeRatio = this.getTimeRatio();
+    if (timeRatio >= 0.15 && timeRatio <= 0.35) {
+      return 0.0;
+    }
+    if (timeRatio > 0.35 && timeRatio < 0.58) {
+      return (timeRatio - 0.35) / 0.23;
+    }
+    if (timeRatio >= 0.58 && timeRatio <= 0.92) {
+      return 1.0;
+    }
+    if (timeRatio > 0.92 && timeRatio <= 1.0) {
+      return 1.0 - 0.5 * (timeRatio - 0.92) / 0.08;
+    }
+    // 0.0 to 0.15
+    return 0.5 * (1.0 - timeRatio / 0.15);
+  }
+
   public update(dt: number, cameraPos: THREE.Vector3, getBlockId: (x: number, y: number, z: number) => number) {
     // 1. Update Game Time
     if (this.activeDimension.hasDayNightCycle) {

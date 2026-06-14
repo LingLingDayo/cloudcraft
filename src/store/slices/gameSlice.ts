@@ -22,6 +22,7 @@ export const createGameSlice: StateCreator<
     dpadSize: settings.dpadSize,
     miningProgress: null,
     showMinimap: settings.showMinimap,
+    nightBrightness: settings.nightBrightness,
     isSettingsOpen: false,
     settingsSource: null,
 
@@ -74,6 +75,10 @@ export const createGameSlice: StateCreator<
     setShowMinimap: (showMinimap) => set(() => {
       saveSystemSetting('showMinimap', showMinimap);
       return { showMinimap };
+    }),
+    setNightBrightness: (nightBrightness) => set(() => {
+      saveSystemSetting('nightBrightness', nightBrightness);
+      return { nightBrightness };
     }),
     setSetting: (key, value) => set(() => {
       saveSystemSetting(key, value);

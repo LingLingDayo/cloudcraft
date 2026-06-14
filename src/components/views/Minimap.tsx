@@ -142,6 +142,18 @@ export const Minimap: React.FC = () => {
         }
       }
 
+      // Draw night overlay on the terrain blocks
+      const environment = gameInstance.environment;
+      if (environment) {
+        const nightFactor = environment.state.getNightFactor();
+        const nightBrightness = useGameStore.getState().nightBrightness;
+        const opacity = nightFactor * Math.max(0.0, Math.min(0.95, 0.7 - (nightBrightness - 1.0) * 0.7));
+        if (opacity > 0) {
+          ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+
       // Get player forward direction and angle
       const forward = new THREE.Vector3(0, 0, -1);
       forward.applyQuaternion(gameInstance.camera.quaternion);

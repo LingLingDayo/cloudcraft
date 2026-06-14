@@ -4,6 +4,7 @@ import { EnvironmentState } from '../environment/EnvironmentState';
 import { WeatherBlender } from '../environment/WeatherBlender';
 import { EnvironmentRenderer } from '../environment/EnvironmentRenderer';
 import { SunBody, MoonBody } from '../environment/CelestialBodies';
+import { useGameStore } from '@store/useGameStore';
 
 export class EnvironmentManager {
   private game: GameManager;
@@ -99,6 +100,11 @@ export class EnvironmentManager {
     const angle = timeRatio * Math.PI * 2;
     const sunSin = Math.sin(angle);
 
+    const nightFactor = this.state.getNightFactor();
+    const nightBrightness = useGameStore.getState().nightBrightness;
+    const nightBoost = nightBrightness > 1.0 ? 1.0 + (nightBrightness - 1.0) * 5.0 : nightBrightness;
+    const nightMultiplier = 1.0 + (nightBoost - 1.0) * nightFactor;
+
     // Scale Sun light by its altitude
     const sunWeight = Math.max(0, sunSin);
     this.sun.light.intensity = blended.dirLightIntensity * sunWeight;
@@ -106,11 +112,12 @@ export class EnvironmentManager {
 
     // Scale Moon light by its altitude
     const moonWeight = Math.max(0, -sunSin);
-    this.moon.light.intensity = (blended.dirLightIntensity * 0.4) * moonWeight;
+    this.moon.light.intensity = (blended.dirLightIntensity * 0.4) * moonWeight * nightMultiplier;
     this.moon.light.color.copy(blended.dirLightColor);
 
     // 6. Update custom voxel shading uniforms
-    this.tempSkyLightColor.copy(blended.dirLightColor).multiplyScalar(Math.min(1.0, this.sun.light.intensity / 1.2 + 0.15));
+    const baseSkyLightFactor = 0.15 * nightMultiplier;
+    this.tempSkyLightColor.copy(blended.dirLightColor).multiplyScalar(Math.min(1.0, this.sun.light.intensity / 1.2 + baseSkyLightFactor));
     this.game.world.getRenderer().updateLightingColors(this.tempSkyLightColor, this.torchColor);
   }
 

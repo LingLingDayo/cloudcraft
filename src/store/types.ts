@@ -12,6 +12,7 @@ export interface GameSlice {
   dpadSize: number;
   miningProgress: number | null;
   showMinimap: boolean;
+  nightBrightness: number;
   
   isSettingsOpen: boolean;
   settingsSource: 'hud' | 'menu' | null;
@@ -31,6 +32,7 @@ export interface GameSlice {
   setDpadSize: (size: number) => void;
   setMiningProgress: (progress: number | null) => void;
   setShowMinimap: (show: boolean) => void;
+  setNightBrightness: (brightness: number) => void;
   setSetting: <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) => void;
   setIsSettingsOpen: (open: boolean, source?: 'hud' | 'menu' | null) => void;
   

@@ -83,6 +83,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const setDpadSize = useGameStore((state) => state.setDpadSize);
   const showMinimap = useGameStore((state) => state.showMinimap);
   const setShowMinimap = useGameStore((state) => state.setShowMinimap);
+  const nightBrightness = useGameStore((state) => state.nightBrightness);
+  const setNightBrightness = useGameStore((state) => state.setNightBrightness);
 
   const [playerName, setPlayerName] = useState<string>(() => {
     return getSystemSettings().playerName;
@@ -105,6 +107,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     renderDistance,
     fov,
     dpadSize,
+    nightBrightness,
   }), [
     language,
     playerName,
@@ -115,7 +118,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     showMinimap,
     renderDistance,
     fov,
-    dpadSize
+    dpadSize,
+    nightBrightness,
   ]);
 
   // 分发具体更改到 Zustand & localStorage 中
@@ -149,6 +153,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     }
     if (updates.dpadSize !== undefined) {
       setDpadSize(updates.dpadSize);
+    }
+    if (updates.nightBrightness !== undefined) {
+      setNightBrightness(updates.nightBrightness);
     }
   };
 
@@ -236,6 +243,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 max: 90,
                 step: 5,
                 valueFormatter: (val) => t('pauseMenu.fovValue', { val }),
+              },
+              {
+                key: 'nightBrightness',
+                label: t('settings.nightBrightness'),
+                type: 'slider',
+                min: 0.1,
+                max: 2.0,
+                step: 0.1,
+                valueFormatter: (val) => t('settings.nightBrightnessValue', { val: Number(val).toFixed(1) }),
               },
             ],
           },

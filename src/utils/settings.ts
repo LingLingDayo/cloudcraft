@@ -9,6 +9,7 @@ export interface SystemSettings {
   renderDistance: number;
   fov: number;
   debugOverlay: boolean;
+  nightBrightness: number;
 }
 
 export interface SettingDefinition<T> {
@@ -57,6 +58,13 @@ export const SETTINGS_REGISTRY: { [K in keyof SystemSettings]: SettingDefinition
   debugOverlay: {
     defaultValue: false,
     validate: (val) => (typeof val === 'boolean' ? val : false),
+  },
+  nightBrightness: {
+    defaultValue: 1.0,
+    validate: (val) => {
+      const num = Number(val);
+      return !isNaN(num) ? Math.max(0.1, Math.min(2.0, num)) : 1.0;
+    },
   },
 };
 

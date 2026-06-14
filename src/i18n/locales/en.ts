@@ -63,6 +63,8 @@ export const en = {
     mobileControls: 'Mobile Controls',
     dpadSize: 'D-pad Size',
     dpadSizeValue: '{{val}} px',
+    nightBrightness: 'Night Brightness',
+    nightBrightnessValue: '{{val}}x',
   },
   controls: {
     keyboard: 'Keyboard Controls',

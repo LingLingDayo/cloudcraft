@@ -32,6 +32,7 @@ describe('useGameStore', () => {
       worldLoadingStage: 'engine',
       chunkLoadingStates: {},
       showMinimap: true,
+      nightBrightness: 1.0,
     });
   });
 
@@ -62,6 +63,7 @@ describe('useGameStore', () => {
     expect(state.worldLoadingStage).toBe('engine');
     expect(state.chunkLoadingStates).toEqual({});
     expect(state.showMinimap).toBe(true);
+    expect(state.nightBrightness).toBe(1.0);
   });
 
   test('should set game state via setGameState', () => {
@@ -333,5 +335,15 @@ describe('useGameStore', () => {
     useGameStore.getState().setSetting('debugOverlay', true);
     expect(useGameStore.getState().debugOverlay).toBe(true);
     expect(getSystemSettings().debugOverlay).toBe(true);
+  });
+
+  test('should set night brightness via setNightBrightness', () => {
+    useGameStore.getState().setNightBrightness(1.5);
+    expect(useGameStore.getState().nightBrightness).toBe(1.5);
+    expect(getSystemSettings().nightBrightness).toBe(1.5);
+
+    useGameStore.getState().setNightBrightness(0.5);
+    expect(useGameStore.getState().nightBrightness).toBe(0.5);
+    expect(getSystemSettings().nightBrightness).toBe(0.5);
   });
 });

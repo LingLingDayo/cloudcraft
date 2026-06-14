@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { BlendedEnvironment } from './EnvironmentTypes';
 import type { EnvironmentState } from './EnvironmentState';
+import { useGameStore } from '@store/useGameStore';
 
 export class EnvironmentRenderer {
   private scene: THREE.Scene;
@@ -21,6 +22,11 @@ export class EnvironmentRenderer {
   }
 
   public render(state: EnvironmentState, blended: BlendedEnvironment) {
+    const nightFactor = state.getNightFactor();
+    const nightBrightness = useGameStore.getState().nightBrightness;
+    const nightBoost = nightBrightness > 1.0 ? 1.0 + (nightBrightness - 1.0) * 5.0 : nightBrightness;
+    const nightMultiplier = 1.0 + (nightBoost - 1.0) * nightFactor;
+
     // To prevent distant geometry from glowing or having silhouette mismatches against the sky background,
     // the sky background color must exactly match the fog color.
     let finalSkyColor = blended.skyColors.fogColor;
@@ -32,6 +38,10 @@ export class EnvironmentRenderer {
       finalSkyColor = this.waterColor;
       finalFogColor = this.waterColor;
       finalFogDensity = this.underwaterDensity;
+    } else if (nightMultiplier !== 1.0) {
+      // Scale sky and fog colors at night to match ambient lighting
+      finalSkyColor = finalSkyColor.clone().multiplyScalar(nightMultiplier);
+      finalFogColor = finalFogColor.clone().multiplyScalar(nightMultiplier);
     }
 
     // Apply background and clear colors
@@ -46,7 +56,7 @@ export class EnvironmentRenderer {
 
     // Apply ambient lighting parameters
     this.hemiLight.color.copy(blended.ambientColor);
-    this.hemiLight.intensity = blended.ambientIntensity;
+    this.hemiLight.intensity = blended.ambientIntensity * nightMultiplier;
   }
 
   public dispose() {
