@@ -30,10 +30,25 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
   const [renderDistance, setRenderDistance] = useState<number>(() => useGameStore.getState().renderDistance);
   const [fov, setFov] = useState<number>(() => useGameStore.getState().fov);
   const [hasSave, setHasSave] = useState<boolean>(false);
+  const [saveSeed, setSaveSeed] = useState<string | null>(null);
 
   useEffect(() => {
     SaveManager.getSave('default_world').then((save) => {
       setHasSave(!!save);
+      if (save) {
+        if (save.seed) {
+          setSaveSeed(save.seed);
+        } else if (save.world) {
+          try {
+            const worldObj = JSON.parse(save.world);
+            if (worldObj && worldObj.seed) {
+              setSaveSeed(String(worldObj.seed));
+            }
+          } catch (e) {
+            console.warn('Failed to parse seed from saved world string:', e);
+          }
+        }
+      }
     }).catch((err) => {
       console.error('Failed to check save state:', err);
     });
@@ -233,7 +248,7 @@ export const StartMenu: React.FC<StartMenuProps> = ({ onStartGame }) => {
           <Button
             variant="secondary"
             disabled={!hasSave}
-            onClick={() => handleStart(true)}
+            onClick={() => handleStart(true, saveSeed || undefined)}
             className={styles.loadSaveButton}
           >
             {t('startMenu.loadSave')}

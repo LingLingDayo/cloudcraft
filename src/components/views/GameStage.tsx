@@ -158,6 +158,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
     if (gm) {
       const saveData = {
         world: gm.world.saveWorld(),
+        seed: gm.world.getSeed(),
         player: {
           x: gm.player.position.x,
           y: gm.player.position.y,

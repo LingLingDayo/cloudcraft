@@ -22,6 +22,10 @@ export class WorldChunkManager {
     this.lastCcy = null;
     this.lastCcz = null;
     this.lastRadius = null;
+    this.pendingGenerationQueue = [];
+    this.pendingMeshQueue = [];
+    this.generatingChunks.clear();
+    this.generatingMeshes.clear();
   }
 
   constructor(world: World) {
@@ -270,8 +274,13 @@ export class WorldChunkManager {
           this.generatingChunks.add(key);
           const [cx, cy, cz] = key.split(',').map(Number);
           
-          this.workerManager.execute<Uint8Array>('GENERATE_CHUNK', { cx, cy, cz, seed: this.world.getSeed() })
+          const currentSeed = this.world.getSeed();
+          this.workerManager.execute<Uint8Array>('GENERATE_CHUNK', { cx, cy, cz, seed: currentSeed })
             .then(chunk => {
+              if (this.world.getSeed() !== currentSeed) {
+                this.generatingChunks.delete(key);
+                return;
+              }
               this.generatingChunks.delete(key);
               this.world.applyChunkModifications(key, chunk);
               this.world.chunks.set(key, chunk);

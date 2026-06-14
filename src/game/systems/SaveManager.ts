@@ -19,6 +19,7 @@ export interface SaveData {
   activeSlot: number;
   gameMode: GameMode;
   version: string;
+  seed?: string;
 }
 
 export class SaveManager {
@@ -90,6 +91,7 @@ export class SaveManager {
 
   public static async saveGame(id: string, data: Omit<SaveData, 'createdAt'>, displayName?: string): Promise<void> {
     const now = Date.now();
+    const saveSeed = data.seed || 'cloudcraft';
 
     if (this.useLocalStorage) {
       localStorage.setItem(`${this.SAVE_PREFIX}${id}`, JSON.stringify(data));
@@ -101,6 +103,7 @@ export class SaveManager {
           updatedAt: now,
           gameMode: data.gameMode,
           version: data.version,
+          seed: saveSeed,
         };
       } else {
         index.push({
@@ -109,7 +112,7 @@ export class SaveManager {
           createdAt: now,
           updatedAt: now,
           gameMode: data.gameMode,
-          seed: 'cloudcraft',
+          seed: saveSeed,
           version: data.version,
         });
       }
@@ -132,13 +135,14 @@ export class SaveManager {
       createdAt: now,
       updatedAt: now,
       gameMode: data.gameMode,
-      seed: 'cloudcraft',
+      seed: saveSeed,
       version: data.version,
     };
 
     metadata.updatedAt = now;
     metadata.gameMode = data.gameMode;
     metadata.version = data.version;
+    metadata.seed = saveSeed;
     if (displayName) {
       metadata.displayName = displayName;
     }
