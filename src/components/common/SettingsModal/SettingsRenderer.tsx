@@ -75,11 +75,7 @@ export function SettingsRenderer<TData extends SettingsData, TContext = unknown>
         return (
           <div key={group.id} className={styles.groupWrapper}>
             {/* 分组头部 */}
-            {styleMode === 'classic' ? (
-              <h3 className={`pixel-text-sm ${styles.classicGroupTitle}`}>
-                {group.title}
-              </h3>
-            ) : (
+            {styleMode === 'classic' ? null : (
               <div
                 className={styles.groupHeader}
                 onClick={() => isCollapsible && toggleGroup(group.id)}

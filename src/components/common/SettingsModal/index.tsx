@@ -176,14 +176,16 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
         </div>
       )}
       <div className={styles.contentArea}>
-        {children}
-        <SettingsRenderer
-          data={isLiveUpdate ? data : localData}
-          onUpdate={handleUpdate}
-          settingsConfig={activeSettingsConfig}
-          context={context}
-          styleMode={styleMode}
-        />
+        <div className={styleMode === 'classic' ? styles.scrollableContent : ''}>
+          {children}
+          <SettingsRenderer
+            data={isLiveUpdate ? data : localData}
+            onUpdate={handleUpdate}
+            settingsConfig={activeSettingsConfig}
+            context={context}
+            styleMode={styleMode}
+          />
+        </div>
         {styleMode === 'classic' && (
           <div className={styles.classicFooter}>
             {isShowReset && (
