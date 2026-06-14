@@ -87,6 +87,32 @@ export class EnvironmentManager {
     // 2. Blend active weather configurations
     const blended = this.blender.blend(timeRatio, this.state.weatherWeights);
 
+    // Adjust base light and ambient colors during night transition based on nightBrightness
+    const nightFactor = this.state.getNightFactor();
+    const nightBrightness = useGameStore.getState().nightBrightness;
+    if (nightFactor > 0) {
+      let colorLerpBase: number;
+      if (nightBrightness <= 1.0) {
+        colorLerpBase = (nightBrightness - 0.1) * (0.4 / 0.9);
+      } else {
+        colorLerpBase = 0.4 + (nightBrightness - 1.0) * 0.6;
+      }
+      const colorLerpFactor = Math.max(0.0, colorLerpBase) * nightFactor;
+      if (colorLerpFactor > 0) {
+        const brightNightColor = new THREE.Color(0xaabbff);
+        blended.dirLightColor.lerp(brightNightColor, colorLerpFactor);
+        blended.ambientColor.lerp(brightNightColor, colorLerpFactor * 0.5);
+      }
+    }
+
+    let nightBoost: number;
+    if (nightBrightness <= 1.0) {
+      nightBoost = 0.1 + (nightBrightness - 0.1) * (3.4 / 0.9);
+    } else {
+      nightBoost = 3.5 + (nightBrightness - 1.0) * 5.0;
+    }
+    const nightMultiplier = 1.0 + (nightBoost - 1.0) * nightFactor;
+
     // 3. Apply background, clear colors and fog changes to scene
     this.renderer.render(this.state, blended);
 
@@ -99,11 +125,6 @@ export class EnvironmentManager {
     // 5. Update light colors and intensities based on altitude & blending
     const angle = timeRatio * Math.PI * 2;
     const sunSin = Math.sin(angle);
-
-    const nightFactor = this.state.getNightFactor();
-    const nightBrightness = useGameStore.getState().nightBrightness;
-    const nightBoost = nightBrightness > 1.0 ? 1.0 + (nightBrightness - 1.0) * 5.0 : nightBrightness;
-    const nightMultiplier = 1.0 + (nightBoost - 1.0) * nightFactor;
 
     // Scale Sun light by its altitude
     const sunWeight = Math.max(0, sunSin);

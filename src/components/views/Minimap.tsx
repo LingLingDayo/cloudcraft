@@ -147,7 +147,13 @@ export const Minimap: React.FC = () => {
       if (environment) {
         const nightFactor = environment.state.getNightFactor();
         const nightBrightness = useGameStore.getState().nightBrightness;
-        const opacity = nightFactor * Math.max(0.0, Math.min(0.95, 0.7 - (nightBrightness - 1.0) * 0.7));
+        let opacityFactor: number;
+        if (nightBrightness <= 1.0) {
+          opacityFactor = 0.95 - (nightBrightness - 0.1) * (0.6 / 0.9);
+        } else {
+          opacityFactor = 0.35 - (nightBrightness - 1.0) * 0.35;
+        }
+        const opacity = nightFactor * Math.max(0.0, Math.min(0.95, opacityFactor));
         if (opacity > 0) {
           ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
           ctx.fillRect(0, 0, canvas.width, canvas.height);

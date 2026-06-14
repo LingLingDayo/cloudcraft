@@ -24,7 +24,12 @@ export class EnvironmentRenderer {
   public render(state: EnvironmentState, blended: BlendedEnvironment) {
     const nightFactor = state.getNightFactor();
     const nightBrightness = useGameStore.getState().nightBrightness;
-    const nightBoost = nightBrightness > 1.0 ? 1.0 + (nightBrightness - 1.0) * 5.0 : nightBrightness;
+    let nightBoost: number;
+    if (nightBrightness <= 1.0) {
+      nightBoost = 0.1 + (nightBrightness - 0.1) * (3.4 / 0.9);
+    } else {
+      nightBoost = 3.5 + (nightBrightness - 1.0) * 5.0;
+    }
     const nightMultiplier = 1.0 + (nightBoost - 1.0) * nightFactor;
 
     // To prevent distant geometry from glowing or having silhouette mismatches against the sky background,
