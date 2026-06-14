@@ -26,6 +26,19 @@ export const Dialog: React.FC<DialogProps> = ({
 }) => {
   const { t } = useTranslation();
   useBackToClose({ onClose, enabled: closeOnBack });
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const style: React.CSSProperties = {
     ...(width !== undefined ? { width } : {}),
     ...(height !== undefined ? { height } : {}),

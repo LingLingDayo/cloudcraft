@@ -120,6 +120,28 @@ export function SettingsModal<TData extends SettingsData, TContext = unknown>({
     onClose?.(localData, data);
   };
 
+  // 监听 Escape 按键关闭设置弹窗
+  const handleCancelRef = React.useRef(handleCancel);
+  
+  React.useEffect(() => {
+    handleCancelRef.current = handleCancel;
+  });
+
+  React.useEffect(() => {
+    if (renderMode !== 'dialog' || !isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCancelRef.current();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [renderMode, isOpen]);
+
   // 触发全局重置
   const handleReset = () => {
     setIsResetConfirmOpen(true);

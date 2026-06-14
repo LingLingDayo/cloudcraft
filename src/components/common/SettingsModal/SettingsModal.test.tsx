@@ -335,4 +335,24 @@ describe('SettingsModal component', () => {
     expect(screen.getByTestId('my-custom-node')).toBeInTheDocument();
     expect(screen.getByText('Custom Node')).toBeInTheDocument();
   });
+
+  it('should trigger onClose when Escape key is pressed in dialog mode', () => {
+    const onUpdate = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <SettingsModal
+        isOpen={true}
+        renderMode="dialog"
+        data={INITIAL_DATA}
+        settingsConfig={CONFIG}
+        context={null}
+        onUpdate={onUpdate}
+        onClose={onClose}
+      />
+    );
+
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
