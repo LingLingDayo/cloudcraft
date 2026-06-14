@@ -194,16 +194,44 @@ export class ChunkMeshBuilder {
       
       const in_d1 = step_d1 < 0 ? 0 : -1;
       const in_d2 = step_d2 < 0 ? 0 : -1;
+      const out_d1 = step_d1 < 0 ? -1 : 0;
+      const out_d2 = step_d2 < 0 ? -1 : 0;
       
-      const sx = [0, 0, 0];
-      sx[axis] = targetAxisVal;
-      sx[d1] = v[d1] + in_d1;
-      sx[d2] = v[d2] + in_d2;
-      
-      const lightVal = getLightAt(sx[0], sx[1], sx[2]);
-      const sky = (lightVal >> 4) & 0x0F;
-      const block = lightVal & 0x0F;
-      return { sky, block };
+      // Average light from the same 3 positions AO samples, to match light with occlusion
+      let totalSky = 0, totalBlock = 0, count = 0;
+
+      const sample = (lx: number, ly: number, lz: number) => {
+        // Only sample from non-opaque blocks (same rule as light propagation)
+        if (!isOpaque(lx, ly, lz)) {
+          const lightVal = getLightAt(lx, ly, lz);
+          totalSky += (lightVal >> 4) & 0x0F;
+          totalBlock += lightVal & 0x0F;
+          count++;
+        }
+      };
+
+      const base = [0, 0, 0];
+      base[axis] = targetAxisVal;
+
+      // Sample the direct corner block (same as before)
+      base[d1] = v[d1] + in_d1;
+      base[d2] = v[d2] + in_d2;
+      sample(base[0], base[1], base[2]);
+
+      // Sample the block offset in d1 direction
+      base[d1] = v[d1] + out_d1;
+      base[d2] = v[d2] + in_d2;
+      sample(base[0], base[1], base[2]);
+
+      // Sample the block offset in d2 direction
+      base[d1] = v[d1] + in_d1;
+      base[d2] = v[d2] + out_d2;
+      sample(base[0], base[1], base[2]);
+
+      if (count === 0) {
+        return { sky: 0, block: 0 };
+      }
+      return { sky: Math.round(totalSky / count), block: Math.round(totalBlock / count) };
     };
 
     const dims = [CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z];
@@ -343,15 +371,6 @@ export class ChunkMeshBuilder {
               const v3 = [ v0[0] + d2Vec[0]*h, v0[1] + d2Vec[1]*h, v0[2] + d2Vec[2]*h ];
 
               const targetData = renderType === 1 ? solidData : transData;
-              
-              targetData.positions.push(
-                worldStartX + v0[0], worldStartY + v0[1], worldStartZ + v0[2],
-                worldStartX + v1[0], worldStartY + v1[1], worldStartZ + v1[2],
-                worldStartX + v2[0], worldStartY + v2[1], worldStartZ + v2[2],
-                worldStartX + v0[0], worldStartY + v0[1], worldStartZ + v0[2],
-                worldStartX + v2[0], worldStartY + v2[1], worldStartZ + v2[2],
-                worldStartX + v3[0], worldStartY + v3[1], worldStartZ + v3[2]
-              );
 
               const normalVec = [0, 0, 0];
               normalVec[axis] = face.dir;
@@ -374,11 +393,6 @@ export class ChunkMeshBuilder {
               const uv3 = [h, 0];
               
               const finalUVs = rotateUV ? [uv3, uv0, uv1, uv2] : [uv0, uv1, uv2, uv3];
-                      
-              targetData.uvs.push(
-                ...finalUVs[0], ...finalUVs[1], ...finalUVs[2],
-                ...finalUVs[0], ...finalUVs[2], ...finalUVs[3]
-              );
 
               // Calculate final AO and Light values for the corners of the greedy mesh
               const ao0 = getVertexAO(v0[0], v0[1], v0[2], axis, dir, d1, d2, -1, -1);
@@ -391,19 +405,68 @@ export class ChunkMeshBuilder {
               const light2 = getVertexLight(v2[0], v2[1], v2[2], axis, dir, d1, d2, 1, 1);
               const light3 = getVertexLight(v3[0], v3[1], v3[2], axis, dir, d1, d2, -1, 1);
 
-              targetData.valLights.push(
-                light0.sky, light0.block,
-                light1.sky, light1.block,
-                light2.sky, light2.block,
-                light0.sky, light0.block,
-                light2.sky, light2.block,
-                light3.sky, light3.block
-              );
+              // To avoid ugly diagonal interpolation artifacts (AO flop), we dynamically choose the triangulation.
+              // Flip the diagonal when the (v0,v2) pair has a higher total AO than (v1,v3), because that
+              // means the shaded corners are on opposite ends of the same triangle edge, causing a harsh crease.
+              if (ao0 + ao2 > ao1 + ao3) {
+                // Triangulate using v0-v1-v3 and v1-v2-v3
+                targetData.positions.push(
+                  worldStartX + v0[0], worldStartY + v0[1], worldStartZ + v0[2],
+                  worldStartX + v1[0], worldStartY + v1[1], worldStartZ + v1[2],
+                  worldStartX + v3[0], worldStartY + v3[1], worldStartZ + v3[2],
+                  worldStartX + v1[0], worldStartY + v1[1], worldStartZ + v1[2],
+                  worldStartX + v2[0], worldStartY + v2[1], worldStartZ + v2[2],
+                  worldStartX + v3[0], worldStartY + v3[1], worldStartZ + v3[2]
+                );
 
-              targetData.aos.push(
-                ao0, ao1, ao2,
-                ao0, ao2, ao3
-              );
+                targetData.uvs.push(
+                  ...finalUVs[0], ...finalUVs[1], ...finalUVs[3],
+                  ...finalUVs[1], ...finalUVs[2], ...finalUVs[3]
+                );
+
+                targetData.valLights.push(
+                  light0.sky, light0.block,
+                  light1.sky, light1.block,
+                  light3.sky, light3.block,
+                  light1.sky, light1.block,
+                  light2.sky, light2.block,
+                  light3.sky, light3.block
+                );
+
+                targetData.aos.push(
+                  ao0, ao1, ao3,
+                  ao1, ao2, ao3
+                );
+              } else {
+                // Triangulate using v0-v1-v2 and v0-v2-v3 (default)
+                targetData.positions.push(
+                  worldStartX + v0[0], worldStartY + v0[1], worldStartZ + v0[2],
+                  worldStartX + v1[0], worldStartY + v1[1], worldStartZ + v1[2],
+                  worldStartX + v2[0], worldStartY + v2[1], worldStartZ + v2[2],
+                  worldStartX + v0[0], worldStartY + v0[1], worldStartZ + v0[2],
+                  worldStartX + v2[0], worldStartY + v2[1], worldStartZ + v2[2],
+                  worldStartX + v3[0], worldStartY + v3[1], worldStartZ + v3[2]
+                );
+
+                targetData.uvs.push(
+                  ...finalUVs[0], ...finalUVs[1], ...finalUVs[2],
+                  ...finalUVs[0], ...finalUVs[2], ...finalUVs[3]
+                );
+
+                targetData.valLights.push(
+                  light0.sky, light0.block,
+                  light1.sky, light1.block,
+                  light2.sky, light2.block,
+                  light0.sky, light0.block,
+                  light2.sky, light2.block,
+                  light3.sky, light3.block
+                );
+
+                targetData.aos.push(
+                  ao0, ao1, ao2,
+                  ao0, ao2, ao3
+                );
+              }
 
               for (let l = 0; l < h; l++) {
                 for (let k = 0; k < w; k++) {
