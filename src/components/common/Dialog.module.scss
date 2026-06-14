@@ -1,4 +1,5 @@
 @use '@styles/mixins' as *;
+@use '@styles/variables' as *;
 
 .dialogOverlay {
   position: fixed;
@@ -29,7 +30,7 @@
   flex-direction: column;
   box-sizing: border-box;
 
-  @include fit-scale(440px, 400px, 0.92, 768px, 480px);
+  @include fit-scale(440px, 400px, 0.92, $breakpoint-tablet-portrait, $breakpoint-height-tiny);
 
   &.noPadding {
     padding: 0;

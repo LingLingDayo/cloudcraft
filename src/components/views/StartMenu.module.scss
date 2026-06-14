@@ -43,7 +43,7 @@
     inset -4px -4px 0px #1a1a1a,
     0 12px 30px rgba(0, 0, 0, 0.7);
 
-  @include fit-scale(560px, 520px, 0.92, 768px, 560px);
+  @include fit-scale(560px, 520px, 0.92);
 }
 
 .titleContainer {

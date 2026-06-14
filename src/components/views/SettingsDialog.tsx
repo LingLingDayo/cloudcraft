@@ -282,7 +282,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 key: 'keybindings',
                 type: 'ui-custom',
                 render: () => (
-                  <div className={styles.controlsGrid} style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                  <div className={styles.controlsGrid}>
                     {/* Keyboard Section */}
                     <div className={styles.controlSection}>
                       <h4 className={`pixel-text-sm ${styles.sectionTitle}`}>
