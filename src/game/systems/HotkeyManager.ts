@@ -1,3 +1,5 @@
+import { getSystemSettings, saveSystemSetting } from '@utils/settings';
+
 export const GameAction = {
   MOVE_FORWARD: 'MOVE_FORWARD',
   MOVE_BACKWARD: 'MOVE_BACKWARD',
@@ -43,7 +45,6 @@ export const DEFAULT_KEY_BINDINGS: Record<GameAction, string[]> = {
 };
 
 type ActionCallback = () => void;
-const STORAGE_KEY = 'cloudcraft_keybindings';
 
 export class HotkeyManager {
   private bindings: Record<GameAction, string[]> = { ...DEFAULT_KEY_BINDINGS };
@@ -269,38 +270,33 @@ export class HotkeyManager {
   }
 
   /**
-   * Load custom bindings from localStorage.
+   * Load custom bindings from system settings.
    */
   public loadBindings() {
-    if (typeof localStorage === 'undefined') return;
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
-        const loaded = JSON.parse(data) as Record<GameAction, string[]>;
-        // Validate loaded keys, merge with default for any missing actions
-        for (const actionStr in DEFAULT_KEY_BINDINGS) {
-          const action = actionStr as GameAction;
-          if (Array.isArray(loaded[action])) {
-            this.bindings[action] = loaded[action];
-          } else {
-            this.bindings[action] = DEFAULT_KEY_BINDINGS[action];
-          }
+      const settings = getSystemSettings();
+      const loaded = settings.keybindings || {};
+      for (const actionStr in DEFAULT_KEY_BINDINGS) {
+        const action = actionStr as GameAction;
+        if (Array.isArray(loaded[action])) {
+          this.bindings[action] = loaded[action];
+        } else {
+          this.bindings[action] = DEFAULT_KEY_BINDINGS[action];
         }
       }
     } catch (e) {
-      console.warn('Failed to load keybindings from localStorage:', e);
+      console.warn('Failed to load keybindings:', e);
     }
   }
 
   /**
-   * Save custom bindings to localStorage.
+   * Save custom bindings to system settings.
    */
   private saveBindings() {
-    if (typeof localStorage === 'undefined') return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.bindings));
+      saveSystemSetting('keybindings', this.bindings);
     } catch (e) {
-      console.warn('Failed to save keybindings to localStorage:', e);
+      console.warn('Failed to save keybindings:', e);
     }
   }
 }

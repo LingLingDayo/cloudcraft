@@ -10,6 +10,7 @@ export interface SystemSettings {
   fov: number;
   debugOverlay: boolean;
   nightBrightness: number;
+  keybindings: Record<string, string[]>;
 }
 
 export interface SettingDefinition<T> {
@@ -64,6 +65,23 @@ export const SETTINGS_REGISTRY: { [K in keyof SystemSettings]: SettingDefinition
     validate: (val) => {
       const num = Number(val);
       return !isNaN(num) ? Math.max(0.1, Math.min(2.0, num)) : 1.0;
+    },
+  },
+  keybindings: {
+    defaultValue: {},
+    validate: (val) => {
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const validated: Record<string, string[]> = {};
+        const obj = val as Record<string, unknown>;
+        for (const key in obj) {
+          const arr = obj[key];
+          if (Array.isArray(arr) && arr.every((item) => typeof item === 'string')) {
+            validated[key] = arr as string[];
+          }
+        }
+        return validated;
+      }
+      return {};
     },
   },
 };

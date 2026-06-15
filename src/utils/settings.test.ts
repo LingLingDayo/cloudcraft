@@ -31,6 +31,7 @@ describe('settings utility', () => {
         fov: 80,
         debugOverlay: false,
         nightBrightness: 1.5,
+        keybindings: { JUMP: ['KeyX'] },
       };
       localStorage.setItem('cloudcraft_settings', JSON.stringify(saved));
 
@@ -63,6 +64,25 @@ describe('settings utility', () => {
       expect(current.autoJump).toBe(false);
       expect(current.playerName).toBe('NotSteve');
       expect(current.language).toBe(DEFAULT_SETTINGS.language);
+    }
+  });
+
+  test('should validate keybindings values correctly', () => {
+    if (typeof localStorage !== 'undefined') {
+      // Valid keybindings
+      saveSystemSetting('keybindings', { JUMP: ['KeyX', 'Space'], MOVE_FORWARD: ['KeyW'] });
+      let current = getSystemSettings();
+      expect(current.keybindings).toEqual({ JUMP: ['KeyX', 'Space'], MOVE_FORWARD: ['KeyW'] });
+
+      // Invalid keybindings formats (should recover to empty object)
+      saveSystemSetting('keybindings', 'not-an-object' as unknown as Record<string, string[]>);
+      current = getSystemSettings();
+      expect(current.keybindings).toEqual({});
+
+      // Malformed array values
+      saveSystemSetting('keybindings', { JUMP: [123, 'Space'] } as unknown as Record<string, string[]>);
+      current = getSystemSettings();
+      expect(current.keybindings).toEqual({});
     }
   });
 });
