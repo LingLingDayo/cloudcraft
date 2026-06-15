@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { ICelestialBody } from './EnvironmentTypes';
+import { useGameStore } from '@store/useGameStore';
 
 export class SunBody implements ICelestialBody {
   public id = 'sun';
@@ -92,7 +93,8 @@ export class SunBody implements ICelestialBody {
     this.light.shadow.bias = dynamicBias;
 
     // Enable/disable shadow casting dynamically based on altitude to save performance
-    this.light.castShadow = sunAltitude > -0.2;
+    const shadowQuality = useGameStore.getState().shadowQuality;
+    this.light.castShadow = shadowQuality === 'fancy' && sunAltitude > -0.2;
   }
 
   public dispose(scene: THREE.Scene): void {

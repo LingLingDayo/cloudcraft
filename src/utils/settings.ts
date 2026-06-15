@@ -10,6 +10,7 @@ export interface SystemSettings {
   fov: number;
   debugOverlay: boolean;
   nightBrightness: number;
+  shadowQuality: 'simple' | 'fancy';
   keybindings: Record<string, string[]>;
 }
 
@@ -66,6 +67,10 @@ export const SETTINGS_REGISTRY: { [K in keyof SystemSettings]: SettingDefinition
       const num = Number(val);
       return !isNaN(num) ? Math.max(0.1, Math.min(2.0, num)) : 1.0;
     },
+  },
+  shadowQuality: {
+    defaultValue: 'fancy',
+    validate: (val) => (val === 'simple' || val === 'fancy' ? val : 'fancy'),
   },
   keybindings: {
     defaultValue: {},

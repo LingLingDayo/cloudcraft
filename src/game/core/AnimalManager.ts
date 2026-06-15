@@ -186,6 +186,19 @@ export class AnimalManager {
     return this.animals.length;
   }
 
+  public markMaterialsDirty() {
+    this.animals.forEach(a => {
+      a.mesh.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach((mat) => {
+            mat.needsUpdate = true;
+          });
+        }
+      });
+    });
+  }
+
   public dispose() {
     this.animals.forEach(a => {
       this.game.scene.remove(a.mesh);

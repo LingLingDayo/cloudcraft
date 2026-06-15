@@ -65,6 +65,9 @@ export const en = {
     dpadSizeValue: '{{val}} px',
     nightBrightness: 'Night Brightness',
     nightBrightnessValue: '{{val}}x',
+    shadowQuality: 'Shadows',
+    shadowQualitySimple: 'Simple',
+    shadowQualityFancy: 'Fancy',
   },
   controls: {
     keyboard: 'Keyboard Controls',

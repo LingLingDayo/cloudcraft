@@ -13,6 +13,7 @@ export interface GameSlice {
   miningProgress: number | null;
   showMinimap: boolean;
   nightBrightness: number;
+  shadowQuality: 'simple' | 'fancy';
   
   isSettingsOpen: boolean;
   settingsSource: 'hud' | 'menu' | null;
@@ -33,6 +34,7 @@ export interface GameSlice {
   setMiningProgress: (progress: number | null) => void;
   setShowMinimap: (show: boolean) => void;
   setNightBrightness: (brightness: number) => void;
+  setShadowQuality: (quality: 'simple' | 'fancy') => void;
   setSetting: <K extends keyof SystemSettings>(key: K, value: SystemSettings[K]) => void;
   setIsSettingsOpen: (open: boolean, source?: 'hud' | 'menu' | null) => void;
   

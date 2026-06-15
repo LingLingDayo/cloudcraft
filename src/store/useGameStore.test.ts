@@ -33,6 +33,7 @@ describe('useGameStore', () => {
       chunkLoadingStates: {},
       showMinimap: true,
       nightBrightness: 1.0,
+      shadowQuality: 'fancy',
     });
   });
 
@@ -64,6 +65,7 @@ describe('useGameStore', () => {
     expect(state.chunkLoadingStates).toEqual({});
     expect(state.showMinimap).toBe(true);
     expect(state.nightBrightness).toBe(1.0);
+    expect(state.shadowQuality).toBe('fancy');
   });
 
   test('should set game state via setGameState', () => {
@@ -345,5 +347,15 @@ describe('useGameStore', () => {
     useGameStore.getState().setNightBrightness(0.5);
     expect(useGameStore.getState().nightBrightness).toBe(0.5);
     expect(getSystemSettings().nightBrightness).toBe(0.5);
+  });
+
+  test('should set shadow quality via setShadowQuality', () => {
+    useGameStore.getState().setShadowQuality('simple');
+    expect(useGameStore.getState().shadowQuality).toBe('simple');
+    expect(getSystemSettings().shadowQuality).toBe('simple');
+
+    useGameStore.getState().setShadowQuality('fancy');
+    expect(useGameStore.getState().shadowQuality).toBe('fancy');
+    expect(getSystemSettings().shadowQuality).toBe('fancy');
   });
 });

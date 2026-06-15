@@ -31,6 +31,7 @@ describe('settings utility', () => {
         fov: 80,
         debugOverlay: false,
         nightBrightness: 1.5,
+        shadowQuality: 'fancy',
         keybindings: { JUMP: ['KeyX'] },
       };
       localStorage.setItem('cloudcraft_settings', JSON.stringify(saved));

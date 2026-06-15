@@ -23,6 +23,7 @@ export const createGameSlice: StateCreator<
     miningProgress: null,
     showMinimap: settings.showMinimap,
     nightBrightness: settings.nightBrightness,
+    shadowQuality: settings.shadowQuality,
     isSettingsOpen: false,
     settingsSource: null,
 
@@ -79,6 +80,10 @@ export const createGameSlice: StateCreator<
     setNightBrightness: (nightBrightness) => set(() => {
       saveSystemSetting('nightBrightness', nightBrightness);
       return { nightBrightness };
+    }),
+    setShadowQuality: (shadowQuality) => set(() => {
+      saveSystemSetting('shadowQuality', shadowQuality);
+      return { shadowQuality };
     }),
     setSetting: (key, value) => set(() => {
       saveSystemSetting(key, value);

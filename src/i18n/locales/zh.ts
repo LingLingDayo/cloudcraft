@@ -65,6 +65,9 @@ export const zh = {
     dpadSizeValue: '{{val}} 像素',
     nightBrightness: '夜晚亮度',
     nightBrightnessValue: '{{val}}倍',
+    shadowQuality: '光影质量',
+    shadowQualitySimple: '简单',
+    shadowQualityFancy: '精美',
   },
   controls: {
     keyboard: '键盘操作',

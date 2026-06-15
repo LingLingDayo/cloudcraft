@@ -131,9 +131,11 @@ export class GameManager {
     // Subscribe to state changes in Zustand to sync with engine blockEntities and debug settings
     let prevChestInventory = useGameStore.getState().chestInventory;
     let prevDebugOverlay = useGameStore.getState().debugOverlay;
+    let prevShadowQuality = useGameStore.getState().shadowQuality;
     
-    // Sync initial debug overlay state
+    // Sync initial debug overlay and shadow quality state
     this.debugOverlayVisible = prevDebugOverlay;
+    this.applyShadowQuality(prevShadowQuality);
 
     useGameStore.subscribe((state) => {
       // Sync chest inventory
@@ -154,6 +156,13 @@ export class GameManager {
       if (nextDebugOverlay !== prevDebugOverlay) {
         prevDebugOverlay = nextDebugOverlay;
         this.debugOverlayVisible = nextDebugOverlay;
+      }
+
+      // Sync shadowQuality configuration
+      const nextShadowQuality = state.shadowQuality;
+      if (nextShadowQuality !== prevShadowQuality) {
+        prevShadowQuality = nextShadowQuality;
+        this.applyShadowQuality(nextShadowQuality);
       }
     });
   }
@@ -269,6 +278,38 @@ export class GameManager {
 
     this.renderer.render(this.scene, this.camera);
   };
+
+  public applyShadowQuality(quality: 'simple' | 'fancy') {
+    const isFancy = quality === 'fancy';
+    if (this.renderer) {
+      this.renderer.shadowMap.enabled = isFancy;
+    }
+    
+    // 置脏 ChunkRenderer 材质以要求重新生成 shader
+    if (this.world) {
+      const renderer = this.world.getRenderer();
+      if (renderer && renderer.materials) {
+        const chunkMaterials = [
+          renderer.materials.solid,
+          renderer.materials.transparent,
+          renderer.materials.cutout
+        ];
+        chunkMaterials.forEach(m => {
+          if (m) m.needsUpdate = true;
+        });
+      }
+    }
+    
+    // 置脏动物材质
+    if (this.animals && typeof this.animals.markMaterialsDirty === 'function') {
+      this.animals.markMaterialsDirty();
+    }
+    
+    // 若切为 simple，立即禁用 sun shadow，防止 shadow map 相关的渲染流程继续工作
+    if (!isFancy && this.environment && this.environment.sun) {
+      this.environment.sun.light.castShadow = false;
+    }
+  }
 
   public setRenderDistance(dist: number) {
     this.renderDistance = dist;

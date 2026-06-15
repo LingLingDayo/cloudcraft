@@ -85,6 +85,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const setShowMinimap = useGameStore((state) => state.setShowMinimap);
   const nightBrightness = useGameStore((state) => state.nightBrightness);
   const setNightBrightness = useGameStore((state) => state.setNightBrightness);
+  const shadowQuality = useGameStore((state) => state.shadowQuality);
+  const setShadowQuality = useGameStore((state) => state.setShadowQuality);
 
   const [playerName, setPlayerName] = useState<string>(() => {
     return getSystemSettings().playerName;
@@ -108,6 +110,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     fov,
     dpadSize,
     nightBrightness,
+    shadowQuality,
   }), [
     language,
     playerName,
@@ -120,6 +123,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     fov,
     dpadSize,
     nightBrightness,
+    shadowQuality,
   ]);
 
   // 分发具体更改到 Zustand & localStorage 中
@@ -156,6 +160,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     }
     if (updates.nightBrightness !== undefined) {
       setNightBrightness(updates.nightBrightness);
+    }
+    if (updates.shadowQuality !== undefined) {
+      setShadowQuality(updates.shadowQuality);
     }
   };
 
@@ -252,6 +259,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 max: 2.0,
                 step: 0.1,
                 valueFormatter: (val) => t('settings.nightBrightnessValue', { val: Number(val).toFixed(1) }),
+              },
+              {
+                key: 'shadowQuality',
+                label: t('settings.shadowQuality'),
+                type: 'select',
+                options: [
+                  { label: t('settings.shadowQualitySimple'), value: 'simple' },
+                  { label: t('settings.shadowQualityFancy'), value: 'fancy' },
+                ],
               },
             ],
           },
