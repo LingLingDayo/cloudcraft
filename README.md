@@ -57,7 +57,7 @@ npm install
 ```bash
 npm run dev
 ```
-启动后在浏览器中打开命令行输出的本地地址（默认 `http://localhost:5173`）即可开始游玩。
+启动后在浏览器中打开命令行输出的本地地址（默认 `http://localhost:5402`）即可开始游玩。
 
 ### 3. 项目构建与打包
 ```bash
