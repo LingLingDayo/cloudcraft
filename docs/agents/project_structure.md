@@ -16,6 +16,7 @@ src/
 ├── game/            # 3D 游戏引擎核心逻辑 (纯 TypeScript)
 │   ├── core/        # GameManager (引擎主控、渲染循环与生命周期管理)
 │   ├── entities/    # 实体系统 (Player、Pig 等实体类)
+│   ├── environment/ # 环境与天气系统 (天体昼夜、天气状态与环境渲染)
 │   ├── item/        # 物品与道具系统 (Item 行为定义与注册表)
 │   ├── loot/        # 掉落表系统 (LootTable 随机掉落机制与注册表)
 │   ├── physics/     # 物理系统 (AABB 碰撞检测、重力)
@@ -46,6 +47,7 @@ src/
 ### 3D 游戏引擎核心 (src/game)
 * **core/**: `GameManager` 等主控逻辑，负责管理 Three.js 的初始化、渲染循环（AnimationFrame Loop）、引擎状态流转及各个子系统的生命周期。
 * **entities/**: 游戏实体，如 Player（玩家类）、Pig（猪实体类）等，包含实体的移动更新、行为状态等。
+* **environment/**: 环境与天气系统，管理天体移动（太阳、月亮、星空）、维度环境配置（DimensionConfig）及天气状态渲染（WeatherBlender, WeatherPresets）等。
 * **item/**: 核心道具与物品配置，包含物品基类行为定义及 `ItemRegistry` 注册表，解耦方块与纯道具交互逻辑。
 * **loot/**: 掉落表生成器，管理破坏方块或击杀实体时的掉落物品规则及 `LootTableRegistry`。
 * **physics/**: 自研的 AABB 体素物理系统，负责实体的碰撞检测、多轴移动阻挡、下落重力物理等。
