@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Mock AudioContext since jsdom does not support it
 class MockAudioContext {
@@ -34,15 +35,8 @@ class MockAudioContext {
   destination = {};
 }
 
-Object.defineProperty(window, 'AudioContext', {
-  value: MockAudioContext,
-  writable: true,
-});
-
-Object.defineProperty(window, 'webkitAudioContext', {
-  value: MockAudioContext,
-  writable: true,
-});
+vi.stubGlobal('AudioContext', MockAudioContext);
+vi.stubGlobal('webkitAudioContext', MockAudioContext);
 
 // Mock HTMLCanvasElement.prototype.toDataURL to prevent jsdom from logging warnings about missing native canvas npm package
 HTMLCanvasElement.prototype.toDataURL = function() {
