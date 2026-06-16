@@ -84,6 +84,9 @@ self.onmessage = async (e: MessageEvent<WorkerTask>) => {
           if (geom.normals instanceof Float32Array) transferables.push(geom.normals.buffer);
           if (geom.uvs instanceof Float32Array) transferables.push(geom.uvs.buffer);
           if (geom.atlasOffsets instanceof Float32Array) transferables.push(geom.atlasOffsets.buffer);
+          if (geom.valLights instanceof Float32Array) transferables.push(geom.valLights.buffer);
+          if (geom.aos instanceof Float32Array) transferables.push(geom.aos.buffer);
+          if (geom.roughnessMetalness instanceof Float32Array) transferables.push(geom.roughnessMetalness.buffer);
         }
       });
     }

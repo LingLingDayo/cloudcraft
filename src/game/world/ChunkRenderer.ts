@@ -74,6 +74,8 @@ export class ChunkRenderer {
         attribute vec2 aAtlasOffset;
         varying vec2 vAtlasOffset;
         varying vec2 vLocalUv;
+        attribute vec2 aRoughnessMetalness;
+        varying vec2 vRoughnessMetalness;
         ${shader.vertexShader}
       `.replace(
         `#include <uv_vertex>`,
@@ -82,6 +84,7 @@ export class ChunkRenderer {
          vLocalUv = uv;
          vValLight = aValLight;
          vAo = aAo;
+         vRoughnessMetalness = aRoughnessMetalness;
          
          // Calculate face light multiplier based on vertex normal (gives a strong 3D feel)
          float faceLight = 0.85;
@@ -106,6 +109,7 @@ export class ChunkRenderer {
         uniform vec3 uBlockLightColor;
         varying vec2 vAtlasOffset;
         varying vec2 vLocalUv;
+        varying vec2 vRoughnessMetalness;
         ${shader.fragmentShader}
       `.replace(
         `#include <map_fragment>`,
@@ -135,6 +139,14 @@ export class ChunkRenderer {
            
            diffuseColor *= sampledDiffuseColor * vec4(mixedLight * vFaceLight * aoFactor, 1.0);
          #endif`
+      ).replace(
+        `#include <roughnessmap_fragment>`,
+        `#include <roughnessmap_fragment>
+         roughnessFactor = vRoughnessMetalness.x;`
+      ).replace(
+        `#include <metalnessmap_fragment>`,
+        `#include <metalnessmap_fragment>
+         metalnessFactor = vRoughnessMetalness.y;`
       );
     };
 
@@ -200,6 +212,7 @@ export class ChunkRenderer {
         geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(data.atlasOffsets, 2));
         geom.setAttribute('aValLight', new THREE.Float32BufferAttribute(data.valLights, 2));
         geom.setAttribute('aAo', new THREE.Float32BufferAttribute(data.aos, 1));
+        geom.setAttribute('aRoughnessMetalness', new THREE.Float32BufferAttribute(data.roughnessMetalness, 2));
         geom.computeBoundingSphere();
       }
     };

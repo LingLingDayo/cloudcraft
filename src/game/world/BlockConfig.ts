@@ -23,6 +23,8 @@ export interface BlockProperties {
   allowVegetationBase?: boolean; // 是否允许在此方块上方生成或种植植被/树木/植物 (作为植被生长地基)
   allowedBaseBlocks?: BlockType[]; // 该植被/植物方块只能放置/生长在指定的这些方块类型上
   textureFaces?: { top: number; bottom: number; side: number };
+  roughness?: number;         // 粗糙度 0.0 到 1.0 (哑光为1.0, 默认1.0)
+  metalness?: number;         // 金属度 0.0 到 1.0 (默认0.0)
   droppedModelType?: 'block' | 'cross';
   isCollidable?: boolean;     // 是否参与物理碰撞，未指定时默认为 isSolid
   canSpawnOn?: boolean;       // 是否允许在其上方出生，未指定时默认为 isSolid && !isTransparent && !isLiquid
@@ -82,7 +84,7 @@ function getCachedBlockTypeKey(blockType: number): string {
 
 // ─── 公共查询接口 ──────────────────────────────────────────
 
-export function getBlockProperties(blockId: number): BlockProperties & { translationKey: string } {
+export function getBlockProperties(blockId: number): BlockProperties & { translationKey: string; roughness: number; metalness: number } {
   const props = propertiesResolver(blockId & 0x3F);
 
   let translationKey = props.translationKey;
@@ -94,7 +96,9 @@ export function getBlockProperties(blockId: number): BlockProperties & { transla
     ...props,
     translationKey,
     isCollidable: props.isCollidable ?? props.isSolid,
-    canSpawnOn: props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid)
+    canSpawnOn: props.canSpawnOn ?? (props.isSolid && !props.isTransparent && !props.isLiquid),
+    roughness: props.roughness ?? 1.0,
+    metalness: props.metalness ?? 0.0
   };
 }
 

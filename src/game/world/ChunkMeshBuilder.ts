@@ -22,6 +22,7 @@ export interface ChunkGeometryData {
   atlasOffsets: Float32Array;
   valLights: Float32Array;
   aos: Float32Array;
+  roughnessMetalness: Float32Array;
 }
 
 export interface ChunkMeshResult {
@@ -48,7 +49,8 @@ export class ChunkMeshBuilder {
       uvs: [] as number[],
       atlasOffsets: [] as number[],
       valLights: [] as number[],
-      aos: [] as number[]
+      aos: [] as number[],
+      roughnessMetalness: [] as number[]
     });
 
     const solidData = createData();
@@ -312,8 +314,8 @@ export class ChunkMeshBuilder {
                   // Calculate the light level of the adjacent air space
                   const faceLight = getLightAt(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
 
-                  // Pack into a 27-bit integer: [aoHash:8][faceLight:8][rotateUV:1][renderType:2][atlasIndex:8]
-                  hash = (aoHash << 19) | (faceLight << 11) | ((rotateUV ? 1 : 0) << 10) | (renderType << 8) | atlasIndex;
+                  // Pack into a 33-bit equivalent (JS Bitwise handles 32-bit): [blockType:6][aoHash:8][faceLight:8][rotateUV:1][renderType:2][atlasIndex:8]
+                  hash = (blockType << 27) | (aoHash << 19) | (faceLight << 11) | ((rotateUV ? 1 : 0) << 10) | (renderType << 8) | atlasIndex;
                 }
               }
             }
@@ -385,6 +387,14 @@ export class ChunkMeshBuilder {
               
               for(let m = 0; m < 6; m++) {
                 targetData.atlasOffsets.push(uMin, vMin);
+              }
+
+              const blockType = (c >>> 27) & 0x3F;
+              const props = getBlockProperties(blockType);
+              const roughness = props.roughness;
+              const metalness = props.metalness;
+              for(let m = 0; m < 6; m++) {
+                targetData.roughnessMetalness.push(roughness, metalness);
               }
 
               const uv0 = [0, 0];
@@ -525,6 +535,7 @@ export class ChunkMeshBuilder {
       atlasOffsets: number[];
       valLights: number[];
       aos: number[];
+      roughnessMetalness: number[];
     }): ChunkGeometryData | null => {
       if (data.positions.length === 0) return null;
       return {
@@ -533,7 +544,8 @@ export class ChunkMeshBuilder {
         uvs: new Float32Array(data.uvs),
         atlasOffsets: new Float32Array(data.atlasOffsets),
         valLights: new Float32Array(data.valLights),
-        aos: new Float32Array(data.aos)
+        aos: new Float32Array(data.aos),
+        roughnessMetalness: new Float32Array(data.roughnessMetalness)
       };
     };
 

@@ -143,6 +143,7 @@ export class BlockRegistry {
       hardness: 0.3, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.3, soundType: 'glass', showBreakCracks: false,
       color: 'rgba(150, 230, 255, 0.35)', colorHex: 0xe0f7fa, border: '1.5px solid #96e6ff',
       particleEffect: 'cloudcraft:glass',
+      roughness: 0.25, metalness: 0.0,
       textureFaces: { top: 8, bottom: 8, side: 8 }
     }));
 
@@ -150,6 +151,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.WATER, name: '水', isSolid: false, isTransparent: true, isLiquid: true,
       hardness: 0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 0.8, soundType: 'water', showBreakCracks: false,
       color: 'rgba(40, 110, 220, 0.75)', colorHex: 0x286edc,
+      roughness: 0.15, metalness: 0.05,
       textureFaces: { top: 9, bottom: 9, side: 9 }
     }));
 
@@ -166,6 +168,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.IRON, name: '铁矿石', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 3.0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'stone',
       color: '#d0b090', colorHex: 0xbe825a,
+      roughness: 0.5, metalness: 0.5,
       textureFaces: { top: 12, bottom: 12, side: 12 }
     }));
 
@@ -173,6 +176,7 @@ export class BlockRegistry {
       id: BLOCK_TYPES.DIAMOND, name: '钻石矿石', isSolid: true, isTransparent: false, isLiquid: false,
       hardness: 3.0, affectedByGravity: false, lightLevel: 0, isInteractable: false, opacity: 1.0, soundType: 'stone',
       color: '#5cdcfa', colorHex: 0x5cdcfa, border: '1.5px solid #2db4d2',
+      roughness: 0.3, metalness: 0.2,
       textureFaces: { top: 13, bottom: 13, side: 13 }
     }));
 
