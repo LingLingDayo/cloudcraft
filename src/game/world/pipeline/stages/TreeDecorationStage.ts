@@ -54,7 +54,8 @@ export class TreeDecorationStage implements ChunkPipelineStage {
             const ty = finalHeight;
 
             // 垂直空间优化剪枝：如果树的基底高度完全在该 Sub-chunk 的垂直影响区间外，则 O(1) 快速跳过，消除 32x 重复计算
-            if (ty < worldStartY - 15 || ty > worldStartY + 15) {
+            // 巨型树最大向上长 30 格左右，因此向下容差必须扩大到 32 以上，防止上部区块直接跳过生成导致断顶
+            if (ty < worldStartY - 32 || ty > worldStartY + 16) {
               continue;
             }
 

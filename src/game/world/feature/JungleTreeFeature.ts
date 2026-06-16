@@ -1,63 +1,98 @@
-import type { WorldFeature } from './WorldFeature';
-import type { BlockWriter, RandomProvider } from '../TreeStructureGenerator';
 import { BLOCK_TYPES } from '../BlockConfig';
+import type { BlockWriter, RandomProvider } from '../TreeStructureGenerator';
+import {
+  GenericTreeFeature,
+  BranchingTrunkPlacer,
+  MegaJungleTrunkPlacer,
+  BlobFoliagePlacer,
+  MegaJungleFoliagePlacer,
+  type TreeConfig
+} from './GenericTreeFeature';
 
-export class JungleTreeFeature implements WorldFeature {
-  public readonly id = 'jungle_tree';
+export class JungleTreeFeature extends GenericTreeFeature {
+  private readonly smallTreeConfig: TreeConfig;
+  private readonly megaTreeConfig: TreeConfig;
 
-  public generate(
+  constructor() {
+    // 默认回退配置
+    const defaultSmall: TreeConfig = {
+      trunkBlock: BLOCK_TYPES.JUNGLE_WOOD,
+      leafBlock: BLOCK_TYPES.JUNGLE_LEAVES,
+      minHeight: 7,
+      heightVariance: 5,
+      trunkPlacer: new BranchingTrunkPlacer(),
+      foliagePlacer: new BlobFoliagePlacer({
+        minLy: -3,
+        maxLy: 1,
+        radiusProvider: (ly) => (ly === 1 ? 1 : ly === -3 ? 1 : 2),
+        excludeCornersLayers: [0, -1, -2],
+        discardChance: 0.10
+      })
+    };
+
+    super('jungle_tree', defaultSmall);
+
+    this.smallTreeConfig = defaultSmall;
+
+    this.megaTreeConfig = {
+      trunkBlock: BLOCK_TYPES.JUNGLE_WOOD,
+      leafBlock: BLOCK_TYPES.JUNGLE_LEAVES,
+      minHeight: 16,
+      heightVariance: 12,
+      trunkPlacer: new MegaJungleTrunkPlacer(),
+      foliagePlacer: new MegaJungleFoliagePlacer({
+        minLy: -3,
+        maxLy: 2,
+        radiusProvider: (ly) => (ly === 2 ? 0 : (ly === -3 ? 1 : (ly === 1 ? 1 : 2))),
+        excludeCornersLayers: [1, 0, -1, -2, -3],
+        discardChance: 0.10
+      })
+    };
+  }
+
+  public override generate(
     writer: BlockWriter,
     x: number,
     y: number,
     z: number,
     random: RandomProvider
   ): boolean {
-    const trunkBlock = BLOCK_TYPES.JUNGLE_WOOD;
-    const leafBlock = BLOCK_TYPES.JUNGLE_LEAVES;
+    // 依据本地伪随机数，决定生成巨型丛林大树 (25% 概率) 还是普通丛林小树 (75% 概率)
+    const typeRand = random(x, y, z);
+    const isMega = Math.abs(typeRand) < 0.25;
+    const config = isMega ? this.megaTreeConfig : this.smallTreeConfig;
 
-    // 高度范围为 7 ~ 11
-    const heightRand = random(x, y, z);
-    const treeHeight = 7 + Math.floor(Math.abs(heightRand) * 5);
+    const dirt = config.dirtBlock ?? BLOCK_TYPES.DIRT;
 
-    // 地基转化为泥土
-    writer.setBlock(x, y, z, BLOCK_TYPES.DIRT);
+    // 随机计算高度
+    const heightRand = random(x + 1, y, z + 1);
+    const treeHeight =
+      config.minHeight +
+      Math.floor(Math.abs(heightRand) * config.heightVariance);
 
-    // 生成树干
-    for (let h = 1; h <= treeHeight; h++) {
-      writer.setBlock(x, y + h, z, trunkBlock);
-    }
+    // 放置树干（包括分叉/大侧枝，并做地基转换）
+    const trunkPositions = config.trunkPlacer.place(
+      writer,
+      x,
+      y,
+      z,
+      treeHeight,
+      config.trunkBlock,
+      random,
+      dirt
+    );
 
-    // 生成树冠
-    const leafCenterY = y + treeHeight + 1;
-    for (let ly = -3; ly <= 1; ly++) {
-      const radius = ly === 1 ? 1 : (ly === -3 ? 1 : 2);
-      for (let lx = -radius; lx <= radius; lx++) {
-        for (let lz = -radius; lz <= radius; lz++) {
-          if (lx === 0 && lz === 0 && ly <= 0) continue;
-
-          // 当半径为 2 时，剔除角落
-          if (radius === 2 && Math.abs(lx) === 2 && Math.abs(lz) === 2) {
-            continue;
-          }
-
-          const wlx = x + lx;
-          const wlz = z + lz;
-          const wly = leafCenterY + ly;
-
-          const isOuter = radius > 0 && (Math.abs(lx) === radius || Math.abs(lz) === radius);
-          if (isOuter && !(lx === 0 && lz === 0)) {
-            const leafRand = random(wlx, wly, wlz);
-            if (leafRand < 0.10) {
-              continue;
-            }
-          }
-
-          if (writer.getBlock(wlx, wly, wlz) === BLOCK_TYPES.AIR) {
-            writer.setBlock(wlx, wly, wlz, leafBlock);
-          }
-        }
-      }
-    }
+    // 放置主树冠及侧枝叶簇
+    config.foliagePlacer.place(
+      writer,
+      x,
+      y,
+      z,
+      treeHeight,
+      config.leafBlock,
+      trunkPositions,
+      random
+    );
 
     return true;
   }
