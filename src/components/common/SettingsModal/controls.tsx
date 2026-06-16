@@ -90,18 +90,36 @@ export const TextareaControl: React.FC<ControlRendererProps> = ({
 export const SwitchControl: React.FC<ControlRendererProps> = ({
   value,
   disabled,
+  control,
   onUpdate,
 }) => {
+  const ctrl = control as any;
+  const label = ctrl.label as string | undefined;
+
   const handleToggle = () => {
     if (disabled) return;
     sound.playClick();
     onUpdate(!value);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      sound.playClick();
+      onUpdate(!value);
+    }
+  };
+
   return (
     <div
+      role="switch"
+      aria-checked={!!value}
+      aria-label={label}
+      tabIndex={disabled ? -1 : 0}
       className={`${styles.switchContainer} ${disabled ? styles.disabled : ''}`}
       onClick={handleToggle}
+      onKeyDown={handleKeyDown}
     >
       <div className={`${styles.switchTrack} ${value ? styles.checked : ''}`}>
         <div className={styles.switchThumb} />
@@ -198,14 +216,16 @@ export const SelectControl: React.FC<ControlRendererProps> = ({
     }
   };
 
-  // 生成显示的文本
+  // 生成显示的文本（用 Set 替换 filter+includes 的 O(N²) 双重遍历）
   const displayLabel = useMemo(() => {
     if (isMultiple) {
       const currentArray = Array.isArray(value) ? value : [];
       if (currentArray.length === 0) return '请选择 (多选)...';
-      const labels = options
-        .filter((opt) => currentArray.includes(opt.value))
-        .map((opt) => opt.label);
+      const currentSet = new Set(currentArray);
+      const labels = options.reduce<string[]>((acc, opt) => {
+        if (currentSet.has(opt.value)) acc.push(opt.label);
+        return acc;
+      }, []);
       return labels.join(', ');
     } else {
       const selected = options.find((opt) => opt.value === value);

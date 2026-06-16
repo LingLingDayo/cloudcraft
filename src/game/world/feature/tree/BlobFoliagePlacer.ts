@@ -48,6 +48,8 @@ export class BlobFoliagePlacer implements FoliagePlacer {
       excludeCornersLayers = [],
       discardChance = 0
     } = this.config;
+    // 预构建 Set，避免嵌套循环中 O(N) 线性查找
+    const excludeLayersSet = new Set(excludeCornersLayers);
 
     // 1. 生成树顶主树冠
     for (let ly = minLy; ly <= maxLy; ly++) {
@@ -61,7 +63,7 @@ export class BlobFoliagePlacer implements FoliagePlacer {
 
           // 剔除指定层数的角落位置
           const isCorner = Math.abs(lx) === radius && Math.abs(lz) === radius;
-          if (isCorner && excludeCornersLayers.includes(ly)) {
+          if (isCorner && excludeLayersSet.has(ly)) {
             continue;
           }
 

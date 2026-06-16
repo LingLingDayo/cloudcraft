@@ -10,6 +10,19 @@ import { isMobileDevice, requestFullscreenAndLandscape, exitFullscreenAndUnlock,
 import { getSystemSettings, saveSystemSetting } from '@utils/settings';
 import styles from './SettingsDialog.module.scss';
 
+/**
+ * 纯函数提升到模块层，避免每次 render 重建。
+ * 不依赖任何组件内部状态，只由调用方传入 checked 参数驱动。
+ */
+const toggleFullscreen = (checked: boolean) => {
+  if (checked) {
+    requestFullscreenAndLandscape().catch((err: unknown) => console.warn('Failed to enter fullscreen:', err));
+  } else {
+    exitFullscreenAndUnlock().catch((err: unknown) => console.warn('Failed to exit fullscreen:', err));
+  }
+};
+
+
 interface SettingsDialogProps {
   onClose: () => void;
   closeOnBack?: boolean;
@@ -58,13 +71,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     };
   }, []);
 
-  const toggleFullscreen = (checked: boolean) => {
-    if (checked) {
-      requestFullscreenAndLandscape().catch((err: unknown) => console.warn('Failed to enter fullscreen:', err));
-    } else {
-      exitFullscreenAndUnlock().catch((err: unknown) => console.warn('Failed to exit fullscreen:', err));
-    }
-  };
+  // toggleFullscreen 已提升为模块级纯函数，无需内联声明
 
   // Load state and setters from store
   const renderDistance = useGameStore((state) => state.renderDistance);

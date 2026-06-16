@@ -30,7 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <button className={getClassName()} onClick={handleClick} {...props}>
+    <button type="button" className={getClassName()} onClick={handleClick} {...props}>
       {children}
     </button>
   );

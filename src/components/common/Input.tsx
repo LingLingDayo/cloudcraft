@@ -1,6 +1,9 @@
 import React from 'react';
 import styles from './Input.module.scss';
 
+// 模块级常量，避免每次 render 创建新对象引用打破子组件 memo
+const DEFAULT_STYLE: React.CSSProperties = {};
+
 interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label?: string;
   value: string;
@@ -13,8 +16,8 @@ export const Input: React.FC<InputProps> = ({
   label,
   value,
   onChange,
-  labelStyle = {},
-  containerStyle = {},
+  labelStyle = DEFAULT_STYLE,
+  containerStyle = DEFAULT_STYLE,
   className = '',
   ...props
 }) => {

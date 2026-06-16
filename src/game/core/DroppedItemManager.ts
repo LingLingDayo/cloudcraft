@@ -48,16 +48,17 @@ export class DroppedItemManager {
 
       // 2. Physics updates
       if (!item.onGround || item.velocity.lengthSq() > 0.001) {
-        item.velocity.y += gravity * dt;
-        item.velocity.y = Math.max(-20, item.velocity.y);
+        const vel = item.velocity;
+        vel.y += gravity * dt;
+        vel.y = Math.max(-20, vel.y);
 
-        item.velocity.x *= Math.max(0, 1 - 2 * dt);
-        item.velocity.z *= Math.max(0, 1 - 2 * dt);
+        vel.x *= Math.max(0, 1 - 2 * dt);
+        vel.z *= Math.max(0, 1 - 2 * dt);
 
         const { onGround } = VoxelCollider.resolveMove(
           this.game.world,
           item.position,
-          item.velocity,
+          vel,
           { width: 0.2, height: 0.2, depth: 0.2 },
           dt
         );

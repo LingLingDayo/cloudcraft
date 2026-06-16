@@ -51,6 +51,7 @@ export const MobileToolbar: React.FC = () => {
     <>
       <div className={`${styles.mobileToolbarContainer} ${toolbarExpanded ? styles.expanded : ''}`}>
         <button 
+          type="button"
           className={`${styles.toolbarToggleBtn} glass-panel`}
           onTouchStart={(e) => {
             e.stopPropagation();
@@ -66,6 +67,7 @@ export const MobileToolbar: React.FC = () => {
         
         <div className={styles.toolbarMenu}>
           <button 
+            type="button"
             className={`${styles.toolbarBtn} glass-panel`} 
             onTouchStart={(e) => {
               e.stopPropagation();
@@ -86,6 +88,7 @@ export const MobileToolbar: React.FC = () => {
           </button>
 
           <button 
+            type="button"
             className={`${styles.toolbarBtn} glass-panel`} 
             onTouchStart={(e) => {
               e.stopPropagation();
@@ -104,6 +107,7 @@ export const MobileToolbar: React.FC = () => {
           </button>
           
           <button 
+            type="button"
             className={`${styles.toolbarBtn} ${styles.danger} glass-panel`} 
             onTouchStart={(e) => {
               e.stopPropagation();

@@ -48,6 +48,8 @@ export class MegaJungleFoliagePlacer implements FoliagePlacer {
       excludeCornersLayers = [],
       discardChance = 0
     } = this.config;
+    // 预构建 Set，避免嵌套循环中 O(N) 线性查找
+    const excludeLayersSet = new Set(excludeCornersLayers);
 
     // 1. 生成顶端巨型 2x2 对称主树冠
     for (let ly = minLy; ly <= maxLy; ly++) {
@@ -66,7 +68,7 @@ export class MegaJungleFoliagePlacer implements FoliagePlacer {
 
           // 剔除 2x2 四周边角的叶子
           const isCorner = (lx === minX || lx === maxX) && (lz === minZ || lz === maxZ);
-          if (isCorner && excludeCornersLayers.includes(ly)) {
+          if (isCorner && excludeLayersSet.has(ly)) {
             continue;
           }
 

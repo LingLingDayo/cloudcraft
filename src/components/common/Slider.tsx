@@ -1,6 +1,9 @@
 import React from 'react';
 import styles from './Slider.module.scss';
 
+// 模块级常量，避免每次 render 创建新对象引用打破子组件 memo
+const DEFAULT_STYLE: React.CSSProperties = {};
+
 interface SliderProps {
   label: string;
   min: number;
@@ -20,8 +23,8 @@ export const Slider: React.FC<SliderProps> = ({
   step = 1,
   value,
   onChange,
-  labelStyle = {},
-  containerStyle = {},
+  labelStyle = DEFAULT_STYLE,
+  containerStyle = DEFAULT_STYLE,
   valueFormatter,
 }) => {
   return (
@@ -36,6 +39,7 @@ export const Slider: React.FC<SliderProps> = ({
       </div>
       <input
         type="range"
+        aria-label={label}
         min={min}
         max={max}
         step={step}

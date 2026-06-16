@@ -20,6 +20,8 @@ export const SvgIcon: React.FC<SvgIconProps> = ({ raw, ...props }) => {
     <svg
       viewBox={viewBox}
       fillRule={fillRule}
+      // 安全白名单：raw 内容全部来自 Vite `?raw` 静态打包的本地 SVG 文件，
+      // 非用户可控输入，不存在 XSS 风险。
       dangerouslySetInnerHTML={{ __html: svgInnerContent }}
       {...props}
     />

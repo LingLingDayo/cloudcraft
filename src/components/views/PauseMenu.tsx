@@ -22,9 +22,10 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
   const settingsSource = useGameStore((state) => state.settingsSource);
 
   useEffect(() => {
+    const ref = saveTimeoutRef;
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      if (ref.current) {
+        clearTimeout(ref.current);
       }
     };
   }, []);

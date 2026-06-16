@@ -29,10 +29,21 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
   const selectedItemRef = useRef<ItemType | null>(selectedItem);
+  // 用 ref 持有最新的初始化参数，避免在 init effect 中声明额外依赖导致 GM 被反复重置
+  const renderDistanceRef = useRef(renderDistance);
+  const fovRef = useRef(fov);
 
   useEffect(() => {
     selectedItemRef.current = selectedItem;
   }, [selectedItem]);
+
+  useEffect(() => {
+    renderDistanceRef.current = renderDistance;
+  }, [renderDistance]);
+
+  useEffect(() => {
+    fovRef.current = fov;
+  }, [fov]);
 
   // Initialize GameManager once the canvas is mounted
   useEffect(() => {
@@ -42,9 +53,9 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
       // Create new GameManager without UI callbacks (handled via Zustand directly)
       const gm = new GameManager(canvasRef.current, seed);
 
-      // Apply initial settings
-      gm.setRenderDistance(renderDistance);
-      gm.setFov(fov);
+      // Apply initial settings (via refs to avoid extra effect dependencies)
+      gm.setRenderDistance(renderDistanceRef.current);
+      gm.setFov(fovRef.current);
       gm.player.selectedItemType = selectedItemRef.current;
 
       gameManagerRef.current = gm;
@@ -82,7 +93,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
                   });
                 }
                 // Trigger immediate render distance load
-                gm.setRenderDistance(renderDistance);
+                gm.setRenderDistance(renderDistanceRef.current);
               } catch (e) {
                 console.error('Error loading save data', e);
               }
@@ -101,7 +112,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         gameManagerRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // seed / loadSave 变化才真正需要重建引擎；renderDistance/fov 通过 ref 在首次初始化时读取
   }, [seed, loadSave]);
 
   // Synchronize selected item to GameManager
