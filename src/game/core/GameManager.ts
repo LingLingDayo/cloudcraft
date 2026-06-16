@@ -15,6 +15,7 @@ import { DroppedItemManager } from './DroppedItemManager';
 import { AnimalManager } from './AnimalManager';
 import { WORLD_CONFIG } from '@game/world/WorldConfig';
 import { cleanGpuName } from '@utils/gpu';
+import { mountDevConsole } from '../dev';
 
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
@@ -80,11 +81,10 @@ export class GameManager {
 
   private initGame(seed: string) {
     this.world = new World(seed, this);
-    (window as any).gameInstance = this;
     this.scene.add(this.world.group);
 
     this.physics = new Physics(this.world);
-    this.controls = new Controls(this.camera, this.canvas);
+    this.controls = new Controls(this.camera, this.canvas, this);
 
     this.controls.addLockChangeListener((locked) => {
       useGameStore.getState().setGameState(locked ? GameState.PLAYING : GameState.PAUSED);
@@ -165,6 +165,8 @@ export class GameManager {
         this.applyShadowQuality(nextShadowQuality);
       }
     });
+
+    mountDevConsole(this);
   }
 
   public spawnPlayer() {
@@ -510,6 +512,10 @@ export class GameManager {
     if (this.animals) this.animals.dispose();
     if (this.particles) {
       this.particles.clear();
+    }
+
+    if (import.meta.env.DEV) {
+      delete window.__cloudcraft__;
     }
   }
 }

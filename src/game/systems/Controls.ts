@@ -5,10 +5,17 @@ import { useGameStore } from '@store/useGameStore';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import { GameState } from '@type';
 
+export interface IGameInstance {
+  animals?: {
+    getAnimalMeshes(): THREE.Object3D[];
+  };
+  camera: THREE.Camera;
+}
 
 export class Controls {
   public domElement: HTMLElement;
   private camera: THREE.Camera;
+  private game?: IGameInstance;
 
   // Keep keys property for backwards compatibility, using getters
   public get keys() {
@@ -68,9 +75,10 @@ export class Controls {
   private miningTimeout: number | null = null;
   private longPressButtonTriggered: number | null = null;
 
-  constructor(camera: THREE.Camera, domElement: HTMLElement) {
+  constructor(camera: THREE.Camera, domElement: HTMLElement, game?: IGameInstance) {
     this.camera = camera;
     this.domElement = domElement;
+    this.game = game;
 
     this.initListeners();
     this.initHotkeys();
@@ -296,8 +304,7 @@ export class Controls {
         if (!this.isMoved) {
           if (duration < 200) {
             // Tap: Attack/Break if looking at an animal or in creative mode, otherwise place/use
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const game = (window as any).gameInstance;
+            const game = this.game || (window as unknown as { gameInstance?: IGameInstance }).gameInstance;
             let button = 2; // Default: Right Click (Place/Use)
             if (game) {
               const isCreative = useGameStore.getState().gameMode === 'creative';
