@@ -1,5 +1,6 @@
 import { GameMode, type HotbarItem, type Vector3D } from '@type';
 import pkg from '@package';
+import type { SerializedEntityData } from '@game/entities/Entity';
 
 export interface SaveMetadata {
   id: string;
@@ -20,6 +21,7 @@ export interface SaveData {
   gameMode: GameMode;
   version: string;
   seed?: string;
+  entities?: SerializedEntityData[];
 }
 
 export class SaveManager {

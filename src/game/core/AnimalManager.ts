@@ -4,6 +4,8 @@ import { Animal } from '../entities/Animal';
 import { Pig } from '../entities/Pig';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { World, WORLD_HEIGHT } from '@game/world/World';
+import { EntityRegistry } from '../entities/EntityRegistry';
+import type { SerializedEntityData } from '../entities/Entity';
 
 export type AnimalCreator = (id: string, spawnPos: THREE.Vector3, world: World) => Animal;
 
@@ -18,10 +20,30 @@ export class AnimalManager {
 
   public static register(type: string, creator: AnimalCreator) {
     this.registry.set(type, creator);
+    EntityRegistry.register(type, creator);
   }
 
   constructor(game: GameManager) {
     this.game = game;
+  }
+
+  public serialize(): SerializedEntityData[] {
+    return this.animals.map(animal => animal.serialize());
+  }
+
+  public deserialize(serialized: SerializedEntityData[]) {
+    // Clear current animals
+    this.dispose();
+
+    for (const data of serialized) {
+      const spawnPos = new THREE.Vector3(data.x, data.y, data.z);
+      const entity = EntityRegistry.create(data.type, data.id, spawnPos, this.game.world);
+      if (entity && entity instanceof Animal) {
+        entity.deserialize(data);
+        this.game.scene.add(entity.mesh);
+        this.animals.push(entity);
+      }
+    }
   }
 
   public update(dt: number) {
@@ -68,6 +90,9 @@ export class AnimalManager {
     // 1. Despawn animals too far away from the player (e.g. > 64 blocks)
     for (let i = this.animals.length - 1; i >= 0; i--) {
       const animal = this.animals[i];
+      if (animal.isPersistent) {
+        continue;
+      }
       const dist = animal.position.distanceTo(playerPos);
       if (dist > 64.0) {
         this.game.scene.remove(animal.mesh);

@@ -77,4 +77,44 @@ describe('Pig Entity', () => {
     expect(pig.isDead).toBe(true);
     expect(pig.dropItems).toHaveBeenCalled();
   });
+
+  test('should serialize and deserialize Pig properties correctly', () => {
+    const spawnPos = new THREE.Vector3(10.5, 4, 10.5);
+    const pig = new Pig('pig-1', spawnPos, mockWorld);
+    
+    // Set some custom values
+    pig.velocity.set(1.0, 2.0, 3.0);
+    pig.life = 6;
+    pig.isPersistent = true;
+    pig.aiState = 'panicked';
+
+    const serialized = pig.serialize();
+    expect(serialized.id).toBe('pig-1');
+    expect(serialized.type).toBe('pig');
+    expect(serialized.x).toBe(10.5);
+    expect(serialized.y).toBe(4);
+    expect(serialized.z).toBe(10.5);
+    expect(serialized.vx).toBe(1.0);
+    expect(serialized.vy).toBe(2.0);
+    expect(serialized.vz).toBe(3.0);
+    expect(serialized.life).toBe(6);
+    expect(serialized.isPersistent).toBe(true);
+    expect(serialized.customData?.aiState).toBe('panicked');
+
+    // Restore to another pig
+    const otherPig = new Pig('pig-temp', new THREE.Vector3(0, 0, 0), mockWorld);
+    otherPig.deserialize(serialized);
+
+    expect(otherPig.id).toBe('pig-1');
+    expect(otherPig.type).toBe('pig');
+    expect(otherPig.position.x).toBe(10.5);
+    expect(otherPig.position.y).toBe(4);
+    expect(otherPig.position.z).toBe(10.5);
+    expect(otherPig.velocity.x).toBe(1.0);
+    expect(otherPig.velocity.y).toBe(2.0);
+    expect(otherPig.velocity.z).toBe(3.0);
+    expect(otherPig.life).toBe(6);
+    expect(otherPig.isPersistent).toBe(true);
+    expect(otherPig.aiState).toBe('panicked');
+  });
 });

@@ -70,6 +70,9 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
                 if (saved.world) {
                   gm.world.loadWorld(saved.world);
                 }
+                if (saved.entities && gm.animals) {
+                  gm.animals.deserialize(saved.entities);
+                }
                 if (saved.player) {
                   gm.player.position.set(saved.player.x, saved.player.y, saved.player.z);
                   gm.player.syncCamera();
@@ -180,6 +183,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         activeSlot: useGameStore.getState().activeSlot,
         gameMode: useGameStore.getState().gameMode,
         version: SaveManager.GAME_VERSION,
+        entities: gm.animals ? gm.animals.serialize() : undefined,
       };
       try {
         await SaveManager.saveGame('default_world', saveData, t('startMenu.defaultWorldName'));

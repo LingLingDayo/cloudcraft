@@ -20,7 +20,23 @@ describe('SaveManager', () => {
       inventory: [],
       activeSlot: 0,
       gameMode: GameMode.ADVENTURE,
-      version: SaveManager.GAME_VERSION
+      version: SaveManager.GAME_VERSION,
+      entities: [
+        {
+          id: 'pig-1',
+          type: 'pig',
+          x: 10,
+          y: 4,
+          z: 10,
+          vx: 0.1,
+          vy: 0.2,
+          vz: 0.3,
+          life: 8,
+          maxLife: 10,
+          isPersistent: true,
+          customData: { aiState: 'wandering' }
+        }
+      ]
     };
 
     await SaveManager.saveGame('world_1', data, 'World One');
@@ -35,6 +51,11 @@ describe('SaveManager', () => {
     expect(loaded).toBeDefined();
     expect(loaded?.world).toBe('dummy_world_data');
     expect(loaded?.version).toBe(SaveManager.GAME_VERSION);
+    expect(loaded?.entities).toBeDefined();
+    expect(loaded?.entities?.length).toBe(1);
+    expect(loaded?.entities?.[0].id).toBe('pig-1');
+    expect(loaded?.entities?.[0].type).toBe('pig');
+    expect(loaded?.entities?.[0].life).toBe(8);
   });
 
   it('should delete saves', async () => {

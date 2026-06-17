@@ -4,16 +4,10 @@ import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
 import { VoxelCollider } from '@game/physics/voxel/VoxelCollider';
 import { sound } from '@game/systems/Sound';
 import { LootTableHelper } from '../loot/LootTableHelper';
+import { Entity } from './Entity';
 
-export abstract class Animal {
-  public id: string;
-  public position = new THREE.Vector3();
-  public velocity = new THREE.Vector3();
+export abstract class Animal extends Entity {
   public state = { onGround: false, inWater: false };
-  
-  public life: number;
-  public maxLife: number;
-  public isDead = false;
 
   // Physical size
   public abstract width: number;
@@ -40,14 +34,8 @@ export abstract class Animal {
   public abstract hurtSound: string;
   public abstract deathSound: string;
 
-  protected world: World;
-
-  constructor(id: string, spawnPos: THREE.Vector3, world: World, maxLife = 10) {
-    this.id = id;
-    this.position.copy(spawnPos);
-    this.world = world;
-    this.maxLife = maxLife;
-    this.life = maxLife;
+  constructor(id: string, type: string, spawnPos: THREE.Vector3, world: World, maxLife = 10) {
+    super(id, type, spawnPos, world, maxLife);
     this.mesh = new THREE.Group();
     this.mesh.position.copy(this.position);
   }
@@ -208,6 +196,7 @@ export abstract class Animal {
     if (this.isDead) return;
 
     this.life = Math.max(0, this.life - amount);
+    this.isPersistent = true; // Mark as persistent upon taking damage
     this.aiState = 'panicked';
     this.aiTimer = 5.0; // Panic for 5s
     
@@ -277,4 +266,19 @@ export abstract class Animal {
     }
     this.dropItems();
   }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected serializeCustomData(): Record<string, any> | undefined {
+    return {
+      aiState: this.aiState
+    };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected deserializeCustomData(customData: Record<string, any>): void {
+    if (customData && customData.aiState) {
+      this.aiState = customData.aiState;
+    }
+  }
 }
+
