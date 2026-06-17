@@ -47,10 +47,14 @@ export const Inventory: React.FC = () => {
     y: number;
   } | null>(null);
 
+  // Active selected hotbar slot in inventory popup
+  const [selectedHotbarSlot, setSelectedHotbarSlot] = useState<number | null>(null);
+
   useEffect(() => {
     if (!isInventoryOpen) {
       const frameId = requestAnimationFrame(() => {
         setHoveredItem(null);
+        setSelectedHotbarSlot(null);
       });
       return () => cancelAnimationFrame(frameId);
     }
@@ -144,6 +148,7 @@ export const Inventory: React.FC = () => {
       setHeldItem(null);
     }
     setHoveredItem(null);
+    setSelectedHotbarSlot(null);
     closeInventory();
     // Relock pointer in game controls
     gameInstance?.controls?.requestLock?.();
@@ -189,6 +194,11 @@ export const Inventory: React.FC = () => {
   ) => {
     const nextHotbar = [...hotbar];
     const nextInventory = [...inventory];
+
+    if (zone === 'hotbar') {
+      setSelectedHotbarSlot(index);
+      useGameStore.setState({ activeSlot: index });
+    }
 
     if (zone === 'creative') {
       const clickedBlockId = blockId!;
@@ -344,7 +354,7 @@ export const Inventory: React.FC = () => {
       <Dialog 
         title={gameMode === 'creative' ? t('inventory.titleCreative') : t('inventory.titleSurvival')} 
         onClose={handleClose}
-        width={412}
+        width={480}
       >
         <div className={styles.container}>
           {/* Creative Mode Tabs */}
@@ -382,7 +392,7 @@ export const Inventory: React.FC = () => {
                       onMouseMove={(e) => handleMouseMoveSlot(itemId, e)}
                       onMouseLeave={handleMouseLeaveSlot}
                     >
-                      <BlockIcon itemId={itemId} size={18} className={styles.itemPreview} />
+                      <BlockIcon itemId={itemId} size={26} className={styles.itemPreview} />
                     </div>
                   );
                 })}
@@ -407,7 +417,7 @@ export const Inventory: React.FC = () => {
                   >
                     {item ? (
                       <>
-                        <BlockIcon blockId={item.type} size={18} className={styles.itemPreview} />
+                        <BlockIcon blockId={item.type} size={26} className={styles.itemPreview} />
                         {item.count > 0 && gameMode !== 'creative' && (
                           <span className={styles.itemCount}>{item.count}</span>
                         )}
@@ -421,16 +431,14 @@ export const Inventory: React.FC = () => {
             </div>
           )}
 
-          {/* Bottom Common Area: Divider + Hotbar (1x9) */}
-          <div className={styles.divider} />
-
+          {/* Bottom Common Area: Hotbar (1x9) */}
           <div className={styles.hotbarSection}>
             <div className={styles.labelRow}>{t('inventory.labelHotbar')}</div>
             <div className={styles.hotbarGrid}>
               {hotbar.map((item, idx) => (
                 <div
                   key={`hot-${idx}`}
-                  className={`${styles.itemSlot} ${idx === activeSlot ? styles.activeSlotBorder : ''}`}
+                  className={`${styles.itemSlot} ${idx === selectedHotbarSlot ? styles.activeSlotBorder : ''}`}
                   onClick={() => handleSlotClickWithTooltip('hotbar', idx)}
                   onContextMenu={(e) => handleRightClickWithTooltip('hotbar', idx, e)}
                   onMouseEnter={(e) => item && handleMouseEnterSlot(item.type, e)}
@@ -439,7 +447,7 @@ export const Inventory: React.FC = () => {
                 >
                   {item ? (
                     <>
-                      <BlockIcon blockId={item.type} size={18} className={styles.itemPreview} />
+                      <BlockIcon blockId={item.type} size={26} className={styles.itemPreview} />
                       {item.count > 0 && gameMode !== 'creative' && (
                         <span className={styles.itemCount}>{item.count}</span>
                       )}
@@ -463,11 +471,11 @@ export const Inventory: React.FC = () => {
         <div
           className={styles.heldItemFloat}
           style={{
-            top: mousePos.y - 18,
-            left: mousePos.x - 18,
+            top: mousePos.y - 20,
+            left: mousePos.x - 20,
           }}
         >
-          <BlockIcon blockId={heldItem.type} size={22} className={styles.itemPreview} />
+          <BlockIcon blockId={heldItem.type} size={30} className={styles.itemPreview} />
           {heldItem.count > 0 && gameMode !== 'creative' && (
             <span className={styles.itemCount}>{heldItem.count}</span>
           )}
