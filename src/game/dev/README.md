@@ -35,6 +35,12 @@ window.__cloudcraft__.meta.help();
 - **`window.__cloudcraft__.player.teleport(x, y, z)`**
   - **功能**：将玩家瞬间传送至指定的 X, Y, Z 三维坐标。
   - **参数**：`x` (数字), `y` (数字), `z` (数字)。
+- **`window.__cloudcraft__.player.teleportToBiome(biomeId)`**
+  - **功能**：以玩家当前位置为中心，在约 5000 格半径范围内寻找最近的目标生态群系并传送。
+  - **参数**：`biomeId` (字符串)。可选值有：`"forest"`、`"taiga"`、`"desert"`、`"jungle"`、`"plateau"`、`"stony_peaks"`、`"plains"`。
+- **`window.__cloudcraft__.player.teleportToLandform(landformId)`**
+  - **功能**：以玩家当前位置为中心，在约 5000 格半径范围内寻找最近的目标地形并传送。
+  - **参数**：`landformId` (字符串)。可选值有：`"ocean"`、`"plains"`、`"hills"`、`"plateau"`、`"mountains"`。
 - **`window.__cloudcraft__.player.setHealth(value)`**
   - **功能**：设置玩家的当前生命值。
   - **参数**：`value` (数字，取值范围 `[0, 10]`)。若设为 `0` 则会触发扣血死亡重生流程。

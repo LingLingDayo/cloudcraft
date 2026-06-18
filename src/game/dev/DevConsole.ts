@@ -3,6 +3,8 @@ import { useGameStore } from '@store/useGameStore';
 import type { GameStoreState } from '@store/useGameStore';
 import { ItemType } from '@type';
 import type { GameManager } from '../core/GameManager';
+import { BiomeRegistry } from '../world/biome/BiomeRegistry';
+import { LandformRegistry } from '../world/landform/LandformRegistry';
 
 export interface CloudcraftDevConsole {
   meta: {
@@ -12,6 +14,8 @@ export interface CloudcraftDevConsole {
   };
   player: {
     teleport(x: number, y: number, z: number): void;
+    teleportToBiome(biomeId: string): void;
+    teleportToLandform(landformId: string): void;
     setHealth(value: number): void;
     setHunger(value: number): void;
     setFlying(enabled: boolean): void;
@@ -72,6 +76,8 @@ export function createDevConsole(game: GameManager): CloudcraftDevConsole {
           { Namespace: 'meta', Command: 'seed()', Description: 'Show current world seed' },
           
           { Namespace: 'player', Command: 'teleport(x, y, z)', Description: 'Teleport player to coordinates' },
+          { Namespace: 'player', Command: 'teleportToBiome(biomeId)', Description: 'Teleport player to nearest biome (e.g., "desert", "forest")' },
+          { Namespace: 'player', Command: 'teleportToLandform(landformId)', Description: 'Teleport player to nearest landform (e.g., "mountains")' },
           { Namespace: 'player', Command: 'setHealth(value)', Description: 'Set player health (0 - 10)' },
           { Namespace: 'player', Command: 'setHunger(value)', Description: 'Set player hunger (0 - 20)' },
           { Namespace: 'player', Command: 'setFlying(enabled)', Description: 'Toggle flight mode (auto switch to creative if needed)' },
@@ -117,6 +123,174 @@ export function createDevConsole(game: GameManager): CloudcraftDevConsole {
         game.player.velocity.set(0, 0, 0);
         game.player.syncCamera();
         console.log(`Teleported player to: ${x}, ${y}, ${z}`);
+      },
+      teleportToBiome(biomeId) {
+        if (typeof biomeId !== 'string') {
+          console.error('Biome ID must be a string: teleportToBiome("desert")');
+          return;
+        }
+        const targetId = biomeId.toLowerCase();
+        const validBiomes = BiomeRegistry.getBiomes().map(b => b.id);
+        if (!validBiomes.includes(targetId)) {
+          console.error(`Invalid Biome ID: "${biomeId}". Valid options are: ${validBiomes.join(', ')}`);
+          return;
+        }
+
+        const px = Math.floor(game.player.position.x);
+        const pz = Math.floor(game.player.position.z);
+        
+        console.log(`Searching for biome "${targetId}" near (${px}, ${pz})...`);
+
+        let foundX = px;
+        let foundZ = pz;
+        let found = false;
+
+        const step = 64;
+        const maxRadius = 80;
+        
+        for (let r = 0; r <= maxRadius; r++) {
+          if (r === 0) {
+            const b = game.world.generator.getPrimaryBiome(px, pz);
+            if (b.id === targetId) {
+              foundX = px;
+              foundZ = pz;
+              found = true;
+              break;
+            }
+            continue;
+          }
+
+          const rStep = r * step;
+          let matchX = 0;
+          let matchZ = 0;
+          let distanceSq = Infinity;
+
+          const check = (cx: number, cz: number) => {
+            const b = game.world.generator.getPrimaryBiome(cx, cz);
+            if (b.id === targetId) {
+              const dist = (cx - px) ** 2 + (cz - pz) ** 2;
+              if (dist < distanceSq) {
+                distanceSq = dist;
+                matchX = cx;
+                matchZ = cz;
+                found = true;
+              }
+            }
+          };
+
+          for (let i = -r; i <= r; i++) {
+            check(px + i * step, pz - rStep);
+            check(px + i * step, pz + rStep);
+          }
+          for (let i = -r + 1; i <= r - 1; i++) {
+            check(px - rStep, pz + i * step);
+            check(px + rStep, pz + i * step);
+          }
+
+          if (found) {
+            foundX = matchX;
+            foundZ = matchZ;
+            break;
+          }
+        }
+
+        if (found) {
+          const terrainData = game.world.generator.getColumnTerrainData(foundX, foundZ);
+          const spawnY = terrainData.finalHeight;
+          
+          game.world.loadArea(foundX, spawnY, foundZ, game.renderDistance || 4, true);
+
+          game.player.position.set(foundX, spawnY + 2, foundZ);
+          game.player.velocity.set(0, 0, 0);
+          game.player.syncCamera();
+          console.log(`%c[CloudCraft DevConsole] Found biome "${targetId}" at (${foundX}, ${spawnY}, ${foundZ}). Teleported!`, 'color: #4caf50; font-weight: bold;');
+        } else {
+          console.warn(`Could not find biome "${targetId}" within search radius of 5000 blocks.`);
+        }
+      },
+      teleportToLandform(landformId) {
+        if (typeof landformId !== 'string') {
+          console.error('Landform ID must be a string: teleportToLandform("mountains")');
+          return;
+        }
+        const targetId = landformId.toLowerCase();
+        const validLandforms = LandformRegistry.getLandforms().map(l => l.id);
+        if (!validLandforms.includes(targetId)) {
+          console.error(`Invalid Landform ID: "${landformId}". Valid options are: ${validLandforms.join(', ')}`);
+          return;
+        }
+
+        const px = Math.floor(game.player.position.x);
+        const pz = Math.floor(game.player.position.z);
+        
+        console.log(`Searching for landform "${targetId}" near (${px}, ${pz})...`);
+
+        let foundX = px;
+        let foundZ = pz;
+        let found = false;
+
+        const step = 64;
+        const maxRadius = 80;
+        
+        for (let r = 0; r <= maxRadius; r++) {
+          if (r === 0) {
+            const l = game.world.generator.getPrimaryLandform(px, pz);
+            if (l.id === targetId) {
+              foundX = px;
+              foundZ = pz;
+              found = true;
+              break;
+            }
+            continue;
+          }
+
+          const rStep = r * step;
+          let matchX = 0;
+          let matchZ = 0;
+          let distanceSq = Infinity;
+
+          const check = (cx: number, cz: number) => {
+            const l = game.world.generator.getPrimaryLandform(cx, cz);
+            if (l.id === targetId) {
+              const dist = (cx - px) ** 2 + (cz - pz) ** 2;
+              if (dist < distanceSq) {
+                distanceSq = dist;
+                matchX = cx;
+                matchZ = cz;
+                found = true;
+              }
+            }
+          };
+
+          for (let i = -r; i <= r; i++) {
+            check(px + i * step, pz - rStep);
+            check(px + i * step, pz + rStep);
+          }
+          for (let i = -r + 1; i <= r - 1; i++) {
+            check(px - rStep, pz + i * step);
+            check(px + rStep, pz + i * step);
+          }
+
+          if (found) {
+            foundX = matchX;
+            foundZ = matchZ;
+            break;
+          }
+        }
+
+        if (found) {
+          const terrainData = game.world.generator.getColumnTerrainData(foundX, foundZ);
+          const spawnY = terrainData.finalHeight;
+          
+          game.world.loadArea(foundX, spawnY, foundZ, game.renderDistance || 4, true);
+
+          game.player.position.set(foundX, spawnY + 2, foundZ);
+          game.player.velocity.set(0, 0, 0);
+          game.player.syncCamera();
+          console.log(`%c[CloudCraft DevConsole] Found landform "${targetId}" at (${foundX}, ${spawnY}, ${foundZ}). Teleported!`, 'color: #4caf50; font-weight: bold;');
+        } else {
+          console.warn(`Could not find landform "${targetId}" within search radius of 5000 blocks.`);
+        }
       },
       setHealth(value) {
         if (typeof value !== 'number') {
