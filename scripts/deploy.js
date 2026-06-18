@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { writeFileSync, existsSync, rmSync } from 'fs';
+import { writeFileSync, existsSync, rmSync, readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -74,8 +74,23 @@ try {
       throw new Error('未找到打包生成的 dist 目录！');
     }
 
-    console.log('正在部署至 Cloudflare...');
-    run('npx wrangler deploy');
+    // 从 wrangler.jsonc 中动态读取项目名称
+    let projectName = 'cloudcraft';
+    try {
+      const wranglerConfigPath = path.resolve(rootDir, 'wrangler.jsonc');
+      if (existsSync(wranglerConfigPath)) {
+        const content = readFileSync(wranglerConfigPath, 'utf8');
+        const match = content.match(/"name"\s*:\s*"([^"]+)"/);
+        if (match && match[1]) {
+          projectName = match[1];
+        }
+      }
+    } catch (e) {
+      console.warn('无法从 wrangler.jsonc 解析项目名称，将使用默认名 cloudcraft');
+    }
+
+    console.log(`正在部署至 Cloudflare Pages (项目名: ${projectName})...`);
+    run(`npx wrangler pages deploy ./dist --project-name=${projectName}`);
   }
 
   console.log('部署成功！');

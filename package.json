@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "test": "vitest",
     "test:run": "vitest run",
-    "preview": "npm run build && wrangler dev",
+    "preview": "npm run build && wrangler pages dev ./dist",
     "deploy": "node scripts/deploy.js",
     "prepare": "husky"
   },
