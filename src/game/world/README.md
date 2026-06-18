@@ -1,8 +1,5 @@
 # 生态与地貌多维正交架构设计规范
 
-> [!NOTE]
-> 该功能模块对应的源码路径为 `src/game/world/biome/` 和 `src/game/world/landform/`。
-
 本文档阐明了 CloudCraft 世界生成中“生态群落（Biome）”与“地形地貌（Landform）”的多维正交解耦架构设计，用于指导后续新增地貌、生态类型以及调整地形生成算法。
 
 ---

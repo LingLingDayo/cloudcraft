@@ -25,7 +25,7 @@ window.__cloudcraft__.meta.help();
 
 ### 2.1 Meta (元数据接口)
 - **`window.__cloudcraft__.meta.help()`**
-  - **功能**：在控制台中打印命令帮助表。
+  - **功能**：在控制表中打印命令帮助表。
 - **`window.__cloudcraft__.meta.version`**
   - **功能**：只读属性，返回当前游戏版本（例如 `"0.3.0"`）。
 - **`window.__cloudcraft__.meta.seed()`**

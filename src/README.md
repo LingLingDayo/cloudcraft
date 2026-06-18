@@ -28,9 +28,7 @@ src/
 ├── styles/          # 全局 Sass 样式与主题定义
 ├── test/            # 测试配置与 setup 环境
 ├── types/           # 共享的 TypeScript 类型声明
-├── utils/           # 通用工具函数 (设备检测、数学计算、配置处理等)
-├── main.tsx         # 应用挂载入口
-└── App.tsx          # 顶层应用组件
+└── utils/           # 通用工具函数 (设备检测、数学计算、配置处理等)
 ```
 
 ---
@@ -47,18 +45,19 @@ src/
 ### 3D 游戏引擎核心 (src/game)
 * **core/**: `GameManager` 等主控逻辑，负责管理 Three.js 的初始化、渲染循环（AnimationFrame Loop）、引擎状态流转及各个子系统的生命周期。
 * **entities/**: 游戏实体，如 Player（玩家类）、Pig（猪实体类）等，包含实体的移动更新、行为状态等。
-* **environment/**: 环境与天气系统，管理天体移动（太阳、月亮、星空）、维度环境配置（DimensionConfig）及天气状态渲染（WeatherBlender, WeatherPresets）等。
-* **item/**: 核心道具与物品配置，包含物品基类行为定义及 `ItemRegistry` 注册表，解耦方块与纯道具交互逻辑。
+* **environment/**: 环境与天气系统，管理天体移动（太阳、月亮、星空）、维度环境配置（DimensionConfig）及天气状态渲染（WeatherBlender, WeatherPresets）等。详细规范请参阅 [environment/README.md](./game/environment/README.md)。
+* **item/**: 核心道具与物品配置，包含物品基类行为定义及 `ItemRegistry` 注册表，解耦方块与纯道具交互逻辑。详细规范请参阅 [item/README.md](./game/item/README.md)。
 * **loot/**: 掉落表生成器，管理破坏方块或击杀实体时的掉落物品规则及 `LootTableRegistry`。
-* **physics/**: 自研的 AABB 体素物理系统，负责实体的碰撞检测、多轴移动阻挡、下落重力物理等。
+* **physics/**: 自研的 AABB 体素物理系统，负责实体的碰撞检测、多轴移动阻挡、下落重力物理等。详细规范请参阅 [physics/README.md](./game/physics/README.md)。
 * **systems/**: 引擎的辅助系统：
   * `Controls`: 输入按键绑定与视角控制器。
   * `Particles`: 方块破坏等碎屑粒子发射器。
-  * `Sound`: 音效播放与咀嚼、破坏等合成音效调度。
+  * `Sound`:音效播放与咀嚼、破坏等合成音效调度。
 * **world/**: 核心世界与地形生成系统：
   * `World`: 管理区块（Chunk）的加载、卸载与渲染网格更新。
   * `Noise`: 噪波算法生成高度图与生态分布。
   * `TextureAtlas`: 纹理贴图合并（Atlas），确保批量渲染性能。
+  * 详细规范请参阅 [world/README.md](./game/world/README.md) 以及子模块 [world/pipeline/README.md](./game/world/pipeline/README.md)。
 
 ### 自定义 Hooks (src/hooks)
 * 提供 React 全局或组件局部的通用 Hook，例如用于处理按键返回/关闭浮层的 `useBackToClose`。
@@ -67,7 +66,7 @@ src/
 * 管理游戏的多语言国际化配置，包含翻译文本的加载和切换逻辑。
 
 ### 状态管理库 (src/store)
-* 采用 Zustand 存储。采用 slices 模式（如 game, player, debug 切片）将 React UI 与 3D 引擎的低频交互状态进行规范托管。
+* 采用 Zustand 存储。采用 slices 模式（如 game, player, debug 切片）将 React UI 与 3D 引擎的低频交互状态进行规范托管。详细规范请参阅 [store/README.md](./store/README.md)。
 
 ### 样式与测试环境 (src/styles & src/test)
 * **styles/**: 全局样式与 SCSS 变量、主题配置。
