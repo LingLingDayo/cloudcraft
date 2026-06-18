@@ -130,3 +130,20 @@ window.__cloudcraft__.meta.help();
   - **功能**：在玩家的主物品快捷栏（Hotbar）中塞入指定数量的物品/方块道具。
   - **参数**：`itemType` (字符串，必须是合法的 ItemType 类型，如 `"stone"`, `"grass"` 等)，`count` (数字，可选，默认 `1`)。
   - **返回值**：布尔值（表示是否添加成功）。
+
+---
+
+## 3. 内部实现与目录结构
+
+为保持代码的高可维护性和模块化设计，`DevConsole` 相关的实现代码被拆分在以下目录结构中：
+
+- [DevConsole.ts](/src/game/dev/DevConsole.ts)：声明 `CloudcraftDevConsole` 接口，定义对外暴露的方法签名，并作为中央组合器。
+- [commands/](/src/game/dev/commands)：存放具体指令的业务逻辑实现。
+  - [meta.ts](/src/game/dev/commands/meta.ts)：元数据、版本及种子查询等。
+  - [player.ts](/src/game/dev/commands/player.ts)：玩家传送、生命值/饥饿值设定、飞行等。
+  - [world.ts](/src/game/dev/commands/world.ts)：方块查询与设置、区域填充、世界序列化。
+  - [time.ts](/src/game/dev/commands/time.ts)：游戏时间控制、维度/天气切换。
+  - [render.ts](/src/game/dev/commands/render.ts)：视场角（FOV）、渲染距离、阴影品质和渲染统计。
+  - [store.ts](/src/game/dev/commands/store.ts)：Zustand 状态获取、游戏模式切换及物品发放。
+- [DevConsole.test.ts](/src/game/dev/DevConsole.test.ts)：覆盖调试控制台全命名空间的自动化单元测试。
+
