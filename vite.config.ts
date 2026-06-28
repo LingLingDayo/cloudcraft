@@ -5,7 +5,7 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: process.env.GITHUB_ACTIONS || process.env.DEPLOY_BASE ? '/cloudcraft/' : '/',
+  base: './',
   resolve: {
     alias: {
       '@assets': path.resolve(__dirname, './src/assets'),
