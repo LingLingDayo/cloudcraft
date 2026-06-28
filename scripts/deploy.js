@@ -36,6 +36,19 @@ if (args.includes('--github') || args.includes('github') || args.includes('--pla
   deployCloudflare = true;
 }
 
+// 解析 --branch 参数，用于指定 Cloudflare Pages 部署的分支（例如部署到 main 生产环境分支）
+let branch = '';
+const branchArg = args.find(arg => arg.startsWith('--branch='));
+if (branchArg) {
+  branch = branchArg.split('=')[1];
+} else {
+  const branchIndex = args.indexOf('--branch');
+  if (branchIndex !== -1 && branchIndex + 1 < args.length) {
+    branch = args[branchIndex + 1];
+  }
+}
+
+
 console.log(`部署目标: ${deployGithub ? 'GitHub Pages' : ''}${deployGithub && deployCloudflare ? ' & ' : ''}${deployCloudflare ? 'Cloudflare' : ''}`);
 
 try {
@@ -89,8 +102,12 @@ try {
       console.warn('无法从 wrangler.jsonc 解析项目名称，将使用默认名 cloudcraft');
     }
 
-    console.log(`正在部署至 Cloudflare Pages (项目名: ${projectName})...`);
-    run(`npx wrangler pages deploy ./dist --project-name=${projectName}`);
+    console.log(`正在部署至 Cloudflare Pages (项目名: ${projectName}${branch ? `, 分支: ${branch}` : ''})...`);
+    let deployCmd = `npx wrangler pages deploy ./dist --project-name=${projectName}`;
+    if (branch) {
+      deployCmd += ` --branch=${branch}`;
+    }
+    run(deployCmd);
   }
 
   console.log('部署成功！');
