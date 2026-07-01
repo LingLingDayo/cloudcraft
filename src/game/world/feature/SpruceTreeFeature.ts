@@ -1,7 +1,7 @@
 import { BLOCK_TYPES } from '../BlockConfig';
 import {
   GenericTreeFeature,
-  StraightTrunkPlacer,
+  BranchingTrunkPlacer,
   SpruceFoliagePlacer
 } from './GenericTreeFeature';
 
@@ -12,7 +12,7 @@ export class SpruceTreeFeature extends GenericTreeFeature {
       leafBlock: BLOCK_TYPES.SPRUCE_LEAVES,
       minHeight: 6,
       heightVariance: 3,
-      trunkPlacer: new StraightTrunkPlacer(),
+      trunkPlacer: new BranchingTrunkPlacer(),
       foliagePlacer: new SpruceFoliagePlacer()
     });
   }

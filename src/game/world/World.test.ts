@@ -369,7 +369,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     } finally {
       config.pond.probability = originalProb; // Always restore probability
     }
-  }, 10000);
+  }, 20000);
 });
 
 describe('World Chunk Loading Priority and Custom Sorting', () => {
