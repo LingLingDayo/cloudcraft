@@ -5,6 +5,7 @@ import { WorldGenerator } from './WorldGenerator';
 import { WORLD_CONFIG } from './WorldConfig';
 import { buildChunkVisibilitySummary } from './streaming/ChunkVisibilitySummary';
 import { DynamicMaterialRegistry } from '@game/dynamics/DynamicMaterialRegistry';
+import { EMPTY_DYNAMIC_MATERIAL_SNAPSHOT } from '@game/dynamics/DynamicMaterialSnapshot';
 
 const TEST_CHUNK_BYTE_LENGTH = 16 * 16 * 16 * 2;
 
@@ -86,6 +87,39 @@ describe('World Serialization by Modified Blocks Tracking', () => {
     }));
 
     expect(world.dynamicMaterials.getActiveCount()).toBe(0);
+  });
+
+  test.each([
+    ['top-level shape', JSON.stringify([])],
+    ['modified block type', JSON.stringify({
+      seed: 'test-rejected-world',
+      modified: { '0,0,0': { '0,0,0': 'stone' } },
+      entities: JSON.stringify([]),
+      dynamicMaterials: EMPTY_DYNAMIC_MATERIAL_SNAPSHOT,
+    })],
+    ['block entity payload', JSON.stringify({
+      seed: 'test-rejected-world',
+      modified: {},
+      entities: '{invalid-json',
+      dynamicMaterials: EMPTY_DYNAMIC_MATERIAL_SNAPSHOT,
+    })],
+    ['dynamic material schema', JSON.stringify({
+      seed: 'test-rejected-world',
+      modified: {},
+      entities: JSON.stringify([]),
+      dynamicMaterials: { schemaVersion: 2, bodies: [] },
+    })],
+  ])('rejects invalid world %s before mutating runtime state', (_field, serialized) => {
+    const world = new World('test-existing-world');
+    world.modifiedBlocks.set('1,2,3', new Map([['4,5,6', BLOCK_TYPES.STONE]]));
+    world.blockEntities.createEntity('lever', 7, 8, 9);
+
+    expect(() => world.loadWorld(serialized)).toThrow();
+    expect(world.getSeed()).toBe('test-existing-world');
+    expect(Array.from(world.modifiedBlocks.entries())).toEqual([
+      ['1,2,3', new Map([['4,5,6', BLOCK_TYPES.STONE]])],
+    ]);
+    expect(world.blockEntities.getEntity(7, 8, 9)?.type).toBe('lever');
   });
 
   test('should successfully serialize and deserialize world state with modified blocks', () => {

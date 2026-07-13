@@ -1,7 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BlockEntity, ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
 
 export type BlockEntityCreator = (x: number, y: number, z: number) => BlockEntity;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 export class BlockEntityManager {
   private static registry = new Map<string, BlockEntityCreator>();
@@ -40,20 +43,45 @@ export class BlockEntityManager {
     return JSON.stringify(list);
   }
 
-  public deserialize(jsonStr: string): void {
-    this.clear();
-    if (!jsonStr) return;
-    try {
-      const list = JSON.parse(jsonStr) as Record<string, any>[];
-      for (const item of list) {
-        const entity = this.createEntity(item.type, item.x, item.y, item.z);
-        if (entity) {
-          entity.fromJSON(item);
-        }
-      }
-    } catch (e) {
-      console.error('Failed to load BlockEntities', e);
+  /** Builds detached entities so malformed snapshots cannot mutate the active world. */
+  public prepareSerialized(jsonStr: string): readonly BlockEntity[] {
+    if (!jsonStr) return [];
+    const value: unknown = JSON.parse(jsonStr);
+    if (!Array.isArray(value)) {
+      throw new Error('Block entity snapshot must be an array');
     }
+
+    const prepared: BlockEntity[] = [];
+    const occupiedCoordinates = new Set<string>();
+    for (const item of value) {
+      if (
+        !isRecord(item)
+        || typeof item.type !== 'string'
+        || !Number.isInteger(item.x)
+        || !Number.isInteger(item.y)
+        || !Number.isInteger(item.z)
+      ) {
+        throw new Error('Block entity snapshot contains invalid identity or coordinates');
+      }
+      const creator = BlockEntityManager.registry.get(item.type);
+      if (!creator) continue;
+      const entity = creator(Number(item.x), Number(item.y), Number(item.z));
+      if (occupiedCoordinates.has(entity.key)) {
+        throw new Error(`Block entity snapshot contains duplicate coordinate: ${entity.key}`);
+      }
+      occupiedCoordinates.add(entity.key);
+      entity.fromJSON(item);
+      prepared.push(entity);
+    }
+    return prepared;
+  }
+
+  public restorePrepared(entities: readonly BlockEntity[]): void {
+    this.entities = new Map(entities.map(entity => [entity.key, entity]));
+  }
+
+  public deserialize(jsonStr: string): void {
+    this.restorePrepared(this.prepareSerialized(jsonStr));
   }
 }
 
