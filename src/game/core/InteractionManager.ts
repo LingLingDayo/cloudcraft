@@ -10,8 +10,7 @@ import type { BlockPlaceContext, ItemUseContext, ItemUseResult } from '@game/ite
 import { GameMode } from '@type';
 import { LootTableHelper } from '../loot/LootTableHelper';
 import { FixtureInteractionCoordinator } from './FixtureInteractionCoordinator';
-
-
+import { MiningCrackOverlay } from './MiningCrackOverlay';
 
 export class InteractionManager {
   private game: GameManager;
@@ -33,8 +32,7 @@ export class InteractionManager {
   private miningBreakTime = 0;
   private lastDigSoundTime = 0;
   private lastDigParticleTime = 0;
-  private crackTextures: THREE.Texture[] = [];
-  private crackMesh!: THREE.Mesh;
+  private readonly crackOverlay: MiningCrackOverlay;
   private lastCreativeBreakTime = 0;
   private lastCreativeBreakPos = new THREE.Vector3();
 
@@ -53,66 +51,7 @@ export class InteractionManager {
   constructor(game: GameManager) {
     this.game = game;
     this.fixtureInteraction = new FixtureInteractionCoordinator(game);
-    this.initCrackTextures();
-    this.initCrackMesh();
-  }
-
-  private initCrackTextures() {
-    this.crackTextures = [];
-    const segments = [
-      [2, 3, 6, 8],
-      [6, 8, 11, 4],
-      [11, 4, 14, 11],
-      [6, 8, 5, 13],
-      [5, 13, 2, 12],
-      [11, 4, 9, 2],
-      [2, 3, 4, 1],
-      [14, 11, 15, 14],
-      [5, 13, 9, 13],
-      [9, 13, 13, 9]
-    ];
-
-    for (let stage = 1; stage <= 10; stage++) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 16;
-      canvas.height = 16;
-      const ctx = canvas.getContext('2d')!;
-      ctx.clearRect(0, 0, 16, 16);
-
-      // Draw pixelated cracks
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.lineWidth = 1;
-      ctx.lineCap = 'square';
-
-      ctx.beginPath();
-      for (let i = 0; i < Math.min(stage, segments.length); i++) {
-        const seg = segments[i];
-        ctx.moveTo(seg[0], seg[1]);
-        ctx.lineTo(seg[2], seg[3]);
-      }
-      ctx.stroke();
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.magFilter = THREE.NearestFilter;
-      texture.minFilter = THREE.NearestFilter;
-      texture.needsUpdate = true;
-      this.crackTextures.push(texture);
-    }
-  }
-
-  private initCrackMesh() {
-    const geo = new THREE.BoxGeometry(1.002, 1.002, 1.002);
-    const mat = new THREE.MeshBasicMaterial({
-      map: this.crackTextures[0],
-      transparent: true,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -1,
-      polygonOffsetUnits: -1
-    });
-    this.crackMesh = new THREE.Mesh(geo, mat);
-    this.crackMesh.visible = false;
-    this.game.scene.add(this.crackMesh);
+    this.crackOverlay = new MiningCrackOverlay(game.scene);
   }
 
   public update(dt: number) {
@@ -331,9 +270,7 @@ export class InteractionManager {
 
   public cancelMining() {
     this.isMining = false;
-    if (this.crackMesh) {
-      this.crackMesh.visible = false;
-    }
+    this.crackOverlay.hide();
     useGameStore.getState().setMiningProgress(null);
   }
 
@@ -523,13 +460,9 @@ export class InteractionManager {
     }
 
     if (props.showBreakCracks !== false) {
-      this.crackMesh.position.set(target.x + 0.5, target.y + 0.5, target.z + 0.5);
-      const stage = Math.min(9, Math.floor(progress * 10));
-      const mat = this.crackMesh.material as THREE.MeshBasicMaterial;
-      mat.map = this.crackTextures[stage];
-      this.crackMesh.visible = true;
+      this.crackOverlay.show(target, progress);
     } else {
-      this.crackMesh.visible = false;
+      this.crackOverlay.hide();
     }
 
     useGameStore.getState().setMiningProgress(progress);
@@ -572,19 +505,8 @@ export class InteractionManager {
     }
   }
 
-  public dispose() {
-    if (this.crackTextures) {
-      this.crackTextures.forEach((tex) => tex.dispose());
-    }
-    if (this.crackMesh) {
-      this.game.scene.remove(this.crackMesh);
-      if (this.crackMesh.geometry) this.crackMesh.geometry.dispose();
-      if (Array.isArray(this.crackMesh.material)) {
-        this.crackMesh.material.forEach((mat: THREE.Material) => mat.dispose());
-      } else if (this.crackMesh.material) {
-        (this.crackMesh.material as THREE.Material).dispose();
-      }
-    }
+  public dispose(): void {
+    this.crackOverlay.dispose();
     this.fixtureInteraction.dispose();
   }
 }

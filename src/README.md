@@ -43,7 +43,7 @@ src/
 * 存放 React Context，提供游戏引擎实例与 React 树的单向通信桥梁（如 `GameContext`），确保各组件能方便且安全地引用 3D 游戏对象而不过度触发组件重新渲染。
 
 ### 3D 游戏引擎核心 (src/game)
-* **core/**: `GameManager` 负责 Three.js 初始化、渲染循环和顶层生命周期；`GameSaveCoordinator`、`GameStoreBridge`、`GameFixtureRuntime` 与 `FixtureInteractionCoordinator` 分别承接统一存档、Zustand 订阅、设施装配和设施交互职责，避免主控类直接实现领域细节。
+* **core/**: `GameManager` 负责 Three.js 初始化、渲染循环和顶层生命周期；`GameSaveCoordinator`、`GameStoreBridge`、`GameFixtureRuntime` 与 `FixtureInteractionCoordinator` 分别承接统一存档、Zustand 订阅、设施装配和设施交互职责；`MiningCrackOverlay` 独立管理挖掘裂纹网格、阶段纹理及 GPU 资源生命周期，避免交互主控直接实现渲染细节。
 * **entities/**: 游戏实体，如 Player、Pig、Leopard 等，包含实体移动、行为状态、物种注册与版本化快照。详细规范请参阅 [entities/README.md](./game/entities/README.md)。
 * **fixtures/**: 管理独立于体素的设施定义、占用、交互、渲染和版本化快照。详细规范请参阅 [fixtures/README.md](./game/fixtures/README.md)。
 * **environment/**: 环境与天气系统，管理天体移动（太阳、月亮、星空）、维度环境配置（DimensionConfig）及天气状态渲染（WeatherBlender, WeatherPresets）等。详细规范请参阅 [environment/README.md](./game/environment/README.md)。
