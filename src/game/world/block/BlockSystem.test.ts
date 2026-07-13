@@ -8,6 +8,7 @@ World.prototype.updateChunkMesh = () => {};
 import { ItemType } from '@type';
 import { BlockRegistry } from './BlockRegistry';
 import { ChestBlockEntity } from './BlockEntity';
+import { BlockEntityManager } from './BlockEntityManager';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -24,6 +25,48 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
 }) as any;
 
 describe('Block Registry and Entity System', () => {
+  test.each([
+    ['unknown chest item', {
+      type: 'chest',
+      x: 1,
+      y: 2,
+      z: 3,
+      inventory: [
+        { type: 'cloudcraft:unknown_item', count: 1 },
+        ...Array(26).fill(null),
+      ],
+    }],
+    ['negative chest item count', {
+      type: 'chest',
+      x: 1,
+      y: 2,
+      z: 3,
+      inventory: [
+        { type: ItemType.APPLE, count: -1 },
+        ...Array(26).fill(null),
+      ],
+    }],
+    ['incorrect chest capacity', {
+      type: 'chest',
+      x: 1,
+      y: 2,
+      z: 3,
+      inventory: [null],
+    }],
+    ['non-boolean lever state', {
+      type: 'lever',
+      x: 1,
+      y: 2,
+      z: 3,
+      active: 'yes',
+    }],
+  ])('rejects block entity snapshots with %s during prepare', (_field, entity) => {
+    const manager = new BlockEntityManager();
+
+    expect(() => manager.prepareSerialized(JSON.stringify([entity]))).toThrow();
+    expect(manager.getEntity(1, 2, 3)).toBeNull();
+  });
+
   test('should successfully register and retrieve block properties', () => {
     const grass = BlockRegistry.get(BLOCK_TYPES.GRASS);
     expect(grass).toBeDefined();

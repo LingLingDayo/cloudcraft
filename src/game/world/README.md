@@ -100,4 +100,4 @@ graph TD
 
 ## 动态材质边界
 
-`World` 只持有注入的 `DynamicMaterialRegistry`，不判断沙子或其他具体材料。核心定义和扩展定义在世界创建前统一装配并冻结。`WorldSerializer` 将静态方块修改与 Schema 1 动态活动体快照分别保存；恢复采用预检/提交两阶段，必须先完整解析顶层载体、Seed、修改坐标与方块类型、方块实体和动态活动体，再清空任何运行态。`BlockEntityManager` 在临时实体集合中完成 JSON 解析和状态恢复，仅在全部成功后替换活动集合。载入错误必须向统一存档边界抛出，以阻止设施、生物、天气和玩家继续发生部分恢复。旧存档缺少动态字段时重置活动体；切换 Seed 必须通过 `DynamicMaterialSystem.reset()` 清除旧世界活动体，防止其随后写入新世界。
+`World` 只持有注入的 `DynamicMaterialRegistry`，不判断沙子或其他具体材料。核心定义和扩展定义在世界创建前统一装配并冻结。`WorldSerializer` 将静态方块修改与 Schema 1 动态活动体快照分别保存；恢复采用预检/提交两阶段，必须先完整解析顶层载体、Seed、修改坐标与方块类型、方块实体和动态活动体，再清空任何运行态。`BlockEntityManager` 在临时实体集合中完成 JSON 解析和状态恢复，仅在全部成功后替换活动集合；每个方块实体注册定义必须同时提供 create 与强类型 `validateSnapshot`，禁止管理器按具体 type 分支 payload。载入错误必须向统一存档边界抛出，以阻止设施、生物、天气和玩家继续发生部分恢复。旧存档缺少动态字段时重置活动体；切换 Seed 必须通过 `DynamicMaterialSystem.reset()` 清除旧世界活动体，防止其随后写入新世界。序列化与恢复测试独立位于 `WorldSerializer.test.ts`，不得重新堆入综合世界测试文件。

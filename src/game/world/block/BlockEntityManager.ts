@@ -1,17 +1,28 @@
-import { BlockEntity, ChestBlockEntity, LeverBlockEntity } from './BlockEntity';
+import {
+  assertChestBlockEntitySnapshot,
+  assertLeverBlockEntitySnapshot,
+  BlockEntity,
+  ChestBlockEntity,
+  LeverBlockEntity,
+} from './BlockEntity';
 
 export type BlockEntityCreator = (x: number, y: number, z: number) => BlockEntity;
+
+export interface BlockEntityDefinition {
+  readonly create: BlockEntityCreator;
+  readonly validateSnapshot: (data: Record<string, unknown>) => void;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export class BlockEntityManager {
-  private static registry = new Map<string, BlockEntityCreator>();
+  private static registry = new Map<string, BlockEntityDefinition>();
   private entities = new Map<string, BlockEntity>();
 
-  public static register(type: string, creator: BlockEntityCreator) {
-    this.registry.set(type, creator);
+  public static register(type: string, definition: BlockEntityDefinition) {
+    this.registry.set(type, definition);
   }
 
   public getEntity(x: number, y: number, z: number): BlockEntity | null {
@@ -19,9 +30,9 @@ export class BlockEntityManager {
   }
 
   public createEntity(type: string, x: number, y: number, z: number): BlockEntity | null {
-    const creator = BlockEntityManager.registry.get(type);
-    if (!creator) return null;
-    const entity = creator(x, y, z);
+    const definition = BlockEntityManager.registry.get(type);
+    if (!definition) return null;
+    const entity = definition.create(x, y, z);
     this.entities.set(entity.key, entity);
     return entity;
   }
@@ -63,9 +74,10 @@ export class BlockEntityManager {
       ) {
         throw new Error('Block entity snapshot contains invalid identity or coordinates');
       }
-      const creator = BlockEntityManager.registry.get(item.type);
-      if (!creator) continue;
-      const entity = creator(Number(item.x), Number(item.y), Number(item.z));
+      const definition = BlockEntityManager.registry.get(item.type);
+      if (!definition) continue;
+      definition.validateSnapshot(item);
+      const entity = definition.create(Number(item.x), Number(item.y), Number(item.z));
       if (occupiedCoordinates.has(entity.key)) {
         throw new Error(`Block entity snapshot contains duplicate coordinate: ${entity.key}`);
       }
@@ -86,5 +98,11 @@ export class BlockEntityManager {
 }
 
 // 注册默认的方块实体
-BlockEntityManager.register('chest', (x, y, z) => new ChestBlockEntity(x, y, z));
-BlockEntityManager.register('lever', (x, y, z) => new LeverBlockEntity(x, y, z));
+BlockEntityManager.register('chest', {
+  create: (x, y, z) => new ChestBlockEntity(x, y, z),
+  validateSnapshot: assertChestBlockEntitySnapshot,
+});
+BlockEntityManager.register('lever', {
+  create: (x, y, z) => new LeverBlockEntity(x, y, z),
+  validateSnapshot: assertLeverBlockEntitySnapshot,
+});
