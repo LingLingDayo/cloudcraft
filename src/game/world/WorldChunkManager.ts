@@ -124,13 +124,13 @@ export class WorldChunkManager {
     const ccz = Math.floor(centerZ / CHUNK_SIZE_Z);
     const resolvedRadius = Math.max(0, radius);
 
-    const shouldResolveVisibility = this.viewCache.shouldResolve({
-      centerX: ccx,
-      centerY: ccy,
-      centerZ: ccz,
-      radius: resolvedRadius,
+    const shouldResolveVisibility = this.viewCache.shouldResolve(
+      ccx,
+      ccy,
+      ccz,
+      resolvedRadius,
       view,
-    });
+    );
     if (!shouldSync && !shouldResolveVisibility) {
       return;
     }

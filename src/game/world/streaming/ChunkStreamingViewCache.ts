@@ -1,39 +1,86 @@
 import { CHUNK_STREAMING_CONFIG } from './ChunkStreamingConfig';
 import type { ChunkStreamingView } from './ChunkVisibilityResolver';
 
-export interface ChunkStreamingViewCacheInput {
-  readonly centerX: number;
-  readonly centerY: number;
-  readonly centerZ: number;
-  readonly radius: number;
-  readonly view: ChunkStreamingView | null;
-}
-
-interface ChunkStreamingViewSignature {
-  readonly centerX: number;
-  readonly centerY: number;
-  readonly centerZ: number;
-  readonly radius: number;
-  readonly yawBucket: number | null;
-  readonly pitchBucket: number | null;
-  readonly verticalFov: number | null;
-  readonly aspect: number | null;
-  readonly positionBucketX: number | null;
-  readonly positionBucketY: number | null;
-  readonly positionBucketZ: number | null;
-}
-
 /** Caches the quantized camera signature used by chunk visibility resolution. */
 export class ChunkStreamingViewCache {
-  private signature: ChunkStreamingViewSignature | null = null;
+  private initialized = false;
   private invalidated = true;
+  private centerX = 0;
+  private centerY = 0;
+  private centerZ = 0;
+  private radius = 0;
+  private yawBucket: number | null = null;
+  private pitchBucket: number | null = null;
+  private verticalFov: number | null = null;
+  private aspect: number | null = null;
+  private positionBucketX: number | null = null;
+  private positionBucketY: number | null = null;
+  private positionBucketZ: number | null = null;
 
-  public shouldResolve(input: ChunkStreamingViewCacheInput): boolean {
-    const nextSignature = this.createSignature(input);
+  public shouldResolve(
+    centerX: number,
+    centerY: number,
+    centerZ: number,
+    radius: number,
+    view: ChunkStreamingView | null,
+  ): boolean {
+    let yawBucket: number | null = null;
+    let pitchBucket: number | null = null;
+    let verticalFov: number | null = null;
+    let aspect: number | null = null;
+    let positionBucketX: number | null = null;
+    let positionBucketY: number | null = null;
+    let positionBucketZ: number | null = null;
+    if (view) {
+      const positionBucketSize = CHUNK_STREAMING_CONFIG.viewPositionBucketSizeBlocks;
+      const forwardLength = Math.hypot(view.forward.x, view.forward.y, view.forward.z);
+      if (forwardLength > 0) {
+        const directionStep = Math.PI * 2 / CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
+        const rawYawBucket = Math.round(
+          Math.atan2(view.forward.x, view.forward.z) / directionStep,
+        );
+        yawBucket = (
+          rawYawBucket % CHUNK_STREAMING_CONFIG.directionQuantizationSteps
+          + CHUNK_STREAMING_CONFIG.directionQuantizationSteps
+        ) % CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
+        pitchBucket = Math.round(
+          Math.asin(Math.max(-1, Math.min(1, view.forward.y / forwardLength))) / directionStep,
+        );
+      }
+      verticalFov = Math.round(
+        view.verticalFovRadians * CHUNK_STREAMING_CONFIG.viewParameterPrecision,
+      );
+      aspect = Math.round(view.aspect * CHUNK_STREAMING_CONFIG.viewParameterPrecision);
+      positionBucketX = Math.floor(view.position.x / positionBucketSize);
+      positionBucketY = Math.floor(view.position.y / positionBucketSize);
+      positionBucketZ = Math.floor(view.position.z / positionBucketSize);
+    }
+
     const shouldResolve = this.invalidated
-      || !this.signature
-      || !this.signaturesEqual(this.signature, nextSignature);
-    this.signature = nextSignature;
+      || !this.initialized
+      || this.centerX !== centerX
+      || this.centerY !== centerY
+      || this.centerZ !== centerZ
+      || this.radius !== radius
+      || this.yawBucket !== yawBucket
+      || this.pitchBucket !== pitchBucket
+      || this.verticalFov !== verticalFov
+      || this.aspect !== aspect
+      || this.positionBucketX !== positionBucketX
+      || this.positionBucketY !== positionBucketY
+      || this.positionBucketZ !== positionBucketZ;
+    this.centerX = centerX;
+    this.centerY = centerY;
+    this.centerZ = centerZ;
+    this.radius = radius;
+    this.yawBucket = yawBucket;
+    this.pitchBucket = pitchBucket;
+    this.verticalFov = verticalFov;
+    this.aspect = aspect;
+    this.positionBucketX = positionBucketX;
+    this.positionBucketY = positionBucketY;
+    this.positionBucketZ = positionBucketZ;
+    this.initialized = true;
     this.invalidated = false;
     return shouldResolve;
   }
@@ -43,79 +90,7 @@ export class ChunkStreamingViewCache {
   }
 
   public clear(): void {
-    this.signature = null;
+    this.initialized = false;
     this.invalidated = true;
-  }
-
-  private createSignature(
-    input: ChunkStreamingViewCacheInput,
-  ): ChunkStreamingViewSignature {
-    const { view } = input;
-    if (!view) {
-      return {
-        centerX: input.centerX,
-        centerY: input.centerY,
-        centerZ: input.centerZ,
-        radius: input.radius,
-        yawBucket: null,
-        pitchBucket: null,
-        verticalFov: null,
-        aspect: null,
-        positionBucketX: null,
-        positionBucketY: null,
-        positionBucketZ: null,
-      };
-    }
-
-    const positionBucketSize = CHUNK_STREAMING_CONFIG.viewPositionBucketSizeBlocks;
-    const forwardLength = Math.hypot(view.forward.x, view.forward.y, view.forward.z);
-    let yawBucket: number | null = null;
-    let pitchBucket: number | null = null;
-    if (forwardLength > 0) {
-      const directionStep = Math.PI * 2 / CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
-      const rawYawBucket = Math.round(
-        Math.atan2(view.forward.x, view.forward.z) / directionStep,
-      );
-      yawBucket = (
-        rawYawBucket % CHUNK_STREAMING_CONFIG.directionQuantizationSteps
-        + CHUNK_STREAMING_CONFIG.directionQuantizationSteps
-      ) % CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
-      pitchBucket = Math.round(
-        Math.asin(Math.max(-1, Math.min(1, view.forward.y / forwardLength))) / directionStep,
-      );
-    }
-
-    return {
-      centerX: input.centerX,
-      centerY: input.centerY,
-      centerZ: input.centerZ,
-      radius: input.radius,
-      yawBucket,
-      pitchBucket,
-      verticalFov: Math.round(
-        view.verticalFovRadians * CHUNK_STREAMING_CONFIG.viewParameterPrecision,
-      ),
-      aspect: Math.round(view.aspect * CHUNK_STREAMING_CONFIG.viewParameterPrecision),
-      positionBucketX: Math.floor(view.position.x / positionBucketSize),
-      positionBucketY: Math.floor(view.position.y / positionBucketSize),
-      positionBucketZ: Math.floor(view.position.z / positionBucketSize),
-    };
-  }
-
-  private signaturesEqual(
-    current: ChunkStreamingViewSignature,
-    next: ChunkStreamingViewSignature,
-  ): boolean {
-    return current.centerX === next.centerX
-      && current.centerY === next.centerY
-      && current.centerZ === next.centerZ
-      && current.radius === next.radius
-      && current.yawBucket === next.yawBucket
-      && current.pitchBucket === next.pitchBucket
-      && current.verticalFov === next.verticalFov
-      && current.aspect === next.aspect
-      && current.positionBucketX === next.positionBucketX
-      && current.positionBucketY === next.positionBucketY
-      && current.positionBucketZ === next.positionBucketZ;
   }
 }
