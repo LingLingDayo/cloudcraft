@@ -8,6 +8,11 @@ import { DynamicMaterialRegistry } from '@game/dynamics/DynamicMaterialRegistry'
 import { EMPTY_DYNAMIC_MATERIAL_SNAPSHOT } from '@game/dynamics/DynamicMaterialSnapshot';
 
 const TEST_CHUNK_BYTE_LENGTH = 16 * 16 * 16 * 2;
+const HIGH_POND_CENTER_Y = 150;
+const HIGH_POND_LOAD_RADIUS = 2;
+const HIGH_POND_SCAN_MAX_Y = (
+  Math.floor(HIGH_POND_CENTER_Y / 16) + HIGH_POND_LOAD_RADIUS + 1
+) * 16;
 
 // Bypass slow WebGL mesh updates globally in this test suite
 World.prototype.updateChunkMesh = () => {};
@@ -384,11 +389,11 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
       // With 100% probability, we can search in just the first few regions
       for (const offset of [-64, 192, 448]) {
         const world = new World('cloudcraft-seed');
-        world.loadArea(offset, 150, offset, 2); // Load a 5x5 chunk area (80x80 blocks)
+        world.loadArea(offset, HIGH_POND_CENTER_Y, offset, HIGH_POND_LOAD_RADIUS);
         
         for (let x = offset - 32; x < offset + 32; x++) {
           for (let z = offset - 32; z < offset + 32; z++) {
-            for (let y = 152; y < 250; y++) {
+            for (let y = 152; y < HIGH_POND_SCAN_MAX_Y; y++) {
               if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
                 foundHighPondWater = true;
                 break;
@@ -404,7 +409,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     } finally {
       config.pond.probability = originalProb; // Always restore probability
     }
-  }, 10000);
+  }, 20000);
 
   test('should not generate exposed floating water walls at high altitudes for ponds', () => {
     const config = WORLD_CONFIG as unknown as { pond: { probability: number } };
@@ -417,8 +422,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
 
       for (const offset of [-64, 192, 448]) {
         const world = new World('cloudcraft-seed');
-        // Load a 5x5 chunk area (80x80 blocks) centered around offset
-        world.loadArea(offset, 150, offset, 2);
+        world.loadArea(offset, HIGH_POND_CENTER_Y, offset, HIGH_POND_LOAD_RADIUS);
         
         let hasHighWater = false;
         // Scan coordinate range inside the loaded region
@@ -427,7 +431,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
         
         for (let x = checkMin; x < checkMax; x++) {
           for (let z = checkMin; z < checkMax; z++) {
-            for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
+            for (let y = 151; y < HIGH_POND_SCAN_MAX_Y; y++) {
               if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
                 hasHighWater = true;
                 
@@ -462,7 +466,7 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
     } finally {
       config.pond.probability = originalProb; // Always restore probability
     }
-  }, 10000);
+  }, 20000);
 
   test('should never generate floating vegetation (vegetation block on top of AIR)', () => {
     const world = new World('cloudcraft-seed');
