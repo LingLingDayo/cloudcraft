@@ -4,6 +4,7 @@ import { BLOCK_TYPES } from './BlockConfig';
 import { WorldGenerator } from './WorldGenerator';
 import { WORLD_CONFIG } from './WorldConfig';
 import { buildChunkVisibilitySummary } from './streaming/ChunkVisibilitySummary';
+import { DynamicMaterialRegistry } from '@game/dynamics/DynamicMaterialRegistry';
 
 const TEST_CHUNK_BYTE_LENGTH = 16 * 16 * 16 * 2;
 
@@ -26,6 +27,67 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
 }) as any;
 
 describe('World Serialization by Modified Blocks Tracking', () => {
+  test('uses an injected dynamic material registry in the production world', () => {
+    const registry = new DynamicMaterialRegistry();
+    registry.register({
+      id: 'test:dirt_fall',
+      blockIds: [BLOCK_TYPES.DIRT],
+      replaceableBlockIds: [BLOCK_TYPES.AIR],
+      gravity: -24,
+      terminalVelocity: -35,
+    });
+    registry.freeze();
+    const world = new World('test-dynamic-registry', undefined, registry);
+    world.setBlock(1, WORLD_HEIGHT - 2, 1, BLOCK_TYPES.DIRT);
+
+    expect(world.addFallingBlock(1, WORLD_HEIGHT - 2, 1)).toBe(true);
+    expect(world.getBlock(1, WORLD_HEIGHT - 2, 1)).toBe(BLOCK_TYPES.AIR);
+  });
+
+  test('resets falling voxels before switching the world seed', () => {
+    const world = new World('test-old-dynamic-world');
+    world.setBlock(1, WORLD_HEIGHT - 2, 1, BLOCK_TYPES.SAND);
+    expect(world.dynamicMaterials.getActiveCount()).toBe(1);
+    const setBlockSpy = vi.spyOn(world, 'setBlock');
+
+    world.setSeed('test-new-dynamic-world');
+    world.dynamicMaterials.update(20);
+
+    expect(world.dynamicMaterials.getActiveCount()).toBe(0);
+    expect(setBlockSpy).not.toHaveBeenCalled();
+  });
+
+  test('persists a detached voxel while it is falling', () => {
+    const original = new World('test-dynamic-save');
+    original.setBlock(1, WORLD_HEIGHT - 2, 1, BLOCK_TYPES.SAND);
+    original.dynamicMaterials.update(0.05);
+
+    const serialized = original.saveWorld();
+    const encoded = JSON.parse(serialized);
+    const loaded = new World('test-dynamic-save');
+    loaded.loadWorld(serialized);
+
+    expect(encoded.dynamicMaterials).toMatchObject({
+      schemaVersion: 1,
+      bodies: [{ blockId: BLOCK_TYPES.SAND }],
+    });
+    expect(loaded.dynamicMaterials.getActiveCount()).toBe(1);
+  });
+
+  test('clears active voxels when loading a legacy world without dynamic state', () => {
+    const world = new World('test-legacy-dynamic-save');
+    world.setBlock(1, WORLD_HEIGHT - 2, 1, BLOCK_TYPES.SAND);
+    expect(world.dynamicMaterials.getActiveCount()).toBe(1);
+
+    world.loadWorld(JSON.stringify({
+      seed: 'test-legacy-dynamic-save',
+      modified: {},
+      entities: JSON.stringify([]),
+    }));
+
+    expect(world.dynamicMaterials.getActiveCount()).toBe(0);
+  });
+
   test('should successfully serialize and deserialize world state with modified blocks', () => {
     const originalWorld = new World('test-seed');
     
@@ -80,7 +142,7 @@ describe('World Serialization by Modified Blocks Tracking', () => {
     const emptySave = world.saveWorld();
     const emptySaved = JSON.parse(emptySave);
     expect(emptySaved.modified).toEqual({});
-    expect(emptySave.length).toBeLessThan(100); // Extremely small!
+    expect(emptySave.length).toBeLessThan(128); // Includes the empty versioned dynamic snapshot.
     
     // Make only 1 modification
     world.setBlock(0, 5, 0, BLOCK_TYPES.DIAMOND);
@@ -428,7 +490,16 @@ describe('World Cave and Dry Land Ocean Mask Generation', () => {
         
         for (let x = checkMin; x < checkMax; x++) {
           for (let z = checkMin; z < checkMax; z++) {
-            for (let y = 151; y < WORLD_HEIGHT - 2; y++) {
+            const rawHeight = generator.getRawHeightAt(x, z);
+            const pond = generator.getPondValue(x, z, rawHeight);
+            if (!pond.isPond) continue;
+
+            const minimumWaterY = Math.max(151, Math.floor(pond.bedHeight));
+            const maximumWaterY = Math.min(
+              WORLD_HEIGHT - 2,
+              Math.ceil(pond.waterLevel),
+            );
+            for (let y = minimumWaterY; y <= maximumWaterY; y++) {
               if (world.getBlock(x, y, z) === BLOCK_TYPES.WATER) {
                 const { dRiver } = generator.getRiverValue(x, z);
                 expect(dRiver).toBeGreaterThanOrEqual(valleyStart);

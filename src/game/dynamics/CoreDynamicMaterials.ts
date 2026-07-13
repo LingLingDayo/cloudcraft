@@ -12,9 +12,11 @@ const CORE_DYNAMIC_MATERIALS: readonly DynamicMaterialDefinition[] = [
   },
 ];
 
-export function createCoreDynamicMaterialRegistry(): DynamicMaterialRegistry {
+export function createCoreDynamicMaterialRegistry(
+  additionalDefinitions: readonly DynamicMaterialDefinition[] = [],
+): DynamicMaterialRegistry {
   const registry = new DynamicMaterialRegistry();
-  for (const definition of CORE_DYNAMIC_MATERIALS) {
+  for (const definition of [...CORE_DYNAMIC_MATERIALS, ...additionalDefinitions]) {
     registry.register(definition);
   }
   registry.freeze();

@@ -15,6 +15,7 @@ import type { ChunkNeighbors } from './ChunkMeshBuilder';
 import { createCoreDynamicMaterialRegistry } from '@game/dynamics/CoreDynamicMaterials';
 import { DynamicMaterialSystem } from '@game/dynamics/DynamicMaterialSystem';
 import { ThreeFallingVoxelView } from '@game/dynamics/ThreeFallingVoxelView';
+import type { DynamicMaterialRegistry } from '@game/dynamics/DynamicMaterialRegistry';
 import type {
   ChunkVisibilityState,
   ChunkStreamingView,
@@ -50,7 +51,11 @@ export class World {
   public tickManager: WorldTickManager;
   public dynamicMaterials: DynamicMaterialSystem;
 
-  constructor(seed = 'cloudcraft', game?: any) {
+  constructor(
+    seed = 'cloudcraft',
+    game?: any,
+    dynamicMaterialRegistry: DynamicMaterialRegistry = createCoreDynamicMaterialRegistry(),
+  ) {
     this.seed = seed;
     this.game = game;
     this.blockEntities = new BlockEntityManager();
@@ -59,7 +64,7 @@ export class World {
     this.originalBlocks = new Map();
     this.group = new THREE.Group();
     this.dynamicMaterials = new DynamicMaterialSystem(
-      createCoreDynamicMaterialRegistry(),
+      dynamicMaterialRegistry,
       this,
       new ThreeFallingVoxelView(this.group),
     );
@@ -76,7 +81,12 @@ export class World {
     return this.seed;
   }
 
+  public isInWorldBounds(y: number): boolean {
+    return y >= 0 && y < WORLD_HEIGHT;
+  }
+
   public setSeed(seed: string): void {
+    this.dynamicMaterials.reset();
     this.seed = seed;
     this.generator.setSeed(seed);
     this.chunkRevisions.clear();

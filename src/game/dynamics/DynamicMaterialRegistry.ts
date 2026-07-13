@@ -11,6 +11,7 @@ export interface DynamicMaterialDefinition {
 export interface FallingVoxelWorldPort {
   getBlock(x: number, y: number, z: number): number;
   setBlock(x: number, y: number, z: number, blockId: number): void;
+  isInWorldBounds(y: number): boolean;
 }
 
 export class DynamicMaterialRegistry {

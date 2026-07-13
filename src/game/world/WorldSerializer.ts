@@ -1,4 +1,5 @@
 import { World } from './World';
+import { EMPTY_DYNAMIC_MATERIAL_SNAPSHOT } from '@game/dynamics/DynamicMaterialSnapshot';
 
 export class WorldSerializer {
   // Serialize world to JSON (only saves modified blocks to keep save size minimal)
@@ -16,7 +17,8 @@ export class WorldSerializer {
     return JSON.stringify({
       seed: world.getSeed(),
       modified: serializedModified,
-      entities: world.blockEntities.serialize()
+      entities: world.blockEntities.serialize(),
+      dynamicMaterials: world.dynamicMaterials.createSnapshot(),
     });
   }
 
@@ -24,6 +26,9 @@ export class WorldSerializer {
   public static loadWorld(world: World, saveStr: string): void {
     try {
       const saved = JSON.parse(saveStr);
+      const dynamicMaterialSnapshot = saved.dynamicMaterials
+        ?? EMPTY_DYNAMIC_MATERIAL_SNAPSHOT;
+      world.dynamicMaterials.validateSnapshot(dynamicMaterialSnapshot);
       if (saved.seed) {
         world.setSeed(saved.seed);
       }
@@ -54,6 +59,7 @@ export class WorldSerializer {
       } else {
         world.blockEntities.clear();
       }
+      world.dynamicMaterials.restoreSnapshot(dynamicMaterialSnapshot);
     } catch (e) {
       console.error('Failed to load world', e);
     }

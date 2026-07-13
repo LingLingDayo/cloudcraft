@@ -4,6 +4,7 @@ import type {
   DynamicMaterialRegistry,
   FallingVoxelWorldPort,
 } from './DynamicMaterialRegistry';
+import type { DynamicMaterialSnapshot } from './DynamicMaterialSnapshot';
 
 export interface FallingVoxelViewPort {
   sync(bodies: Iterable<FallingVoxelBody>): void;
@@ -36,9 +37,26 @@ export class DynamicMaterialSystem {
     return this.simulation.getActiveCount();
   }
 
-  public dispose(): void {
+  public createSnapshot(): DynamicMaterialSnapshot {
+    return this.simulation.createSnapshot();
+  }
+
+  public validateSnapshot(snapshot: unknown): void {
+    this.simulation.validateSnapshot(snapshot);
+  }
+
+  public restoreSnapshot(snapshot: unknown): void {
+    this.simulation.restoreSnapshot(snapshot);
+    this.view?.sync(this.simulation.getBodies());
+  }
+
+  public reset(): void {
     this.simulation.clear();
     this.view?.sync(this.simulation.getBodies());
+  }
+
+  public dispose(): void {
+    this.reset();
     this.view?.dispose();
   }
 }
