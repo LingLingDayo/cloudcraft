@@ -14,6 +14,7 @@ import {
   createEntitySnapshot,
 } from './EntitySnapshot';
 import type { World } from '@game/world/World';
+import { Animal } from './Animal';
 
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
   fillStyle: '',
@@ -35,6 +36,32 @@ vi.mock('@game/systems/Sound', () => ({
     playBreak: vi.fn(),
   },
 }));
+
+class LifecycleTestAnimal extends Animal {
+  public width = 0.8;
+  public height = 0.9;
+  public depth = 0.8;
+  protected walkSpeed = 1;
+  protected panicSpeed = 2;
+  protected jumpSpeed = 4;
+  public hurtSound = '';
+  public deathSound = '';
+
+  public constructor(world: World, onExit: () => void) {
+    super(
+      'lifecycle-test-animal',
+      'test:lifecycle',
+      new THREE.Vector3(),
+      world,
+      10,
+      ['cloudcraft:ground'],
+    );
+    this.registerBehaviorState({ id: 'lifecycle-active', onExit });
+    this.transitionBehavior('lifecycle-active');
+  }
+
+  public initMesh(): void {}
+}
 
 describe('BehaviorStateMachine', () => {
   test('transitions leaf states while retaining hierarchical parent membership', () => {
@@ -91,6 +118,19 @@ describe('BehaviorStateMachine', () => {
 
     expect(context.updates).toBe(2);
     expect(parentReads).toBe(0);
+  });
+});
+
+describe('Animal lifecycle', () => {
+  test('exits the active behavior exactly once when disposed', () => {
+    const onExit = vi.fn();
+    const world = { getBlock: vi.fn(() => BLOCK_TYPES.AIR) } as unknown as World;
+    const animal = new LifecycleTestAnimal(world, onExit);
+
+    animal.dispose();
+    animal.dispose();
+
+    expect(onExit).toHaveBeenCalledOnce();
   });
 });
 

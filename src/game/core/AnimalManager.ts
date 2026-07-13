@@ -238,6 +238,7 @@ export class AnimalManager {
   }
 
   private disposeAnimalResources(animal: Animal): void {
+    animal.dispose();
     animal.mesh.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.geometry.dispose();

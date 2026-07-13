@@ -169,6 +169,10 @@ export abstract class Animal extends Entity {
     this.updateRotation(dt);
   }
 
+  public dispose(): void {
+    this.behaviorStateMachine.dispose(this);
+  }
+
   protected updateAI(dt: number) {
     this.behaviorStateMachine.update(this, dt);
   }
