@@ -7,6 +7,8 @@ import {
 } from './GameSaveData';
 import type { SaveData } from './SaveManager';
 import type { WeatherSnapshot } from '@game/environment/WeatherTimeline';
+import { createCoreFixtureRegistry } from '@game/fixtures/FixtureDefinitions';
+import { WorldFixtureManager } from '@game/fixtures/WorldFixtureManager';
 
 function createRuntime(): GameSaveRuntimePort {
   return {
@@ -66,6 +68,54 @@ describe('GameSaveData', () => {
         manualWeather: null,
       },
     });
+  });
+
+  test('round-trips fixture capabilities through definitions instead of snapshot data', () => {
+    let nextFixtureId = 0;
+    const sourceFixtures = new WorldFixtureManager(
+      createCoreFixtureRegistry(),
+      { canOccupy: () => true },
+      undefined,
+      () => `fixture-${nextFixtureId++}`,
+    );
+    sourceFixtures.place('cloudcraft:furnace', { x: 1, y: 2, z: 3 }, 0);
+    sourceFixtures.place('cloudcraft:fabricator_bench', { x: 4, y: 5, z: 6 }, 0);
+    const targetFixtures = new WorldFixtureManager(
+      createCoreFixtureRegistry(),
+      { canOccupy: () => true },
+    );
+    const sourceRuntime = { ...createRuntime(), fixtures: sourceFixtures };
+    const targetRuntime = { ...createRuntime(), fixtures: targetFixtures };
+    const save = captureGameSaveData(sourceRuntime, {
+      hotbar: [],
+      inventory: [],
+      activeSlot: 0,
+      gameMode: GameMode.ADVENTURE,
+    });
+
+    expect(save.fixtures?.fixtures.flatMap(fixture => fixture.components)).toEqual([
+      { type: 'container', slots: [null, null, null] },
+      { type: 'fuel', slots: [null] },
+      { type: 'processor', progress: 0 },
+      { type: 'container', slots: Array(9).fill(null) },
+      { type: 'crafting' },
+    ]);
+
+    restoreGameSaveData(targetRuntime, save);
+
+    const furnaceProcessor = targetFixtures.get('fixture-0')?.components
+      .find(component => component.type === 'processor');
+    const fabricatorCrafting = targetFixtures.get('fixture-1')?.components
+      .find(component => component.type === 'crafting');
+    expect(furnaceProcessor?.type === 'processor' ? furnaceProcessor.capabilities : null)
+      .toEqual(['cloudcraft:heat']);
+    expect(fabricatorCrafting?.type === 'crafting' ? fabricatorCrafting.capabilities : null)
+      .toEqual([
+        'cloudcraft:hand_assembly',
+        'cloudcraft:shape',
+        'cloudcraft:bind',
+        'cloudcraft:stabilize',
+      ]);
   });
 
   test('restores runtime contexts and normalizes legacy inventory length', () => {

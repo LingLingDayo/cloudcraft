@@ -148,15 +148,9 @@ function validateFixtureSnapshot(snapshot: FixtureSnapshot): void {
       if (component.type === 'container' || component.type === 'fuel') {
         validateSlots(component.slots, 'fixture slots');
       } else if (component.type === 'crafting') {
-        if (!Array.isArray(component.capabilities) || component.capabilities.some(value => typeof value !== 'string')) {
-          throw new Error('Fixture snapshot capabilities must be a string array');
-        }
+        continue;
       } else if (component.type === 'processor') {
-        if (
-          !Array.isArray(component.capabilities)
-          || component.capabilities.some(value => typeof value !== 'string')
-          || !Number.isFinite(component.progress)
-        ) {
+        if (!Number.isFinite(component.progress)) {
           throw new Error('Fixture snapshot processor state is invalid');
         }
       } else {
