@@ -4,6 +4,8 @@ import { EnvironmentState } from '../environment/EnvironmentState';
 import { WeatherBlender } from '../environment/WeatherBlender';
 import { EnvironmentRenderer } from '../environment/EnvironmentRenderer';
 import { SunBody, MoonBody } from '../environment/CelestialBodies';
+import { PrecipitationRenderer } from '../environment/PrecipitationRenderer';
+import type { WeatherId, WeatherSnapshot } from '../environment/WeatherTimeline';
 import { useGameStore } from '@store/useGameStore';
 
 export class EnvironmentManager {
@@ -15,6 +17,7 @@ export class EnvironmentManager {
   public renderer: EnvironmentRenderer;
   public sun: SunBody;
   public moon: MoonBody;
+  public precipitation: PrecipitationRenderer;
 
   // Backward-compatible properties
   public dirLight: THREE.DirectionalLight;
@@ -23,18 +26,28 @@ export class EnvironmentManager {
   // Pre-allocated objects to avoid garbage collection pressure in update loop
   private tempSkyLightColor: THREE.Color;
   private torchColor: THREE.Color;
+  private brightNightColor: THREE.Color;
+  private readonly getBlockId: (x: number, y: number, z: number) => number;
 
   constructor(game: GameManager) {
     this.game = game;
     this.tempSkyLightColor = new THREE.Color();
     this.torchColor = new THREE.Color(1.0, 0.85, 0.5);
+    this.brightNightColor = new THREE.Color(0xaabbff);
+    this.getBlockId = (x, y, z) => this.game.world.getBlock(x, y, z);
 
     // 1. Initialize State and Logic
-    this.state = new EnvironmentState();
+    const weatherSeed = this.game.world.getSeed();
+    this.state = new EnvironmentState(weatherSeed);
     this.blender = new WeatherBlender();
 
     // 2. Initialize Renderer
     this.renderer = new EnvironmentRenderer(this.game.scene, this.game.renderer);
+    this.precipitation = new PrecipitationRenderer(
+      this.game.scene,
+      this.game.camera,
+      weatherSeed,
+    );
 
     // 3. Initialize Celestial Bodies
     this.sun = new SunBody(this.game.scene);
@@ -63,15 +76,27 @@ export class EnvironmentManager {
   /**
    * Instantly changes the weather
    */
-  public setWeather(weatherId: string) {
+  public setWeather(weatherId: WeatherId) {
     this.state.setWeather(weatherId);
   }
 
   /**
    * Smoothly transitions to a new weather condition
    */
-  public transitionToWeather(weatherId: string, speedFactor?: number) {
+  public transitionToWeather(weatherId: WeatherId, speedFactor?: number) {
     this.state.transitionToWeather(weatherId, speedFactor);
+  }
+
+  public resumeAutomaticWeather(): void {
+    this.state.resumeAutomaticWeather();
+  }
+
+  public createSnapshot(): WeatherSnapshot {
+    return this.state.createSnapshot();
+  }
+
+  public restoreSnapshot(snapshot: WeatherSnapshot): void {
+    this.state.restoreSnapshot(snapshot);
   }
 
   public update(dt: number) {
@@ -79,8 +104,10 @@ export class EnvironmentManager {
     this.state.update(
       dt, 
       this.game.camera.position, 
-      (x, y, z) => this.game.world.getBlock(x, y, z)
+      this.getBlockId,
     );
+
+    this.precipitation.update(dt, this.state.getWeather());
 
     const timeRatio = this.state.getTimeRatio();
 
@@ -99,9 +126,8 @@ export class EnvironmentManager {
       }
       const colorLerpFactor = Math.max(0.0, colorLerpBase) * nightFactor;
       if (colorLerpFactor > 0) {
-        const brightNightColor = new THREE.Color(0xaabbff);
-        blended.dirLightColor.lerp(brightNightColor, colorLerpFactor);
-        blended.ambientColor.lerp(brightNightColor, colorLerpFactor * 0.5);
+        blended.dirLightColor.lerp(this.brightNightColor, colorLerpFactor);
+        blended.ambientColor.lerp(this.brightNightColor, colorLerpFactor * 0.5);
       }
     }
 
@@ -143,6 +169,7 @@ export class EnvironmentManager {
   }
 
   public dispose() {
+    this.precipitation.dispose();
     this.renderer.dispose();
     this.sun.dispose(this.game.scene);
     this.moon.dispose(this.game.scene);

@@ -48,6 +48,12 @@ export class ClearWeather implements IWeather {
     ambientIntensity: 0,
     dirLightIntensity: 0,
   };
+  private readonly skyColorsView: SkyColors = {
+    skyStart: this.cachedData.skyStart,
+    skyEnd: this.cachedData.skyEnd,
+    fogColor: this.cachedData.fogColor,
+    lightColor: this.cachedData.lightColor,
+  };
 
   private keyframes: Keyframe[] = [
     {
@@ -143,13 +149,8 @@ export class ClearWeather implements IWeather {
   }
 
   public getSkyColors(timeRatio: number): SkyColors {
-    const data = this.getInterpolatedData(timeRatio);
-    return {
-      skyStart: data.skyStart,
-      skyEnd: data.skyEnd,
-      fogColor: data.fogColor,
-      lightColor: data.lightColor,
-    };
+    this.getInterpolatedData(timeRatio);
+    return this.skyColorsView;
   }
 
   public getAmbientIntensity(timeRatio: number): number {
@@ -175,6 +176,12 @@ export class RainWeather implements IWeather {
     lightColor: new THREE.Color(),
     ambientIntensity: 0,
     dirLightIntensity: 0,
+  };
+  private readonly skyColorsView: SkyColors = {
+    skyStart: this.cachedData.skyStart,
+    skyEnd: this.cachedData.skyEnd,
+    fogColor: this.cachedData.fogColor,
+    lightColor: this.cachedData.lightColor,
   };
 
   private keyframes: Keyframe[] = [
@@ -271,13 +278,8 @@ export class RainWeather implements IWeather {
   }
 
   public getSkyColors(timeRatio: number): SkyColors {
-    const data = this.getInterpolatedData(timeRatio);
-    return {
-      skyStart: data.skyStart,
-      skyEnd: data.skyEnd,
-      fogColor: data.fogColor,
-      lightColor: data.lightColor,
-    };
+    this.getInterpolatedData(timeRatio);
+    return this.skyColorsView;
   }
 
   public getAmbientIntensity(timeRatio: number): number {
@@ -303,6 +305,12 @@ export class StormWeather implements IWeather {
     lightColor: new THREE.Color(),
     ambientIntensity: 0,
     dirLightIntensity: 0,
+  };
+  private readonly skyColorsView: SkyColors = {
+    skyStart: this.cachedData.skyStart,
+    skyEnd: this.cachedData.skyEnd,
+    fogColor: this.cachedData.fogColor,
+    lightColor: this.cachedData.lightColor,
   };
 
   private keyframes: Keyframe[] = [
@@ -399,13 +407,8 @@ export class StormWeather implements IWeather {
   }
 
   public getSkyColors(timeRatio: number): SkyColors {
-    const data = this.getInterpolatedData(timeRatio);
-    return {
-      skyStart: data.skyStart,
-      skyEnd: data.skyEnd,
-      fogColor: data.fogColor,
-      lightColor: data.lightColor,
-    };
+    this.getInterpolatedData(timeRatio);
+    return this.skyColorsView;
   }
 
   public getAmbientIntensity(timeRatio: number): number {

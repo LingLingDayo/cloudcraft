@@ -2,6 +2,13 @@ import * as THREE from 'three';
 import { getBlockProperties } from '@game/world/BlockConfig';
 import { DIMENSIONS } from './DimensionConfig';
 import type { DimensionConfig } from './EnvironmentTypes';
+import {
+  WEATHER_IDS,
+  WEATHER_TIMELINE_CONFIG,
+  WeatherTimeline,
+  type WeatherId,
+  type WeatherSnapshot,
+} from './WeatherTimeline';
 
 export class EnvironmentState {
   public gameTime: number = 60; // Start at 60s (noon)
@@ -9,13 +16,20 @@ export class EnvironmentState {
   public activeDimension: DimensionConfig = DIMENSIONS.overworld;
   public cameraInWater = false;
 
+  public readonly timeline: WeatherTimeline;
   public weatherWeights = new Map<string, number>();
   private targetWeights = new Map<string, number>();
-  private transitionSpeed = 0.2; // ~5 seconds transition
+  private transitionSpeed: number = WEATHER_TIMELINE_CONFIG.transitionSpeedPerSecond;
+  private activeWeather: WeatherId;
 
-  constructor() {
-    this.weatherWeights.set('clear', 1.0);
-    this.targetWeights.set('clear', 1.0);
+  constructor(seed: string = WEATHER_TIMELINE_CONFIG.defaultSeed) {
+    this.timeline = new WeatherTimeline(seed);
+    this.activeWeather = this.timeline.getWeather();
+    for (const weatherId of WEATHER_IDS) {
+      const weight = weatherId === this.activeWeather ? 1 : 0;
+      this.weatherWeights.set(weatherId, weight);
+      this.targetWeights.set(weatherId, weight);
+    }
   }
 
   public setDimension(dimensionId: string) {
@@ -28,25 +42,43 @@ export class EnvironmentState {
     }
   }
 
-  public setWeather(weatherId: string) {
-    // Instantly switch weather weights
-    for (const key of this.weatherWeights.keys()) {
-      this.weatherWeights.set(key, 0.0);
-      this.targetWeights.set(key, 0.0);
-    }
-    this.weatherWeights.set(weatherId, 1.0);
-    this.targetWeights.set(weatherId, 1.0);
+  public getWeather(): WeatherId {
+    return this.timeline.getWeather();
   }
 
-  public transitionToWeather(weatherId: string, speedFactor: number = 0.2) {
+  public setWeather(weatherId: WeatherId) {
+    this.timeline.setManualWeather(weatherId);
+    this.activeWeather = weatherId;
+    this.applyWeatherImmediately(weatherId);
+  }
+
+  public transitionToWeather(
+    weatherId: WeatherId,
+    speedFactor: number = WEATHER_TIMELINE_CONFIG.transitionSpeedPerSecond,
+  ) {
+    this.timeline.setManualWeather(weatherId);
+    this.activeWeather = weatherId;
     this.transitionSpeed = speedFactor;
-    // Set targets: specified weather to 1.0, others to 0.0
-    this.targetWeights.set(weatherId, 1.0);
-    for (const key of this.weatherWeights.keys()) {
-      if (key !== weatherId) {
-        this.targetWeights.set(key, 0.0);
-      }
-    }
+    this.setTargetWeather(weatherId);
+  }
+
+  public resumeAutomaticWeather(
+    speedFactor: number = WEATHER_TIMELINE_CONFIG.transitionSpeedPerSecond,
+  ): void {
+    this.timeline.resumeAutomaticWeather();
+    this.activeWeather = this.timeline.getWeather();
+    this.transitionSpeed = speedFactor;
+    this.setTargetWeather(this.activeWeather);
+  }
+
+  public createSnapshot(): WeatherSnapshot {
+    return this.timeline.createSnapshot();
+  }
+
+  public restoreSnapshot(snapshot: WeatherSnapshot): void {
+    this.timeline.restoreSnapshot(snapshot);
+    this.activeWeather = this.timeline.getWeather();
+    this.applyWeatherImmediately(this.activeWeather);
   }
 
   public getTimeRatio(): number {
@@ -80,6 +112,13 @@ export class EnvironmentState {
       this.gameTime = (this.gameTime + dt) % this.dayDuration;
     }
 
+    const timelineWeather = this.timeline.update(dt);
+    if (timelineWeather !== this.activeWeather) {
+      this.activeWeather = timelineWeather;
+      this.transitionSpeed = WEATHER_TIMELINE_CONFIG.transitionSpeedPerSecond;
+      this.setTargetWeather(timelineWeather);
+    }
+
     // 2. Smoothly Blend Weather Weights
     for (const [id, target] of this.targetWeights.entries()) {
       const current = this.weatherWeights.get(id) ?? 0;
@@ -101,5 +140,19 @@ export class EnvironmentState {
     const pz = Math.floor(cameraPos.z);
     const blockId = getBlockId(px, py, pz);
     this.cameraInWater = getBlockProperties(blockId).isLiquid;
+  }
+
+  private applyWeatherImmediately(weatherId: WeatherId): void {
+    for (const id of WEATHER_IDS) {
+      const weight = id === weatherId ? 1 : 0;
+      this.weatherWeights.set(id, weight);
+      this.targetWeights.set(id, weight);
+    }
+  }
+
+  private setTargetWeather(weatherId: WeatherId): void {
+    for (const id of WEATHER_IDS) {
+      this.targetWeights.set(id, id === weatherId ? 1 : 0);
+    }
   }
 }

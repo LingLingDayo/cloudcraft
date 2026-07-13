@@ -9,6 +9,7 @@ export class EnvironmentRenderer {
   public hemiLight: THREE.HemisphereLight;
 
   private waterColor = new THREE.Color(0x1030a0);
+  private finalSkyAndFogColor = new THREE.Color();
   private underwaterDensity = 0.08;
 
   constructor(scene: THREE.Scene, renderer: THREE.WebGLRenderer) {
@@ -34,28 +35,25 @@ export class EnvironmentRenderer {
 
     // To prevent distant geometry from glowing or having silhouette mismatches against the sky background,
     // the sky background color must exactly match the fog color.
-    let finalSkyColor = blended.skyColors.fogColor;
-    let finalFogColor = blended.skyColors.fogColor;
+    const finalSkyAndFogColor = this.finalSkyAndFogColor.copy(blended.skyColors.fogColor);
     let finalFogDensity = blended.fogDensity;
 
     // Post-process medium override (e.g., underwater)
     if (state.cameraInWater) {
-      finalSkyColor = this.waterColor;
-      finalFogColor = this.waterColor;
+      finalSkyAndFogColor.copy(this.waterColor);
       finalFogDensity = this.underwaterDensity;
     } else if (nightMultiplier !== 1.0) {
       // Scale sky and fog colors at night to match ambient lighting
-      finalSkyColor = finalSkyColor.clone().multiplyScalar(nightMultiplier);
-      finalFogColor = finalFogColor.clone().multiplyScalar(nightMultiplier);
+      finalSkyAndFogColor.multiplyScalar(nightMultiplier);
     }
 
     // Apply background and clear colors
-    this.renderer.setClearColor(finalSkyColor);
-    this.scene.background = finalSkyColor;
+    this.renderer.setClearColor(finalSkyAndFogColor);
+    this.scene.background = finalSkyAndFogColor;
 
     // Apply fog configuration if present in the scene
     if (this.scene.fog && this.scene.fog instanceof THREE.FogExp2) {
-      this.scene.fog.color.copy(finalFogColor);
+      this.scene.fog.color.copy(finalSkyAndFogColor);
       this.scene.fog.density = finalFogDensity;
     }
 

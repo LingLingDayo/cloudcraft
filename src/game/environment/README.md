@@ -15,14 +15,18 @@
 
 2. **状态与时间驱动（逻辑层）**
    * 维护游戏当前的运行时间周期（用以计算天体的位置角度）。
+   * `WeatherTimeline` 使用世界 Seed 与固定时间片段确定性地产生 `clear`、`rain`、`storm` 阶段；更新频率不会改变天气序列。
+   * 时间线以完整天气模式周期为范围保存规范化的有限时间值，并使用固定精度时间单位累加，避免不同 Tick 步长在片段边界产生漂移。
    * 维护当前天气状态的过渡权重（在晴天、雨天、暴风雨等天气类型间进行平滑的线性或曲线混合）。
+   * 手动天气是时间线上的显式覆盖状态；`resumeAutomaticWeather()` 清除覆盖并回到同一 Seed、同一累计时间对应的自动阶段。
    * 负责检测相机环境状态（例如是否处于液体等介质中），以驱动渲染参数的改写。
-   * 关联文件位置：`src/game/environment/EnvironmentState.ts` 与 `src/game/environment/WeatherPresets.ts`
+   * 关联文件位置：`src/game/environment/WeatherTimeline.ts`、`src/game/environment/EnvironmentState.ts` 与 `src/game/environment/WeatherPresets.ts`
 
 3. **表现与渲染应用（表现层）**
    * 负责插值计算，将多个天气预设的混合结果合成最终的渲染参数，并单向应用至 Three.js 的场景（背景清理色、雾色、雾浓度）和灯光中。
    * 负责天体的轨迹运行和阴影投射管理。
-   * 关联文件位置：`src/game/environment/WeatherBlender.ts`、`src/game/environment/EnvironmentRenderer.ts` 及 `src/game/environment/CelestialBodies.ts`
+   * `PrecipitationRenderer` 使用相机局部的固定容量 `Float32Array` 线段缓冲区表现雨和暴雨，不按帧创建粒子对象。
+   * 关联文件位置：`src/game/environment/WeatherBlender.ts`、`src/game/environment/EnvironmentRenderer.ts`、`src/game/environment/PrecipitationRenderer.ts` 及 `src/game/environment/CelestialBodies.ts`
 
 ---
 
@@ -40,8 +44,16 @@
 
 ### 如何新增维度或天气？
 * **新增维度**：在维度配置中定义全新的维度配置，提供其基准天空色彩与雾效参数，并指定是否随时间流逝。
-* **新增天气**：实现天气接口定义，配置 24 小时随时间演变的插值关键帧，并在混合器中注册。
+* **新增天气**：实现天气接口定义，配置 24 小时随时间演变的插值关键帧，在混合器中注册，并同步扩展 `WeatherId`、确定性时间片段配置与降水表现（如需要）。
+
+### 天气快照与存档兼容
+* `WeatherSnapshot` 当前 Schema 版本为 `1`，保存时间线 Seed、周期内规范化时间秒数及可选的手动覆盖天气；恢复时必须拒绝不支持的版本和非法字段。
+* 持久化层必须在调用任何 World、Fixture、Entity、Environment 或 Player 运行时恢复接口前，通过纯 `validateWeatherSnapshot()` 完成天气快照校验，防止损坏存档造成部分恢复。
+* `GameManager.captureSaveData()` 通过统一保存边界自动包含天气快照，桌面端与移动端不得各自维护天气保存逻辑。
+* `SaveData.weather` 保持可选。旧存档缺少该字段时继续使用当前世界 Seed 初始化的自动时间线，不得阻断世界、玩家、实体或设施恢复。
 
 ### 零 GC（垃圾回收）性能约束
 * **高频 Tick 零运行时分配**：由于环境计算与天体运动属于 60 FPS 渲染主循环的一部分，**绝对禁止**在每帧调用的更新、混合与渲染逻辑中临时实例化新的颜色（Color）、向量（Vector3）或矩阵对象。
 * **做法**：所有数学辅助计算和临时混合数据必须复用预先分配并在类实例化时初始化好的私有成员变量，通过引用改写（如 `.copy()`、`.set()` 或 `.lerp()`）进行运算。
+* **天气预设视图**：`getSkyColors()` 必须返回构造期创建的稳定 `SkyColors` 视图；其内部 `Color` 允许原地更新，但禁止按帧创建包装对象。
+* **降水资源生命周期**：几何体、材质、位置缓冲和随机状态缓冲只能在构造期分配；`dispose()` 必须从场景移除对象并对称释放 Three.js 几何体与材质，且允许重复调用而不重复释放。

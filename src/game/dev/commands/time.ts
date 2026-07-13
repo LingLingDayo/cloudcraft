@@ -1,4 +1,5 @@
 import type { GameManager } from '../../core/GameManager';
+import { isWeatherId, WEATHER_IDS } from '../../environment/WeatherTimeline';
 
 export function createTimeCommands(game: GameManager) {
   return {
@@ -15,9 +16,8 @@ export function createTimeCommands(game: GameManager) {
       console.log(`Set game time to: ${game.environment.state.gameTime} seconds`);
     },
     setWeather(id: string) {
-      const valid = ['clear', 'rain', 'storm'];
-      if (!valid.includes(id)) {
-        console.error(`Invalid weather. Valid options are: ${valid.join(', ')}`);
+      if (!isWeatherId(id)) {
+        console.error(`Invalid weather. Valid options are: ${WEATHER_IDS.join(', ')}`);
         return;
       }
       game.environment.setWeather(id);
