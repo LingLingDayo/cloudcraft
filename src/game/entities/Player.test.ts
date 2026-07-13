@@ -46,6 +46,7 @@ describe('Player', () => {
 
     mockWorld = {
       getBlock: vi.fn(() => BLOCK_TYPES.AIR),
+      getSeed: vi.fn(() => 'test-player-seed'),
     } as unknown as World;
 
     // Reset Zustand store
