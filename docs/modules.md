@@ -10,9 +10,15 @@
 - [根目录模块架构规范](../src/README.md) —— 全局目录结构划分、模块边界及核心模块职责定义。
 - [状态管理模块](../src/store/README.md) (`store`) —— Zustand 状态管理切片（Slices）架构及 3D 引擎高频渲染与 UI 低频刷新的同步规范。
 - [游戏引擎核心模块](../src/game/)
+  - [基础契约模块](../src/game/foundation/README.md) (`game/foundation`) —— 类型化定义注册表、生命周期内核、缓冲领域事件与版本快照契约。
   - [调试控制台与暴露接口](../src/game/dev/README.md) (`game/dev`) —— `window.__cloudcraft__` 挂载的调试控制台域（Meta, Player, World, Time, Render, Store）API 说明。
+  - [生物与实体架构](../src/game/entities/README.md) (`game/entities`) —— HFSM 行为、组合运动模式、物种注册、生成偏好与实体快照规范。
   - [环境与天气系统](../src/game/environment/README.md) (`game/environment`) —— 维度静态配置、时间驱动逻辑、天气混合器与零 GC 渲染平滑过渡契约。
+  - [动态材质与掉落体](../src/game/dynamics/README.md) (`game/dynamics`) —— 连续掉落模拟、动态材质注册和实例化渲染生命周期规范。
+  - [工序合成系统](../src/game/fabrication/README.md) (`game/fabrication`) —— 配方注册、能力门禁、原子背包事务与工序扩展契约。
+  - [非体素设施系统](../src/game/fixtures/README.md) (`game/fixtures`) —— 设施定义、能力组件、放置交互、容器状态与快照边界。
   - [道具与物品系统](../src/game/item/README.md) (`game/item`) —— 纯道具 Item、BlockItem、FoodItem 多态分发机制与运行时注入解耦（Properties Resolver 模式）。
   - [物理与碰撞系统](../src/game/physics/README.md) (`game/physics`) —— AABB 碰撞检测时序、分轴判断机制以及局部刚体引擎（Rapier.js）集成规范。
   - [世界与地形生成系统](../src/game/world/README.md) (`game/world`) —— 温湿度/大陆度/侵蚀度多维正交噪波生成解耦、动态坡度检测与悬崖崖壁裸石填充机制。
     - [区块生成管道流水线](../src/game/world/pipeline/README.md) (`game/world/pipeline`) —— 区块生成管道流水线（Stage）模式、上下文共享以及越界安全写入防护。
+    - [区块可见性流送](../src/game/world/streaming/README.md) (`game/world/streaming`) —— 视锥、透明 Portal 拓扑、安全外圈及异步结果失效契约。
