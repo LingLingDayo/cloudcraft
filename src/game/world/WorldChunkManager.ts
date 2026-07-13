@@ -8,6 +8,7 @@ import {
 } from './streaming/ChunkVisibilityResolver';
 import { CHUNK_STREAMING_CONFIG } from './streaming/ChunkStreamingConfig';
 import { ChunkWorkerRetryTracker } from './streaming/ChunkWorkerRetryTracker';
+import { ChunkStreamingViewCache } from './streaming/ChunkStreamingViewCache';
 
 interface PendingGenerationQueueItem {
   readonly key: string;
@@ -48,21 +49,9 @@ export class WorldChunkManager {
   private meshRetries = new ChunkWorkerRetryTracker(
     CHUNK_STREAMING_CONFIG.maxWorkerTaskAttempts,
   );
-
-  private lastCcx: number | null = null;
-  private lastCcy: number | null = null;
-  private lastCcz: number | null = null;
-  private lastRadius: number | null = null;
-  private lastViewYawBucket: number | null = null;
-  private lastViewPitchBucket: number | null = null;
-  private lastViewFov: number | null = null;
-  private lastViewAspect: number | null = null;
-  private lastViewPositionBucketX: number | null = null;
-  private lastViewPositionBucketY: number | null = null;
-  private lastViewPositionBucketZ: number | null = null;
+  private readonly viewCache = new ChunkStreamingViewCache();
   private streamingEpoch = 0;
   private desiredActiveKeys = new Set<string>();
-  private visibilityInvalidated = true;
   private readonly workerTaskOwner = `world-chunk-manager:${nextWorkerTaskOwnerId++}`;
 
   public getStreamingEpoch(): number {
@@ -74,7 +63,7 @@ export class WorldChunkManager {
   }
 
   public invalidateVisibility(): void {
-    this.visibilityInvalidated = true;
+    this.viewCache.invalidate();
   }
 
   public getWorkerTaskOwner(): string {
@@ -97,18 +86,7 @@ export class WorldChunkManager {
   }
 
   public clearCache() {
-    this.lastCcx = null;
-    this.lastCcy = null;
-    this.lastCcz = null;
-    this.lastRadius = null;
-    this.lastViewYawBucket = null;
-    this.lastViewPitchBucket = null;
-    this.lastViewFov = null;
-    this.lastViewAspect = null;
-    this.lastViewPositionBucketX = null;
-    this.lastViewPositionBucketY = null;
-    this.lastViewPositionBucketZ = null;
-    this.visibilityInvalidated = true;
+    this.viewCache.clear();
     this.streamingEpoch++;
     this.workerManager.cancelQueuedTasks(this.workerTaskOwner);
     this.desiredActiveKeys = new Set();
@@ -146,68 +124,16 @@ export class WorldChunkManager {
     const ccz = Math.floor(centerZ / CHUNK_SIZE_Z);
     const resolvedRadius = Math.max(0, radius);
 
-    let viewYawBucket: number | null = null;
-    let viewPitchBucket: number | null = null;
-    let viewFov: number | null = null;
-    let viewAspect: number | null = null;
-    let viewPositionBucketX: number | null = null;
-    let viewPositionBucketY: number | null = null;
-    let viewPositionBucketZ: number | null = null;
-    if (view) {
-      const positionBucketSize = CHUNK_STREAMING_CONFIG.viewPositionBucketSizeBlocks;
-      viewPositionBucketX = Math.floor(view.position.x / positionBucketSize);
-      viewPositionBucketY = Math.floor(view.position.y / positionBucketSize);
-      viewPositionBucketZ = Math.floor(view.position.z / positionBucketSize);
-      const forwardLength = Math.hypot(view.forward.x, view.forward.y, view.forward.z);
-      if (forwardLength > 0) {
-        const directionStep = Math.PI * 2 / CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
-        const rawYawBucket = Math.round(
-          Math.atan2(view.forward.x, view.forward.z) / directionStep,
-        );
-        viewYawBucket = (
-          rawYawBucket % CHUNK_STREAMING_CONFIG.directionQuantizationSteps
-          + CHUNK_STREAMING_CONFIG.directionQuantizationSteps
-        ) % CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
-        viewPitchBucket = Math.round(
-          Math.asin(Math.max(-1, Math.min(1, view.forward.y / forwardLength))) / directionStep,
-        );
-      }
-      viewFov = Math.round(
-        view.verticalFovRadians * CHUNK_STREAMING_CONFIG.viewParameterPrecision,
-      );
-      viewAspect = Math.round(view.aspect * CHUNK_STREAMING_CONFIG.viewParameterPrecision);
-    }
-
-    if (
-      !shouldSync
-      && !this.visibilityInvalidated
-      && this.lastCcx === ccx
-      && this.lastCcy === ccy
-      && this.lastCcz === ccz
-      && this.lastRadius === resolvedRadius
-      && this.lastViewYawBucket === viewYawBucket
-      && this.lastViewPitchBucket === viewPitchBucket
-      && this.lastViewFov === viewFov
-      && this.lastViewAspect === viewAspect
-      && this.lastViewPositionBucketX === viewPositionBucketX
-      && this.lastViewPositionBucketY === viewPositionBucketY
-      && this.lastViewPositionBucketZ === viewPositionBucketZ
-    ) {
+    const shouldResolveVisibility = this.viewCache.shouldResolve({
+      centerX: ccx,
+      centerY: ccy,
+      centerZ: ccz,
+      radius: resolvedRadius,
+      view,
+    });
+    if (!shouldSync && !shouldResolveVisibility) {
       return;
     }
-
-    this.lastCcx = ccx;
-    this.lastCcy = ccy;
-    this.lastCcz = ccz;
-    this.lastRadius = resolvedRadius;
-    this.lastViewYawBucket = viewYawBucket;
-    this.lastViewPitchBucket = viewPitchBucket;
-    this.lastViewFov = viewFov;
-    this.lastViewAspect = viewAspect;
-    this.lastViewPositionBucketX = viewPositionBucketX;
-    this.lastViewPositionBucketY = viewPositionBucketY;
-    this.lastViewPositionBucketZ = viewPositionBucketZ;
-    this.visibilityInvalidated = false;
 
     const visibility = this.visibilityResolver.resolve({
       center: { x: ccx, y: ccy, z: ccz },

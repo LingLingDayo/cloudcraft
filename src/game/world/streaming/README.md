@@ -39,6 +39,8 @@
 - 以 4 个方块为边长量化的相机 X/Y/Z position bucket；
 - 显式拓扑失效标记。
 
+`ChunkStreamingViewCache` 是上述量化签名的唯一所有者：`WorldChunkManager` 只通过 `shouldResolve()` 判断是否重算，通过 `invalidate()` 响应摘要变化，并在 `clearCache()` 时对称调用 `clear()`。缓存模块不得依赖 World、Worker 或 Zustand。
+
 Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍位于相同 position bucket 且其他量化参数未变化时，不重复执行拓扑解析；同一 chunk 内跨 position bucket 仍必须解析。
 
 实际裁剪使用相机 forward、right、up 标量基向量，将区块包围球分别与水平、垂直视锥平面做保守相交，不得退化为取最大 FOV 的外接圆锥。Manager 解析会把 position bucket 内最大三维位移作为额外球半径，保证 bucket 内任意精确视点的 `directVisible` 都包含在首次 `active` 中。相机近似垂直时使用稳定的备用轴构造 right；aspect、FOV、位置或方向无效时必须保守放行，避免错误卸载可见区块。
