@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as THREE from 'three';
 import { World, getBlockProperties } from '@game/world/World';
 import { Physics } from '@game/physics/Physics';
@@ -16,6 +15,13 @@ import { AnimalManager } from './AnimalManager';
 import { WORLD_CONFIG } from '@game/world/WorldConfig';
 import { cleanGpuName } from '@utils/gpu';
 import { mountDevConsole } from '../dev';
+import { WorldFixtureManager } from '@game/fixtures/WorldFixtureManager';
+import { ThreeFixtureView } from '@game/fixtures/ThreeFixtureView';
+import type { SaveData } from '@game/systems/SaveManager';
+import type { ChunkStreamingView } from '@game/world/streaming/ChunkVisibilityResolver';
+import { GameSaveCoordinator } from './GameSaveCoordinator';
+import { createGameFixtureRuntime } from './GameFixtureRuntime';
+import { GameStoreBridge } from './GameStoreBridge';
 
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
@@ -32,13 +38,24 @@ export class GameManager {
   public interaction!: InteractionManager;
   public droppedItems!: DroppedItemManager;
   public animals!: AnimalManager;
+  public fixtures!: WorldFixtureManager;
+  public fixtureView!: ThreeFixtureView;
 
   public canvas: HTMLCanvasElement;
   private animationId: number | null = null;
   private lastTime = 0;
+  private readonly chunkStreamingDirection = new THREE.Vector3();
+  private readonly chunkStreamingView = {
+    position: { x: 0, y: 0, z: 0 },
+    forward: { x: 0, y: 0, z: -1 },
+    verticalFovRadians: 0,
+    aspect: 1,
+  } satisfies ChunkStreamingView;
 
   // UI update throttling
   private lastUiUpdateTime = 0;
+  private saveCoordinator!: GameSaveCoordinator;
+  private storeBridge!: GameStoreBridge;
 
   // Settings
   public renderDistance = 4;
@@ -119,59 +136,68 @@ export class GameManager {
     this.particles = new ParticleSystem(this.scene);
     this.player.spawn(this.world, this.physics);
 
+    const fixtureRuntime = createGameFixtureRuntime(this.scene, this.world);
+    this.fixtureView = fixtureRuntime.view;
+    this.fixtures = fixtureRuntime.manager;
+
     // Load chunks around spawn asynchronously to allow React to render the loading progress
-    this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, 2, false);
+    this.loadAreaAroundPlayer(2);
 
     // Initialize Sub-managers
     this.environment = new EnvironmentManager(this);
     this.interaction = new InteractionManager(this);
     this.droppedItems = new DroppedItemManager(this);
     this.animals = new AnimalManager(this);
-
-    // Subscribe to state changes in Zustand to sync with engine blockEntities and debug settings
-    let prevChestInventory = useGameStore.getState().chestInventory;
-    let prevDebugOverlay = useGameStore.getState().debugOverlay;
-    let prevShadowQuality = useGameStore.getState().shadowQuality;
-    
-    // Sync initial debug overlay and shadow quality state
-    this.debugOverlayVisible = prevDebugOverlay;
-    this.applyShadowQuality(prevShadowQuality);
-
-    useGameStore.subscribe((state) => {
-      // Sync chest inventory
-      const nextChest = state.chestInventory;
-      if (nextChest !== prevChestInventory) {
-        prevChestInventory = nextChest;
-        const activeChest = state.activeChest;
-        if (activeChest) {
-          const entity = this.world.blockEntities.getEntity(activeChest.x, activeChest.y, activeChest.z);
-          if (entity && 'inventory' in entity) {
-            (entity as any).inventory = [...nextChest];
-          }
-        }
-      }
-
-      // Sync debugOverlay configuration
-      const nextDebugOverlay = state.debugOverlay;
-      if (nextDebugOverlay !== prevDebugOverlay) {
-        prevDebugOverlay = nextDebugOverlay;
-        this.debugOverlayVisible = nextDebugOverlay;
-      }
-
-      // Sync shadowQuality configuration
-      const nextShadowQuality = state.shadowQuality;
-      if (nextShadowQuality !== prevShadowQuality) {
-        prevShadowQuality = nextShadowQuality;
-        this.applyShadowQuality(nextShadowQuality);
-      }
+    this.saveCoordinator = new GameSaveCoordinator({
+      world: this.world,
+      player: this.player,
+      entities: this.animals,
+      fixtures: this.fixtures,
+      environment: this.environment,
     });
+
+    this.storeBridge = new GameStoreBridge(this);
 
     mountDevConsole(this);
   }
 
+  public captureSaveData(): SaveData {
+    return this.saveCoordinator.capture();
+  }
+
+  public restoreSaveData(save: SaveData): void {
+    this.saveCoordinator.restore(save);
+  }
+
   public spawnPlayer() {
     this.player.spawn(this.world, this.physics);
-    this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, 2, true);
+    this.loadAreaAroundPlayer(2, true);
+  }
+
+  private updateChunkStreamingView(): ChunkStreamingView | null {
+    if (!this.camera) return null;
+
+    this.camera.getWorldDirection(this.chunkStreamingDirection);
+    this.chunkStreamingView.position.x = this.camera.position.x;
+    this.chunkStreamingView.position.y = this.camera.position.y;
+    this.chunkStreamingView.position.z = this.camera.position.z;
+    this.chunkStreamingView.forward.x = this.chunkStreamingDirection.x;
+    this.chunkStreamingView.forward.y = this.chunkStreamingDirection.y;
+    this.chunkStreamingView.forward.z = this.chunkStreamingDirection.z;
+    this.chunkStreamingView.verticalFovRadians = THREE.MathUtils.degToRad(this.camera.fov);
+    this.chunkStreamingView.aspect = this.camera.aspect;
+    return this.chunkStreamingView;
+  }
+
+  private loadAreaAroundPlayer(radius: number, sync = false): void {
+    this.world.loadArea(
+      this.player.position.x,
+      this.player.position.y,
+      this.player.position.z,
+      radius,
+      sync,
+      sync ? null : this.updateChunkStreamingView(),
+    );
   }
 
   private initListeners() {
@@ -243,7 +269,7 @@ export class GameManager {
       
       this.player.update(dt, this.physics, this.controls, this.world);
       const radius = store.isWorldLoading ? 2 : this.renderDistance;
-      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
+      this.loadAreaAroundPlayer(radius);
 
       if (this.interaction) this.interaction.update(dt);
       if (this.droppedItems) this.droppedItems.update(dt);
@@ -273,7 +299,7 @@ export class GameManager {
       if (this.environment) this.environment.update(dt);
       if (this.player) {
         const radius = store.isWorldLoading ? 2 : this.renderDistance;
-        this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
+        this.loadAreaAroundPlayer(radius);
       }
       this.world.update(dt);
     }
@@ -318,7 +344,7 @@ export class GameManager {
     if (this.world && this.player) {
       const store = useGameStore.getState();
       const radius = store.isWorldLoading ? 2 : this.renderDistance;
-      this.world.loadArea(this.player.position.x, this.player.position.y, this.player.position.z, radius);
+      this.loadAreaAroundPlayer(radius);
       
       const isPaused = (store.gameState === GameState.PAUSED || store.isSettingsOpen) && !store.isWorldLoading;
       if (isPaused && this.renderer && this.scene && this.camera) {
@@ -492,6 +518,7 @@ export class GameManager {
   public dispose() {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
+      this.animationId = null;
     }
     window.removeEventListener('resize', this.onResize);
     if (this.canvas) {
@@ -500,19 +527,19 @@ export class GameManager {
     }
     window.removeEventListener('mouseup', this.onMouseUp);
 
-    if (this.controls) this.controls.dispose();
-    if (this.world) this.world.dispose();
-    if (this.renderer) this.renderer.dispose();
+    this.storeBridge?.dispose();
 
-    if (this.environment) {
-      this.environment.dispose();
-    }
+    if (this.controls) this.controls.dispose();
     if (this.interaction) this.interaction.dispose();
     if (this.droppedItems) this.droppedItems.dispose();
     if (this.animals) this.animals.dispose();
     if (this.particles) {
       this.particles.clear();
     }
+    if (this.fixtures) this.fixtures.dispose();
+    if (this.environment) this.environment.dispose();
+    if (this.world) this.world.dispose();
+    if (this.renderer) this.renderer.dispose();
 
     if (import.meta.env.DEV) {
       delete window.__cloudcraft__;

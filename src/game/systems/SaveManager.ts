@@ -1,6 +1,9 @@
 import { GameMode, type HotbarItem, type Vector3D } from '@type';
 import pkg from '@package';
+import type { FixtureSnapshot } from '@game/fixtures/FixtureTypes';
+import type { EntitySnapshot } from '@game/entities/EntitySnapshot';
 import type { SerializedEntityData } from '@game/entities/Entity';
+import type { WeatherSnapshot } from '@game/environment/WeatherTimeline';
 
 export interface SaveMetadata {
   id: string;
@@ -21,7 +24,9 @@ export interface SaveData {
   gameMode: GameMode;
   version: string;
   seed?: string;
-  entities?: SerializedEntityData[];
+  entities?: EntitySnapshot | SerializedEntityData[];
+  fixtures?: FixtureSnapshot;
+  weather?: WeatherSnapshot;
 }
 
 export class SaveManager {

@@ -9,6 +9,7 @@ import { BlockItem } from '@game/item/Item';
 import type { BlockPlaceContext, ItemUseContext, ItemUseResult } from '@game/item/Item';
 import { GameMode } from '@type';
 import { LootTableHelper } from '../loot/LootTableHelper';
+import { FixtureInteractionCoordinator } from './FixtureInteractionCoordinator';
 
 
 
@@ -16,8 +17,12 @@ export class InteractionManager {
   private game: GameManager;
 
   // Interaction properties
-  public selectionBox!: THREE.Mesh;
   public targetedBlockInfo: { target: THREE.Vector3; place: THREE.Vector3; face: THREE.Vector3 } | null = null;
+  private fixtureInteraction!: FixtureInteractionCoordinator;
+
+  public get targetedFixtureId(): string | null {
+    return this.fixtureInteraction?.targetedFixtureId ?? null;
+  }
 
   // Mining state properties
   public isMining = false;
@@ -47,21 +52,9 @@ export class InteractionManager {
 
   constructor(game: GameManager) {
     this.game = game;
-    this.initSelectionBox();
+    this.fixtureInteraction = new FixtureInteractionCoordinator(game);
     this.initCrackTextures();
     this.initCrackMesh();
-  }
-
-  private initSelectionBox() {
-    const selectGeo = new THREE.BoxGeometry(1.008, 1.008, 1.008);
-    const selectMat = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.5,
-    });
-    this.selectionBox = new THREE.Mesh(selectGeo, selectMat);
-    this.game.scene.add(this.selectionBox);
   }
 
   private initCrackTextures() {
@@ -169,6 +162,8 @@ export class InteractionManager {
       face,
       playerBox: this.game.physics.getPlayerBox(this.game.player.position),
       gameMode: useGameStore.getState().gameMode as GameMode,
+      fixtures: this.fixtureInteraction.getPlacementPort(),
+      fixtureOrientation: this.fixtureInteraction.getPlacementOrientation(),
     };
   }
 
@@ -214,6 +209,8 @@ export class InteractionManager {
     const storeState = useGameStore.getState();
     const heldSlotItem = storeState.hotbar[storeState.activeSlot];
     const item = heldSlotItem ? ItemRegistry.get(heldSlotItem.type) : null;
+
+    if (this.fixtureInteraction.handleInteraction()) return;
 
     // 1. 尝试与目标方块交互（箱子、拉杆等）
     if (this.targetedBlockInfo) {
@@ -286,6 +283,15 @@ export class InteractionManager {
     }
 
     this.updateTargetedBlock();
+
+    if (e.button === 0 && this.targetedFixtureId) {
+      const isCreative = useGameStore.getState().gameMode === 'creative';
+      if (isCreative && this.fixtureInteraction.removeTargetedFixture()) {
+        sound.playBreak('wood');
+        this.updateTargetedBlock();
+      }
+      return;
+    }
 
     if (!this.targetedBlockInfo) return;
 
@@ -415,27 +421,8 @@ export class InteractionManager {
   }
 
   private updateTargetedBlock() {
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(0, 0), this.game.camera);
-    const dir = raycaster.ray.direction;
-    const origin = raycaster.ray.origin;
-
-    const maxDist = 5.2;
-
-    this.targetedBlockInfo = null;
-    this.selectionBox.visible = false;
-
-    const hit = this.game.physics.raycast(origin, dir, maxDist);
-    if (hit) {
-      this.targetedBlockInfo = {
-        target: hit.target,
-        place: hit.place,
-        face: hit.face,
-      };
-
-      this.selectionBox.position.set(hit.target.x + 0.5, hit.target.y + 0.5, hit.target.z + 0.5);
-      this.selectionBox.visible = true;
-    }
+    this.fixtureInteraction.updateTarget(5.2);
+    this.targetedBlockInfo = this.fixtureInteraction.targetedBlockInfo;
   }
 
   private updateMining(dt: number) {
@@ -598,14 +585,6 @@ export class InteractionManager {
         (this.crackMesh.material as THREE.Material).dispose();
       }
     }
-    if (this.selectionBox) {
-      this.game.scene.remove(this.selectionBox);
-      if (this.selectionBox.geometry) this.selectionBox.geometry.dispose();
-      if (Array.isArray(this.selectionBox.material)) {
-        this.selectionBox.material.forEach((mat: THREE.Material) => mat.dispose());
-      } else if (this.selectionBox.material) {
-        (this.selectionBox.material as THREE.Material).dispose();
-      }
-    }
+    this.fixtureInteraction.dispose();
   }
 }

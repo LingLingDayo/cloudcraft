@@ -21,21 +21,12 @@ export const MobileToolbar: React.FC = () => {
 
   const handleSave = async () => {
     if (gameInstance) {
-      const saveData = {
-        world: gameInstance.world.saveWorld(),
-        player: {
-          x: gameInstance.player.position.x,
-          y: gameInstance.player.position.y,
-          z: gameInstance.player.position.z,
-        },
-        hotbar: useGameStore.getState().hotbar,
-        inventory: useGameStore.getState().inventory,
-        activeSlot: useGameStore.getState().activeSlot,
-        gameMode: useGameStore.getState().gameMode,
-        version: SaveManager.GAME_VERSION,
-      };
       try {
-        await SaveManager.saveGame('default_world', saveData, t('startMenu.defaultWorldName'));
+        await SaveManager.saveGame(
+          'default_world',
+          gameInstance.captureSaveData(),
+          t('startMenu.defaultWorldName'),
+        );
       } catch (err) {
         console.error('Failed to save game data:', err);
       }

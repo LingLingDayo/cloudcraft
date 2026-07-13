@@ -43,8 +43,9 @@ src/
 * 存放 React Context，提供游戏引擎实例与 React 树的单向通信桥梁（如 `GameContext`），确保各组件能方便且安全地引用 3D 游戏对象而不过度触发组件重新渲染。
 
 ### 3D 游戏引擎核心 (src/game)
-* **core/**: `GameManager` 等主控逻辑，负责管理 Three.js 的初始化、渲染循环（AnimationFrame Loop）、引擎状态流转及各个子系统的生命周期。
-* **entities/**: 游戏实体，如 Player（玩家类）、Pig（猪实体类）等，包含实体的移动更新、行为状态等。
+* **core/**: `GameManager` 负责 Three.js 初始化、渲染循环和顶层生命周期；`GameSaveCoordinator`、`GameStoreBridge`、`GameFixtureRuntime` 与 `FixtureInteractionCoordinator` 分别承接统一存档、Zustand 订阅、设施装配和设施交互职责，避免主控类直接实现领域细节。
+* **entities/**: 游戏实体，如 Player、Pig、Leopard 等，包含实体移动、行为状态、物种注册与版本化快照。详细规范请参阅 [entities/README.md](./game/entities/README.md)。
+* **fixtures/**: 管理独立于体素的设施定义、占用、交互、渲染和版本化快照。详细规范请参阅 [fixtures/README.md](./game/fixtures/README.md)。
 * **environment/**: 环境与天气系统，管理天体移动（太阳、月亮、星空）、维度环境配置（DimensionConfig）及天气状态渲染（WeatherBlender, WeatherPresets）等。详细规范请参阅 [environment/README.md](./game/environment/README.md)。
 * **item/**: 核心道具与物品配置，包含物品基类行为定义及 `ItemRegistry` 注册表，解耦方块与纯道具交互逻辑。详细规范请参阅 [item/README.md](./game/item/README.md)。
 * **loot/**: 掉落表生成器，管理破坏方块或击杀实体时的掉落物品规则及 `LootTableRegistry`。
@@ -53,6 +54,7 @@ src/
   * `Controls`: 输入按键绑定与视角控制器。
   * `Particles`: 方块破坏等碎屑粒子发射器。
   * `Sound`:音效播放与咀嚼、破坏等合成音效调度。
+  * `SaveManager` / `GameSaveData`: 负责持久化载体和统一快照捕获、预检、旧数据迁移与恢复顺序。
 * **world/**: 核心世界与地形生成系统：
   * `World`: 管理区块（Chunk）的加载、卸载与渲染网格更新。
   * `Noise`: 噪波算法生成高度图与生态分布。

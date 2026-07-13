@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { GameManager } from '@game/core/GameManager';
 import { HUD } from './HUD';
 import { PauseMenu } from './PauseMenu';
@@ -28,6 +28,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
+  const [gameManager, setGameManager] = useState<GameManager | null>(null);
   const selectedItemRef = useRef<ItemType | null>(selectedItem);
   // 用 ref 持有最新的初始化参数，避免在 init effect 中声明额外依赖导致 GM 被反复重置
   const renderDistanceRef = useRef(renderDistance);
@@ -48,6 +49,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
   // Initialize GameManager once the canvas is mounted
   useEffect(() => {
     let active = true;
+    let managedGame: GameManager | null = null;
 
     if (canvasRef.current && !gameManagerRef.current) {
       // Create new GameManager without UI callbacks (handled via Zustand directly)
@@ -59,6 +61,8 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
       gm.player.selectedItemType = selectedItemRef.current;
 
       gameManagerRef.current = gm;
+      managedGame = gm;
+      setGameManager(gm);
 
       // Handle loading saved world
       if (loadSave) {
@@ -67,34 +71,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
             if (!active || gameManagerRef.current !== gm) return;
             if (saved) {
               try {
-                if (saved.world) {
-                  gm.world.loadWorld(saved.world);
-                }
-                if (saved.entities && gm.animals) {
-                  gm.animals.deserialize(saved.entities);
-                }
-                if (saved.player) {
-                  gm.player.position.set(saved.player.x, saved.player.y, saved.player.z);
-                  gm.player.syncCamera();
-                }
-                if (saved.gameMode) {
-                  useGameStore.getState().setGameMode(saved.gameMode);
-                }
-                if (saved.hotbar !== undefined) {
-                  let loadedInventory = saved.inventory ?? Array(54).fill(null);
-                  if (loadedInventory.length < 54) {
-                    loadedInventory = [
-                      ...loadedInventory,
-                      ...Array(54 - loadedInventory.length).fill(null)
-                    ];
-                  }
-                  useGameStore.setState({
-                    hotbar: saved.hotbar,
-                    inventory: loadedInventory,
-                    activeSlot: saved.activeSlot ?? 0,
-                    selectedItem: saved.hotbar[saved.activeSlot ?? 0]?.type ?? null
-                  });
-                }
+                gm.restoreSaveData(saved);
                 // Trigger immediate render distance load
                 gm.setRenderDistance(renderDistanceRef.current);
               } catch (e) {
@@ -110,8 +87,8 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
 
     return () => {
       active = false;
-      if (gameManagerRef.current) {
-        gameManagerRef.current.dispose();
+      if (managedGame && gameManagerRef.current === managedGame) {
+        managedGame.dispose();
         gameManagerRef.current = null;
       }
     };
@@ -170,23 +147,12 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
   const handleSave = async () => {
     const gm = gameManagerRef.current;
     if (gm) {
-      const saveData = {
-        world: gm.world.saveWorld(),
-        seed: gm.world.getSeed(),
-        player: {
-          x: gm.player.position.x,
-          y: gm.player.position.y,
-          z: gm.player.position.z,
-        },
-        hotbar: useGameStore.getState().hotbar,
-        inventory: useGameStore.getState().inventory,
-        activeSlot: useGameStore.getState().activeSlot,
-        gameMode: useGameStore.getState().gameMode,
-        version: SaveManager.GAME_VERSION,
-        entities: gm.animals ? gm.animals.serialize() : undefined,
-      };
       try {
-        await SaveManager.saveGame('default_world', saveData, t('startMenu.defaultWorldName'));
+        await SaveManager.saveGame(
+          'default_world',
+          gm.captureSaveData(),
+          t('startMenu.defaultWorldName'),
+        );
       } catch (err) {
         console.error('Failed to save game data:', err);
       }
@@ -208,8 +174,7 @@ export const GameStage: React.FC<GameStageProps> = ({ seed, loadSave }) => {
         <div className={styles.damageOverlay} />
       )}
 
-      {/* eslint-disable-next-line react-hooks/refs */}
-      <GameProvider value={gameManagerRef.current}>
+      <GameProvider value={gameManager}>
         <HUD />
         {gameState === GameState.PAUSED && !activeChest && !isInventoryOpen && (
           <PauseMenu
