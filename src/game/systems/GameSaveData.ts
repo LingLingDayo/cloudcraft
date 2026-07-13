@@ -66,8 +66,58 @@ export interface RestoredGameStoreState extends GameSaveStoreSource {
   readonly selectedItem: ItemTypeValue | null;
 }
 
+interface RuntimeRollbackState {
+  readonly world: string;
+  readonly entities?: EntitySnapshot;
+  readonly fixtures: FixtureSnapshot;
+  readonly weather: WeatherSnapshot;
+  readonly player: Vector3D;
+}
+
 function cloneSlots(slots: readonly (HotbarItem | null)[]): (HotbarItem | null)[] {
   return slots.map(item => item ? { ...item } : null);
+}
+
+function captureRuntimeRollbackState(runtime: GameSaveRuntimePort): RuntimeRollbackState {
+  return {
+    world: runtime.world.saveWorld(),
+    entities: runtime.entities?.createSnapshot(),
+    fixtures: runtime.fixtures.createSnapshot(),
+    weather: runtime.environment.createSnapshot(),
+    player: {
+      x: runtime.player.position.x,
+      y: runtime.player.position.y,
+      z: runtime.player.position.z,
+    },
+  };
+}
+
+function rollbackRuntimeState(
+  runtime: GameSaveRuntimePort,
+  rollback: RuntimeRollbackState,
+): unknown[] {
+  const errors: unknown[] = [];
+  const attempt = (operation: () => void): void => {
+    try {
+      operation();
+    } catch (error) {
+      errors.push(error);
+    }
+  };
+
+  attempt(() => runtime.world.loadWorld(rollback.world));
+  attempt(() => runtime.fixtures.restoreSnapshot(rollback.fixtures));
+  const entitySnapshot = rollback.entities;
+  const entityRuntime = runtime.entities;
+  if (entitySnapshot && entityRuntime) {
+    attempt(() => entityRuntime.restoreSnapshot(entitySnapshot));
+  }
+  attempt(() => runtime.environment.restoreSnapshot(rollback.weather));
+  attempt(() => {
+    runtime.player.position.set(rollback.player.x, rollback.player.y, rollback.player.z);
+    runtime.player.syncCamera();
+  });
+  return errors;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -129,11 +179,11 @@ function validateFixtureSnapshot(snapshot: FixtureSnapshot): void {
     }
     if (
       !isRecord(fixture.anchor)
-      || !Number.isFinite(fixture.anchor.x)
-      || !Number.isFinite(fixture.anchor.y)
-      || !Number.isFinite(fixture.anchor.z)
+      || !Number.isInteger(fixture.anchor.x)
+      || !Number.isInteger(fixture.anchor.y)
+      || !Number.isInteger(fixture.anchor.z)
     ) {
-      throw new Error('Fixture snapshot anchors must contain finite coordinates');
+      throw new Error('Fixture snapshot anchors must contain integer coordinates');
     }
     if (!Number.isInteger(fixture.orientation) || Number(fixture.orientation) < 0 || Number(fixture.orientation) > 3) {
       throw new Error('Fixture snapshot orientations must be quarter turns');
@@ -150,7 +200,7 @@ function validateFixtureSnapshot(snapshot: FixtureSnapshot): void {
       } else if (component.type === 'crafting') {
         continue;
       } else if (component.type === 'processor') {
-        if (!Number.isFinite(component.progress)) {
+        if (!Number.isFinite(component.progress) || Number(component.progress) < 0) {
           throw new Error('Fixture snapshot processor state is invalid');
         }
       } else {
@@ -243,22 +293,35 @@ export function restoreGameSaveData(
   validateBaseSaveData(save);
   const entities = normalizeEntitySnapshot(save.entities);
   validateSaveSnapshots(save);
+  const rollback = captureRuntimeRollbackState(runtime);
 
-  if (save.world) {
-    runtime.world.loadWorld(save.world);
-  }
-  if (save.fixtures) {
-    runtime.fixtures.restoreSnapshot(save.fixtures);
-  }
-  if (entities && runtime.entities) {
-    runtime.entities.restoreSnapshot(entities);
-  }
-  if (save.weather) {
-    runtime.environment.restoreSnapshot(save.weather);
-  }
+  try {
+    if (save.world) {
+      runtime.world.loadWorld(save.world);
+    }
+    if (save.fixtures) {
+      runtime.fixtures.restoreSnapshot(save.fixtures);
+    }
+    if (entities && runtime.entities) {
+      runtime.entities.restoreSnapshot(entities);
+    }
+    if (save.weather) {
+      runtime.environment.restoreSnapshot(save.weather);
+    }
 
-  runtime.player.position.set(save.player.x, save.player.y, save.player.z);
-  runtime.player.syncCamera();
+    runtime.player.position.set(save.player.x, save.player.y, save.player.z);
+    runtime.player.syncCamera();
+  } catch (error) {
+    const rollbackErrors = rollbackRuntimeState(runtime, rollback);
+    if (rollbackErrors.length > 0) {
+      throw new AggregateError(
+        [error, ...rollbackErrors],
+        'Game save restoration and rollback both failed',
+        { cause: error },
+      );
+    }
+    throw new Error('Game save restoration failed', { cause: error });
+  }
 
   const hotbar = cloneSlots(save.hotbar);
   const inventory = cloneSlots(save.inventory ?? []);

@@ -352,6 +352,83 @@ describe('GameSaveData', () => {
   });
 
   test.each([
+    ['fractional anchor', {
+      id: 'fixture-fractional-anchor',
+      definitionId: 'cloudcraft:chest',
+      anchor: { x: 1.5, y: 2, z: 3 },
+      orientation: 0,
+      components: [],
+    }],
+    ['negative processor progress', {
+      id: 'fixture-negative-progress',
+      definitionId: 'cloudcraft:furnace',
+      anchor: { x: 1, y: 2, z: 3 },
+      orientation: 0,
+      components: [{ type: 'processor', progress: -1 }],
+    }],
+  ])('rejects fixture snapshot %s before loading the world', (_field, fixture) => {
+    const runtime = createRuntime();
+    const save = {
+      world: 'invalid-fixture-world',
+      player: { x: 8, y: 9, z: 10 },
+      hotbar: [],
+      inventory: [],
+      activeSlot: 0,
+      gameMode: GameMode.ADVENTURE,
+      version: '0.3.0',
+      fixtures: { schemaVersion: 1, fixtures: [fixture] },
+    } as unknown as SaveData;
+
+    expect(() => restoreGameSaveData(runtime, save)).toThrow();
+    expect(runtime.world.loadWorld).not.toHaveBeenCalled();
+    expect(runtime.fixtures.restoreSnapshot).not.toHaveBeenCalled();
+  });
+
+  test('rolls back every runtime domain when fixture restoration fails after world commit', () => {
+    const runtime = createRuntime();
+    const restoreError = new Error('fixture restore failed');
+    vi.mocked(runtime.fixtures.restoreSnapshot)
+      .mockImplementationOnce(() => {
+        throw restoreError;
+      })
+      .mockImplementationOnce(() => undefined);
+    const save: SaveData = {
+      world: 'replacement-world',
+      player: { x: 8, y: 9, z: 10 },
+      hotbar: [],
+      inventory: [],
+      activeSlot: 0,
+      gameMode: GameMode.ADVENTURE,
+      version: '0.3.0',
+      fixtures: { schemaVersion: 1, fixtures: [] },
+    };
+
+    let caughtError: unknown;
+    try {
+      restoreGameSaveData(runtime, save);
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toMatchObject({ cause: restoreError });
+    expect(runtime.world.loadWorld).toHaveBeenNthCalledWith(1, 'replacement-world');
+    expect(runtime.world.loadWorld).toHaveBeenNthCalledWith(2, 'serialized-world');
+    expect(runtime.fixtures.restoreSnapshot).toHaveBeenCalledTimes(2);
+    expect(runtime.entities?.restoreSnapshot).toHaveBeenCalledWith({
+      schemaVersion: 1,
+      entities: [],
+    });
+    expect(runtime.environment.restoreSnapshot).toHaveBeenCalledWith({
+      schemaVersion: 1,
+      seed: 'test-weather-save-seed',
+      elapsedSeconds: 90,
+      manualWeather: null,
+    });
+    expect(runtime.player.position.set).toHaveBeenCalledWith(1, 2, 3);
+    expect(runtime.player.syncCamera).toHaveBeenCalledOnce();
+  });
+
+  test.each([
     ['player position', { player: { x: '8', y: 9, z: 10 } }],
     ['hotbar', { hotbar: {} }],
     ['inventory item stack', {
