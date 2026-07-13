@@ -5,6 +5,7 @@ import { AnimalManager } from './AnimalManager';
 import { World } from '@game/world/World';
 import { Pig } from '../entities/Pig';
 import { createCoreSpeciesRegistry } from '../entities/species/CoreSpecies';
+import { SpeciesRegistry } from '../entities/species/SpeciesRegistry';
 
 // Mock Canvas 2D context
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -90,5 +91,55 @@ describe('AnimalManager Serialization', () => {
     expect(loadedPig.life).toBe(7);
     expect(loadedPig.isPersistent).toBe(true);
     expect(mockGame.scene.add).toHaveBeenCalledWith(loadedPig.mesh);
+  });
+
+  test('keeps active animals when snapshot preflight validation fails', () => {
+    const manager = new AnimalManager(mockGame);
+    const pig = createCoreSpeciesRegistry()
+      .get('cloudcraft:pig')
+      .create('pig-current', new THREE.Vector3(5, 10, 5), mockWorld) as Pig;
+    (manager as any).animals.push(pig);
+
+    expect(() => manager.restoreSnapshot({
+      schemaVersion: 1,
+      entities: null,
+    } as never)).toThrowError('Entity snapshot entities must be an array');
+
+    expect(manager.getCount()).toBe(1);
+    expect(mockGame.scene.remove).not.toHaveBeenCalled();
+  });
+
+  test('keeps active animals when a staged species cannot be created', () => {
+    const creationError = new Error('species creation failed');
+    const coreSpecies = createCoreSpeciesRegistry();
+    const species = new SpeciesRegistry();
+    species.register(coreSpecies.get('cloudcraft:pig'));
+    species.register({
+      ...coreSpecies.get('cloudcraft:pig'),
+      id: 'cloudcraft:broken',
+      create: () => {
+        throw creationError;
+      },
+    });
+    species.freeze();
+
+    const manager = new AnimalManager(mockGame, species);
+    const currentPig = coreSpecies
+      .get('cloudcraft:pig')
+      .create('pig-current', new THREE.Vector3(5, 10, 5), mockWorld) as Pig;
+    (manager as any).animals.push(currentPig);
+    const stagedPig = currentPig.serialize();
+
+    expect(() => manager.restoreSnapshot({
+      schemaVersion: 1,
+      entities: [
+        { ...stagedPig, id: 'pig-staged' },
+        { ...stagedPig, id: 'broken-staged', type: 'cloudcraft:broken' },
+      ],
+    })).toThrow(creationError);
+
+    expect(manager.getCount()).toBe(1);
+    expect(mockGame.scene.add).not.toHaveBeenCalled();
+    expect(mockGame.scene.remove).not.toHaveBeenCalled();
   });
 });

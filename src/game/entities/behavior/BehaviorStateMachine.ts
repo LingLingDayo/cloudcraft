@@ -16,6 +16,10 @@ export interface BehaviorTransition<TContext> {
 export class BehaviorStateMachine<TContext> {
   private readonly states = new Map<string, BehaviorStateDefinition<TContext>>();
   private readonly transitions: BehaviorTransition<TContext>[] = [];
+  private readonly lineageCache = new Map<
+    string,
+    readonly BehaviorStateDefinition<TContext>[]
+  >();
   private activeStateId: string | null = null;
 
   public registerState(state: BehaviorStateDefinition<TContext>): void {
@@ -23,6 +27,7 @@ export class BehaviorStateMachine<TContext> {
       throw new Error(`Duplicate behavior state: ${state.id}`);
     }
     this.states.set(state.id, state);
+    this.lineageCache.clear();
   }
 
   public registerTransition(transition: BehaviorTransition<TContext>): void {
@@ -79,18 +84,23 @@ export class BehaviorStateMachine<TContext> {
       state.onUpdate?.(context, deltaSeconds);
     }
 
-    const activeIds = new Set(lineage.map(state => state.id));
-    const transition = this.transitions.find(candidate =>
-      activeIds.has(candidate.from) && candidate.when(context),
-    );
-    if (transition) {
-      this.transitionTo(transition.to, context);
+    const activeLineage = this.activeStateId
+      ? this.getLineage(this.activeStateId)
+      : lineage;
+    for (const transition of this.transitions) {
+      if (
+        this.lineageContains(activeLineage, transition.from)
+        && transition.when(context)
+      ) {
+        this.transitionTo(transition.to, context);
+        break;
+      }
     }
   }
 
   public isInState(stateId: string): boolean {
     return this.activeStateId
-      ? this.getLineage(this.activeStateId).some(state => state.id === stateId)
+      ? this.lineageContains(this.getLineage(this.activeStateId), stateId)
       : false;
   }
 
@@ -107,7 +117,10 @@ export class BehaviorStateMachine<TContext> {
     return this.activeStateId;
   }
 
-  private getLineage(stateId: string): BehaviorStateDefinition<TContext>[] {
+  private getLineage(stateId: string): readonly BehaviorStateDefinition<TContext>[] {
+    const cached = this.lineageCache.get(stateId);
+    if (cached) return cached;
+
     const lineage: BehaviorStateDefinition<TContext>[] = [];
     const visited = new Set<string>();
     let current = this.states.get(stateId);
@@ -124,6 +137,17 @@ export class BehaviorStateMachine<TContext> {
         throw new Error(`Unknown parent behavior state: ${lineage[0].parentId}`);
       }
     }
+    this.lineageCache.set(stateId, lineage);
     return lineage;
+  }
+
+  private lineageContains(
+    lineage: readonly BehaviorStateDefinition<TContext>[],
+    stateId: string,
+  ): boolean {
+    for (const state of lineage) {
+      if (state.id === stateId) return true;
+    }
+    return false;
   }
 }

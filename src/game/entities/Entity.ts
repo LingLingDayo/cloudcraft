@@ -1,6 +1,16 @@
 import * as THREE from 'three';
 import { World } from '@game/world/World';
 
+export type EntitySnapshotValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly EntitySnapshotValue[]
+  | { readonly [key: string]: EntitySnapshotValue };
+
+export type EntityExtensionData = Readonly<Record<string, EntitySnapshotValue>>;
+
 export interface SerializedEntityData {
   id: string;
   type: string;
@@ -13,8 +23,7 @@ export interface SerializedEntityData {
   life: number;
   maxLife: number;
   isPersistent: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customData?: Record<string, any>;
+  customData?: EntityExtensionData;
 }
 
 export abstract class Entity {
@@ -70,13 +79,11 @@ export abstract class Entity {
 
   public abstract update(dt: number): void;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected serializeCustomData(): Record<string, any> | undefined {
+  protected serializeCustomData(): EntityExtensionData | undefined {
     return undefined;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected deserializeCustomData(_customData: Record<string, any>): void {
+  protected deserializeCustomData(_customData: EntityExtensionData): void {
     // To be overridden by subclasses if needed
   }
 }

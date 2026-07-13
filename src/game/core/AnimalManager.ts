@@ -30,17 +30,36 @@ export class AnimalManager {
 
   public restoreSnapshot(snapshot: EntitySnapshot): void {
     assertEntitySnapshot(snapshot);
-    this.dispose();
+    const restoredAnimals: Animal[] = [];
 
-    for (const data of snapshot.entities) {
-      const spawnPos = new THREE.Vector3(data.x, data.y, data.z);
-      const definition = this.speciesRegistry.find(data.type);
-      if (!definition) continue;
-      const animal = definition.create(data.id, spawnPos, this.game.world);
-      animal.deserialize(data);
-      this.game.scene.add(animal.mesh);
-      this.animals.push(animal);
+    try {
+      for (const data of snapshot.entities) {
+        const definition = this.speciesRegistry.find(data.type);
+        if (!definition) continue;
+        const spawnPos = new THREE.Vector3(data.x, data.y, data.z);
+        const animal = definition.create(data.id, spawnPos, this.game.world);
+        animal.deserialize(data);
+        restoredAnimals.push(animal);
+      }
+    } catch (error) {
+      restoredAnimals.forEach(animal => this.disposeAnimalResources(animal));
+      throw error;
     }
+
+    const attachedAnimals: Animal[] = [];
+    try {
+      for (const animal of restoredAnimals) {
+        this.game.scene.add(animal.mesh);
+        attachedAnimals.push(animal);
+      }
+    } catch (error) {
+      attachedAnimals.forEach(animal => this.game.scene.remove(animal.mesh));
+      restoredAnimals.forEach(animal => this.disposeAnimalResources(animal));
+      throw error;
+    }
+
+    this.dispose();
+    this.animals = restoredAnimals;
   }
 
   public update(dt: number) {
@@ -63,16 +82,7 @@ export class AnimalManager {
         this.game.particles.spawn('cloudcraft:smoke', particlePos, 0xeeeeee, 18);
         
         // Remove from scene and manager list
-        this.game.scene.remove(animal.mesh);
-        
-        // Dispose geometries and materials
-        animal.mesh.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            if (child.geometry) child.geometry.dispose();
-            const materials = Array.isArray(child.material) ? child.material : [child.material];
-            materials.forEach((mat) => mat.dispose());
-          }
-        });
+        this.removeAnimalFromScene(animal);
 
         this.animals.splice(i, 1);
         continue;
@@ -92,14 +102,7 @@ export class AnimalManager {
       }
       const dist = animal.position.distanceTo(playerPos);
       if (dist > 64.0) {
-        this.game.scene.remove(animal.mesh);
-        animal.mesh.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            if (child.geometry) child.geometry.dispose();
-            const materials = Array.isArray(child.material) ? child.material : [child.material];
-            materials.forEach((mat) => mat.dispose());
-          }
-        });
+        this.removeAnimalFromScene(animal);
         this.animals.splice(i, 1);
       }
     }
@@ -224,15 +227,23 @@ export class AnimalManager {
 
   public dispose() {
     this.animals.forEach(a => {
-      this.game.scene.remove(a.mesh);
-      a.mesh.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          if (child.geometry) child.geometry.dispose();
-          const materials = Array.isArray(child.material) ? child.material : [child.material];
-          materials.forEach((mat) => mat.dispose());
-        }
-      });
+      this.removeAnimalFromScene(a);
     });
     this.animals = [];
+  }
+
+  private removeAnimalFromScene(animal: Animal): void {
+    this.game.scene.remove(animal.mesh);
+    this.disposeAnimalResources(animal);
+  }
+
+  private disposeAnimalResources(animal: Animal): void {
+    animal.mesh.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach(material => material.dispose());
+      }
+    });
   }
 }

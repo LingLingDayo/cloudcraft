@@ -65,6 +65,33 @@ describe('BehaviorStateMachine', () => {
     expect(machine.isInState('active')).toBe(true);
     expect(context.events).toEqual(['exit:idle', 'enter:chasing']);
   });
+
+  test('reuses resolved state lineage during frame updates and membership checks', () => {
+    let parentReads = 0;
+    const context = { updates: 0 };
+    const machine = new BehaviorStateMachine<typeof context>();
+    machine.registerState({ id: 'active' });
+    machine.registerState({
+      id: 'idle',
+      get parentId() {
+        parentReads++;
+        return 'active';
+      },
+      onUpdate: state => {
+        state.updates++;
+      },
+    });
+    machine.start('idle', context);
+    parentReads = 0;
+
+    machine.update(context, 0.1);
+    machine.update(context, 0.1);
+    expect(machine.isInState('active')).toBe(true);
+    expect(machine.isInState('idle')).toBe(true);
+
+    expect(context.updates).toBe(2);
+    expect(parentReads).toBe(0);
+  });
 });
 
 describe('MovementModeController', () => {
@@ -84,8 +111,10 @@ describe('MovementModeController', () => {
     registry.register(ground);
     registry.register(swim);
     registry.freeze();
+    const registryLookup = vi.spyOn(registry, 'get');
     const controller = new MovementModeController(registry, ['swim', 'ground']);
     const context = { inWater: false, updates: [] as string[] };
+    registryLookup.mockClear();
 
     controller.update(context, 0.1);
     context.inWater = true;
@@ -93,6 +122,7 @@ describe('MovementModeController', () => {
 
     expect(context.updates).toEqual(['ground', 'swim']);
     expect(controller.activeModeId).toBe('swim');
+    expect(registryLookup).not.toHaveBeenCalled();
   });
 });
 
@@ -173,5 +203,52 @@ describe('EntitySnapshot', () => {
     expect(snapshot.entities[0].type).toBe('pig');
     expect(() => assertEntitySnapshot({ ...snapshot, schemaVersion: 2 } as never))
       .toThrowError('Unsupported entity snapshot schema version: 2');
+  });
+
+  test('deeply detaches extension data from the live entity payload', () => {
+    const movementModeIds = ['cloudcraft:ground', 'cloudcraft:swim'];
+    const snapshot = createEntitySnapshot([{
+      id: 'pig-detached',
+      type: 'cloudcraft:pig',
+      x: 1,
+      y: 2,
+      z: 3,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      life: 8,
+      maxLife: 10,
+      isPersistent: true,
+      customData: { movementModeIds },
+    }]);
+
+    movementModeIds[0] = 'cloudcraft:flying';
+
+    expect(snapshot.entities[0].customData?.movementModeIds).toEqual([
+      'cloudcraft:ground',
+      'cloudcraft:swim',
+    ]);
+  });
+
+  test('rejects malformed entity entries before runtime restoration', () => {
+    const malformed = {
+      schemaVersion: 1,
+      entities: [{
+        id: 'pig-invalid',
+        type: 'cloudcraft:pig',
+        x: Number.POSITIVE_INFINITY,
+        y: 2,
+        z: 3,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        life: 8,
+        maxLife: 10,
+        isPersistent: true,
+      }],
+    };
+
+    expect(() => assertEntitySnapshot(malformed as never))
+      .toThrowError('Entity snapshot contains invalid numeric data at pig-invalid');
   });
 });

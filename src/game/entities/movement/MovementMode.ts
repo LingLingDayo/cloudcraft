@@ -25,6 +25,7 @@ export class MovementModeRegistry<TContext> {
 export class MovementModeController<TContext> {
   private readonly registry: MovementModeRegistry<TContext>;
   private configuredModeIds: readonly string[];
+  private configuredModes: readonly MovementMode<TContext>[];
   private currentModeId: string | null = null;
 
   public constructor(
@@ -33,25 +34,25 @@ export class MovementModeController<TContext> {
   ) {
     this.registry = registry;
     this.configuredModeIds = [...modeIds];
-    this.validateModes();
+    this.configuredModes = this.resolveModes(this.configuredModeIds);
   }
 
   public setModes(modeIds: readonly string[]): void {
-    this.configuredModeIds = [...modeIds];
-    this.validateModes();
+    const nextModeIds = [...modeIds];
+    const nextModes = this.resolveModes(nextModeIds);
+    this.configuredModeIds = nextModeIds;
+    this.configuredModes = nextModes;
     this.currentModeId = null;
   }
 
   public update(context: TContext, deltaSeconds: number): void {
-    const mode = this.configuredModeIds
-      .map(modeId => this.registry.get(modeId))
-      .find(candidate => candidate.canActivate(context));
-    if (!mode) {
-      this.currentModeId = null;
+    for (const mode of this.configuredModes) {
+      if (!mode.canActivate(context)) continue;
+      this.currentModeId = mode.id;
+      mode.update(context, deltaSeconds);
       return;
     }
-    this.currentModeId = mode.id;
-    mode.update(context, deltaSeconds);
+    this.currentModeId = null;
   }
 
   public get activeModeId(): string | null {
@@ -62,12 +63,10 @@ export class MovementModeController<TContext> {
     return this.configuredModeIds;
   }
 
-  private validateModes(): void {
-    if (this.configuredModeIds.length === 0) {
+  private resolveModes(modeIds: readonly string[]): readonly MovementMode<TContext>[] {
+    if (modeIds.length === 0) {
       throw new Error('Creature requires at least one movement mode');
     }
-    for (const modeId of this.configuredModeIds) {
-      this.registry.get(modeId);
-    }
+    return modeIds.map(modeId => this.registry.get(modeId));
   }
 }

@@ -4,7 +4,7 @@ import { getBlockProperties } from '@game/world/BlockConfig';
 import { VoxelCollider } from '@game/physics/voxel/VoxelCollider';
 import { sound } from '@game/systems/Sound';
 import { LootTableHelper } from '../loot/LootTableHelper';
-import { Entity } from './Entity';
+import { Entity, type EntityExtensionData } from './Entity';
 import {
   BehaviorStateMachine,
   type BehaviorStateDefinition,
@@ -300,8 +300,7 @@ export abstract class Animal extends Entity {
     this.dropItems();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected serializeCustomData(): Record<string, any> | undefined {
+  protected serializeCustomData(): EntityExtensionData | undefined {
     return {
       behaviorStateId: this.getBehaviorStateId(),
       movementModeIds: [...this.movementController.modeIds],
@@ -309,8 +308,7 @@ export abstract class Animal extends Entity {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected deserializeCustomData(customData: Record<string, any>): void {
+  protected deserializeCustomData(customData: EntityExtensionData): void {
     if (Array.isArray(customData.movementModeIds)) {
       const modeIds = customData.movementModeIds.filter(
         (modeId): modeId is string => typeof modeId === 'string',
