@@ -55,7 +55,7 @@
 
 ## 5. 测试与验证
 
-设施行为测试位于 `Fixtures.test.ts`。常规修改至少运行：
+设施测试按职责拆分：`Fixtures.test.ts` 覆盖管理器事务与快照，`FixtureRegistry.test.ts` 覆盖定义和交互描述，`ThreeFixtureView.test.ts` 覆盖射线检测与 GPU 生命周期；共享测试定义集中在 `FixtureTestFixtures.ts`。常规修改至少运行：
 
 ```powershell
 npm run test:run -- src/game/fixtures

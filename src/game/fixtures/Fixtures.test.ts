@@ -1,37 +1,16 @@
 import { describe, expect, test, vi } from 'vitest';
 import { ItemType } from '@type';
-import * as THREE from 'three';
 import { FixtureRegistry } from './FixtureRegistry';
 import { WorldFixtureManager } from './WorldFixtureManager';
 import type {
-  FixtureDefinition,
   FixtureSnapshot,
-  FixtureSnapshotEntry,
   FixtureWorldPort,
 } from './FixtureTypes';
 import { createCoreFixtureRegistry } from './FixtureDefinitions';
-import { ThreeFixtureView } from './ThreeFixtureView';
-import { describeFixtureInteraction } from './FixtureInteraction';
-
-const chestDefinition: FixtureDefinition = {
-  id: 'cloudcraft:chest',
-  displayName: '箱子',
-  footprint: [{ x: 0, y: 0, z: 0 }],
-  components: [{ type: 'container', slots: 27 }],
-};
-
-function createChestSnapshotEntry(
-  id: string,
-  anchor: { readonly x: number; readonly y: number; readonly z: number },
-): FixtureSnapshotEntry {
-  return {
-    id,
-    definitionId: chestDefinition.id,
-    anchor,
-    orientation: 0,
-    components: [{ type: 'container', slots: Array(27).fill(null) }],
-  };
-}
+import {
+  createChestSnapshotEntry,
+  TEST_CHEST_FIXTURE_DEFINITION as chestDefinition,
+} from './FixtureTestFixtures';
 
 describe('WorldFixtureManager', () => {
   test('reserves fixture footprint independently from voxel data and releases it on removal', () => {
@@ -441,182 +420,5 @@ describe('WorldFixtureManager', () => {
       .find(component => component.type === 'container');
     expect(container?.type === 'container' ? container.slots : null)
       .toEqual(Array(27).fill(null));
-  });
-});
-
-describe('core fixture definitions', () => {
-  test.each([
-    ['duplicate footprint coordinate', {
-      ...chestDefinition,
-      id: 'cloudcraft:duplicate_footprint',
-      footprint: [{ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 }],
-    }],
-    ['invalid footprint coordinate', {
-      ...chestDefinition,
-      id: 'cloudcraft:invalid_footprint',
-      footprint: [{ x: Number.NaN, y: 0, z: 0 }],
-    }],
-    ['duplicate component type', {
-      ...chestDefinition,
-      id: 'cloudcraft:duplicate_component',
-      components: [
-        { type: 'container' as const, slots: 2 },
-        { type: 'container' as const, slots: 3 },
-      ],
-    }],
-    ['invalid slot capacity', {
-      ...chestDefinition,
-      id: 'cloudcraft:invalid_slots',
-      components: [{ type: 'container' as const, slots: 0 }],
-    }],
-    ['invalid capability', {
-      ...chestDefinition,
-      id: 'cloudcraft:invalid_capability',
-      components: [{ type: 'crafting' as const, capabilities: [''] }],
-    }],
-    ['duplicate capability', {
-      ...chestDefinition,
-      id: 'cloudcraft:duplicate_capability',
-      components: [{
-        type: 'processor' as const,
-        capabilities: ['cloudcraft:heat', 'cloudcraft:heat'],
-      }],
-    }],
-  ])('rejects fixture definitions with %s', (_case, definition) => {
-    const registry = new FixtureRegistry();
-    expect(() => registry.register(definition)).toThrow(/fixture/i);
-    expect(registry.getAll()).toHaveLength(0);
-  });
-
-  test('composes chest, furnace and fabricator behavior from reusable components', () => {
-    const registry = createCoreFixtureRegistry();
-
-    expect(registry.get('cloudcraft:chest').components.map(component => component.type))
-      .toEqual(['container']);
-    expect(registry.get('cloudcraft:furnace').components.map(component => component.type))
-      .toEqual(['container', 'fuel', 'processor']);
-    expect(registry.get('cloudcraft:fabricator_bench').components.map(component => component.type))
-      .toEqual(['container', 'crafting']);
-  });
-
-  test('describes container and workbench interactions from fixture components', () => {
-    const registry = createCoreFixtureRegistry();
-    const createFixture = (definitionId: string) => ({
-      id: `fixture:${definitionId}`,
-      definitionId,
-      anchor: { x: 4, y: 5, z: 6 },
-      orientation: 0 as const,
-      components: registry.get(definitionId).components.map(component => {
-        if (component.type === 'container' || component.type === 'fuel') {
-          return { type: component.type, slots: Array(component.slots).fill(null) };
-        }
-        if (component.type === 'processor') {
-          return { type: component.type, capabilities: component.capabilities, progress: 0 };
-        }
-        return { type: component.type, capabilities: component.capabilities };
-      }),
-    });
-
-    expect(describeFixtureInteraction(createFixture('cloudcraft:chest'))).toMatchObject({
-      kind: 'container',
-      fixtureId: 'fixture:cloudcraft:chest',
-    });
-    expect(describeFixtureInteraction(createFixture('cloudcraft:furnace'))).toEqual({
-      kind: 'workbench',
-      fixtureId: 'fixture:cloudcraft:furnace',
-      capabilities: ['cloudcraft:heat'],
-    });
-    expect(describeFixtureInteraction(createFixture('cloudcraft:fabricator_bench'))).toEqual({
-      kind: 'workbench',
-      fixtureId: 'fixture:cloudcraft:fabricator_bench',
-      capabilities: [
-        'cloudcraft:hand_assembly',
-        'cloudcraft:shape',
-        'cloudcraft:bind',
-        'cloudcraft:stabilize',
-      ],
-    });
-  });
-});
-
-describe('ThreeFixtureView', () => {
-  test('attaches identifiable fixture meshes and removes them symmetrically', () => {
-    const scene = new THREE.Scene();
-    const view = new ThreeFixtureView(scene);
-    const fixture = {
-      id: 'fixture-view',
-      definitionId: chestDefinition.id,
-      anchor: { x: 1, y: 2, z: 3 },
-      orientation: 0 as const,
-      components: [],
-    };
-
-    view.attach(fixture, { ...chestDefinition, view: { color: 0x885522 } });
-
-    expect(view.getRaycastObjects()).toHaveLength(1);
-    expect(view.getRaycastObjects()[0].userData.fixtureId).toBe('fixture-view');
-    expect(scene.children).toContain(view.getRaycastObjects()[0]);
-
-    view.detach('fixture-view');
-    expect(view.getRaycastObjects()).toHaveLength(0);
-    view.dispose();
-  });
-
-  test('returns the nearest fixture hit within the interaction distance', () => {
-    const scene = new THREE.Scene();
-    const view = new ThreeFixtureView(scene);
-    view.attach({
-      id: 'fixture-raycast',
-      definitionId: chestDefinition.id,
-      anchor: { x: 1, y: 2, z: 3 },
-      orientation: 0,
-      components: [],
-    }, { ...chestDefinition, view: { color: 0x885522 } });
-    scene.updateMatrixWorld(true);
-    const raycaster = new THREE.Raycaster(
-      new THREE.Vector3(1.5, 2.45, 0),
-      new THREE.Vector3(0, 0, 1),
-    );
-
-    expect(view.raycast(raycaster, 5)).toMatchObject({ fixtureId: 'fixture-raycast' });
-    expect(view.raycast(raycaster, 2)).toBeNull();
-    view.dispose();
-  });
-
-  test('restores the raycaster range when intersection fails', () => {
-    const view = new ThreeFixtureView(new THREE.Scene());
-    const raycaster = new THREE.Raycaster();
-    raycaster.far = 7;
-    vi.spyOn(raycaster, 'intersectObjects').mockImplementation(() => {
-      throw new Error('raycast failed');
-    });
-
-    expect(() => view.raycast(raycaster, 2)).toThrow('raycast failed');
-    expect(raycaster.far).toBe(7);
-    view.dispose();
-  });
-
-  test('disposes shared geometry and material resources with the view', () => {
-    const scene = new THREE.Scene();
-    const view = new ThreeFixtureView(scene);
-    view.attach({
-      id: 'fixture-dispose',
-      definitionId: chestDefinition.id,
-      anchor: { x: 1, y: 2, z: 3 },
-      orientation: 0,
-      components: [],
-    }, { ...chestDefinition, view: { color: 0x885522 } });
-    const mesh = view.getRaycastObjects()[0] as THREE.Mesh<
-      THREE.BoxGeometry,
-      THREE.MeshStandardMaterial
-    >;
-    const disposeGeometry = vi.spyOn(mesh.geometry, 'dispose');
-    const disposeMaterial = vi.spyOn(mesh.material, 'dispose');
-
-    view.dispose();
-
-    expect(scene.children).not.toContain(mesh);
-    expect(disposeGeometry).toHaveBeenCalledOnce();
-    expect(disposeMaterial).toHaveBeenCalledOnce();
   });
 });
