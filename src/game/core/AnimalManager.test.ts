@@ -109,13 +109,113 @@ describe('AnimalManager Serialization', () => {
     expect(mockGame.scene.remove).not.toHaveBeenCalled();
   });
 
+  test('rejects an unknown species before creating or replacing any animal', () => {
+    const coreSpecies = createCoreSpeciesRegistry();
+    const pigDefinition = coreSpecies.get('cloudcraft:pig');
+    const createPig = vi.fn(pigDefinition.create);
+    const species = new SpeciesRegistry();
+    species.register({ ...pigDefinition, create: createPig });
+    species.freeze();
+
+    const manager = new AnimalManager(mockGame, species);
+    const currentPig = pigDefinition.create(
+      'pig-current',
+      new THREE.Vector3(5, 10, 5),
+      mockWorld,
+    ) as Pig;
+    (manager as any).animals.push(currentPig);
+    const serializedPig = currentPig.serialize();
+
+    expect(() => manager.restoreSnapshot({
+      schemaVersion: 1,
+      entities: [
+        { ...serializedPig, id: 'pig-staged' },
+        { ...serializedPig, id: 'entity-from-plugin', type: 'plugin:missing-species' },
+      ],
+    })).toThrowError(/plugin:missing-species.*entity-from-plugin/i);
+
+    expect(createPig).not.toHaveBeenCalled();
+    expect((manager as any).animals).toEqual([currentPig]);
+    expect(mockGame.scene.add).not.toHaveBeenCalled();
+    expect(mockGame.scene.remove).not.toHaveBeenCalled();
+  });
+
+  test('reclaims a newly created animal when its snapshot data cannot be restored', () => {
+    const restoreError = new Error('animal deserialization failed');
+    const coreSpecies = createCoreSpeciesRegistry();
+    const pigDefinition = coreSpecies.get('cloudcraft:pig');
+    let stagedPig: Pig | null = null;
+    const resourceDispose = vi.fn();
+    const species = new SpeciesRegistry();
+    species.register({
+      ...pigDefinition,
+      create: (id, position, world) => {
+        const animal = pigDefinition.create(id, position, world) as Pig;
+        stagedPig = animal;
+        vi.spyOn(animal, 'dispose');
+        vi.spyOn(animal, 'deserialize').mockImplementation(() => {
+          throw restoreError;
+        });
+        animal.mesh.traverse((child) => {
+          if (!(child instanceof THREE.Mesh)) return;
+          child.geometry.dispose = resourceDispose;
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach((material) => {
+            material.dispose = resourceDispose;
+          });
+        });
+        return animal;
+      },
+    });
+    species.freeze();
+
+    const manager = new AnimalManager(mockGame, species);
+    const currentPig = pigDefinition.create(
+      'pig-current',
+      new THREE.Vector3(5, 10, 5),
+      mockWorld,
+    ) as Pig;
+    (manager as any).animals.push(currentPig);
+
+    expect(() => manager.restoreSnapshot({
+      schemaVersion: 1,
+      entities: [{ ...currentPig.serialize(), id: 'pig-staged' }],
+    })).toThrow(restoreError);
+
+    expect((manager as any).animals).toEqual([currentPig]);
+    expect(mockGame.scene.add).not.toHaveBeenCalled();
+    expect(mockGame.scene.remove).not.toHaveBeenCalled();
+    expect(stagedPig).not.toBeNull();
+    expect(stagedPig!.dispose).toHaveBeenCalledOnce();
+    expect(resourceDispose).toHaveBeenCalled();
+  });
+
   test('keeps active animals when a staged species cannot be created', () => {
     const creationError = new Error('species creation failed');
     const coreSpecies = createCoreSpeciesRegistry();
+    const pigDefinition = coreSpecies.get('cloudcraft:pig');
+    let stagedPig: Pig | null = null;
+    const resourceDispose = vi.fn();
     const species = new SpeciesRegistry();
-    species.register(coreSpecies.get('cloudcraft:pig'));
     species.register({
-      ...coreSpecies.get('cloudcraft:pig'),
+      ...pigDefinition,
+      create: (id, position, world) => {
+        const animal = pigDefinition.create(id, position, world) as Pig;
+        stagedPig = animal;
+        vi.spyOn(animal, 'dispose');
+        animal.mesh.traverse((child) => {
+          if (!(child instanceof THREE.Mesh)) return;
+          child.geometry.dispose = resourceDispose;
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach((material) => {
+            material.dispose = resourceDispose;
+          });
+        });
+        return animal;
+      },
+    });
+    species.register({
+      ...pigDefinition,
       id: 'cloudcraft:broken',
       create: () => {
         throw creationError;
@@ -128,18 +228,21 @@ describe('AnimalManager Serialization', () => {
       .get('cloudcraft:pig')
       .create('pig-current', new THREE.Vector3(5, 10, 5), mockWorld) as Pig;
     (manager as any).animals.push(currentPig);
-    const stagedPig = currentPig.serialize();
+    const serializedPig = currentPig.serialize();
 
     expect(() => manager.restoreSnapshot({
       schemaVersion: 1,
       entities: [
-        { ...stagedPig, id: 'pig-staged' },
-        { ...stagedPig, id: 'broken-staged', type: 'cloudcraft:broken' },
+        { ...serializedPig, id: 'pig-staged' },
+        { ...serializedPig, id: 'broken-staged', type: 'cloudcraft:broken' },
       ],
     })).toThrow(creationError);
 
     expect(manager.getCount()).toBe(1);
     expect(mockGame.scene.add).not.toHaveBeenCalled();
     expect(mockGame.scene.remove).not.toHaveBeenCalled();
+    expect(stagedPig).not.toBeNull();
+    expect(stagedPig!.dispose).toHaveBeenCalledOnce();
+    expect(resourceDispose).toHaveBeenCalled();
   });
 });

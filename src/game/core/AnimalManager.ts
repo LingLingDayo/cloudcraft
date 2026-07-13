@@ -30,16 +30,25 @@ export class AnimalManager {
 
   public restoreSnapshot(snapshot: EntitySnapshot): void {
     assertEntitySnapshot(snapshot);
+    // Resolve every definition before allocating animals so a missing plugin cannot
+    // turn a complete snapshot into a partially restored runtime and later save.
+    const definitions = snapshot.entities.map((data) => {
+      const definition = this.speciesRegistry.find(data.type);
+      if (!definition) {
+        throw new Error(`Unknown species ${data.type} for entity ${data.id}`);
+      }
+      return definition;
+    });
     const restoredAnimals: Animal[] = [];
 
     try {
-      for (const data of snapshot.entities) {
-        const definition = this.speciesRegistry.find(data.type);
-        if (!definition) continue;
+      for (let index = 0; index < snapshot.entities.length; index++) {
+        const data = snapshot.entities[index];
+        const definition = definitions[index];
         const spawnPos = new THREE.Vector3(data.x, data.y, data.z);
         const animal = definition.create(data.id, spawnPos, this.game.world);
-        animal.deserialize(data);
         restoredAnimals.push(animal);
+        animal.deserialize(data);
       }
     } catch (error) {
       restoredAnimals.forEach(animal => this.disposeAnimalResources(animal));

@@ -428,6 +428,79 @@ describe('GameSaveData', () => {
     expect(runtime.player.syncCamera).toHaveBeenCalledOnce();
   });
 
+  test('rolls back every runtime domain when entity restoration rejects an unknown species', () => {
+    const runtime = createRuntime();
+    const restoreError = new Error(
+      'Unknown species plugin:missing-species for entity entity-from-plugin',
+    );
+    vi.mocked(runtime.entities!.restoreSnapshot)
+      .mockImplementationOnce(() => {
+        throw restoreError;
+      })
+      .mockImplementationOnce(() => undefined);
+    const entitySnapshot = {
+      schemaVersion: 1 as const,
+      entities: [{
+        id: 'entity-from-plugin',
+        type: 'plugin:missing-species',
+        x: 8,
+        y: 9,
+        z: 10,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        life: 10,
+        maxLife: 10,
+        isPersistent: true,
+      }],
+    };
+    const replacementWeather = {
+      schemaVersion: 1 as const,
+      seed: 'test-replacement-weather-seed',
+      elapsedSeconds: 180,
+      manualWeather: 'rain' as const,
+    };
+    const save: SaveData = {
+      world: 'replacement-world',
+      player: { x: 8, y: 9, z: 10 },
+      hotbar: [],
+      inventory: [],
+      activeSlot: 0,
+      gameMode: GameMode.ADVENTURE,
+      version: '0.3.0',
+      entities: entitySnapshot,
+      fixtures: { schemaVersion: 1, fixtures: [] },
+      weather: replacementWeather,
+    };
+
+    let caughtError: unknown;
+    try {
+      restoreGameSaveData(runtime, save);
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toMatchObject({ cause: restoreError });
+    expect(runtime.world.loadWorld).toHaveBeenNthCalledWith(1, 'replacement-world');
+    expect(runtime.world.loadWorld).toHaveBeenNthCalledWith(2, 'serialized-world');
+    expect(runtime.fixtures.restoreSnapshot).toHaveBeenCalledTimes(2);
+    expect(runtime.entities?.restoreSnapshot).toHaveBeenNthCalledWith(1, entitySnapshot);
+    expect(runtime.entities?.restoreSnapshot).toHaveBeenNthCalledWith(2, {
+      schemaVersion: 1,
+      entities: [],
+    });
+    expect(runtime.environment.restoreSnapshot).toHaveBeenCalledOnce();
+    expect(runtime.environment.restoreSnapshot).toHaveBeenCalledWith({
+      schemaVersion: 1,
+      seed: 'test-weather-save-seed',
+      elapsedSeconds: 90,
+      manualWeather: null,
+    });
+    expect(runtime.player.position.set).toHaveBeenCalledOnce();
+    expect(runtime.player.position.set).toHaveBeenCalledWith(1, 2, 3);
+    expect(runtime.player.syncCamera).toHaveBeenCalledOnce();
+  });
+
   test.each([
     ['player position', { player: { x: '8', y: 9, z: 10 } }],
     ['hotbar', { hotbar: {} }],
