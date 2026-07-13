@@ -2,11 +2,15 @@ import * as THREE from 'three';
 import { ItemType, BlockType, BLOCK_TYPES, GameMode, SoundType } from '@type';
 import type { World } from '../world/World';
 import { getBlockProperties } from '../world/BlockConfig';
+import type {
+  FixtureOrientation,
+  FixturePlacementPort,
+} from '@game/fixtures/FixtureTypes';
 
 // ─── 物品分类 ───────────────────────────────────────────────
 
 /** 物品分类，用于 UI 筛选、注册表查询等 */
-export type ItemCategory = 'block' | 'food' | 'tool' | 'material' | 'misc';
+export type ItemCategory = 'block' | 'fixture' | 'food' | 'tool' | 'material' | 'misc';
 
 // ─── 交互上下文 (依赖注入，避免 Item 直接引用 GameManager) ───
 
@@ -24,6 +28,8 @@ export interface BlockPlaceContext {
   face: THREE.Vector3;
   playerBox: THREE.Box3;
   gameMode: GameMode;
+  fixtures?: FixturePlacementPort;
+  fixtureOrientation?: FixtureOrientation;
 }
 
 /** 物品使用后产生的副作用描述，由调用方统一应用 */
@@ -44,6 +50,7 @@ export interface ItemProperties {
   droppedModelType?: 'block' | 'cross';
   color?: string;
   colorHex?: number;
+  tags?: readonly string[];
 }
 
 // ─── Item 基类 ──────────────────────────────────────────────
@@ -57,6 +64,7 @@ export abstract class Item {
   public readonly droppedModelType: 'block' | 'cross';
   public readonly color?: string;
   public readonly colorHex?: number;
+  public readonly tags: ReadonlySet<string>;
 
   constructor(properties: ItemProperties) {
     this.id = properties.id;
@@ -67,6 +75,7 @@ export abstract class Item {
     this.droppedModelType = properties.droppedModelType ?? 'cross';
     this.color = properties.color;
     this.colorHex = properties.colorHex;
+    this.tags = new Set(properties.tags ?? []);
   }
 
   /** 该物品是否可以放置为方块 */
@@ -93,6 +102,10 @@ export abstract class Item {
    */
   public onUseOnBlock(_ctx: BlockPlaceContext): boolean {
     return false;
+  }
+
+  public hasTag(tag: string): boolean {
+    return this.tags.has(tag);
   }
 }
 
@@ -147,6 +160,41 @@ export class BlockItem extends Item {
   /** 获取放置后方块的音效类型 */
   public getPlaceSoundType(): SoundType {
     return getBlockProperties(this.blockId).soundType;
+  }
+}
+
+// ─── PlaceableFixtureItem 子类 ─────────────────────────────
+
+export class PlaceableFixtureItem extends Item {
+  public readonly fixtureDefinitionId: string;
+
+  constructor(properties: ItemProperties & { fixtureDefinitionId: string }) {
+    super({
+      ...properties,
+      category: 'fixture',
+      droppedModelType: properties.droppedModelType ?? 'block',
+    });
+    this.fixtureDefinitionId = properties.fixtureDefinitionId;
+  }
+
+  public override get isPlaceable(): boolean {
+    return true;
+  }
+
+  public override onUseOnBlock(ctx: BlockPlaceContext): boolean {
+    if (!ctx.fixtures) return false;
+
+    const fixtureBox = new THREE.Box3(
+      ctx.placePos.clone(),
+      new THREE.Vector3(ctx.placePos.x + 1, ctx.placePos.y + 1, ctx.placePos.z + 1),
+    );
+    if (ctx.playerBox.intersectsBox(fixtureBox)) return false;
+
+    return ctx.fixtures.place(
+      this.fixtureDefinitionId,
+      { x: ctx.placePos.x, y: ctx.placePos.y, z: ctx.placePos.z },
+      ctx.fixtureOrientation ?? 0,
+    ).ok;
   }
 }
 

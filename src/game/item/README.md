@@ -12,6 +12,7 @@
 * **Item**：所有物品的基类，定义了基本的物品属性（如标识、名称、堆叠大小）和通用的多态交互接口。
 * **BlockItem** (`category: 'block'`)：方块物品，其内部持有对应的方块标识，负责具体方块的物理碰撞检查与放置操作。
 * **FoodItem** (`category: 'food'`)：食物物品，携带营养/生命回复参数，并处理食用逻辑。
+* **PlaceableFixtureItem** (`category: 'fixture'`)：非体素设施物品，持有设施定义 ID，通过 `FixturePlacementPort` 放置到独立设施占用层。
 
 ---
 
@@ -59,6 +60,14 @@
 2. 在 `ItemRegistry` 初始化时：
    * 注册对应类型的实例。如果是食物，实例化并注册 `FoodItem` 并指定其回复参数（如生命值和饱食度增量）。
 3. 在本地化配置文件中配置对应的翻译文案。
+
+### B.1 添加一个非体素设施物品
+1. 在设施模块注册 `FixtureDefinition`，由 footprint、能力组件和视图配置描述设施。
+2. 在 `ItemRegistry` 注册对应的 `PlaceableFixtureItem`，物品 ID 与设施定义 ID 可以不同，但映射必须显式声明。
+3. 设施物品的 `isPlaceable` 为 `true`、`isBlockItem` 为 `false`；放置不得调用 `World.setBlock`，也不得加入物品到体素的反向映射。
+4. 旧世界中的体素箱子保留 `BLOCK_TYPES.CHEST -> ItemType.CHEST` 单向掉落映射，用于存档迁移；`ItemType.CHEST -> BLOCK_TYPES.CHEST` 必须继续返回 `AIR`，避免重新放置体素箱子。
+
+设施的占用、组件状态、存档 carrier 与资源生命周期规范参见 [设施系统 README](../fixtures/README.md)。
 
 ### C. 添加新的右键交互效果
 * 如果想给某个物品增加独特的右键对空使用效果：

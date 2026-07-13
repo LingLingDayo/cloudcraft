@@ -1,7 +1,25 @@
-import { Item, BlockItem, FoodItem, type ItemCategory } from './Item';
+import {
+  Item,
+  BlockItem,
+  FoodItem,
+  PlaceableFixtureItem,
+  type ItemCategory,
+} from './Item';
 import { ItemType, BlockType, BLOCK_TYPES } from '@type';
 import { BlockRegistry } from '@game/world/block/BlockRegistry';
 import { CrossBlockModel } from '@game/world/block/BlockModel';
+
+const WOOD_BLOCK_TYPES = new Set<BlockType>([
+  BLOCK_TYPES.WOOD,
+  BLOCK_TYPES.BIRCH_WOOD,
+  BLOCK_TYPES.SPRUCE_WOOD,
+  BLOCK_TYPES.JUNGLE_WOOD,
+]);
+
+const STONE_BLOCK_TYPES = new Set<BlockType>([
+  BLOCK_TYPES.STONE,
+  BLOCK_TYPES.SANDSTONE,
+]);
 
 export class ItemRegistry {
   private static items = new Map<ItemType, Item>();
@@ -17,6 +35,12 @@ export class ItemRegistry {
   }
 
   public static register(item: Item) {
+    const previous = this.items.get(item.id);
+    if (previous?.isBlockItem) {
+      const previousBlock = previous as BlockItem;
+      this.blockToItemMap.delete(previousBlock.blockId);
+      this.itemToBlockMap.delete(previousBlock.id);
+    }
     this.items.set(item.id, item);
     if (item.isBlockItem) {
       const blockItem = item as BlockItem;
@@ -39,6 +63,33 @@ export class ItemRegistry {
       color: '#e07890',
       colorHex: 0xe07890,
       droppedModelType: 'cross'
+    }));
+
+    this.register(new PlaceableFixtureItem({
+      id: ItemType.CHEST,
+      name: '箱子',
+      fixtureDefinitionId: 'cloudcraft:chest',
+      textureFaces: { top: 15, bottom: 15, side: 14 },
+      color: '#8b5a2b',
+      colorHex: 0x8b5a2b,
+    }));
+
+    this.register(new PlaceableFixtureItem({
+      id: ItemType.FURNACE,
+      name: '火炉',
+      fixtureDefinitionId: 'cloudcraft:furnace',
+      textureFaces: { top: 3, bottom: 3, side: 3 },
+      color: '#606060',
+      colorHex: 0x606060,
+    }));
+
+    this.register(new PlaceableFixtureItem({
+      id: ItemType.FABRICATOR_BENCH,
+      name: '构装台',
+      fixtureDefinitionId: 'cloudcraft:fabricator_bench',
+      textureFaces: { top: 5, bottom: 4, side: 4 },
+      color: '#96633a',
+      colorHex: 0x96633a,
     }));
 
     this.register(new FoodItem({
@@ -72,6 +123,7 @@ export class ItemRegistry {
     const allBlocks = BlockRegistry.getAllBlocks();
     for (const block of allBlocks) {
       if (block.id === BLOCK_TYPES.AIR) continue;
+      if (block.id === BLOCK_TYPES.CHEST) continue;
 
       const keyName = blockTypeToKey.get(block.id);
       if (!keyName) continue;
@@ -91,6 +143,13 @@ export class ItemRegistry {
 
       if (itemType) {
         const props = block.properties;
+        const tags: string[] = [];
+        if (WOOD_BLOCK_TYPES.has(block.id)) {
+          tags.push('cloudcraft:wood');
+        }
+        if (STONE_BLOCK_TYPES.has(block.id)) {
+          tags.push('cloudcraft:stone');
+        }
         this.register(new BlockItem({
           id: itemType,
           name: props.name,
@@ -98,10 +157,14 @@ export class ItemRegistry {
           textureFaces: props.textureFaces,
           droppedModelType: props.model instanceof CrossBlockModel ? 'cross' : 'block',
           color: props.color,
-          colorHex: props.colorHex
+          colorHex: props.colorHex,
+          tags,
         }));
       }
     }
+
+    // Legacy voxel chests must still drop the new fixture item during save migration.
+    this.blockToItemMap.set(BLOCK_TYPES.CHEST, ItemType.CHEST);
 
     // Set default item to GRASS
     this.defaultItem = this.get(ItemType.GRASS);
@@ -136,6 +199,10 @@ export class ItemRegistry {
     return Array.from(this.items.values());
   }
 
+  public static hasTag(itemType: ItemType, tag: string): boolean {
+    return this.get(itemType).hasTag(tag);
+  }
+
   /** 按分类获取所有物品 */
   public static getByCategory(category: ItemCategory): Item[] {
     this.ensureInitialized();
@@ -152,5 +219,9 @@ export class ItemRegistry {
   public static getFoodItems(): FoodItem[] {
     this.ensureInitialized();
     return this.getByCategory('food') as FoodItem[];
+  }
+
+  public static getFixtureItems(): PlaceableFixtureItem[] {
+    return this.getByCategory('fixture') as PlaceableFixtureItem[];
   }
 }

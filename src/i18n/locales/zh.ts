@@ -140,6 +140,14 @@ export const zh = {
     labelHotbar: '快捷栏 (Hotbar)',
     hintRightClick: '提示：右键槽位可在背包与快捷栏之间快速移动物品',
   },
+  fabrication: {
+    title: '工序合成',
+    craft: '制作',
+  },
+  itemTags: {
+    'cloudcraft:wood': '木材',
+    'cloudcraft:stone': '石材',
+  },
   worldLoading: {
     title: '正在生成世界...',
     engine: '加载游戏引擎及资源',
@@ -180,6 +188,8 @@ export const zh = {
     iron: '铁矿石',
     diamond: '钻石矿石',
     chest: '储物箱',
+    furnace: '火炉',
+    fabricator_bench: '构装台',
     lever: '拉杆',
     birch_wood: '桦木',
     birch_leaves: '桦树叶',
@@ -225,6 +235,8 @@ export const zh = {
     iron: '铁矿石，富含铁元素，用于打造更坚固的铁制工具。',
     diamond: '极其珍贵的钻石矿石，硬度极高，可打造最顶级的装备。',
     chest: '储物箱，提供安全的存储空间，可放置背包中的物品。',
+    furnace: '可提供加热工序的世界设施，用于处理需要热量的配方。',
+    fabricator_bench: '具备塑形、结合和稳定能力的复杂工序设施。',
     lever: '开关拉杆，可用于控制红石信号或机关。',
     birch_wood: '桦木原木，质地轻软，颜色淡雅。',
     birch_leaves: '桦树树叶，呈现出明亮翠绿的色彩。',

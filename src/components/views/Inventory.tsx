@@ -9,6 +9,10 @@ import { useGame } from '@context/GameContext';
 import { BlockIcon } from './ItemIcon';
 import { ItemType } from '@type';
 import { ItemRegistry } from '@game/item/ItemRegistry';
+import { HAND_CRAFTING_CAPABILITIES } from '@game/fabrication/CraftingRuntime';
+import { CraftingPanel } from './CraftingPanel';
+
+const HAND_CRAFTING_CAPABILITY_LIST = Array.from(HAND_CRAFTING_CAPABILITIES);
 
 // Available items list for creative mode
 const ALL_ITEMS: ItemType[] = Object.values(ItemType);
@@ -30,11 +34,19 @@ export const Inventory: React.FC = () => {
   const hotbar = useGameStore((state) => state.hotbar);
   const inventory = useGameStore((state) => state.inventory);
   const activeSlot = useGameStore((state) => state.activeSlot);
+  const craftRecipe = useGameStore((state) => state.craftRecipe);
+  const activeFixtureId = useGameStore((state) => state.activeFixtureId);
+  const fixtureCraftingCapabilities = useGameStore((state) => state.craftingCapabilities);
+  const hasActiveFixture = activeFixtureId !== null;
+  const craftingCapabilities = hasActiveFixture
+    ? fixtureCraftingCapabilities
+    : HAND_CRAFTING_CAPABILITY_LIST;
 
   // Tab selection in Creative Mode: 'creative' or 'survival'
-  const [activeTab, setActiveTab] = useState<'creative' | 'survival'>(
+  const [selectedTab, setSelectedTab] = useState<'creative' | 'survival'>(
     gameMode === 'creative' ? 'creative' : 'survival'
   );
+  const activeTab = hasActiveFixture ? 'survival' : selectedTab;
 
   // Tracking dragging/held item
   const [heldItem, setHeldItem] = useState<HeldItem | null>(null);
@@ -363,14 +375,14 @@ export const Inventory: React.FC = () => {
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === 'creative' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('creative')}
+                onClick={() => setSelectedTab('creative')}
               >
                 {t('inventory.tabAllItems')}
               </button>
               <button
                 type="button"
                 className={`${styles.tabBtn} ${activeTab === 'survival' ? styles.activeTab : ''}`}
-                onClick={() => setActiveTab('survival')}
+                onClick={() => setSelectedTab('survival')}
               >
                 {t('inventory.tabHotbarInventory')}
               </button>
@@ -428,6 +440,12 @@ export const Inventory: React.FC = () => {
                   </div>
                 ))}
               </div>
+              <CraftingPanel
+                hotbar={hotbar}
+                inventory={inventory}
+                capabilities={craftingCapabilities}
+                onCraft={recipeId => craftRecipe(recipeId)}
+              />
             </div>
           )}
 

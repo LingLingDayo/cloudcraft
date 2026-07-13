@@ -60,6 +60,8 @@ export interface PlayerSlice {
   chestInventory: (HotbarItem | null)[];
   isInventoryOpen: boolean;
   inventory: (HotbarItem | null)[];
+  activeFixtureId: string | null;
+  craftingCapabilities: readonly string[];
   setSelectedItem: (item: ItemType | null) => void;
   setActiveSlot: (slot: number) => void;
   addToHotbar: (itemType: ItemType, count?: number) => boolean;
@@ -79,8 +81,10 @@ export interface PlayerSlice {
   openInventory: () => void;
   closeInventory: () => void;
   toggleInventory: () => void;
+  openFixture: (fixtureId: string, capabilities: readonly string[]) => void;
   setInventory: (inventory: (HotbarItem | null)[]) => void;
   quickMoveItem: (from: 'hotbar' | 'chest', index: number) => void;
+  craftRecipe: (recipeId: string) => boolean;
 }
 
 

@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
-import { Item, BlockItem, FoodItem } from './Item';
+import { Item, BlockItem, FoodItem, PlaceableFixtureItem } from './Item';
 import { ItemRegistry } from './ItemRegistry';
 import { ItemType, BLOCK_TYPES } from '@type';
 import type { World } from '../world/World';
@@ -243,6 +243,38 @@ describe('Item System', () => {
     });
   });
 
+  describe('PlaceableFixtureItem Subclass', () => {
+    test('places a fixture without writing a voxel block', () => {
+      const placements: string[] = [];
+      const furnace = new PlaceableFixtureItem({
+        id: ItemType.FURNACE,
+        name: '火炉',
+        fixtureDefinitionId: 'cloudcraft:furnace',
+      });
+
+      const placed = furnace.onUseOnBlock({
+        world: mockWorld,
+        targetPos: new THREE.Vector3(3, 4, 5),
+        placePos: new THREE.Vector3(3, 5, 5),
+        face: new THREE.Vector3(0, 1, 0),
+        playerBox: new THREE.Box3(),
+        gameMode: 'adventure',
+        fixtures: {
+          place: (definitionId) => {
+            placements.push(definitionId);
+            return { ok: true, fixtureId: 'fixture-furnace' };
+          },
+        },
+      });
+
+      expect(placed).toBe(true);
+      expect(furnace.isPlaceable).toBe(true);
+      expect(furnace.isBlockItem).toBe(false);
+      expect(placements).toEqual(['cloudcraft:furnace']);
+      expect(mockWorld.getBlock(3, 5, 5)).toBe(BLOCK_TYPES.AIR);
+    });
+  });
+
   describe('ItemRegistry', () => {
     test('should retrieve registered food items', () => {
       const porkchop = ItemRegistry.get(ItemType.PORKCHOP);
@@ -290,6 +322,19 @@ describe('Item System', () => {
     test('should return all registered items', () => {
       const allItems = ItemRegistry.getAllItems();
       expect(allItems.length).toBeGreaterThan(0);
+    });
+
+    test('registers fixture items separately from voxel block items and exposes material tags', () => {
+      const furnace = ItemRegistry.get(ItemType.FURNACE);
+      const fabricator = ItemRegistry.get(ItemType.FABRICATOR_BENCH);
+
+      expect(furnace.category).toBe('fixture');
+      expect(fabricator.category).toBe('fixture');
+      expect(ItemRegistry.getItemTypeFromBlockType(BLOCK_TYPES.CHEST)).toBe(ItemType.CHEST);
+      expect(ItemRegistry.getBlockTypeFromItemType(ItemType.FURNACE)).toBe(BLOCK_TYPES.AIR);
+      expect(ItemRegistry.getBlockTypeFromItemType(ItemType.CHEST)).toBe(BLOCK_TYPES.AIR);
+      expect(ItemRegistry.hasTag(ItemType.WOOD, 'cloudcraft:wood')).toBe(true);
+      expect(ItemRegistry.hasTag(ItemType.STONE, 'cloudcraft:wood')).toBe(false);
     });
   });
 });

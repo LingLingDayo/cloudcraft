@@ -24,6 +24,8 @@ describe('useGameStore', () => {
       gameMode: GameMode.ADVENTURE,
       isInventoryOpen: false,
       inventory: Array(54).fill(null),
+      activeFixtureId: null,
+      craftingCapabilities: [],
       language: 'zh',
       autoJump: true,
       dpadSize: 180,
@@ -56,6 +58,8 @@ describe('useGameStore', () => {
     expect(state.gameMode).toBe(GameMode.ADVENTURE);
     expect(state.isInventoryOpen).toBe(false);
     expect(state.inventory).toEqual(Array(54).fill(null));
+    expect(state.activeFixtureId).toBeNull();
+    expect(state.craftingCapabilities).toEqual([]);
     expect(state.language).toBe('zh');
     expect(state.autoJump).toBe(true);
     expect(state.dpadSize).toBe(180);
@@ -252,6 +256,48 @@ describe('useGameStore', () => {
     expect(success).toBe(true);
     expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.STONE, count: 100 });
     expect(useGameStore.getState().hotbar[1]).toEqual({ type: ItemType.STONE, count: 50 });
+  });
+
+  test('should craft a process recipe through the inventory action', () => {
+    const hotbar = Array(9).fill(null);
+    hotbar[0] = { type: ItemType.SAND, count: 4 };
+    useGameStore.setState({ hotbar });
+
+    const crafted = useGameStore.getState().craftRecipe('cloudcraft:sandstone');
+
+    expect(crafted).toBe(true);
+    expect(useGameStore.getState().hotbar[0]).toEqual({
+      type: ItemType.SANDSTONE,
+      count: 1,
+    });
+  });
+
+  test('should scope workstation capabilities to the active fixture lifecycle', () => {
+    useGameStore.getState().openFixture('fixture-furnace', ['cloudcraft:heat']);
+    useGameStore.getState().openInventory();
+
+    expect(useGameStore.getState().activeFixtureId).toBe('fixture-furnace');
+    expect(useGameStore.getState().craftingCapabilities).toEqual(['cloudcraft:heat']);
+
+    useGameStore.getState().closeInventory();
+    expect(useGameStore.getState().activeFixtureId).toBeNull();
+    expect(useGameStore.getState().craftingCapabilities).toEqual([]);
+  });
+
+  test('should reject caller-provided capabilities outside the active fixture context', () => {
+    const hotbar = Array(9).fill(null);
+    hotbar[0] = { type: ItemType.SAND, count: 2 };
+    useGameStore.setState({ hotbar });
+    useGameStore.getState().openFixture('fixture-fabricator', ['cloudcraft:shape']);
+
+    const crafted = Reflect.apply(
+      useGameStore.getState().craftRecipe,
+      undefined,
+      ['cloudcraft:glass', ['cloudcraft:heat']],
+    );
+
+    expect(crafted).toBe(false);
+    expect(useGameStore.getState().hotbar[0]).toEqual({ type: ItemType.SAND, count: 2 });
   });
 
   test('should set language via setLanguage', () => {

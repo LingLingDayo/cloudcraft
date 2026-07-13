@@ -140,6 +140,14 @@ export const en = {
     labelHotbar: 'Hotbar',
     hintRightClick: 'Tip: Right click a slot to quickly move items between inventory and hotbar',
   },
+  fabrication: {
+    title: 'Process Crafting',
+    craft: 'Craft',
+  },
+  itemTags: {
+    'cloudcraft:wood': 'Wood',
+    'cloudcraft:stone': 'Stone',
+  },
   worldLoading: {
     title: 'Building Terrain...',
     engine: 'Loading Engine & Resources',
@@ -180,6 +188,8 @@ export const en = {
     iron: 'Iron Ore',
     diamond: 'Diamond Ore',
     chest: 'Chest',
+    furnace: 'Furnace',
+    fabricator_bench: 'Fabricator Bench',
     lever: 'Lever',
     birch_wood: 'Birch Log',
     birch_leaves: 'Birch Leaves',
@@ -225,6 +235,8 @@ export const en = {
     iron: 'Iron ore. Can be smelted into iron ingots for stronger tools.',
     diamond: 'Extremely rare diamond ore, used to craft top-tier gear.',
     chest: 'A storage block. Provides space to store your items.',
+    furnace: 'A world fixture that provides heat processing for recipes.',
+    fabricator_bench: 'A process station for shaping, binding, and stabilizing materials.',
     lever: 'A lever switch that can be used to control mechanisms.',
     birch_wood: 'Birch log, featuring light-colored bark and wood.',
     birch_leaves: 'Birch leaves, offering bright green foliage.',

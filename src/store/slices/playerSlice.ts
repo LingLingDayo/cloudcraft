@@ -4,6 +4,10 @@ import { BLOCK_TYPES } from '@game/world/World';
 import { GameMode, ItemType, BlockType } from '@type';
 import { ItemRegistry } from '@game/item/ItemRegistry';
 import type { HotbarItem } from '../types';
+import {
+  coreCraftingService,
+  HAND_CRAFTING_CAPABILITIES,
+} from '@game/fabrication/CraftingRuntime';
 
 /** 创意模式默认热键栏配置，统一维护避免两处重复 */
 export const CREATIVE_DEFAULT_HOTBAR: HotbarItem[] = [
@@ -43,6 +47,8 @@ export const createPlayerSlice: StateCreator<
   chestInventory: [],
   isInventoryOpen: false,
   inventory: Array(54).fill(null),
+  activeFixtureId: null,
+  craftingCapabilities: [],
 
 
   setSelectedItem: (selectedItem) => set(() => ({
@@ -186,7 +192,9 @@ export const createPlayerSlice: StateCreator<
   closeChest: () => {
     set({
       activeChest: null,
-      chestInventory: []
+      chestInventory: [],
+      activeFixtureId: null,
+      craftingCapabilities: [],
     });
   },
 
@@ -195,14 +203,54 @@ export const createPlayerSlice: StateCreator<
   },
 
   closeInventory: () => {
-    set({ isInventoryOpen: false });
+    set({
+      isInventoryOpen: false,
+      activeFixtureId: null,
+      craftingCapabilities: [],
+    });
   },
 
   toggleInventory: () => set((state) => {
-    return { isInventoryOpen: !state.isInventoryOpen };
+    const isInventoryOpen = !state.isInventoryOpen;
+    return {
+      isInventoryOpen,
+      activeFixtureId: null,
+      craftingCapabilities: [],
+    };
+  }),
+
+  openFixture: (activeFixtureId, craftingCapabilities) => set({
+    activeFixtureId,
+    craftingCapabilities: [...craftingCapabilities],
   }),
 
   setInventory: (inventory) => set({ inventory }),
+
+  craftRecipe: (recipeId) => {
+    let crafted = false;
+    set((state) => {
+      const capabilities = state.activeFixtureId === null
+        ? HAND_CRAFTING_CAPABILITIES
+        : new Set(state.craftingCapabilities);
+      const result = coreCraftingService.craft(
+        recipeId,
+        { hotbar: state.hotbar, inventory: state.inventory },
+        capabilities,
+      );
+      if (!result.ok) return {};
+
+      crafted = true;
+      const hotbar = [...result.inventory.hotbar];
+      const inventory = [...result.inventory.inventory];
+      const activeItem = hotbar[state.activeSlot];
+      return {
+        hotbar,
+        inventory,
+        selectedItem: activeItem ? activeItem.type : null,
+      };
+    });
+    return crafted;
+  },
 
   quickMoveItem: (from, index) => {
     set((state) => {

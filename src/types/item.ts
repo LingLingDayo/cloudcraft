@@ -13,6 +13,8 @@ export const ItemType = {
   IRON: 'iron',
   DIAMOND: 'diamond',
   CHEST: 'chest',
+  FURNACE: 'furnace',
+  FABRICATOR_BENCH: 'fabricator_bench',
   LEVER: 'lever',
   BIRCH_WOOD: 'birch_wood',
   BIRCH_LEAVES: 'birch_leaves',
