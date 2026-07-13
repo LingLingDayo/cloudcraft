@@ -105,22 +105,23 @@ describe('Block Registry and Entity System', () => {
     expect(loadedEntity.inventory[4]).toEqual({ type: ItemType.IRON, count: 16 });
   });
 
-  test('should simulate sand gravity block falling when below block is AIR', () => {
+  test('should simulate sand as a continuous dynamic voxel until it lands', () => {
     const world = new World('test-seed');
-    
-    // Set base support
-    world.setBlock(12, 10, 12, BLOCK_TYPES.STONE);
-    // Set sand above it
-    world.setBlock(12, 11, 12, BLOCK_TYPES.SAND);
-    
-    // Remove base support (set to AIR)
+
+    world.setBlock(12, 8, 12, BLOCK_TYPES.STONE);
+    world.setBlock(12, 9, 12, BLOCK_TYPES.AIR);
     world.setBlock(12, 10, 12, BLOCK_TYPES.AIR);
-    
-    // Trigger tick
-    world.update(0.15); // Exceeds timer interval
-    
-    // Sand should have fallen to y=10
+    world.setBlock(12, 11, 12, BLOCK_TYPES.SAND);
+
     expect(world.getBlock(12, 11, 12)).toBe(BLOCK_TYPES.AIR);
-    expect(world.getBlock(12, 10, 12)).toBe(BLOCK_TYPES.SAND);
+    expect(world.dynamicMaterials.getActiveCount()).toBe(1);
+
+    world.update(0.05);
+    expect(world.getBlock(12, 9, 12)).toBe(BLOCK_TYPES.AIR);
+    expect(world.dynamicMaterials.getActiveCount()).toBe(1);
+
+    world.update(1);
+    expect(world.getBlock(12, 9, 12)).toBe(BLOCK_TYPES.SAND);
+    expect(world.dynamicMaterials.getActiveCount()).toBe(0);
   });
 });

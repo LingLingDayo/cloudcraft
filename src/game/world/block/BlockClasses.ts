@@ -37,24 +37,6 @@ export class SandBlock extends Block {
       textureFaces: { top: 10, bottom: 10, side: 10 }
     });
   }
-
-  public onPlaced(world: World, x: number, y: number, z: number): void {
-    this.checkGravity(world, x, y, z);
-  }
-
-  public onNeighborChanged(world: World, x: number, y: number, z: number, _nx: number, ny: number, _nz: number): void {
-    if (ny === y - 1) {
-      this.checkGravity(world, x, y, z);
-    }
-  }
-
-
-  private checkGravity(world: World, x: number, y: number, z: number) {
-    const belowType = world.getBlock(x, y - 1, z);
-    if (belowType === BLOCK_TYPES.AIR || belowType === BLOCK_TYPES.WATER) {
-      world.addFallingBlock(x, y, z);
-    }
-  }
 }
 
 export class ChestBlock extends Block {

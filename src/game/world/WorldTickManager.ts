@@ -11,42 +11,17 @@ import { FeatureRegistry } from './feature/WorldFeature';
 
 export class WorldTickManager {
   private world: World;
-  public fallingBlocks: Map<string, { x: number; y: number; z: number; blockId: number; timer: number }>;
   public decayingLeaves: Map<string, { x: number; y: number; z: number; timer: number }>;
   public growingSaplings: Map<string, { x: number; y: number; z: number; timer: number; saplingType: number }>;
 
   constructor(world: World) {
     this.world = world;
-    this.fallingBlocks = new Map();
     this.decayingLeaves = new Map();
     this.growingSaplings = new Map();
   }
 
   public update(dt: number) {
-    // 1. Update falling blocks
-    if (this.fallingBlocks.size > 0) {
-      const fbs = Array.from(this.fallingBlocks.entries());
-      for (const [key, fb] of fbs) {
-        fb.timer -= dt;
-        if (fb.timer <= 0) {
-          this.fallingBlocks.delete(key);
-          const currentType = this.world.getBlock(fb.x, fb.y, fb.z);
-          if (currentType === fb.blockId) {
-            const belowY = fb.y - 1;
-            const belowType = this.world.getBlock(fb.x, belowY, fb.z);
-            if (belowType === BLOCK_TYPES.AIR || belowType === BLOCK_TYPES.WATER) {
-              // Lower sand block by 1 voxel
-              this.world.setBlock(fb.x, fb.y, fb.z, BLOCK_TYPES.AIR);
-              this.world.setBlock(fb.x, belowY, fb.z, fb.blockId);
-              // Recursively trigger next fall check
-              this.addFallingBlock(fb.x, belowY, fb.z);
-            }
-          }
-        }
-      }
-    }
-
-    // 2. Update leaf decay
+    // 1. Update leaf decay
     if (this.decayingLeaves.size > 0) {
       const leaves = Array.from(this.decayingLeaves.entries());
       for (const [key, dl] of leaves) {
@@ -99,7 +74,7 @@ export class WorldTickManager {
       }
     }
 
-    // 3. Update sapling growth
+    // 2. Update sapling growth
     if (this.growingSaplings.size > 0) {
       const saplings = Array.from(this.growingSaplings.entries());
       for (const [key, gs] of saplings) {
@@ -132,15 +107,6 @@ export class WorldTickManager {
           }
         }
       }
-    }
-  }
-
-  public addFallingBlock(x: number, y: number, z: number) {
-    const blockId = this.world.getBlock(x, y, z);
-    if (blockId === BLOCK_TYPES.AIR) return;
-    const key = `${x},${y},${z}`;
-    if (!this.fallingBlocks.has(key)) {
-      this.fallingBlocks.set(key, { x, y, z, blockId, timer: 0.1 });
     }
   }
 
