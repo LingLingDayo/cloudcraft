@@ -144,6 +144,9 @@ export class WorldChunkManager {
       positionUncertaintyRadius: view
         ? CHUNK_STREAMING_CONFIG.viewPositionBucketUncertaintyRadius
         : 0,
+      directionUncertaintyRadians: view
+        ? CHUNK_STREAMING_CONFIG.directionBucketUncertaintyRadians
+        : 0,
       getChunkState: key => this.world.getChunkVisibilityState(key),
     });
     const nextActiveKeys = new Set(visibility.active);

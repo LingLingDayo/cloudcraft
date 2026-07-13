@@ -34,6 +34,7 @@ export interface ChunkVisibilityResolverInput {
   readonly maxChunkYExclusive: number;
   readonly view: ChunkStreamingView | null;
   readonly positionUncertaintyRadius?: number;
+  readonly directionUncertaintyRadians?: number;
   readonly getChunkState: (key: string) => ChunkVisibilityState | undefined;
 }
 
@@ -90,6 +91,7 @@ function isInConservativeView(
   coordinate: ChunkCoordinate,
   view: ChunkStreamingView,
   positionUncertaintyRadius: number,
+  directionUncertaintyRadians: number,
 ): boolean {
   if (
     !Number.isFinite(view.verticalFovRadians)
@@ -116,6 +118,14 @@ function isInConservativeView(
     + positionUncertaintyRadius;
   if (distanceSq <= sphereRadius * sphereRadius) return true;
 
+  // A cached yaw/pitch bucket represents a bounded family of rotated frustum planes.
+  // Relaxing each plane by its maximum chord displacement covers that family without
+  // expanding nearby chunks by the worst-case render distance.
+  const directionMargin = (
+    Math.sqrt(distanceSq) + positionUncertaintyRadius
+  ) * 2 * Math.sin(directionUncertaintyRadians / 2);
+  const conservativeSphereRadius = sphereRadius + directionMargin;
+
   const forwardLength = Math.hypot(view.forward.x, view.forward.y, view.forward.z);
   if (
     !Number.isFinite(forwardLength)
@@ -128,7 +138,7 @@ function isInConservativeView(
   const forwardY = view.forward.y / forwardLength;
   const forwardZ = view.forward.z / forwardLength;
   const forwardDot = dx * forwardX + dy * forwardY + dz * forwardZ;
-  if (forwardDot + sphereRadius <= 0) return false;
+  if (forwardDot + conservativeSphereRadius <= 0) return false;
 
   const verticalSlope = Math.tan(view.verticalFovRadians / 2);
   const horizontalSlope = verticalSlope * view.aspect;
@@ -162,8 +172,8 @@ function isInConservativeView(
   const upZ = rightX * forwardY - rightY * forwardX;
   const rightDot = dx * rightX + dy * rightY + dz * rightZ;
   const upDot = dx * upX + dy * upY + dz * upZ;
-  const horizontalMargin = sphereRadius * Math.hypot(1, horizontalSlope);
-  const verticalMargin = sphereRadius * Math.hypot(1, verticalSlope);
+  const horizontalMargin = conservativeSphereRadius * Math.hypot(1, horizontalSlope);
+  const verticalMargin = conservativeSphereRadius * Math.hypot(1, verticalSlope);
 
   return Math.abs(rightDot) - forwardDot * horizontalSlope <= horizontalMargin
     && Math.abs(upDot) - forwardDot * verticalSlope <= verticalMargin;
@@ -189,6 +199,9 @@ export class ChunkVisibilityResolver {
     const positionUncertaintyRadius = Number.isFinite(input.positionUncertaintyRadius)
       ? Math.max(0, input.positionUncertaintyRadius ?? 0)
       : 0;
+    const directionUncertaintyRadians = Number.isFinite(input.directionUncertaintyRadians)
+      ? Math.max(0, Math.min(Math.PI, input.directionUncertaintyRadians ?? 0))
+      : 0;
     let queueIndex = 0;
 
     while (queueIndex < queue.length) {
@@ -210,7 +223,12 @@ export class ChunkVisibilityResolver {
           || (
             !isAlwaysAvailableNeighbor(coordinate, input.center)
             && input.view !== null
-            && !isInConservativeView(coordinate, input.view, positionUncertaintyRadius)
+            && !isInConservativeView(
+              coordinate,
+              input.view,
+              positionUncertaintyRadius,
+              directionUncertaintyRadians,
+            )
           )
           || !canExitChunk(node, direction.exitFace, state)
         ) {

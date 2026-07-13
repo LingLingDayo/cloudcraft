@@ -37,4 +37,14 @@ describe('ChunkStreamingViewCache', () => {
     expect(cache.shouldResolve(0, 1, 0, 2, createView(3, 0))).toBe(false);
     expect(cache.shouldResolve(0, 1, 0, 2, createView(4, 0))).toBe(true);
   });
+
+  test('reuses scalar signature state across stable frames without replacing the view', () => {
+    const cache = new ChunkStreamingViewCache();
+    const view = createView(1, 0);
+
+    expect(cache.shouldResolve(0, 1, 0, 10, view)).toBe(true);
+    for (let frame = 0; frame < 100; frame++) {
+      expect(cache.shouldResolve(0, 1, 0, 10, view)).toBe(false);
+    }
+  });
 });

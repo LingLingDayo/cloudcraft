@@ -38,6 +38,100 @@ describe('WorldChunkManager visibility cache', () => {
     expect(resolve).toHaveBeenCalledTimes(1);
   });
 
+  test.each([
+    {
+      axis: 'yaw',
+      firstYawFactor: -0.49,
+      firstPitchFactor: 0,
+      secondYawFactor: 0.49,
+      secondPitchFactor: 0,
+      verticalFovRadians: Math.PI / 3,
+      aspect: 16 / 9,
+    },
+    {
+      axis: 'pitch',
+      firstYawFactor: 0,
+      firstPitchFactor: -0.49,
+      secondYawFactor: 0,
+      secondPitchFactor: 0.49,
+      verticalFovRadians: Math.PI / 2.5,
+      aspect: 4 / 3,
+    },
+  ])(
+    'keeps exact $axis endpoint visibility inside the first radius-10 active set',
+    async ({
+      firstYawFactor,
+      firstPitchFactor,
+      secondYawFactor,
+      secondPitchFactor,
+      verticalFovRadians,
+      aspect,
+    }) => {
+      const world = createStreamingWorld('test-direction-bucket-uncertainty');
+      const { WorkerManager } = await import('./worker/WorkerManager');
+      assumeLiveWorkerPool(WorkerManager.getInstance());
+      const managerResolver = (world.chunkManager as any).visibilityResolver;
+      const resolve = vi.spyOn(managerResolver, 'resolve');
+      const directionStep = Math.PI * 2 / CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
+      const view: ChunkStreamingView = {
+        position: { x: 8, y: 136, z: 8 },
+        forward: { x: 0, y: 0, z: 1 },
+        verticalFovRadians,
+        aspect,
+      };
+      const setDirection = (yaw: number, pitch: number): void => {
+        const horizontalScale = Math.cos(pitch);
+        (view.forward as { x: number }).x = Math.sin(yaw) * horizontalScale;
+        (view.forward as { y: number }).y = Math.sin(pitch);
+        (view.forward as { z: number }).z = Math.cos(yaw) * horizontalScale;
+      };
+
+      setDirection(firstYawFactor * directionStep, firstPitchFactor * directionStep);
+      world.loadArea(view.position.x, view.position.y, view.position.z, 10, false, view);
+      const firstActive = new Set<string>((world.chunkManager as any).desiredActiveKeys);
+
+      setDirection(secondYawFactor * directionStep, secondPitchFactor * directionStep);
+      world.loadArea(view.position.x, view.position.y, view.position.z, 10, false, view);
+      const exactVisibility = new ChunkVisibilityResolver().resolve({
+        center: { x: 0, y: 8, z: 0 },
+        radius: 10,
+        minChunkY: 0,
+        maxChunkYExclusive: 32,
+        view,
+        positionUncertaintyRadius: 0,
+        getChunkState: key => world.getChunkVisibilityState(key),
+      });
+      const missing = [...exactVisibility.directVisible].filter(key => !firstActive.has(key));
+
+      expect(missing).toEqual([]);
+      expect(resolve).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  test('re-resolves after crossing a direction bucket boundary', async () => {
+    const world = createStreamingWorld('test-direction-bucket-crossing');
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    assumeLiveWorkerPool(WorkerManager.getInstance());
+    const resolver = (world.chunkManager as any).visibilityResolver;
+    const resolve = vi.spyOn(resolver, 'resolve');
+    const directionStep = Math.PI * 2 / CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
+    const view: ChunkStreamingView = {
+      position: { x: 8, y: 136, z: 8 },
+      forward: { x: 0, y: 0, z: 1 },
+      verticalFovRadians: Math.PI / 3,
+      aspect: 16 / 9,
+    };
+
+    (view.forward as { x: number }).x = Math.sin(0.49 * directionStep);
+    (view.forward as { z: number }).z = Math.cos(0.49 * directionStep);
+    world.loadArea(view.position.x, view.position.y, view.position.z, 10, false, view);
+    (view.forward as { x: number }).x = Math.sin(0.51 * directionStep);
+    (view.forward as { z: number }).z = Math.cos(0.51 * directionStep);
+    world.loadArea(view.position.x, view.position.y, view.position.z, 10, false, view);
+
+    expect(resolve).toHaveBeenCalledTimes(2);
+  });
+
   test('does not advance the epoch when summary invalidation keeps the active set unchanged', () => {
     const world = createStreamingWorld('test-streaming-stable-active-set');
     setLoadedChunk(world, '0,1,0');

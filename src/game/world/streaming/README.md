@@ -41,9 +41,9 @@
 
 `ChunkStreamingViewCache` 是上述量化签名的唯一所有者：`WorldChunkManager` 只通过纯标量参数调用 `shouldResolve()` 判断是否重算，通过 `invalidate()` 响应摘要变化，并在 `clearCache()` 时对称调用 `clear()`。缓存模块不得依赖 World、Worker 或 Zustand，高频比较必须原地更新标量字段，禁止创建输入或签名对象。
 
-Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍位于相同 position bucket 且其他量化参数未变化时，不重复执行拓扑解析；同一 chunk 内跨 position bucket 仍必须解析。
+Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍位于相同 position bucket 且其他量化参数未变化时，不重复执行拓扑解析；同一 chunk 内跨 position bucket 或 direction bucket 仍必须解析。稳定帧继续复用调用方的视图对象，缓存只原地更新标量签名字段，不创建签名对象。
 
-实际裁剪使用相机 forward、right、up 标量基向量，将区块包围球分别与水平、垂直视锥平面做保守相交，不得退化为取最大 FOV 的外接圆锥。Manager 解析会把 position bucket 内最大三维位移作为额外球半径，保证 bucket 内任意精确视点的 `directVisible` 都包含在首次 `active` 中。相机近似垂直时使用稳定的备用轴构造 right；aspect、FOV、位置或方向无效时必须保守放行，避免错误卸载可见区块。
+实际裁剪使用相机 forward、right、up 标量基向量，将区块包围球分别与水平、垂直视锥平面做保守相交，不得退化为取最大 FOV 的外接圆锥。Manager 解析会把 position bucket 内最大三维位移作为额外球半径，并把同一 direction bucket 内一整步 yaw 漂移与一整步 pitch 漂移组合后的最大姿态旋转作为角度不确定性。解析器按候选区块到相机的实际距离计算视锥平面弦长容差，因此任意 FOV、宽高比和有限渲染半径下，同桶内任意精确视点与方向的 `directVisible` 都包含在首次 `active` 中，同时不会用最大视距固定扩张所有近处区块。相机近似垂直时使用稳定的备用轴构造 right；aspect、FOV、位置或方向无效时必须保守放行，避免错误卸载可见区块。
 
 ## 异步一致性
 
