@@ -270,3 +270,53 @@
     text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
   }
 }
+
+@media (max-width: 560px) {
+  .container {
+    gap: 8px;
+    padding-inline: 0;
+  }
+
+  .creativeSection,
+  .creativeGrid,
+  .inventoryGrid,
+  .hotbarGrid {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .creativeSection,
+  .inventoryGrid,
+  .hotbarGrid {
+    padding: 6px;
+  }
+
+  .creativeGrid,
+  .inventoryGrid,
+  .hotbarGrid {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 2px;
+  }
+
+  .itemSlot {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .itemPreview,
+  .emptyItem {
+    width: 18px !important;
+    height: 18px !important;
+    max-width: 70%;
+    max-height: 70%;
+    --cube-size: 18px !important;
+  }
+
+  .itemCount {
+    right: 2px;
+    bottom: 1px;
+    font-size: 7px;
+  }
+}
