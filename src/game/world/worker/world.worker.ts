@@ -1,11 +1,19 @@
-import type { WorkerTask, WorkerResult, WorkerTaskHandler } from './WorkerTypes';
+import {
+  collectWorkerTransferables,
+  type GenerateChunkResult,
+  type GenerateMeshResult,
+  type WorkerTask,
+  type WorkerResult,
+  type WorkerTaskHandler,
+} from './WorkerTypes';
 import { WorldGenerator } from '../WorldGenerator';
 import { ChunkMeshBuilder } from '../ChunkMeshBuilder';
-import type { ChunkNeighbors, ChunkMeshResult } from '../ChunkMeshBuilder';
+import { buildChunkVisibilitySummary } from '../streaming/ChunkVisibilitySummary';
 import '../block/BlockRegistry'; // Ensure propertiesResolver is registered
 
 // Registry of task handlers to support OCP (Open-Closed Principle)
-const TaskRegistry = new Map<string, WorkerTaskHandler>();
+type RegisteredTaskHandler = WorkerTaskHandler<'GENERATE_CHUNK'> | WorkerTaskHandler<'GENERATE_MESH'>;
+const TaskRegistry = new Map<string, RegisteredTaskHandler>();
 
 interface PostMessageContext {
   postMessage(message: WorkerResult, transfer?: Transferable[]): void;
@@ -14,7 +22,7 @@ interface PostMessageContext {
 const workerCtx = self as unknown as PostMessageContext;
 
 // Handler for chunk data generation
-class GenerateChunkHandler implements WorkerTaskHandler {
+class GenerateChunkHandler implements WorkerTaskHandler<'GENERATE_CHUNK'> {
   // Cache the WorldGenerator by seed to avoid re-constructing and re-seeding the noise function
   private generators = new Map<string, WorldGenerator>();
 
@@ -27,24 +35,25 @@ class GenerateChunkHandler implements WorkerTaskHandler {
     return gen;
   }
 
-  public handle(payload: unknown): Uint8Array {
-    const { cx, cy, cz, seed } = payload as { cx: number; cy: number; cz: number; seed: string };
+  public handle(payload: WorkerTask<'GENERATE_CHUNK'>['payload']): GenerateChunkResult {
+    const { cx, cy, cz, seed, chunkRevision } = payload;
     const generator = this.getGenerator(seed);
-    return generator.generateChunkData(cx, cy, cz);
+    const chunk = generator.generateChunkData(cx, cy, cz);
+    return {
+      chunk,
+      summary: buildChunkVisibilitySummary(chunk, chunkRevision),
+    };
   }
 }
 
 // Handler for chunk mesh generation
-class GenerateMeshHandler implements WorkerTaskHandler {
-  public handle(payload: unknown): unknown {
-    const { cx, cy, cz, chunk, neighbors } = payload as {
-      cx: number;
-      cy: number;
-      cz: number;
-      chunk: Uint8Array;
-      neighbors: ChunkNeighbors;
+class GenerateMeshHandler implements WorkerTaskHandler<'GENERATE_MESH'> {
+  public handle(payload: WorkerTask<'GENERATE_MESH'>['payload']): GenerateMeshResult {
+    const { cx, cy, cz, chunk, neighbors, chunkRevision } = payload;
+    return {
+      mesh: ChunkMeshBuilder.buildMesh(cx, cy, cz, chunk, neighbors),
+      summary: buildChunkVisibilitySummary(chunk, chunkRevision),
     };
-    return ChunkMeshBuilder.buildMesh(cx, cy, cz, chunk, neighbors);
   }
 }
 
@@ -69,34 +78,27 @@ self.onmessage = async (e: MessageEvent<WorkerTask>) => {
   }
 
   try {
-    const resultPayload = await handler.handle(payload);
-    
-    // Transfer buffer if the result payload contains an ArrayBuffer/TypedArray
-    const transferables: Transferable[] = [];
-    if (resultPayload instanceof Uint8Array) {
-      transferables.push(resultPayload.buffer);
-    } else if (resultPayload && typeof resultPayload === 'object') {
-      const meshResult = resultPayload as ChunkMeshResult;
-      ['solid', 'transparent', 'cutout'].forEach(key => {
-        const geom = meshResult[key as keyof ChunkMeshResult];
-        if (geom) {
-          if (geom.positions instanceof Float32Array) transferables.push(geom.positions.buffer);
-          if (geom.normals instanceof Float32Array) transferables.push(geom.normals.buffer);
-          if (geom.uvs instanceof Float32Array) transferables.push(geom.uvs.buffer);
-          if (geom.atlasOffsets instanceof Float32Array) transferables.push(geom.atlasOffsets.buffer);
-          if (geom.valLights instanceof Float32Array) transferables.push(geom.valLights.buffer);
-          if (geom.aos instanceof Float32Array) transferables.push(geom.aos.buffer);
-          if (geom.roughnessMetalness instanceof Float32Array) transferables.push(geom.roughnessMetalness.buffer);
-        }
-      });
+    if (type === 'GENERATE_CHUNK') {
+      const resultPayload = await (handler as WorkerTaskHandler<'GENERATE_CHUNK'>).handle(
+        payload as WorkerTask<'GENERATE_CHUNK'>['payload'],
+      );
+      workerCtx.postMessage({
+        id,
+        type,
+        success: true,
+        payload: resultPayload,
+      }, collectWorkerTransferables(resultPayload));
+    } else {
+      const resultPayload = await (handler as WorkerTaskHandler<'GENERATE_MESH'>).handle(
+        payload as WorkerTask<'GENERATE_MESH'>['payload'],
+      );
+      workerCtx.postMessage({
+        id,
+        type,
+        success: true,
+        payload: resultPayload,
+      }, collectWorkerTransferables(resultPayload));
     }
-
-    workerCtx.postMessage({
-      id,
-      type,
-      success: true,
-      payload: resultPayload
-    }, transferables);
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     workerCtx.postMessage({

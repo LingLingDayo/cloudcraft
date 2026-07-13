@@ -3,6 +3,9 @@ import { World, WORLD_HEIGHT } from './World';
 import { BLOCK_TYPES } from './BlockConfig';
 import { WorldGenerator } from './WorldGenerator';
 import { WORLD_CONFIG } from './WorldConfig';
+import { buildChunkVisibilitySummary } from './streaming/ChunkVisibilitySummary';
+
+const TEST_CHUNK_BYTE_LENGTH = 16 * 16 * 16 * 2;
 
 // Bypass slow WebGL mesh updates globally in this test suite
 World.prototype.updateChunkMesh = () => {};
@@ -88,6 +91,77 @@ describe('World Serialization by Modified Blocks Tracking', () => {
   });
 
 
+});
+
+describe('World chunk modification revisions', () => {
+  test('increments revision once for a changed batch and not again for identical data', () => {
+    const world = new World('test-modification-revision');
+    const key = '0,0,0';
+    const chunk = new Uint8Array(TEST_CHUNK_BYTE_LENGTH);
+    const initialRevision = world.getChunkRevision(key);
+    world.modifiedBlocks.set(key, new Map([
+      ['0,0,0', BLOCK_TYPES.STONE],
+      ['1,0,0', BLOCK_TYPES.DIRT],
+    ]));
+    world.applyChunkVisibilitySummary(
+      key,
+      buildChunkVisibilitySummary(chunk, initialRevision),
+    );
+
+    world.applyChunkModifications(key, chunk);
+
+    expect(world.getChunkRevision(key)).toBe(initialRevision + 1);
+    expect(world.getChunkVisibilitySummary(key)).toBeUndefined();
+    expect(chunk[0]).toBe(BLOCK_TYPES.STONE);
+    expect(chunk[2]).toBe(BLOCK_TYPES.DIRT);
+
+    world.applyChunkModifications(key, chunk);
+    expect(world.getChunkRevision(key)).toBe(initialRevision + 1);
+  });
+
+  test('applies the revision contract during synchronous getBlock generation', () => {
+    const world = new World('test-get-block-modification-revision');
+    const key = '0,0,0';
+    const generated = world.generator.generateChunkData(0, 0, 0);
+    const modifiedType = generated[0] === BLOCK_TYPES.STONE
+      ? BLOCK_TYPES.DIRT
+      : BLOCK_TYPES.STONE;
+    world.modifiedBlocks.set(key, new Map([['0,0,0', modifiedType]]));
+    world.applyChunkVisibilitySummary(
+      key,
+      buildChunkVisibilitySummary(generated, world.getChunkRevision(key)),
+    );
+
+    expect(world.getBlock(0, 0, 0)).toBe(modifiedType);
+    expect(world.getChunkRevision(key)).toBe(1);
+    expect(world.getChunkVisibilitySummary(key)).toBeUndefined();
+
+    world.getBlock(0, 0, 0);
+    expect(world.getChunkRevision(key)).toBe(1);
+  });
+
+  test('applies the revision contract during synchronous area loading', () => {
+    const world = new World('test-sync-load-modification-revision');
+    const key = '0,1,0';
+    const generated = world.generator.generateChunkData(0, 1, 0);
+    const modifiedType = generated[0] === BLOCK_TYPES.STONE
+      ? BLOCK_TYPES.DIRT
+      : BLOCK_TYPES.STONE;
+    world.modifiedBlocks.set(key, new Map([['0,0,0', modifiedType]]));
+    world.applyChunkVisibilitySummary(
+      key,
+      buildChunkVisibilitySummary(generated, world.getChunkRevision(key)),
+    );
+
+    world.loadArea(0, 16, 0, 0, true);
+
+    expect(world.chunks.get(key)?.[0]).toBe(modifiedType);
+    expect(world.getChunkRevision(key)).toBe(1);
+    expect(world.getChunkVisibilitySummary(key)).toBeUndefined();
+
+    world.loadArea(0, 16, 0, 0, true);
+    expect(world.getChunkRevision(key)).toBe(1);
+  });
 });
 
 describe('World Cave and Dry Land Ocean Mask Generation', () => {

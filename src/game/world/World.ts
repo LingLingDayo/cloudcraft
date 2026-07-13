@@ -8,10 +8,18 @@ import { ChunkRenderer } from './ChunkRenderer';
 import { WorldSerializer } from './WorldSerializer';
 import { TreeStyle } from './biome/Biome';
 import { useGameStore } from '@store/useGameStore';
-import { WorkerManager } from './worker/WorkerManager';
+import { isWorkerTaskCancelledError, WorkerManager } from './worker/WorkerManager';
 import { WorldChunkManager } from './WorldChunkManager';
 import { WorldTickManager } from './WorldTickManager';
-import type { ChunkNeighbors, ChunkMeshResult } from './ChunkMeshBuilder';
+import type { ChunkNeighbors } from './ChunkMeshBuilder';
+import { createCoreDynamicMaterialRegistry } from '@game/dynamics/CoreDynamicMaterials';
+import { DynamicMaterialSystem } from '@game/dynamics/DynamicMaterialSystem';
+import { ThreeFallingVoxelView } from '@game/dynamics/ThreeFallingVoxelView';
+import type {
+  ChunkVisibilityState,
+  ChunkStreamingView,
+} from './streaming/ChunkVisibilityResolver';
+import type { ChunkVisibilitySummary } from './streaming/ChunkVisibilitySummary';
 
 export { BLOCK_TYPES, getBlockProperties };
 
@@ -30,6 +38,8 @@ export class World {
   public modifiedBlocks: Map<string, Map<string, number>>;
   // Track original blocks for reverting: chunkKey -> relativePosKey -> blockType
   private originalBlocks: Map<string, Map<string, number>>;
+  private chunkRevisions = new Map<string, number>();
+  private chunkVisibilitySummaries = new Map<string, ChunkVisibilitySummary>();
 
   private seed: string;
   public generator: WorldGenerator;
@@ -38,6 +48,7 @@ export class World {
   
   public chunkManager: WorldChunkManager;
   public tickManager: WorldTickManager;
+  public dynamicMaterials: DynamicMaterialSystem;
 
   constructor(seed = 'cloudcraft', game?: any) {
     this.seed = seed;
@@ -47,6 +58,11 @@ export class World {
     this.modifiedBlocks = new Map();
     this.originalBlocks = new Map();
     this.group = new THREE.Group();
+    this.dynamicMaterials = new DynamicMaterialSystem(
+      createCoreDynamicMaterialRegistry(),
+      this,
+      new ThreeFallingVoxelView(this.group),
+    );
     
     this.generator = new WorldGenerator(seed);
     this.renderer = new ChunkRenderer(this);
@@ -63,6 +79,66 @@ export class World {
   public setSeed(seed: string): void {
     this.seed = seed;
     this.generator.setSeed(seed);
+    this.chunkRevisions.clear();
+    this.chunkVisibilitySummaries.clear();
+    this.chunkManager.clearCache();
+  }
+
+  public getChunkRevision(key: string): number {
+    return this.chunkRevisions.get(key) ?? 0;
+  }
+
+  public getChunkVisibilitySummary(key: string): ChunkVisibilitySummary | undefined {
+    return this.chunkVisibilitySummaries.get(key);
+  }
+
+  public getChunkVisibilityState(key: string): ChunkVisibilityState {
+    return {
+      revision: this.getChunkRevision(key),
+      summary: this.chunkVisibilitySummaries.get(key),
+    };
+  }
+
+  public applyChunkVisibilitySummary(key: string, summary: ChunkVisibilitySummary): boolean {
+    if (summary.chunkRevision !== this.getChunkRevision(key)) return false;
+    const previous = this.chunkVisibilitySummaries.get(key);
+    this.chunkVisibilitySummaries.set(key, summary);
+    if (
+      !previous
+      || previous.schemaVersion !== summary.schemaVersion
+      || previous.openFacesMask !== summary.openFacesMask
+      || previous.portalMask !== summary.portalMask
+      || previous.chunkRevision !== summary.chunkRevision
+    ) {
+      this.chunkManager.invalidateVisibility();
+    }
+    return true;
+  }
+
+  public acceptGeneratedChunk(
+    key: string,
+    chunk: Uint8Array,
+    summary: ChunkVisibilitySummary,
+    revision: number,
+  ): boolean {
+    if (revision !== this.getChunkRevision(key)) return false;
+    this.applyChunkModifications(key, chunk);
+    this.chunks.set(key, chunk);
+    if (this.modifiedBlocks.has(key)) {
+      this.chunkVisibilitySummaries.delete(key);
+      this.chunkManager.invalidateVisibility();
+    } else {
+      this.applyChunkVisibilitySummary(key, summary);
+    }
+    return true;
+  }
+
+  private incrementChunkRevision(key: string): number {
+    const revision = this.getChunkRevision(key) + 1;
+    this.chunkRevisions.set(key, revision);
+    this.chunkVisibilitySummaries.delete(key);
+    this.chunkManager.invalidateVisibility();
+    return revision;
   }
 
   public getRenderer(): ChunkRenderer {
@@ -128,6 +204,7 @@ export class World {
 
     const oldType = chunk[index * 2];
     if (oldType === type) return;
+    this.incrementChunkRevision(key);
 
     // Track modification
     const posKey = `${lx},${ly},${lz}`;
@@ -186,6 +263,9 @@ export class World {
       this.blockEntities.createEntity(entityType, x, y, z);
     }
     newBlock.onPlaced(this, x, y, z);
+    if (newBlock.affectedByGravity) {
+      this.addFallingBlock(x, y, z);
+    }
     this.notifyNeighborsOfStateChange(x, y, z);
 
     // Rebuild only the current chunk's mesh asynchronously
@@ -207,8 +287,13 @@ export class World {
     const chunk = this.chunks.get(key);
     if (!chunk) return;
 
-    // Fallback: If Web Workers are not supported (e.g. inside unit tests), run sync meshing
-    if (typeof Worker === 'undefined') {
+    const revision = this.getChunkRevision(key);
+    const streamingEpoch = this.chunkManager.getStreamingEpoch();
+    const currentSeed = this.getSeed();
+    if (this.game && !this.chunkManager.isKeyActive(key)) return;
+
+    // Fallback when the runtime cannot keep at least one worker alive.
+    if (!this.workerManager.hasLiveWorkers()) {
       this.updateChunkMesh(cx, cy, cz, false);
       return;
     }
@@ -224,11 +309,34 @@ export class World {
 
     const version = this.renderer.getNextVersion(key);
 
-    this.workerManager.execute<ChunkMeshResult>('GENERATE_MESH', {
-      cx, cy, cz, chunk, neighbors
-    }).then(meshResult => {
-      this.renderer.applyMeshResult(cx, cy, cz, meshResult, version);
-    }).catch(err => {
+    this.workerManager.execute('GENERATE_MESH', {
+      cx, cy, cz, chunk, neighbors, chunkRevision: revision,
+    }, {
+      metadata: {
+        owner: this.chunkManager.getWorkerTaskOwner(),
+        key,
+        epoch: streamingEpoch,
+        revision,
+        seed: currentSeed,
+      },
+    }).then(result => {
+      if (
+        revision !== this.getChunkRevision(key)
+        || currentSeed !== this.getSeed()
+        || (
+          this.game
+          && (
+            streamingEpoch !== this.chunkManager.getStreamingEpoch()
+            || !this.chunkManager.isKeyActive(key)
+          )
+        )
+      ) {
+        return;
+      }
+      this.applyChunkVisibilitySummary(key, result.summary);
+      this.renderer.applyMeshResult(cx, cy, cz, result.mesh, version);
+    }).catch((err: unknown) => {
+      if (isWorkerTaskCancelledError(err)) return;
       console.error(`Failed to generate mesh asynchronously for chunk ${key}`, err);
     });
   }
@@ -271,12 +379,20 @@ export class World {
   }
 
   // Load an area around a central chunk (generate if not existing, create meshes)
-  public loadArea(centerX: number, centerY: number, centerZ: number, radius: number, sync = false) {
-    this.chunkManager.loadArea(centerX, centerY, centerZ, radius, sync);
+  public loadArea(
+    centerX: number,
+    centerY: number,
+    centerZ: number,
+    radius: number,
+    sync = false,
+    view: ChunkStreamingView | null = null,
+  ) {
+    this.chunkManager.loadArea(centerX, centerY, centerZ, radius, sync, view);
   }
 
   // Clean up WebGL resources
   public dispose() {
+    this.dynamicMaterials.dispose();
     this.renderer.dispose();
     this.workerManager.dispose();
   }
@@ -292,12 +408,13 @@ export class World {
     this.chunkManager.clearCache();
   }
 
-  public addFallingBlock(x: number, y: number, z: number) {
-    this.tickManager.addFallingBlock(x, y, z);
+  public addFallingBlock(x: number, y: number, z: number): boolean {
+    return this.dynamicMaterials.tryActivate(x, y, z);
   }
 
   public update(dt: number) {
     this.chunkManager.processIncrementalLoading();
+    this.dynamicMaterials.update(dt);
     this.tickManager.update(dt);
   }
 
@@ -314,6 +431,9 @@ export class World {
       const neighborId = this.getBlock(nx, ny, nz);
       const neighborBlock = BlockRegistry.get(neighborId);
       neighborBlock.onNeighborChanged(this, nx, ny, nz, x, y, z);
+      if (neighborBlock.affectedByGravity) {
+        this.addFallingBlock(nx, ny, nz);
+      }
     }
   }
 
@@ -365,11 +485,15 @@ export class World {
     const chunkModified = this.modifiedBlocks.get(chunkKey);
     if (!chunkModified) return;
 
+    let changed = false;
     for (const [posKey, type] of chunkModified.entries()) {
       const [lx, y, lz] = posKey.split(',').map(Number);
       const index = lx + lz * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
+      if (chunk[index * 2] === type) continue;
       chunk[index * 2] = type;
+      changed = true;
     }
+    if (changed) this.incrementChunkRevision(chunkKey);
   }
 
   public recalculateColumnSkyLight(x: number, z: number): void {

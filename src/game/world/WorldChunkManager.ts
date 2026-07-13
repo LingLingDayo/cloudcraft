@@ -1,31 +1,128 @@
 import { World, CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z, WORLD_HEIGHT } from './World';
 import { useGameStore } from '@store/useGameStore';
-import { WorkerManager } from './worker/WorkerManager';
-import type { ChunkMeshResult, ChunkNeighbors } from './ChunkMeshBuilder';
+import { isWorkerTaskCancelledError, WorkerManager } from './worker/WorkerManager';
+import type { ChunkNeighbors } from './ChunkMeshBuilder';
+import {
+  ChunkVisibilityResolver,
+  type ChunkStreamingView,
+} from './streaming/ChunkVisibilityResolver';
+import { CHUNK_STREAMING_CONFIG } from './streaming/ChunkStreamingConfig';
+import { ChunkWorkerRetryTracker } from './streaming/ChunkWorkerRetryTracker';
+
+interface PendingGenerationQueueItem {
+  readonly key: string;
+  readonly epoch: number;
+  readonly revision: number;
+}
+
+export interface PendingMeshQueueItem {
+  readonly key: string;
+  readonly updateNeighbors: boolean;
+  readonly epoch: number;
+  readonly revision: number;
+}
+
+const CHUNK_NEIGHBOR_OFFSETS = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 1, 0],
+  [0, -1, 0],
+  [0, 0, 1],
+  [0, 0, -1],
+] as const;
+
+let nextWorkerTaskOwnerId = 0;
 
 export class WorldChunkManager {
   private world: World;
   private workerManager: WorkerManager;
+  private visibilityResolver = new ChunkVisibilityResolver();
   
-  private generatingChunks: Set<string> = new Set();
-  private generatingMeshes: Set<string> = new Set();
-  private pendingGenerationQueue: string[] = [];
-  public pendingMeshQueue: Array<{ key: string; updateNeighbors: boolean }> = []; // Used for incremental loading
+  private generatingChunks = new Map<string, number>();
+  private generatingMeshes = new Map<string, number>();
+  private pendingGenerationQueue: PendingGenerationQueueItem[] = [];
+  public pendingMeshQueue: PendingMeshQueueItem[] = [];
+  private generationRetries = new ChunkWorkerRetryTracker(
+    CHUNK_STREAMING_CONFIG.maxWorkerTaskAttempts,
+  );
+  private meshRetries = new ChunkWorkerRetryTracker(
+    CHUNK_STREAMING_CONFIG.maxWorkerTaskAttempts,
+  );
 
   private lastCcx: number | null = null;
   private lastCcy: number | null = null;
   private lastCcz: number | null = null;
   private lastRadius: number | null = null;
+  private lastViewYawBucket: number | null = null;
+  private lastViewPitchBucket: number | null = null;
+  private lastViewFov: number | null = null;
+  private lastViewAspect: number | null = null;
+  private lastViewPositionBucketX: number | null = null;
+  private lastViewPositionBucketY: number | null = null;
+  private lastViewPositionBucketZ: number | null = null;
+  private streamingEpoch = 0;
+  private desiredActiveKeys = new Set<string>();
+  private visibilityInvalidated = true;
+  private readonly workerTaskOwner = `world-chunk-manager:${nextWorkerTaskOwnerId++}`;
+
+  public getStreamingEpoch(): number {
+    return this.streamingEpoch;
+  }
+
+  public isKeyActive(key: string): boolean {
+    return this.desiredActiveKeys.has(key);
+  }
+
+  public invalidateVisibility(): void {
+    this.visibilityInvalidated = true;
+  }
+
+  public getWorkerTaskOwner(): string {
+    return this.workerTaskOwner;
+  }
+
+  private countTasksForEpoch(tasks: ReadonlyMap<string, number>, epoch: number): number {
+    let count = 0;
+    for (const taskEpoch of tasks.values()) {
+      if (taskEpoch === epoch) count++;
+    }
+    return count;
+  }
+
+  private isTaskCurrent(key: string, epoch: number, revision: number, seed: string): boolean {
+    return epoch === this.streamingEpoch
+      && this.desiredActiveKeys.has(key)
+      && revision === this.world.getChunkRevision(key)
+      && seed === this.world.getSeed();
+  }
 
   public clearCache() {
     this.lastCcx = null;
     this.lastCcy = null;
     this.lastCcz = null;
     this.lastRadius = null;
+    this.lastViewYawBucket = null;
+    this.lastViewPitchBucket = null;
+    this.lastViewFov = null;
+    this.lastViewAspect = null;
+    this.lastViewPositionBucketX = null;
+    this.lastViewPositionBucketY = null;
+    this.lastViewPositionBucketZ = null;
+    this.visibilityInvalidated = true;
+    this.streamingEpoch++;
+    this.workerManager.cancelQueuedTasks(this.workerTaskOwner);
+    this.desiredActiveKeys = new Set();
     this.pendingGenerationQueue = [];
     this.pendingMeshQueue = [];
     this.generatingChunks.clear();
     this.generatingMeshes.clear();
+    this.generationRetries.clearAll();
+    this.meshRetries.clearAll();
+
+    const chunkMeshes = this.world.getRenderer().getChunkMeshes();
+    for (const key of chunkMeshes.keys()) {
+      this.world.getRenderer().removeChunkMesh(key);
+    }
   }
 
   constructor(world: World) {
@@ -33,148 +130,195 @@ export class WorldChunkManager {
     this.workerManager = WorkerManager.getInstance();
   }
 
-  // Load an area around a central chunk (generate if not existing, create meshes)
-  public loadArea(centerX: number, centerY: number, centerZ: number, radius: number, sync = false) {
-    const shouldSync = sync || !this.world.game;
+  // Resolve only when a quantized view parameter changes or topology is invalidated.
+  public loadArea(
+    centerX: number,
+    centerY: number,
+    centerZ: number,
+    radius: number,
+    sync = false,
+    view: ChunkStreamingView | null = null,
+  ): void {
+    const shouldSync = sync || !this.world.game || !this.workerManager.hasLiveWorkers();
+    const worldChunkHeight = WORLD_HEIGHT / CHUNK_SIZE_Y;
     const ccx = Math.floor(centerX / CHUNK_SIZE_X);
-    const ccy = Math.floor(centerY / CHUNK_SIZE_Y);
+    const ccy = Math.max(0, Math.min(worldChunkHeight - 1, Math.floor(centerY / CHUNK_SIZE_Y)));
     const ccz = Math.floor(centerZ / CHUNK_SIZE_Z);
+    const resolvedRadius = Math.max(0, radius);
 
-    if (!shouldSync) {
+    let viewYawBucket: number | null = null;
+    let viewPitchBucket: number | null = null;
+    let viewFov: number | null = null;
+    let viewAspect: number | null = null;
+    let viewPositionBucketX: number | null = null;
+    let viewPositionBucketY: number | null = null;
+    let viewPositionBucketZ: number | null = null;
+    if (view) {
+      const positionBucketSize = CHUNK_STREAMING_CONFIG.viewPositionBucketSizeBlocks;
+      viewPositionBucketX = Math.floor(view.position.x / positionBucketSize);
+      viewPositionBucketY = Math.floor(view.position.y / positionBucketSize);
+      viewPositionBucketZ = Math.floor(view.position.z / positionBucketSize);
+      const forwardLength = Math.hypot(view.forward.x, view.forward.y, view.forward.z);
+      if (forwardLength > 0) {
+        const directionStep = Math.PI * 2 / CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
+        const rawYawBucket = Math.round(
+          Math.atan2(view.forward.x, view.forward.z) / directionStep,
+        );
+        viewYawBucket = (
+          rawYawBucket % CHUNK_STREAMING_CONFIG.directionQuantizationSteps
+          + CHUNK_STREAMING_CONFIG.directionQuantizationSteps
+        ) % CHUNK_STREAMING_CONFIG.directionQuantizationSteps;
+        viewPitchBucket = Math.round(
+          Math.asin(Math.max(-1, Math.min(1, view.forward.y / forwardLength))) / directionStep,
+        );
+      }
+      viewFov = Math.round(
+        view.verticalFovRadians * CHUNK_STREAMING_CONFIG.viewParameterPrecision,
+      );
+      viewAspect = Math.round(view.aspect * CHUNK_STREAMING_CONFIG.viewParameterPrecision);
+    }
+
+    if (
+      !shouldSync
+      && !this.visibilityInvalidated
+      && this.lastCcx === ccx
+      && this.lastCcy === ccy
+      && this.lastCcz === ccz
+      && this.lastRadius === resolvedRadius
+      && this.lastViewYawBucket === viewYawBucket
+      && this.lastViewPitchBucket === viewPitchBucket
+      && this.lastViewFov === viewFov
+      && this.lastViewAspect === viewAspect
+      && this.lastViewPositionBucketX === viewPositionBucketX
+      && this.lastViewPositionBucketY === viewPositionBucketY
+      && this.lastViewPositionBucketZ === viewPositionBucketZ
+    ) {
+      return;
+    }
+
+    this.lastCcx = ccx;
+    this.lastCcy = ccy;
+    this.lastCcz = ccz;
+    this.lastRadius = resolvedRadius;
+    this.lastViewYawBucket = viewYawBucket;
+    this.lastViewPitchBucket = viewPitchBucket;
+    this.lastViewFov = viewFov;
+    this.lastViewAspect = viewAspect;
+    this.lastViewPositionBucketX = viewPositionBucketX;
+    this.lastViewPositionBucketY = viewPositionBucketY;
+    this.lastViewPositionBucketZ = viewPositionBucketZ;
+    this.visibilityInvalidated = false;
+
+    const visibility = this.visibilityResolver.resolve({
+      center: { x: ccx, y: ccy, z: ccz },
+      radius: resolvedRadius,
+      minChunkY: 0,
+      maxChunkYExclusive: worldChunkHeight,
+      view,
+      positionUncertaintyRadius: view
+        ? CHUNK_STREAMING_CONFIG.viewPositionBucketUncertaintyRadius
+        : 0,
+      getChunkState: key => this.world.getChunkVisibilityState(key),
+    });
+    const nextActiveKeys = new Set(visibility.active);
+    let activeChanged = nextActiveKeys.size !== this.desiredActiveKeys.size;
+    if (!activeChanged) {
+      for (const key of nextActiveKeys) {
+        if (!this.desiredActiveKeys.has(key)) {
+          activeChanged = true;
+          break;
+        }
+      }
+    }
+    if (activeChanged) {
+      this.streamingEpoch++;
+      this.desiredActiveKeys = nextActiveKeys;
+      this.workerManager.cancelQueuedTasks(
+        this.workerTaskOwner,
+        metadata => (
+          metadata.epoch !== this.streamingEpoch
+          || !this.desiredActiveKeys.has(metadata.key)
+        ),
+      );
+      this.generationRetries.clearAll();
+      this.meshRetries.clearAll();
+    }
+    const epoch = this.streamingEpoch;
+    const currentSeed = this.world.getSeed();
+
+    const store = useGameStore.getState();
+    if (!shouldSync && store.isWorldLoading) {
+      const loadingKeys = [...this.desiredActiveKeys];
+      const currentKeys = Object.keys(store.chunkLoadingStates);
+      const keysMatch = loadingKeys.length === currentKeys.length
+        && loadingKeys.every(key => currentKeys.includes(key));
+      if (!keysMatch) {
+        store.setWorldLoadingStage('chunks');
+        store.initChunkLoading(loadingKeys);
+        for (const key of loadingKeys) {
+          if (this.world.getRenderer().hasChunkMesh(key)) {
+            store.setChunkLoadingState(key, true);
+          }
+        }
+      }
+    }
+
+    const neededGeneration: PendingGenerationQueueItem[] = [];
+    const neededMesh: PendingMeshQueueItem[] = [];
+    for (const key of this.desiredActiveKeys) {
+      const [cx, cy, cz] = key.split(',').map(Number);
+      const revision = this.world.getChunkRevision(key);
+      if (!this.world.chunks.has(key)) {
+        if (shouldSync) {
+          const chunk = this.world.generator.generateChunkData(cx, cy, cz);
+          this.world.applyChunkModifications(key, chunk);
+          this.world.chunks.set(key, chunk);
+        } else if (
+          this.generatingChunks.get(key) !== epoch
+          && this.generationRetries.canAttempt(key, epoch, revision, currentSeed)
+        ) {
+          neededGeneration.push({ key, epoch, revision });
+        }
+        continue;
+      }
+
+      const summary = this.world.getChunkVisibilitySummary(key);
+      const needsWorkerSummary = !summary || summary.chunkRevision !== revision;
       if (
-        this.lastCcx === ccx &&
-        this.lastCcy === ccy &&
-        this.lastCcz === ccz &&
-        this.lastRadius === radius
+        (!this.world.getRenderer().hasChunkMesh(key) || needsWorkerSummary)
+        && this.generatingMeshes.get(key) !== epoch
+        && this.meshRetries.canAttempt(key, epoch, revision, currentSeed)
       ) {
-        return;
-      }
-      this.lastCcx = ccx;
-      this.lastCcy = ccy;
-      this.lastCcz = ccz;
-      this.lastRadius = radius;
-    } else {
-      this.clearCache();
-    }
-
-    const activeKeys = new Set<string>();
-    const neededGeneration: string[] = [];
-    const radiusSq = radius * radius;
-
-    // Initialize loading progress for this area if we are in world loading screen and asynchronous
-    if (!shouldSync) {
-      const store = useGameStore.getState();
-      if (store.isWorldLoading) {
-        const keys: string[] = [];
-        for (let dx = -radius; dx <= radius; dx++) {
-          for (let dy = -radius; dy <= radius; dy++) {
-            for (let dz = -radius; dz <= radius; dz++) {
-              if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-              const cx = ccx + dx;
-              const cy = ccy + dy;
-              const cz = ccz + dz;
-              if (cy >= 0 && cy < WORLD_HEIGHT / CHUNK_SIZE_Y) {
-                keys.push(`${cx},${cy},${cz}`);
-              }
-            }
-          }
-        }
-        // Only initialize if the keys list is different
-        const currentKeys = Object.keys(store.chunkLoadingStates);
-        const keysMatch = keys.length === currentKeys.length && keys.every(k => currentKeys.includes(k));
-        if (!keysMatch) {
-          store.setWorldLoadingStage('chunks');
-          store.initChunkLoading(keys);
-          // Mark already loaded chunks as true immediately
-          keys.forEach(key => {
-            if (this.world.getRenderer().hasChunkMesh(key)) {
-              store.setChunkLoadingState(key, true);
-            }
-          });
-        }
-      }
-    }
-
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        for (let dz = -radius; dz <= radius; dz++) {
-          if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-          const cx = ccx + dx;
-          const cy = ccy + dy;
-          const cz = ccz + dz;
-          if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
-
-          const key = `${cx},${cy},${cz}`;
-          activeKeys.add(key);
-
-          if (shouldSync) {
-            if (!this.world.chunks.has(key)) {
-              const chunk = this.world.generator.generateChunkData(cx, cy, cz);
-              this.world.applyChunkModifications(key, chunk);
-              this.world.chunks.set(key, chunk);
-            }
-          } else {
-            if (!this.world.chunks.has(key)) {
-              neededGeneration.push(key);
-            }
-          }
-        }
+        neededMesh.push({ key, updateNeighbors: true, epoch, revision });
       }
     }
 
     if (shouldSync) {
-      for (let dx = -radius; dx <= radius; dx++) {
-        for (let dy = -radius; dy <= radius; dy++) {
-          for (let dz = -radius; dz <= radius; dz++) {
-            if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-            const cx = ccx + dx;
-            const cy = ccy + dy;
-            const cz = ccz + dz;
-            if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
-
-            const key = `${cx},${cy},${cz}`;
-            const hasMesh = this.world.getRenderer().hasChunkMesh(key);
-            if (!hasMesh) {
-              this.world.updateChunkMesh(cx, cy, cz);
-            }
-          }
-        }
+      for (const key of this.desiredActiveKeys) {
+        if (this.world.getRenderer().hasChunkMesh(key)) continue;
+        const [cx, cy, cz] = key.split(',').map(Number);
+        this.world.updateChunkMesh(cx, cy, cz);
       }
       this.pendingGenerationQueue = [];
-      this.pendingMeshQueue = [];
+      this.pendingMeshQueue = this.world.game && this.workerManager.hasLiveWorkers()
+        ? neededMesh
+        : [];
     } else {
-      const neededMesh: string[] = [];
-      for (let dx = -radius; dx <= radius; dx++) {
-        for (let dy = -radius; dy <= radius; dy++) {
-          for (let dz = -radius; dz <= radius; dz++) {
-            if (dx * dx + dy * dy + dz * dz > radiusSq) continue;
-            const cx = ccx + dx;
-            const cy = ccy + dy;
-            const cz = ccz + dz;
-            if (cy < 0 || cy >= WORLD_HEIGHT / CHUNK_SIZE_Y) continue;
-
-            const key = `${cx},${cy},${cz}`;
-            if (this.world.chunks.has(key)) {
-              const hasMesh = this.world.getRenderer().hasChunkMesh(key);
-              if (!hasMesh) {
-                neededMesh.push(key);
-              }
-            }
-          }
-        }
-      }
-
-      neededGeneration.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
-      neededMesh.sort((a, b) => this.getChunkPriority(a, ccx, ccy, ccz) - this.getChunkPriority(b, ccx, ccy, ccz));
-
+      neededGeneration.sort((first, second) => (
+        this.getChunkPriority(first.key, ccx, ccy, ccz)
+        - this.getChunkPriority(second.key, ccx, ccy, ccz)
+      ));
+      neededMesh.sort((first, second) => (
+        this.getChunkPriority(first.key, ccx, ccy, ccz)
+        - this.getChunkPriority(second.key, ccx, ccy, ccz)
+      ));
       this.pendingGenerationQueue = neededGeneration;
-      this.pendingMeshQueue = neededMesh.map(key => ({ key, updateNeighbors: true }));
+      this.pendingMeshQueue = neededMesh;
     }
 
-    // Unload chunks that are too far away
     const chunkMeshes = this.world.getRenderer().getChunkMeshes();
     for (const key of chunkMeshes.keys()) {
-      if (!activeKeys.has(key)) {
+      if (!this.desiredActiveKeys.has(key)) {
         this.world.getRenderer().removeChunkMesh(key);
       }
     }
@@ -185,7 +329,9 @@ export class WorldChunkManager {
 
     const startTime = performance.now();
     const store = useGameStore.getState();
-    const BUDGET_MS = store.isWorldLoading ? 50 : 8; // Loading map gets 50ms budget, in-game gets 8ms
+    const budgetMs = store.isWorldLoading
+      ? CHUNK_STREAMING_CONFIG.worldLoadingBudgetMs
+      : CHUNK_STREAMING_CONFIG.gameplayBudgetMs;
 
     const playerX = this.world.game.player.position.x;
     const playerY = this.world.game.player.position.y;
@@ -194,108 +340,237 @@ export class WorldChunkManager {
     const ccy = Math.floor(playerY / CHUNK_SIZE_Y);
     const ccz = Math.floor(playerZ / CHUNK_SIZE_Z);
 
-    while (performance.now() - startTime < BUDGET_MS) {
-      if (this.pendingMeshQueue.length > 0) {
+    while (performance.now() - startTime < budgetMs) {
+      if (this.workerManager.getIdleWorkerCount() <= 0) break;
+      const canScheduleMesh = this.pendingMeshQueue.length > 0
+        && this.countTasksForEpoch(this.generatingMeshes, this.streamingEpoch)
+          < CHUNK_STREAMING_CONFIG.maxConcurrentMeshing;
+      const canScheduleGeneration = this.pendingGenerationQueue.length > 0
+        && this.countTasksForEpoch(this.generatingChunks, this.streamingEpoch)
+          < CHUNK_STREAMING_CONFIG.maxConcurrentGeneration;
+
+      if (canScheduleMesh) {
         const item = this.pendingMeshQueue.shift();
-        if (item) {
-          const { key, updateNeighbors } = item;
-          if (!this.generatingMeshes.has(key)) {
-            const [cx, cy, cz] = key.split(',').map(Number);
-            const chunk = this.world.chunks.get(key);
-            if (chunk) {
-              this.generatingMeshes.add(key);
-              
-              // Collect neighbors package
-              const neighbors: ChunkNeighbors = {
-                px: this.world.chunks.get(`${cx + 1},${cy},${cz}`),
-                nx: this.world.chunks.get(`${cx - 1},${cy},${cz}`),
-                py: this.world.chunks.get(`${cx},${cy + 1},${cz}`),
-                ny: this.world.chunks.get(`${cx},${cy - 1},${cz}`),
-                pz: this.world.chunks.get(`${cx},${cy},${cz + 1}`),
-                nz: this.world.chunks.get(`${cx},${cy},${cz - 1}`),
-              };
+        if (!item) continue;
+        const { key, updateNeighbors, epoch, revision } = item;
+        if (
+          epoch !== this.streamingEpoch
+          || !this.desiredActiveKeys.has(key)
+          || revision !== this.world.getChunkRevision(key)
+          || this.generatingMeshes.get(key) === epoch
+        ) {
+          continue;
+        }
 
-              const version = this.world.getRenderer().getNextVersion(key);
+        const [cx, cy, cz] = key.split(',').map(Number);
+        const chunk = this.world.chunks.get(key);
+        if (!chunk) continue;
+        const currentSeed = this.world.getSeed();
+        const attempt = this.meshRetries.recordAttempt(key, epoch, revision, currentSeed);
+        if (attempt === null) continue;
+        this.generatingMeshes.set(key, epoch);
 
-              this.workerManager.execute<ChunkMeshResult>('GENERATE_MESH', {
-                cx, cy, cz, chunk, neighbors
-              }).then(meshResult => {
-                this.generatingMeshes.delete(key);
-                this.world.getRenderer().applyMeshResult(cx, cy, cz, meshResult, version);
-
-                // Update chunk loading progress in store
-                if (store.isWorldLoading) {
-                  if (store.chunkLoadingStates[key] === false) {
-                    store.setChunkLoadingState(key, true);
-                  }
-                }
-
-                // Update neighbors if required to ensure boundary faces are culled correctly
-                if (updateNeighbors) {
-                  const directions = [
-                    [1, 0, 0], [-1, 0, 0],
-                    [0, 1, 0], [0, -1, 0],
-                    [0, 0, 1], [0, 0, -1]
-                  ];
-                  let addedNeighbor = false;
-                  for (const [dx, dy, dz] of directions) {
-                    const ncx = cx + dx;
-                    const ncy = cy + dy;
-                    const ncz = cz + dz;
-                    const nkey = `${ncx},${ncy},${ncz}`;
-                    if (this.world.getRenderer().hasChunkMesh(nkey)) {
-                      const isAlreadyQueued = this.pendingMeshQueue.some(q => q.key === nkey);
-                      if (!isAlreadyQueued && !this.generatingMeshes.has(nkey)) {
-                        this.pendingMeshQueue.push({ key: nkey, updateNeighbors: false });
-                        addedNeighbor = true;
-                      }
-                    }
-                  }
-                  if (addedNeighbor && this.world.game) {
-                    const pX = this.world.game.player.position.x;
-                    const pY = this.world.game.player.position.y;
-                    const pZ = this.world.game.player.position.z;
-                    const currentCcx = Math.floor(pX / CHUNK_SIZE_X);
-                    const currentCcy = Math.floor(pY / CHUNK_SIZE_Y);
-                    const currentCcz = Math.floor(pZ / CHUNK_SIZE_Z);
-                    this.pendingMeshQueue.sort((a, b) => this.getChunkPriority(a.key, currentCcx, currentCcy, currentCcz) - this.getChunkPriority(b.key, currentCcx, currentCcy, currentCcz));
-                  }
-                }
-              }).catch(err => {
-                console.error(`Failed to generate mesh asynchronously for key ${key}`, err);
-                this.generatingMeshes.delete(key);
-              });
-            }
+        const neighbors: ChunkNeighbors = {
+          px: this.world.chunks.get(`${cx + 1},${cy},${cz}`),
+          nx: this.world.chunks.get(`${cx - 1},${cy},${cz}`),
+          py: this.world.chunks.get(`${cx},${cy + 1},${cz}`),
+          ny: this.world.chunks.get(`${cx},${cy - 1},${cz}`),
+          pz: this.world.chunks.get(`${cx},${cy},${cz + 1}`),
+          nz: this.world.chunks.get(`${cx},${cy},${cz - 1}`),
+        };
+        const version = this.world.getRenderer().getNextVersion(key);
+        this.workerManager.execute('GENERATE_MESH', {
+          cx,
+          cy,
+          cz,
+          chunk,
+          neighbors,
+          chunkRevision: revision,
+        }, {
+          metadata: {
+            owner: this.workerTaskOwner,
+            key,
+            epoch,
+            revision,
+            seed: currentSeed,
+          },
+        }).then(result => {
+          if (this.generatingMeshes.get(key) === epoch) {
+            this.generatingMeshes.delete(key);
           }
-        }
-      } else if (this.pendingGenerationQueue.length > 0) {
-        const key = this.pendingGenerationQueue.shift();
-        if (key && !this.world.chunks.has(key) && !this.generatingChunks.has(key)) {
-          this.generatingChunks.add(key);
-          const [cx, cy, cz] = key.split(',').map(Number);
-          
-          const currentSeed = this.world.getSeed();
-          this.workerManager.execute<Uint8Array>('GENERATE_CHUNK', { cx, cy, cz, seed: currentSeed })
-            .then(chunk => {
-              if (this.world.getSeed() !== currentSeed) {
-                this.generatingChunks.delete(key);
-                return;
-              }
-              this.generatingChunks.delete(key);
-              this.world.applyChunkModifications(key, chunk);
-              this.world.chunks.set(key, chunk);
+          if (
+            epoch !== this.streamingEpoch
+            || !this.desiredActiveKeys.has(key)
+            || this.world.getSeed() !== currentSeed
+            || revision !== this.world.getChunkRevision(key)
+          ) {
+            this.meshRetries.clear(key, epoch, revision, currentSeed);
+            return;
+          }
 
-              // Once generated, queue it for mesh creation and re-sort by proximity
-              this.pendingMeshQueue.push({ key, updateNeighbors: true });
-              this.pendingMeshQueue.sort((a, b) => this.getChunkPriority(a.key, ccx, ccy, ccz) - this.getChunkPriority(b.key, ccx, ccy, ccz));
-            })
-            .catch(err => {
-              console.error(`Failed to generate chunk asynchronously for key ${key}`, err);
-              this.generatingChunks.delete(key);
+          this.meshRetries.clear(key, epoch, revision, currentSeed);
+          this.world.applyChunkVisibilitySummary(key, result.summary);
+          this.world.getRenderer().applyMeshResult(cx, cy, cz, result.mesh, version);
+
+          const currentStore = useGameStore.getState();
+          if (
+            currentStore.isWorldLoading
+            && currentStore.chunkLoadingStates[key] === false
+          ) {
+            currentStore.setChunkLoadingState(key, true);
+          }
+
+          if (!updateNeighbors) return;
+          let addedNeighbor = false;
+          for (const [dx, dy, dz] of CHUNK_NEIGHBOR_OFFSETS) {
+            const nkey = `${cx + dx},${cy + dy},${cz + dz}`;
+            if (
+              !this.desiredActiveKeys.has(nkey)
+              || !this.world.getRenderer().hasChunkMesh(nkey)
+              || this.pendingMeshQueue.some(queued => queued.key === nkey)
+              || this.generatingMeshes.get(nkey) === epoch
+            ) {
+              continue;
+            }
+            this.pendingMeshQueue.push({
+              key: nkey,
+              updateNeighbors: false,
+              epoch,
+              revision: this.world.getChunkRevision(nkey),
             });
+            addedNeighbor = true;
+          }
+          if (addedNeighbor) {
+            const playerPosition = this.world.game.player.position;
+            const currentCcx = Math.floor(playerPosition.x / CHUNK_SIZE_X);
+            const currentCcy = Math.floor(playerPosition.y / CHUNK_SIZE_Y);
+            const currentCcz = Math.floor(playerPosition.z / CHUNK_SIZE_Z);
+            this.pendingMeshQueue.sort((first, second) => (
+              this.getChunkPriority(first.key, currentCcx, currentCcy, currentCcz)
+              - this.getChunkPriority(second.key, currentCcx, currentCcy, currentCcz)
+            ));
+          }
+        }).catch((err: unknown) => {
+          if (this.generatingMeshes.get(key) === epoch) {
+            this.generatingMeshes.delete(key);
+          }
+          if (!this.isTaskCurrent(key, epoch, revision, currentSeed)) {
+            this.meshRetries.clear(key, epoch, revision, currentSeed);
+            return;
+          }
+          if (isWorkerTaskCancelledError(err)) {
+            this.meshRetries.clear(key, epoch, revision, currentSeed);
+            return;
+          }
+          if (attempt < CHUNK_STREAMING_CONFIG.maxWorkerTaskAttempts) {
+            if (!this.pendingMeshQueue.some(queued => queued.key === key && queued.epoch === epoch)) {
+              this.pendingMeshQueue.push(item);
+              this.pendingMeshQueue.sort((first, second) => (
+                this.getChunkPriority(first.key, ccx, ccy, ccz)
+                - this.getChunkPriority(second.key, ccx, ccy, ccz)
+              ));
+            }
+            return;
+          }
+          console.error(
+            `Worker mesh failed after ${attempt} attempts for chunk ${key}`,
+            err,
+          );
+        });
+      } else if (canScheduleGeneration) {
+        const item = this.pendingGenerationQueue.shift();
+        if (!item) continue;
+        const { key, epoch, revision } = item;
+        if (
+          epoch !== this.streamingEpoch
+          || !this.desiredActiveKeys.has(key)
+          || this.world.chunks.has(key)
+          || revision !== this.world.getChunkRevision(key)
+          || this.generatingChunks.get(key) === epoch
+        ) {
+          continue;
         }
+
+        const [cx, cy, cz] = key.split(',').map(Number);
+        const currentSeed = this.world.getSeed();
+        const attempt = this.generationRetries.recordAttempt(key, epoch, revision, currentSeed);
+        if (attempt === null) continue;
+        this.generatingChunks.set(key, epoch);
+        this.workerManager.execute('GENERATE_CHUNK', {
+          cx,
+          cy,
+          cz,
+          seed: currentSeed,
+          chunkRevision: revision,
+        }, {
+          metadata: {
+            owner: this.workerTaskOwner,
+            key,
+            epoch,
+            revision,
+            seed: currentSeed,
+          },
+        }).then(result => {
+          if (this.generatingChunks.get(key) === epoch) {
+            this.generatingChunks.delete(key);
+          }
+          if (
+            epoch !== this.streamingEpoch
+            || !this.desiredActiveKeys.has(key)
+            || this.world.getSeed() !== currentSeed
+            || revision !== this.world.getChunkRevision(key)
+          ) {
+            this.generationRetries.clear(key, epoch, revision, currentSeed);
+            return;
+          }
+          if (!this.world.acceptGeneratedChunk(key, result.chunk, result.summary, revision)) {
+            this.generationRetries.clear(key, epoch, revision, currentSeed);
+            return;
+          }
+
+          this.generationRetries.clear(key, epoch, revision, currentSeed);
+          const acceptedRevision = this.world.getChunkRevision(key);
+          this.pendingMeshQueue.push({
+            key,
+            updateNeighbors: true,
+            epoch,
+            revision: acceptedRevision,
+          });
+          this.pendingMeshQueue.sort((first, second) => (
+            this.getChunkPriority(first.key, ccx, ccy, ccz)
+            - this.getChunkPriority(second.key, ccx, ccy, ccz)
+          ));
+        }).catch((err: unknown) => {
+          if (this.generatingChunks.get(key) === epoch) {
+            this.generatingChunks.delete(key);
+          }
+          if (!this.isTaskCurrent(key, epoch, revision, currentSeed)) {
+            this.generationRetries.clear(key, epoch, revision, currentSeed);
+            return;
+          }
+          if (isWorkerTaskCancelledError(err)) {
+            this.generationRetries.clear(key, epoch, revision, currentSeed);
+            return;
+          }
+          if (attempt < CHUNK_STREAMING_CONFIG.maxWorkerTaskAttempts) {
+            if (!this.pendingGenerationQueue.some(
+              queued => queued.key === key && queued.epoch === epoch,
+            )) {
+              this.pendingGenerationQueue.push(item);
+              this.pendingGenerationQueue.sort((first, second) => (
+                this.getChunkPriority(first.key, ccx, ccy, ccz)
+                - this.getChunkPriority(second.key, ccx, ccy, ccz)
+              ));
+            }
+            return;
+          }
+          console.error(
+            `Worker generation failed after ${attempt} attempts for chunk ${key}`,
+            err,
+          );
+        });
       } else {
-        break; // No more items to load
+        break;
       }
     }
   }
@@ -305,9 +580,7 @@ export class WorldChunkManager {
     const dcx = cx - ccx;
     const dcy = cy - ccy;
     const dcz = cz - ccz;
-    // Balanced 3D distance priority: (dcx^2 + dcz^2) + dcy^2 * 4.
-    // By setting Y_BIAS to 4 (which is 2^2), we treat 1 chunk vertically as equivalent to 2 chunks horizontally.
-    // This aligns with screen aspect ratio and field of view, ensuring nearby vertical chunks load quickly.
-    return (dcx * dcx + dcz * dcz) + dcy * dcy * 4;
+    return (dcx * dcx + dcz * dcz)
+      + dcy * dcy * CHUNK_STREAMING_CONFIG.verticalPriorityMultiplier;
   }
 }
