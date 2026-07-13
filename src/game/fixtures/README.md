@@ -37,7 +37,7 @@
 
 `setContainerSlots` 只接受与注册容量完全一致的槽位数组。非空槽位必须使用已知 `ItemType`，且数量必须为正整数；校验失败返回 `false` 并保留原状态。
 
-设施射线检测会临时收紧调用方 `Raycaster.far`，并保证正常或异常路径都恢复原值。体素与设施同时命中时，由 `resolveWorldInteractionTarget` 选择距离更近的目标。
+设施射线检测会临时收紧调用方 `Raycaster.far`，并保证正常或异常路径都恢复原值。`ThreeFixtureView` 维护随 attach/detach 原地更新的稳定射线对象列表，高频目标检测不得通过 `Array.from()` 逐帧创建数组。体素与设施同时命中时，由 `resolveWorldInteractionTarget` 选择距离更近的目标。
 
 `core/GameFixtureRuntime` 负责把核心设施注册表、世界占位查询和 Three 视图装配为 GameManager 可用的运行时；`core/FixtureInteractionCoordinator` 负责最近目标、选择框、打开设施、创造模式拆除和放置朝向。设施模块本身不得依赖 React 组件或 GameManager。
 

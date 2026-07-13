@@ -14,6 +14,7 @@ interface FixtureViewResources {
 export class ThreeFixtureView implements FixtureViewPort {
   private readonly scene: THREE.Scene;
   private readonly objects = new Map<string, THREE.Object3D>();
+  private readonly raycastObjects: THREE.Object3D[] = [];
   private readonly resources = new Map<string, FixtureViewResources>();
 
   public constructor(scene: THREE.Scene) {
@@ -53,6 +54,7 @@ export class ThreeFixtureView implements FixtureViewPort {
     mesh.userData.fixtureId = fixture.id;
     this.scene.add(mesh);
     this.objects.set(fixture.id, mesh);
+    this.raycastObjects.push(mesh);
   }
 
   public detach(fixtureId: string): void {
@@ -60,10 +62,12 @@ export class ThreeFixtureView implements FixtureViewPort {
     if (!object) return;
     this.scene.remove(object);
     this.objects.delete(fixtureId);
+    const raycastIndex = this.raycastObjects.indexOf(object);
+    if (raycastIndex >= 0) this.raycastObjects.splice(raycastIndex, 1);
   }
 
-  public getRaycastObjects(): THREE.Object3D[] {
-    return Array.from(this.objects.values());
+  public getRaycastObjects(): readonly THREE.Object3D[] {
+    return this.raycastObjects;
   }
 
   public getFixtureIdFromObject(object: THREE.Object3D): string | undefined {
@@ -80,7 +84,7 @@ export class ThreeFixtureView implements FixtureViewPort {
     const previousFar = raycaster.far;
     raycaster.far = Math.min(previousFar, maxDistance);
     try {
-      const intersections = raycaster.intersectObjects(this.getRaycastObjects(), true);
+      const intersections = raycaster.intersectObjects(this.raycastObjects, true);
       for (const intersection of intersections) {
         const fixtureId = this.getFixtureIdFromObject(intersection.object);
         if (fixtureId) {

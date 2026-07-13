@@ -4,6 +4,29 @@ import { TEST_CHEST_FIXTURE_DEFINITION as chestDefinition } from './FixtureTestF
 import { ThreeFixtureView } from './ThreeFixtureView';
 
 describe('ThreeFixtureView', () => {
+  test('reuses one raycast object list across stable frames and lifecycle changes', () => {
+    const view = new ThreeFixtureView(new THREE.Scene());
+    const raycastObjects = view.getRaycastObjects();
+
+    expect(view.getRaycastObjects()).toBe(raycastObjects);
+
+    view.attach({
+      id: 'fixture-stable-list',
+      definitionId: chestDefinition.id,
+      anchor: { x: 1, y: 2, z: 3 },
+      orientation: 0,
+      components: [],
+    }, { ...chestDefinition, view: { color: 0x885522 } });
+
+    expect(view.getRaycastObjects()).toBe(raycastObjects);
+    expect(raycastObjects).toHaveLength(1);
+
+    view.detach('fixture-stable-list');
+    expect(view.getRaycastObjects()).toBe(raycastObjects);
+    expect(raycastObjects).toHaveLength(0);
+    view.dispose();
+  });
+
   test('attaches identifiable fixture meshes and removes them symmetrically', () => {
     const scene = new THREE.Scene();
     const view = new ThreeFixtureView(scene);
