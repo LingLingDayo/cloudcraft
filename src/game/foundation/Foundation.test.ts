@@ -58,6 +58,60 @@ describe('RuntimeKernel', () => {
       'dispose:content',
     ]);
   });
+
+  test('rejects repeated initialization without initializing resources twice', async () => {
+    let initializeCount = 0;
+    let disposeCount = 0;
+    const kernel = new RuntimeKernel();
+    kernel.register({
+      id: 'world',
+      initialize: () => {
+        initializeCount++;
+      },
+      dispose: () => {
+        disposeCount++;
+      },
+    });
+
+    await kernel.initialize();
+    await expect(kernel.initialize()).rejects
+      .toThrowError('Runtime kernel cannot initialize while initialized');
+    await kernel.dispose();
+
+    expect(initializeCount).toBe(1);
+    expect(disposeCount).toBe(1);
+  });
+
+  test('preserves initialization and cleanup errors when rollback also fails', async () => {
+    const initializationError = new Error('render initialization failed');
+    const cleanupError = new Error('world cleanup failed');
+    const kernel = new RuntimeKernel();
+    kernel.register({
+      id: 'world',
+      initialize: () => undefined,
+      dispose: () => {
+        throw cleanupError;
+      },
+    });
+    kernel.register({
+      id: 'render',
+      dependencies: ['world'],
+      initialize: () => {
+        throw initializationError;
+      },
+      dispose: () => undefined,
+    });
+
+    try {
+      await kernel.initialize();
+      throw new Error('Expected initialization to fail');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AggregateError);
+      const aggregate = error as AggregateError;
+      expect(aggregate.cause).toBe(initializationError);
+      expect(aggregate.errors).toEqual([initializationError, cleanupError]);
+    }
+  });
 });
 
 describe('BufferedDomainEventBus', () => {

@@ -7,12 +7,18 @@ export interface RuntimeSystem {
   dispose(): void | Promise<void>;
 }
 
+type RuntimeKernelState = 'idle' | 'initializing' | 'initialized' | 'disposing';
+
 export class RuntimeKernel {
   private readonly systems = new Map<string, RuntimeSystem>();
   private initializedSystems: RuntimeSystem[] = [];
   private orderedSystems: RuntimeSystem[] = [];
+  private state: RuntimeKernelState = 'idle';
 
   public register(system: RuntimeSystem): void {
+    if (this.state !== 'idle') {
+      throw new Error(`Runtime kernel cannot register systems while ${this.state}`);
+    }
     if (this.systems.has(system.id)) {
       throw new Error(`Duplicate runtime system: ${system.id}`);
     }
@@ -20,17 +26,41 @@ export class RuntimeKernel {
   }
 
   public async initialize(): Promise<void> {
-    this.orderedSystems = this.resolveOrder();
-    this.initializedSystems = [];
+    if (this.state !== 'idle') {
+      throw new Error(`Runtime kernel cannot initialize while ${this.state}`);
+    }
+    this.state = 'initializing';
 
     try {
+      this.orderedSystems = this.resolveOrder();
+      this.initializedSystems = [];
       for (const system of this.orderedSystems) {
         await system.initialize();
         this.initializedSystems.push(system);
       }
-    } catch (error) {
-      await this.disposeInitializedSystems();
-      throw error;
+      this.state = 'initialized';
+    } catch (initializationError) {
+      let cleanupFailed = false;
+      let cleanupFailure: unknown;
+      try {
+        await this.disposeInitializedSystems();
+      } catch (error) {
+        cleanupFailed = true;
+        cleanupFailure = error;
+      }
+      this.orderedSystems = [];
+      this.state = 'idle';
+      if (cleanupFailed) {
+        const cleanupErrors = cleanupFailure instanceof AggregateError
+          ? cleanupFailure.errors
+          : [cleanupFailure];
+        throw new AggregateError(
+          [initializationError, ...cleanupErrors],
+          'Runtime kernel failed to initialize and clean up',
+          { cause: initializationError },
+        );
+      }
+      throw initializationError;
     }
   }
 
@@ -47,8 +77,18 @@ export class RuntimeKernel {
   }
 
   public async dispose(): Promise<void> {
-    await this.disposeInitializedSystems();
-    this.orderedSystems = [];
+    if (this.state === 'idle') return;
+    if (this.state !== 'initialized') {
+      throw new Error(`Runtime kernel cannot dispose while ${this.state}`);
+    }
+
+    this.state = 'disposing';
+    try {
+      await this.disposeInitializedSystems();
+    } finally {
+      this.orderedSystems = [];
+      this.state = 'idle';
+    }
   }
 
   private resolveOrder(): RuntimeSystem[] {
