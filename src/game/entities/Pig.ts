@@ -27,8 +27,13 @@ export class Pig extends Animal {
   private backLeftLeg!: THREE.Mesh;
   private backRightLeg!: THREE.Mesh;
 
-  constructor(id: string, spawnPos: THREE.Vector3, world: World) {
-    super(id, 'pig', spawnPos, world, 10); // 10 Health (5 Hearts)
+  constructor(
+    id: string,
+    spawnPos: THREE.Vector3,
+    world: World,
+    movementModeIds: readonly string[],
+  ) {
+    super(id, 'cloudcraft:pig', spawnPos, world, 10, movementModeIds);
     this.lootTableId = 'cloudcraft:entities/pig';
     this.initMesh();
   }
@@ -223,7 +228,7 @@ export class Pig extends Animal {
     // Legs swing micro-animation when moving
     const speed2D = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
     if (speed2D > 0.05 && this.state.onGround) {
-      const swingSpeed = this.aiState === 'panicked' ? 20.0 : 9.0;
+      const swingSpeed = this.getBehaviorStateId() === 'panicked' ? 20.0 : 9.0;
       const angle = Math.sin(performance.now() * 0.001 * swingSpeed) * 0.65;
       
       this.frontLeftLeg.rotation.x = angle;

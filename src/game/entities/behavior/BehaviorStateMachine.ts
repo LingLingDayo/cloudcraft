@@ -1,0 +1,129 @@
+export interface BehaviorStateDefinition<TContext> {
+  readonly id: string;
+  readonly parentId?: string;
+  readonly onEnter?: (context: TContext) => void;
+  readonly onUpdate?: (context: TContext, deltaSeconds: number) => void;
+  readonly onExit?: (context: TContext) => void;
+}
+
+export interface BehaviorTransition<TContext> {
+  readonly from: string;
+  readonly to: string;
+  readonly when: (context: TContext) => boolean;
+  readonly priority?: number;
+}
+
+export class BehaviorStateMachine<TContext> {
+  private readonly states = new Map<string, BehaviorStateDefinition<TContext>>();
+  private readonly transitions: BehaviorTransition<TContext>[] = [];
+  private activeStateId: string | null = null;
+
+  public registerState(state: BehaviorStateDefinition<TContext>): void {
+    if (this.states.has(state.id)) {
+      throw new Error(`Duplicate behavior state: ${state.id}`);
+    }
+    this.states.set(state.id, state);
+  }
+
+  public registerTransition(transition: BehaviorTransition<TContext>): void {
+    this.transitions.push(transition);
+    this.transitions.sort((left, right) => (right.priority ?? 0) - (left.priority ?? 0));
+  }
+
+  public hasState(stateId: string): boolean {
+    return this.states.has(stateId);
+  }
+
+  public start(stateId: string, context: TContext): void {
+    if (this.activeStateId) {
+      throw new Error('Behavior state machine has already started');
+    }
+    const lineage = this.getLineage(stateId);
+    for (const state of lineage) {
+      state.onEnter?.(context);
+    }
+    this.activeStateId = stateId;
+  }
+
+  public transitionTo(stateId: string, context: TContext): void {
+    if (this.activeStateId === stateId) return;
+    if (!this.activeStateId) {
+      this.start(stateId, context);
+      return;
+    }
+
+    const fromLineage = this.getLineage(this.activeStateId);
+    const toLineage = this.getLineage(stateId);
+    let sharedLength = 0;
+    while (
+      sharedLength < fromLineage.length
+      && sharedLength < toLineage.length
+      && fromLineage[sharedLength].id === toLineage[sharedLength].id
+    ) {
+      sharedLength++;
+    }
+
+    for (let index = fromLineage.length - 1; index >= sharedLength; index--) {
+      fromLineage[index].onExit?.(context);
+    }
+    for (let index = sharedLength; index < toLineage.length; index++) {
+      toLineage[index].onEnter?.(context);
+    }
+    this.activeStateId = stateId;
+  }
+
+  public update(context: TContext, deltaSeconds: number): void {
+    if (!this.activeStateId) return;
+    const lineage = this.getLineage(this.activeStateId);
+    for (const state of lineage) {
+      state.onUpdate?.(context, deltaSeconds);
+    }
+
+    const activeIds = new Set(lineage.map(state => state.id));
+    const transition = this.transitions.find(candidate =>
+      activeIds.has(candidate.from) && candidate.when(context),
+    );
+    if (transition) {
+      this.transitionTo(transition.to, context);
+    }
+  }
+
+  public isInState(stateId: string): boolean {
+    return this.activeStateId
+      ? this.getLineage(this.activeStateId).some(state => state.id === stateId)
+      : false;
+  }
+
+  public dispose(context: TContext): void {
+    if (!this.activeStateId) return;
+    const lineage = this.getLineage(this.activeStateId);
+    for (let index = lineage.length - 1; index >= 0; index--) {
+      lineage[index].onExit?.(context);
+    }
+    this.activeStateId = null;
+  }
+
+  public get currentStateId(): string | null {
+    return this.activeStateId;
+  }
+
+  private getLineage(stateId: string): BehaviorStateDefinition<TContext>[] {
+    const lineage: BehaviorStateDefinition<TContext>[] = [];
+    const visited = new Set<string>();
+    let current = this.states.get(stateId);
+    if (!current) throw new Error(`Unknown behavior state: ${stateId}`);
+
+    while (current) {
+      if (visited.has(current.id)) {
+        throw new Error(`Behavior state hierarchy contains a cycle at ${current.id}`);
+      }
+      visited.add(current.id);
+      lineage.unshift(current);
+      current = current.parentId ? this.states.get(current.parentId) : undefined;
+      if (lineage[0].parentId && !current) {
+        throw new Error(`Unknown parent behavior state: ${lineage[0].parentId}`);
+      }
+    }
+    return lineage;
+  }
+}

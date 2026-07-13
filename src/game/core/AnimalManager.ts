@@ -1,48 +1,45 @@
 import * as THREE from 'three';
 import { GameManager } from './GameManager';
 import { Animal } from '../entities/Animal';
-import { Pig } from '../entities/Pig';
 import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
-import { World, WORLD_HEIGHT } from '@game/world/World';
-import { EntityRegistry } from '../entities/EntityRegistry';
-import type { SerializedEntityData } from '../entities/Entity';
-
-export type AnimalCreator = (id: string, spawnPos: THREE.Vector3, world: World) => Animal;
+import { WORLD_HEIGHT } from '@game/world/World';
+import { createCoreSpeciesRegistry } from '../entities/species/CoreSpecies';
+import type { SpeciesRegistry } from '../entities/species/SpeciesRegistry';
+import {
+  assertEntitySnapshot,
+  createEntitySnapshot,
+  type EntitySnapshot,
+} from '../entities/EntitySnapshot';
 
 export class AnimalManager {
-  private static registry = new Map<string, AnimalCreator>();
-
   private game: GameManager;
+  private readonly speciesRegistry: SpeciesRegistry;
   private animals: Animal[] = [];
   private maxAnimals = 8;
   private spawnCheckTimer = 0;
   private spawnCheckInterval = 3.0; // check spawn every 3 seconds
 
-  public static register(type: string, creator: AnimalCreator) {
-    this.registry.set(type, creator);
-    EntityRegistry.register(type, creator);
-  }
-
-  constructor(game: GameManager) {
+  constructor(game: GameManager, speciesRegistry: SpeciesRegistry = createCoreSpeciesRegistry()) {
     this.game = game;
+    this.speciesRegistry = speciesRegistry;
   }
 
-  public serialize(): SerializedEntityData[] {
-    return this.animals.map(animal => animal.serialize());
+  public createSnapshot(): EntitySnapshot {
+    return createEntitySnapshot(this.animals.map(animal => animal.serialize()));
   }
 
-  public deserialize(serialized: SerializedEntityData[]) {
-    // Clear current animals
+  public restoreSnapshot(snapshot: EntitySnapshot): void {
+    assertEntitySnapshot(snapshot);
     this.dispose();
 
-    for (const data of serialized) {
+    for (const data of snapshot.entities) {
       const spawnPos = new THREE.Vector3(data.x, data.y, data.z);
-      const entity = EntityRegistry.create(data.type, data.id, spawnPos, this.game.world);
-      if (entity && entity instanceof Animal) {
-        entity.deserialize(data);
-        this.game.scene.add(entity.mesh);
-        this.animals.push(entity);
-      }
+      const definition = this.speciesRegistry.find(data.type);
+      if (!definition) continue;
+      const animal = definition.create(data.id, spawnPos, this.game.world);
+      animal.deserialize(data);
+      this.game.scene.add(animal.mesh);
+      this.animals.push(animal);
     }
   }
 
@@ -135,14 +132,15 @@ export class AnimalManager {
           if (space1 === BLOCK_TYPES.AIR && space2 === BLOCK_TYPES.AIR) {
             const spawnPos = new THREE.Vector3(x + 0.5, y + 1, z + 0.5);
             
-            // Choose random animal type from static registry
-            const registeredTypes = Array.from(AnimalManager.registry.keys());
-            if (registeredTypes.length > 0) {
-              const randType = registeredTypes[Math.floor(Math.random() * registeredTypes.length)];
-              const creator = AnimalManager.registry.get(randType)!;
-              const animalId = Math.random().toString(36).substring(2, 9);
-              const animal = creator(animalId, spawnPos, this.game.world);
-              
+            const biome = this.game.world.generator.getPrimaryBiome(x, z);
+            const species = this.speciesRegistry.selectForHabitat({
+              biomeId: biome?.id ?? 'unknown',
+              vegetationDensity: biome?.getTreeProbability(0.5) ?? 0,
+              surfaceBlockId: props.id,
+            }, Math.random());
+            if (species) {
+              const animalId = `${species.id.split(':').at(-1)}-${Math.random().toString(36).slice(2, 9)}`;
+              const animal = species.create(animalId, spawnPos, this.game.world);
               this.game.scene.add(animal.mesh);
               this.animals.push(animal);
             }
@@ -238,6 +236,3 @@ export class AnimalManager {
     this.animals = [];
   }
 }
-
-// Register default animals
-AnimalManager.register('pig', (id, spawnPos, world) => new Pig(id, spawnPos, world));

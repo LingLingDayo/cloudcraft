@@ -3,6 +3,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { Pig } from './Pig';
 import { World } from '@game/world/World';
+import { createCoreSpeciesRegistry } from './species/CoreSpecies';
 
 // Mock Canvas 2D context to prevent crash in jsdom environment when generating texture atlas
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
@@ -31,6 +32,12 @@ vi.mock('@game/systems/Sound', () => {
 describe('Pig Entity', () => {
   let mockWorld: World;
 
+  const createPig = (id: string, spawnPosition: THREE.Vector3): Pig => {
+    return createCoreSpeciesRegistry()
+      .get('cloudcraft:pig')
+      .create(id, spawnPosition, mockWorld) as Pig;
+  };
+
   beforeEach(() => {
     mockWorld = {
       getBlock: vi.fn(() => 0),
@@ -39,7 +46,7 @@ describe('Pig Entity', () => {
 
   test('should initialize Pig properties correctly', () => {
     const spawnPos = new THREE.Vector3(10.5, 4, 10.5);
-    const pig = new Pig('pig-1', spawnPos, mockWorld);
+    const pig = createPig('pig-1', spawnPos);
 
     expect(pig.id).toBe('pig-1');
     expect(pig.position.x).toBe(10.5);
@@ -51,23 +58,27 @@ describe('Pig Entity', () => {
     expect(pig.width).toBe(0.9);
     expect(pig.height).toBe(0.9);
     expect(pig.depth).toBe(0.9);
+    expect(pig.getMovementModeIds()).toEqual([
+      'cloudcraft:swim',
+      'cloudcraft:ground',
+    ]);
     expect(pig.mesh).toBeDefined();
     expect(pig.mesh.children.length).toBeGreaterThan(0); // Body, Head, Snout, 4 Legs
   });
 
   test('should take damage and enter panicked state', () => {
     const spawnPos = new THREE.Vector3(10.5, 4, 10.5);
-    const pig = new Pig('pig-1', spawnPos, mockWorld);
+    const pig = createPig('pig-1', spawnPos);
 
     pig.takeDamage(2);
     expect(pig.life).toBe(8);
-    expect(pig.aiState).toBe('panicked');
+    expect(pig.getBehaviorStateId()).toBe('panicked');
     expect(pig.isDead).toBe(false);
   });
 
   test('should die when health drops to 0', () => {
     const spawnPos = new THREE.Vector3(10.5, 4, 10.5);
-    const pig = new Pig('pig-1', spawnPos, mockWorld);
+    const pig = createPig('pig-1', spawnPos);
     
     // Mock drop items
     pig.dropItems = vi.fn();
@@ -80,17 +91,17 @@ describe('Pig Entity', () => {
 
   test('should serialize and deserialize Pig properties correctly', () => {
     const spawnPos = new THREE.Vector3(10.5, 4, 10.5);
-    const pig = new Pig('pig-1', spawnPos, mockWorld);
+    const pig = createPig('pig-1', spawnPos);
     
     // Set some custom values
     pig.velocity.set(1.0, 2.0, 3.0);
     pig.life = 6;
     pig.isPersistent = true;
-    pig.aiState = 'panicked';
+    pig.transitionBehavior('panicked');
 
     const serialized = pig.serialize();
     expect(serialized.id).toBe('pig-1');
-    expect(serialized.type).toBe('pig');
+    expect(serialized.type).toBe('cloudcraft:pig');
     expect(serialized.x).toBe(10.5);
     expect(serialized.y).toBe(4);
     expect(serialized.z).toBe(10.5);
@@ -99,14 +110,18 @@ describe('Pig Entity', () => {
     expect(serialized.vz).toBe(3.0);
     expect(serialized.life).toBe(6);
     expect(serialized.isPersistent).toBe(true);
-    expect(serialized.customData?.aiState).toBe('panicked');
+    expect(serialized.customData?.behaviorStateId).toBe('panicked');
+    expect(serialized.customData?.movementModeIds).toEqual([
+      'cloudcraft:swim',
+      'cloudcraft:ground',
+    ]);
 
     // Restore to another pig
-    const otherPig = new Pig('pig-temp', new THREE.Vector3(0, 0, 0), mockWorld);
+    const otherPig = createPig('pig-temp', new THREE.Vector3(0, 0, 0));
     otherPig.deserialize(serialized);
 
     expect(otherPig.id).toBe('pig-1');
-    expect(otherPig.type).toBe('pig');
+    expect(otherPig.type).toBe('cloudcraft:pig');
     expect(otherPig.position.x).toBe(10.5);
     expect(otherPig.position.y).toBe(4);
     expect(otherPig.position.z).toBe(10.5);
@@ -115,6 +130,6 @@ describe('Pig Entity', () => {
     expect(otherPig.velocity.z).toBe(3.0);
     expect(otherPig.life).toBe(6);
     expect(otherPig.isPersistent).toBe(true);
-    expect(otherPig.aiState).toBe('panicked');
+    expect(otherPig.getBehaviorStateId()).toBe('panicked');
   });
 });

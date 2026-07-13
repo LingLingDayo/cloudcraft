@@ -1,10 +1,25 @@
 import * as THREE from 'three';
 import { World } from '@game/world/World';
-import { BLOCK_TYPES, getBlockProperties } from '@game/world/BlockConfig';
+import { getBlockProperties } from '@game/world/BlockConfig';
 import { VoxelCollider } from '@game/physics/voxel/VoxelCollider';
 import { sound } from '@game/systems/Sound';
 import { LootTableHelper } from '../loot/LootTableHelper';
 import { Entity } from './Entity';
+import {
+  BehaviorStateMachine,
+  type BehaviorStateDefinition,
+} from './behavior/BehaviorStateMachine';
+import { MovementModeController } from './movement/MovementMode';
+import {
+  CoreMovementModeId,
+  coreMovementModeRegistry,
+  type CreatureMovementContext,
+} from './movement/CoreMovementModes';
+
+const DEFAULT_MOVEMENT_MODE_IDS = [
+  CoreMovementModeId.SWIM,
+  CoreMovementModeId.GROUND,
+] as const;
 
 export abstract class Animal extends Entity {
   public state = { onGround: false, inWater: false };
@@ -15,10 +30,14 @@ export abstract class Animal extends Entity {
   public abstract depth: number;
 
   // AI & Behavior State
-  public aiState: 'wandering' | 'panicked' = 'wandering';
+  protected readonly behaviorStateMachine = new BehaviorStateMachine<Animal>();
+  protected readonly movementController: MovementModeController<CreatureMovementContext>;
   protected aiTimer = 0;
   protected targetDir = new THREE.Vector3();
   protected shouldJump = false;
+  protected flightRequested = false;
+  private readonly movementDimensions = { width: 0, height: 0, depth: 0 };
+  private readonly movementContext: CreatureMovementContext;
 
   // Visuals
   public mesh: THREE.Group;
@@ -34,15 +53,79 @@ export abstract class Animal extends Entity {
   public abstract hurtSound: string;
   public abstract deathSound: string;
 
-  constructor(id: string, type: string, spawnPos: THREE.Vector3, world: World, maxLife = 10) {
+  constructor(
+    id: string,
+    type: string,
+    spawnPos: THREE.Vector3,
+    world: World,
+    maxLife = 10,
+    movementModeIds: readonly string[] = DEFAULT_MOVEMENT_MODE_IDS,
+  ) {
     super(id, type, spawnPos, world, maxLife);
     this.mesh = new THREE.Group();
     this.mesh.position.copy(this.position);
+    this.movementController = new MovementModeController(
+      coreMovementModeRegistry,
+      movementModeIds,
+    );
+    this.movementContext = {
+      world: this.world,
+      position: this.position,
+      velocity: this.velocity,
+      state: this.state,
+      desiredDirection: this.targetDir,
+      dimensions: this.movementDimensions,
+      desiredSpeed: 0,
+      jumpSpeed: 0,
+      jumpRequested: false,
+      flightRequested: false,
+      random: Math.random,
+    };
+    this.registerBehaviorState({ id: 'active' });
+    this.registerBehaviorState({
+      id: 'wandering',
+      parentId: 'active',
+      onUpdate: (animal, deltaSeconds) => animal.updateWanderingBehavior(deltaSeconds),
+    });
+    this.registerBehaviorState({
+      id: 'panicked',
+      parentId: 'active',
+      onUpdate: (animal, deltaSeconds) => animal.updatePanickedBehavior(deltaSeconds),
+    });
+    this.behaviorStateMachine.start('wandering', this);
   }
 
   public lootTableId?: string;
 
   public abstract initMesh(): void;
+
+  public getBehaviorStateId(): string {
+    return this.behaviorStateMachine.currentStateId ?? 'wandering';
+  }
+
+  public transitionBehavior(stateId: string): void {
+    this.behaviorStateMachine.transitionTo(stateId, this);
+  }
+
+  public setMovementModes(modeIds: readonly string[]): void {
+    this.movementController.setModes(modeIds);
+  }
+
+  public getMovementModeIds(): readonly string[] {
+    return this.movementController.modeIds;
+  }
+
+  public getActiveMovementModeId(): string | null {
+    return this.movementController.activeModeId;
+  }
+
+  protected registerBehaviorState(state: BehaviorStateDefinition<Animal>): void {
+    this.behaviorStateMachine.registerState(state);
+  }
+
+  protected setBehaviorState(stateId: string): void {
+    this.behaviorStateMachine.transitionTo(stateId, this);
+  }
   
   public dropItems(): void {
     if (this.lootTableId) {
@@ -87,100 +170,50 @@ export abstract class Animal extends Entity {
   }
 
   protected updateAI(dt: number) {
+    this.behaviorStateMachine.update(this, dt);
+  }
+
+  protected updateWanderingBehavior(dt: number): void {
     this.aiTimer -= dt;
 
-    if (this.aiState === 'panicked') {
-      if (this.aiTimer <= 0) {
-        this.aiState = 'wandering';
-        this.aiTimer = Math.random() * 3 + 2; // Wander interval
+    if (this.aiTimer <= 0) {
+      if (Math.random() < 0.6) {
+        const angle = Math.random() * Math.PI * 2;
+        this.targetDir.set(Math.sin(angle), 0, Math.cos(angle)).normalize();
+        this.aiTimer = Math.random() * 3 + 2;
       } else {
-        // Change run direction occasionally
-        if (Math.random() < 0.05) {
-          const angle = Math.random() * Math.PI * 2;
-          this.targetDir.set(Math.sin(angle), 0, Math.cos(angle)).normalize();
-        }
-      }
-    } else {
-      // Wandering state
-      if (this.aiTimer <= 0) {
-        const rand = Math.random();
-        if (rand < 0.6) {
-          // Walk
-          const angle = Math.random() * Math.PI * 2;
-          this.targetDir.set(Math.sin(angle), 0, Math.cos(angle)).normalize();
-          this.aiTimer = Math.random() * 3 + 2;
-        } else {
-          // Idle / Stand still
-          this.targetDir.set(0, 0, 0);
-          this.aiTimer = Math.random() * 2 + 1;
-        }
+        this.targetDir.set(0, 0, 0);
+        this.aiTimer = Math.random() * 2 + 1;
       }
     }
   }
 
+  protected updatePanickedBehavior(dt: number): void {
+    this.aiTimer -= dt;
+    if (this.aiTimer <= 0) {
+      this.setBehaviorState('wandering');
+      this.aiTimer = Math.random() * 3 + 2;
+    } else if (Math.random() < 0.05) {
+      const angle = Math.random() * Math.PI * 2;
+      this.targetDir.set(Math.sin(angle), 0, Math.cos(angle)).normalize();
+    }
+  }
+
   protected updatePhysics(dt: number) {
-    dt = Math.min(dt, 0.1);
-    const gravity = -18;
-    const terminalVelocity = -22;
-
     this.state.inWater = this.checkInWater();
+    this.movementDimensions.width = this.width;
+    this.movementDimensions.height = this.height;
+    this.movementDimensions.depth = this.depth;
+    this.movementContext.desiredSpeed = this.getDesiredMovementSpeed();
+    this.movementContext.jumpSpeed = this.jumpSpeed;
+    this.movementContext.jumpRequested = this.shouldJump;
+    this.movementContext.flightRequested = this.flightRequested;
+    this.movementController.update(this.movementContext, dt);
+    this.shouldJump = this.movementContext.jumpRequested;
+  }
 
-    // Apply horizontal speed forces
-    const speed = this.aiState === 'panicked' ? this.panicSpeed : this.walkSpeed;
-    this.velocity.x = this.targetDir.x * speed;
-    this.velocity.z = this.targetDir.z * speed;
-
-    // Apply vertical forces (Gravity / Float buoyancy)
-    if (this.state.inWater) {
-      if (this.shouldJump || Math.random() < 0.1) {
-        // Animals automatically swim up when stuck in water
-        this.velocity.y = 2.0;
-        this.shouldJump = false;
-      } else {
-        this.velocity.y = Math.max(-1.0, this.velocity.y - 4.0 * dt);
-      }
-    } else if (!this.state.onGround) {
-      this.velocity.y += gravity * dt;
-      this.velocity.y = Math.max(terminalVelocity, this.velocity.y);
-    } else {
-      this.velocity.y = 0;
-      if (this.shouldJump) {
-        this.velocity.y = this.jumpSpeed;
-        this.state.onGround = false;
-        this.shouldJump = false;
-      }
-    }
-
-    // Record pre-collision horizontal movement indicators for step-up jump check
-    const velXBefore = this.velocity.x;
-    const velZBefore = this.velocity.z;
-
-    // Delegate movement and collision resolution to VoxelCollider.resolveMove
-    const { collidedX, collidedZ, onGround } = VoxelCollider.resolveMove(
-      this.world,
-      this.position,
-      this.velocity,
-      { width: this.width, height: this.height, depth: this.depth },
-      dt
-    );
-
-    this.state.onGround = onGround;
-
-    // Step-up jump check: if animal hits a wall horizontally, try to jump
-    if (this.state.onGround && (collidedX || collidedZ)) {
-      // Check if there is block blocking front at knee height
-      const dx = Math.sign(velXBefore || this.targetDir.x);
-      const dz = Math.sign(velZBefore || this.targetDir.z);
-      const checkX = Math.floor(this.position.x + dx * 0.45);
-      const checkY = Math.floor(this.position.y);
-      const checkZ = Math.floor(this.position.z + dz * 0.45);
-
-      const blockHead = this.world.getBlock(checkX, checkY + 1, checkZ);
-      // If head-level space is free, jump to get over it
-      if (getBlockProperties(blockHead).id === BLOCK_TYPES.AIR) {
-        this.shouldJump = true;
-      }
-    }
+  protected getDesiredMovementSpeed(): number {
+    return this.behaviorStateMachine.isInState('panicked') ? this.panicSpeed : this.walkSpeed;
   }
 
   protected updateRotation(dt: number) {
@@ -197,7 +230,7 @@ export abstract class Animal extends Entity {
 
     this.life = Math.max(0, this.life - amount);
     this.isPersistent = true; // Mark as persistent upon taking damage
-    this.aiState = 'panicked';
+    this.setBehaviorState('panicked');
     this.aiTimer = 5.0; // Panic for 5s
     
     // Choose panic direction away from current velocity or randomly
@@ -270,14 +303,25 @@ export abstract class Animal extends Entity {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected serializeCustomData(): Record<string, any> | undefined {
     return {
-      aiState: this.aiState
+      behaviorStateId: this.getBehaviorStateId(),
+      movementModeIds: [...this.movementController.modeIds],
+      activeMovementModeId: this.movementController.activeModeId,
     };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected deserializeCustomData(customData: Record<string, any>): void {
-    if (customData && customData.aiState) {
-      this.aiState = customData.aiState;
+    if (Array.isArray(customData.movementModeIds)) {
+      const modeIds = customData.movementModeIds.filter(
+        (modeId): modeId is string => typeof modeId === 'string',
+      );
+      if (modeIds.length > 0) {
+        this.setMovementModes(modeIds);
+      }
+    }
+    if (typeof customData.behaviorStateId === 'string'
+      && this.behaviorStateMachine.hasState(customData.behaviorStateId)) {
+      this.transitionBehavior(customData.behaviorStateId);
     }
   }
 }
