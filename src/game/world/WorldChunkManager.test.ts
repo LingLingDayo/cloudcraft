@@ -239,7 +239,7 @@ describe('WorldChunkManager worker concurrency', () => {
       CHUNK_STREAMING_CONFIG.maxConcurrentGeneration,
     );
 
-    setLoadedChunk(world, '2,1,0');
+    setLoadedChunk(world, '0,2,0');
     world.chunkManager.invalidateVisibility();
     world.loadArea(0, 16, 0, 1);
     world.chunkManager.processIncrementalLoading();

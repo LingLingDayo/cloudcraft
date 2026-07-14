@@ -147,6 +147,7 @@ export class WorldChunkManager {
       directionUncertaintyRadians: view
         ? CHUNK_STREAMING_CONFIG.directionBucketUncertaintyRadians
         : 0,
+      allowUnknownTraversal: shouldSync,
       getChunkState: key => this.world.getChunkVisibilityState(key),
     });
     const nextActiveKeys = new Set(visibility.active);
@@ -159,9 +160,18 @@ export class WorldChunkManager {
         }
       }
     }
+    let removedActiveKey = false;
     if (activeChanged) {
-      this.streamingEpoch++;
+      for (const key of this.desiredActiveKeys) {
+        if (!nextActiveKeys.has(key)) {
+          removedActiveKey = true;
+          break;
+        }
+      }
       this.desiredActiveKeys = nextActiveKeys;
+    }
+    if (removedActiveKey) {
+      this.streamingEpoch++;
       this.workerManager.cancelQueuedTasks(
         this.workerTaskOwner,
         metadata => (

@@ -149,6 +149,42 @@ describe('WorldChunkManager visibility cache', () => {
 
     expect(world.chunkManager.getStreamingEpoch()).toBe(epoch);
   });
+
+  test('advances an unknown frontier only after transparent summaries without restarting the epoch', async () => {
+    const world = createStreamingWorld('test-progressive-transparent-frontier');
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    assumeLiveWorkerPool(WorkerManager.getInstance());
+    const transparentChunk = new Uint8Array(TEST_CHUNK_BYTE_LENGTH);
+
+    world.loadArea(0, 16, 0, 4);
+    const initialActive = new Set<string>((world.chunkManager as any).desiredActiveKeys);
+    const epoch = world.chunkManager.getStreamingEpoch();
+
+    expect(initialActive.has('1,1,0')).toBe(true);
+    expect(initialActive.has('2,1,0')).toBe(false);
+
+    world.applyChunkVisibilitySummary(
+      '0,1,0',
+      buildChunkVisibilitySummary(transparentChunk, world.getChunkRevision('0,1,0')),
+    );
+    world.loadArea(0, 16, 0, 4);
+    const centerExpandedActive = new Set<string>((world.chunkManager as any).desiredActiveKeys);
+
+    expect(centerExpandedActive.has('2,1,0')).toBe(true);
+    expect(centerExpandedActive.has('3,1,0')).toBe(false);
+    expect(world.chunkManager.getStreamingEpoch()).toBe(epoch);
+
+    world.applyChunkVisibilitySummary(
+      '1,1,0',
+      buildChunkVisibilitySummary(transparentChunk, world.getChunkRevision('1,1,0')),
+    );
+    world.loadArea(0, 16, 0, 4);
+    const portalExpandedActive = new Set<string>((world.chunkManager as any).desiredActiveKeys);
+
+    expect(portalExpandedActive.has('3,1,0')).toBe(true);
+    expect(portalExpandedActive.has('4,1,0')).toBe(false);
+    expect(world.chunkManager.getStreamingEpoch()).toBe(epoch);
+  });
 });
 describe('WorldChunkManager worker capability fallback', () => {
   afterEach(() => {

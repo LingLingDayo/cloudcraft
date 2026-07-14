@@ -35,6 +35,7 @@ export interface ChunkVisibilityResolverInput {
   readonly view: ChunkStreamingView | null;
   readonly positionUncertaintyRadius?: number;
   readonly directionUncertaintyRadians?: number;
+  readonly allowUnknownTraversal?: boolean;
   readonly getChunkState: (key: string) => ChunkVisibilityState | undefined;
 }
 
@@ -183,8 +184,11 @@ function canExitChunk(
   node: PropagationNode,
   exitFace: ChunkFace,
   state: ChunkVisibilityState | undefined,
+  allowUnknownTraversal: boolean,
 ): boolean {
-  if (!state || !isCurrentChunkVisibilitySummary(state.summary, state.revision)) return true;
+  if (!state || !isCurrentChunkVisibilitySummary(state.summary, state.revision)) {
+    return allowUnknownTraversal;
+  }
   if (node.entryFace === null) return hasOpenFace(state.summary, exitFace);
   return hasPortalConnection(state.summary, node.entryFace, exitFace);
 }
@@ -202,6 +206,7 @@ export class ChunkVisibilityResolver {
     const directionUncertaintyRadians = Number.isFinite(input.directionUncertaintyRadians)
       ? Math.max(0, Math.min(Math.PI, input.directionUncertaintyRadians ?? 0))
       : 0;
+    const allowUnknownTraversal = input.allowUnknownTraversal === true;
     let queueIndex = 0;
 
     while (queueIndex < queue.length) {
@@ -230,7 +235,7 @@ export class ChunkVisibilityResolver {
               directionUncertaintyRadians,
             )
           )
-          || !canExitChunk(node, direction.exitFace, state)
+          || !canExitChunk(node, direction.exitFace, state, allowUnknownTraversal)
         ) {
           continue;
         }

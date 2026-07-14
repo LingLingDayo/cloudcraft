@@ -94,7 +94,7 @@ graph TD
 
 ## 区块可见性流送
 
-运行时区块加载由 `WorldChunkManager` 与 `streaming` 子模块共同负责：Worker 生成版本化 portal 摘要，可见性解析器通过矩形水平/垂直视锥平面与区块包围球筛选候选，再沿透明连通拓扑传播，并在直接可见集合外增加一层安全缓冲。所有异步结果在挂载前校验 active epoch、区块 revision 与世界 seed；生成和网格任务使用互不阻塞的独立并发上限。
+运行时区块加载由 `WorldChunkManager` 与 `streaming` 子模块共同负责：Worker 生成版本化 portal 摘要，可见性解析器通过矩形水平/垂直视锥平面与区块包围球筛选候选，再沿透明连通拓扑传播，并在直接可见集合外增加一层安全缓冲。未知摘要只形成异步加载前沿，不允许连续穿透铺满视锥；透明摘要返回后才继续扩展，纯新增前沿复用当前 epoch。所有异步结果在挂载前校验 active epoch、区块 revision 与世界 seed；生成和网格任务使用互不阻塞的独立并发上限。
 
 相机参数由 `GameManager` 通过复用的强类型 `ChunkStreamingView` 提供，方向、投影和 block position bucket 量化后才触发重新解析；bucket 位移不确定半径保证稳定帧不分配对象且不会漏载。存档修改通过统一入口比较真实体素变化，整批最多推进一次 revision；变化会立即使旧摘要及未完成的旧 revision 网格结果失效。Worker 调度依据真实存活/idle 能力同步降级，以 owner、epoch、revision、seed 取消和去重 queued 任务，并对瞬时失败执行无 timer 的有限跨帧重试。完整契约、失效规则与扩展点见 [区块可见性流送说明](./streaming/README.md)。
 

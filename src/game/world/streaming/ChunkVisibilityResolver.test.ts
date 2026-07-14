@@ -129,7 +129,7 @@ describe('Chunk visibility topology propagation', () => {
     expect(result.active.has(chunkKey(4, 1, 0))).toBe(false);
   });
 
-  test('a stale summary is treated as unknown and conservatively allows propagation', () => {
+  test('a stale summary stops propagation at the visible frontier while retaining one buffer', () => {
     const states = new Map<string, ChunkVisibilityState>([
       [chunkKey(0, 1, 0), state(transparentSummary)],
       [chunkKey(1, 1, 0), state(opaqueSummary, TEST_REVISION + 1)],
@@ -137,6 +137,24 @@ describe('Chunk visibility topology propagation', () => {
     ]);
 
     const result = new ChunkVisibilityResolver().resolve(createResolverInput(states));
+
+    expect(result.directVisible.has(chunkKey(1, 1, 0))).toBe(true);
+    expect(result.directVisible.has(chunkKey(2, 1, 0))).toBe(false);
+    expect(result.active.has(chunkKey(2, 1, 0))).toBe(true);
+    expect(result.active.has(chunkKey(3, 1, 0))).toBe(false);
+  });
+
+  test('the synchronous fallback may traverse an unknown summary conservatively', () => {
+    const states = new Map<string, ChunkVisibilityState>([
+      [chunkKey(0, 1, 0), state(transparentSummary)],
+      [chunkKey(1, 1, 0), state(opaqueSummary, TEST_REVISION + 1)],
+      [chunkKey(2, 1, 0), state(opaqueSummary)],
+    ]);
+
+    const result = new ChunkVisibilityResolver().resolve({
+      ...createResolverInput(states),
+      allowUnknownTraversal: true,
+    });
 
     expect(result.directVisible.has(chunkKey(2, 1, 0))).toBe(true);
   });
