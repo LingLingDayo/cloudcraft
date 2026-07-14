@@ -14,7 +14,7 @@ describe('WeatherTimeline', () => {
     const second = new WeatherTimeline('test-weather-seed');
 
     for (let index = 0; index < 12; index++) {
-      const elapsed = WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds * 0.5;
+      const elapsed = WEATHER_TIMELINE_CONFIG.cycleDurationSeconds / 24;
       expect(first.update(elapsed)).toBe(second.update(elapsed));
     }
 
@@ -27,11 +27,10 @@ describe('WeatherTimeline', () => {
     const largeStep = new WeatherTimeline('test-weather-boundary-seed');
     const smallSteps = new WeatherTimeline('test-weather-boundary-seed');
 
-    largeStep.update(WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds);
+    const elapsed = WEATHER_TIMELINE_CONFIG.cycleDurationSeconds * 0.37;
+    largeStep.update(elapsed);
     for (let index = 0; index < stepCount; index++) {
-      smallSteps.update(
-        WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds / stepCount,
-      );
+      smallSteps.update(elapsed / stepCount);
     }
 
     expect(smallSteps.getWeather()).toBe(largeStep.getWeather());
@@ -49,22 +48,49 @@ describe('WeatherTimeline', () => {
     expect(WEATHER_IDS).toContain(timeline.getWeather());
   });
 
-  test('automatically migrates between clear, rain and storm fragments', () => {
+  test('automatically migrates between clear, rain and storm phases', () => {
     const timeline = new WeatherTimeline('test-automatic-weather-seed');
     const observed = new Set([timeline.getWeather()]);
+    const sampleIntervalSeconds = 15;
 
-    for (let index = 0; index < WEATHER_TIMELINE_CONFIG.pattern.length; index++) {
-      timeline.update(WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds);
+    for (
+      let elapsed = 0;
+      elapsed < WEATHER_TIMELINE_CONFIG.cycleDurationSeconds;
+      elapsed += sampleIntervalSeconds
+    ) {
+      timeline.update(sampleIntervalSeconds);
       observed.add(timeline.getWeather());
     }
 
     expect(observed).toEqual(new Set(['clear', 'rain', 'storm']));
   });
 
+  test('uses long clear and rain phases while keeping storms uncommon', () => {
+    const phases = WEATHER_TIMELINE_CONFIG.phases;
+    const clearDurations = phases
+      .filter(phase => phase.weatherId === 'clear')
+      .map(phase => phase.durationSeconds);
+    const rainDurations = phases
+      .filter(phase => phase.weatherId === 'rain')
+      .map(phase => phase.durationSeconds);
+    const stormDuration = phases
+      .filter(phase => phase.weatherId === 'storm')
+      .reduce((total, phase) => total + phase.durationSeconds, 0);
+    const precipitationDuration = phases
+      .filter(phase => phase.weatherId !== 'clear')
+      .reduce((total, phase) => total + phase.durationSeconds, 0);
+
+    expect(Math.min(...clearDurations)).toBeGreaterThanOrEqual(180);
+    expect(Math.min(...rainDurations)).toBeGreaterThanOrEqual(120);
+    expect(Math.max(...rainDurations)).toBeLessThanOrEqual(180);
+    expect(stormDuration / WEATHER_TIMELINE_CONFIG.cycleDurationSeconds).toBeLessThan(0.1);
+    expect(precipitationDuration / WEATHER_TIMELINE_CONFIG.cycleDurationSeconds).toBeLessThan(0.4);
+  });
+
   test('holds a manual weather override until automatic mode is resumed', () => {
     const automatic = new WeatherTimeline('test-manual-weather-seed');
     const overridden = new WeatherTimeline('test-manual-weather-seed');
-    const elapsed = WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds * 4;
+    const elapsed = WEATHER_TIMELINE_CONFIG.cycleDurationSeconds * 0.3;
 
     overridden.setManualWeather('storm');
     expect(overridden.update(elapsed)).toBe('storm');
@@ -76,7 +102,7 @@ describe('WeatherTimeline', () => {
 
   test('restores a versioned snapshot and rejects an unsupported future version', () => {
     const source = new WeatherTimeline('test-snapshot-weather-seed');
-    source.update(WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds * 2.5);
+    source.update(WEATHER_TIMELINE_CONFIG.cycleDurationSeconds * 0.42);
     source.setManualWeather('rain');
 
     const snapshot = source.createSnapshot();
@@ -100,7 +126,7 @@ describe('EnvironmentState weather integration', () => {
     const state = new EnvironmentState('test-environment-weather-seed');
     const automatic = new WeatherTimeline('test-environment-weather-seed');
     const cameraPosition = new Vector3(0, 80, 0);
-    const elapsed = WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds * 3;
+    const elapsed = WEATHER_TIMELINE_CONFIG.cycleDurationSeconds * 0.4;
 
     state.setWeather('storm');
     state.update(elapsed, cameraPosition, () => 0);

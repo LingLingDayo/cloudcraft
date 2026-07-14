@@ -2,22 +2,34 @@ export const WEATHER_IDS = ['clear', 'rain', 'storm'] as const;
 
 export type WeatherId = (typeof WEATHER_IDS)[number];
 
-const WEATHER_PATTERN = [
-  'clear',
-  'rain',
-  'clear',
-  'storm',
-  'clear',
-  'rain',
-] as const satisfies readonly WeatherId[];
+export interface WeatherPhase {
+  readonly weatherId: WeatherId;
+  readonly durationSeconds: number;
+}
+
+const WEATHER_PHASES = Object.freeze([
+  Object.freeze({ weatherId: 'clear', durationSeconds: 180 }),
+  Object.freeze({ weatherId: 'rain', durationSeconds: 120 }),
+  Object.freeze({ weatherId: 'clear', durationSeconds: 240 }),
+  Object.freeze({ weatherId: 'rain', durationSeconds: 180 }),
+  Object.freeze({ weatherId: 'clear', durationSeconds: 300 }),
+  Object.freeze({ weatherId: 'storm', durationSeconds: 90 }),
+  Object.freeze({ weatherId: 'clear', durationSeconds: 210 }),
+  Object.freeze({ weatherId: 'rain', durationSeconds: 150 }),
+] as const satisfies readonly WeatherPhase[]);
+
+const WEATHER_CYCLE_DURATION_SECONDS = WEATHER_PHASES.reduce(
+  (total, phase) => total + phase.durationSeconds,
+  0,
+);
 
 export const WEATHER_TIMELINE_CONFIG = Object.freeze({
   snapshotSchemaVersion: 1,
-  fragmentDurationSeconds: 45,
+  cycleDurationSeconds: WEATHER_CYCLE_DURATION_SECONDS,
   timeUnitsPerSecond: 1_000_000_000,
   transitionSpeedPerSecond: 0.2,
   defaultSeed: 'cloudcraft',
-  pattern: Object.freeze(WEATHER_PATTERN),
+  phases: WEATHER_PHASES,
 } as const);
 
 export interface WeatherSnapshot {
@@ -68,7 +80,7 @@ export function validateWeatherSnapshot(
 }
 
 /**
- * Derives weather from a seed and fixed time fragments without maintaining a
+ * Derives weather from seed-ordered phases without maintaining a
  * mutable random generator, so update cadence cannot change the sequence.
  */
 export class WeatherTimeline {
@@ -137,22 +149,28 @@ export class WeatherTimeline {
   }
 
   private getAutomaticWeather(): WeatherId {
-    const pattern = WEATHER_TIMELINE_CONFIG.pattern;
-    const fragmentTimeUnits = WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds
-      * WEATHER_TIMELINE_CONFIG.timeUnitsPerSecond;
-    const fragmentIndex = Math.floor(
-      this.getEffectiveElapsedTimeUnits() / fragmentTimeUnits,
-    );
-    const offset = this.seedHash % pattern.length;
+    const phases = WEATHER_TIMELINE_CONFIG.phases;
+    const offset = this.seedHash % phases.length;
     const direction = (this.seedHash & 1) === 0 ? 1 : -1;
-    const rawIndex = offset + fragmentIndex * direction;
-    const patternIndex = ((rawIndex % pattern.length) + pattern.length) % pattern.length;
-    return pattern[patternIndex];
+    let remainingTimeUnits = this.getEffectiveElapsedTimeUnits();
+
+    for (let phaseOffset = 0; phaseOffset < phases.length; phaseOffset++) {
+      const rawIndex = offset + phaseOffset * direction;
+      const phaseIndex = ((rawIndex % phases.length) + phases.length) % phases.length;
+      const phase = phases[phaseIndex];
+      const phaseTimeUnits = phase.durationSeconds
+        * WEATHER_TIMELINE_CONFIG.timeUnitsPerSecond;
+      if (remainingTimeUnits < phaseTimeUnits) {
+        return phase.weatherId;
+      }
+      remainingTimeUnits -= phaseTimeUnits;
+    }
+
+    return phases[offset].weatherId;
   }
 
   private getCycleDurationSeconds(): number {
-    return WEATHER_TIMELINE_CONFIG.fragmentDurationSeconds
-      * WEATHER_TIMELINE_CONFIG.pattern.length;
+    return WEATHER_TIMELINE_CONFIG.cycleDurationSeconds;
   }
 
   private getCycleTimeUnits(): number {

@@ -187,84 +187,84 @@ export class RainWeather implements IWeather {
   private keyframes: Keyframe[] = [
     {
       time: 0.0, // Sunrise
-      skyStart: new THREE.Color(0x2a3038),
-      skyEnd: new THREE.Color(0x3a424d),
-      fogColor: new THREE.Color(0x30363f),
-      lightColor: new THREE.Color(0x888888),
-      ambientIntensity: 0.15,
-      dirLightIntensity: 0.15,
+      skyStart: new THREE.Color(0x292b38),
+      skyEnd: new THREE.Color(0xc28c76),
+      fogColor: new THREE.Color(0xb88976),
+      lightColor: new THREE.Color(0xd9b3a0),
+      ambientIntensity: 0.27,
+      dirLightIntensity: 0.43,
     },
     {
       time: 0.15, // Morning
-      skyStart: new THREE.Color(0x444f5a),
-      skyEnd: new THREE.Color(0x5a6978),
-      fogColor: new THREE.Color(0x4c5865),
-      lightColor: new THREE.Color(0xcccccc),
-      ambientIntensity: 0.22,
-      dirLightIntensity: 0.3,
+      skyStart: new THREE.Color(0x7893a3),
+      skyEnd: new THREE.Color(0x8baebe),
+      fogColor: new THREE.Color(0x84a4b2),
+      lightColor: new THREE.Color(0xe8edf0),
+      ambientIntensity: 0.54,
+      dirLightIntensity: 1.05,
     },
     {
       time: 0.25, // Noon
-      skyStart: new THREE.Color(0x444f5a),
-      skyEnd: new THREE.Color(0x5a6978),
-      fogColor: new THREE.Color(0x4c5865),
-      lightColor: new THREE.Color(0xcccccc),
-      ambientIntensity: 0.25,
-      dirLightIntensity: 0.35,
+      skyStart: new THREE.Color(0x7893a3),
+      skyEnd: new THREE.Color(0x8baebe),
+      fogColor: new THREE.Color(0x84a4b2),
+      lightColor: new THREE.Color(0xe8edf0),
+      ambientIntensity: 0.63,
+      dirLightIntensity: 1.2,
     },
     {
       time: 0.35, // Afternoon
-      skyStart: new THREE.Color(0x444f5a),
-      skyEnd: new THREE.Color(0x5a6978),
-      fogColor: new THREE.Color(0x4c5865),
-      lightColor: new THREE.Color(0xcccccc),
-      ambientIntensity: 0.22,
-      dirLightIntensity: 0.3,
+      skyStart: new THREE.Color(0x7893a3),
+      skyEnd: new THREE.Color(0x8baebe),
+      fogColor: new THREE.Color(0x84a4b2),
+      lightColor: new THREE.Color(0xe8edf0),
+      ambientIntensity: 0.54,
+      dirLightIntensity: 1.05,
     },
     {
       time: 0.5, // Sunset
-      skyStart: new THREE.Color(0x2a3038),
-      skyEnd: new THREE.Color(0x3a424d),
-      fogColor: new THREE.Color(0x30363f),
-      lightColor: new THREE.Color(0x888888),
-      ambientIntensity: 0.15,
-      dirLightIntensity: 0.15,
+      skyStart: new THREE.Color(0x292b38),
+      skyEnd: new THREE.Color(0xc28c76),
+      fogColor: new THREE.Color(0xb88976),
+      lightColor: new THREE.Color(0xd9b3a0),
+      ambientIntensity: 0.27,
+      dirLightIntensity: 0.43,
     },
     {
       time: 0.58, // Night start
-      skyStart: new THREE.Color(0x0a0c10),
-      skyEnd: new THREE.Color(0x101318),
-      fogColor: new THREE.Color(0x0c0e12),
-      lightColor: new THREE.Color(0x556688),
-      ambientIntensity: 0.08,
-      dirLightIntensity: 0.05,
+      skyStart: new THREE.Color(0x080a12),
+      skyEnd: new THREE.Color(0x0a0d17),
+      fogColor: new THREE.Color(0x080911),
+      lightColor: new THREE.Color(0x526580),
+      ambientIntensity: 0.135,
+      dirLightIntensity: 0.09,
     },
     {
       time: 0.75, // Midnight
-      skyStart: new THREE.Color(0x050608),
-      skyEnd: new THREE.Color(0x080a0d),
-      fogColor: new THREE.Color(0x06070a),
-      lightColor: new THREE.Color(0x334466),
-      ambientIntensity: 0.05,
-      dirLightIntensity: 0.02,
+      skyStart: new THREE.Color(0x04050a),
+      skyEnd: new THREE.Color(0x060812),
+      fogColor: new THREE.Color(0x04050a),
+      lightColor: new THREE.Color(0x94a6c9),
+      ambientIntensity: 0.09,
+      dirLightIntensity: 0.17,
     },
     {
       time: 0.92, // Late night
-      skyStart: new THREE.Color(0x0a0c10),
-      skyEnd: new THREE.Color(0x101318),
-      fogColor: new THREE.Color(0x0c0e12),
-      lightColor: new THREE.Color(0x556688),
-      ambientIntensity: 0.08,
-      dirLightIntensity: 0.05,
+      skyStart: new THREE.Color(0x080a12),
+      skyEnd: new THREE.Color(0x0a0d17),
+      fogColor: new THREE.Color(0x080911),
+      lightColor: new THREE.Color(0x526580),
+      ambientIntensity: 0.135,
+      dirLightIntensity: 0.09,
     },
     {
       time: 1.0, // Sunrise (loop)
-      skyStart: new THREE.Color(0x2a3038),
-      skyEnd: new THREE.Color(0x3a424d),
-      fogColor: new THREE.Color(0x30363f),
-      lightColor: new THREE.Color(0x888888),
-      ambientIntensity: 0.15,
-      dirLightIntensity: 0.15,
+      skyStart: new THREE.Color(0x292b38),
+      skyEnd: new THREE.Color(0xc28c76),
+      fogColor: new THREE.Color(0xb88976),
+      lightColor: new THREE.Color(0xd9b3a0),
+      ambientIntensity: 0.27,
+      dirLightIntensity: 0.43,
     },
   ];
 
@@ -291,7 +291,7 @@ export class RainWeather implements IWeather {
   }
 
   public getFogDensity(_timeRatio: number): number {
-    return 0.03;
+    return 0.0185;
   }
 }
 
