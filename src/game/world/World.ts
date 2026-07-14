@@ -29,6 +29,15 @@ export const CHUNK_SIZE_Z = 16;
 export const CHUNK_SIZE_Y = 16;
 export const WORLD_HEIGHT = 512;
 
+const CHUNK_VISIBILITY_REVISION_POLICY = {
+  RETAIN_STABLE_TOPOLOGY: 'retain-stable-topology',
+  DISCARD_TOPOLOGY: 'discard-topology',
+} as const;
+
+type ChunkVisibilityRevisionPolicy = typeof CHUNK_VISIBILITY_REVISION_POLICY[
+  keyof typeof CHUNK_VISIBILITY_REVISION_POLICY
+];
+
 export class World {
   public game: any;
   public blockEntities: BlockEntityManager;
@@ -41,6 +50,7 @@ export class World {
   private originalBlocks: Map<string, Map<string, number>>;
   private chunkRevisions = new Map<string, number>();
   private chunkVisibilitySummaries = new Map<string, ChunkVisibilitySummary>();
+  private chunkVisibilityFallbackSummaries = new Map<string, ChunkVisibilitySummary>();
 
   private seed: string;
   public generator: WorldGenerator;
@@ -91,6 +101,7 @@ export class World {
     this.generator.setSeed(seed);
     this.chunkRevisions.clear();
     this.chunkVisibilitySummaries.clear();
+    this.chunkVisibilityFallbackSummaries.clear();
     this.chunkManager.clearCache();
   }
 
@@ -106,19 +117,21 @@ export class World {
     return {
       revision: this.getChunkRevision(key),
       summary: this.chunkVisibilitySummaries.get(key),
+      fallbackSummary: this.chunkVisibilityFallbackSummaries.get(key),
     };
   }
 
   public applyChunkVisibilitySummary(key: string, summary: ChunkVisibilitySummary): boolean {
     if (summary.chunkRevision !== this.getChunkRevision(key)) return false;
-    const previous = this.chunkVisibilitySummaries.get(key);
+    const previous = this.chunkVisibilitySummaries.get(key)
+      ?? this.chunkVisibilityFallbackSummaries.get(key);
     this.chunkVisibilitySummaries.set(key, summary);
+    this.chunkVisibilityFallbackSummaries.delete(key);
     if (
       !previous
       || previous.schemaVersion !== summary.schemaVersion
       || previous.openFacesMask !== summary.openFacesMask
       || previous.portalMask !== summary.portalMask
-      || previous.chunkRevision !== summary.chunkRevision
     ) {
       this.chunkManager.invalidateVisibility();
     }
@@ -136,6 +149,7 @@ export class World {
     this.chunks.set(key, chunk);
     if (this.modifiedBlocks.has(key)) {
       this.chunkVisibilitySummaries.delete(key);
+      this.chunkVisibilityFallbackSummaries.delete(key);
       this.chunkManager.invalidateVisibility();
     } else {
       this.applyChunkVisibilitySummary(key, summary);
@@ -143,10 +157,22 @@ export class World {
     return true;
   }
 
-  private incrementChunkRevision(key: string): number {
+  private incrementChunkRevision(
+    key: string,
+    visibilityPolicy: ChunkVisibilityRevisionPolicy,
+  ): number {
     const revision = this.getChunkRevision(key) + 1;
     this.chunkRevisions.set(key, revision);
-    this.chunkVisibilitySummaries.delete(key);
+    if (visibilityPolicy === CHUNK_VISIBILITY_REVISION_POLICY.RETAIN_STABLE_TOPOLOGY) {
+      const stableSummary = this.chunkVisibilitySummaries.get(key);
+      if (stableSummary) {
+        this.chunkVisibilityFallbackSummaries.set(key, stableSummary);
+      }
+      this.chunkVisibilitySummaries.delete(key);
+    } else {
+      this.chunkVisibilitySummaries.delete(key);
+      this.chunkVisibilityFallbackSummaries.delete(key);
+    }
     this.chunkManager.invalidateVisibility();
     return revision;
   }
@@ -214,7 +240,10 @@ export class World {
 
     const oldType = chunk[index * 2];
     if (oldType === type) return;
-    this.incrementChunkRevision(key);
+    this.incrementChunkRevision(
+      key,
+      CHUNK_VISIBILITY_REVISION_POLICY.RETAIN_STABLE_TOPOLOGY,
+    );
 
     // Track modification
     const posKey = `${lx},${ly},${lz}`;
@@ -503,7 +532,12 @@ export class World {
       chunk[index * 2] = type;
       changed = true;
     }
-    if (changed) this.incrementChunkRevision(chunkKey);
+    if (changed) {
+      this.incrementChunkRevision(
+        chunkKey,
+        CHUNK_VISIBILITY_REVISION_POLICY.DISCARD_TOPOLOGY,
+      );
+    }
   }
 
   public recalculateColumnSkyLight(x: number, z: number): void {

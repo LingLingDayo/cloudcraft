@@ -165,6 +165,12 @@ export function isCurrentChunkVisibilitySummary(
   summary: ChunkVisibilitySummary | undefined,
   chunkRevision: number,
 ): summary is ChunkVisibilitySummary {
-  return summary?.schemaVersion === CHUNK_VISIBILITY_SCHEMA_VERSION
+  return isCompatibleChunkVisibilitySummary(summary)
     && summary.chunkRevision === chunkRevision;
+}
+
+export function isCompatibleChunkVisibilitySummary(
+  summary: ChunkVisibilitySummary | undefined,
+): summary is ChunkVisibilitySummary {
+  return summary?.schemaVersion === CHUNK_VISIBILITY_SCHEMA_VERSION;
 }

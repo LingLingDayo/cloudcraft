@@ -31,6 +31,39 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
 }) as any;
 
 describe('World chunk modification revisions', () => {
+  test.each([
+    { operation: 'placing', initialType: BLOCK_TYPES.AIR, nextType: BLOCK_TYPES.STONE },
+    { operation: 'breaking', initialType: BLOCK_TYPES.STONE, nextType: BLOCK_TYPES.AIR },
+  ])('preserves the previous visibility topology while $operation a block', ({
+    initialType,
+    nextType,
+  }) => {
+    const world = new World('test-runtime-visibility-revision');
+    const key = '0,1,0';
+    const chunk = new Uint8Array(TEST_CHUNK_BYTE_LENGTH);
+    for (let index = 0; index < chunk.length; index += 2) {
+      chunk[index] = initialType;
+    }
+    world.chunks.set(key, chunk);
+    const previousSummary = buildChunkVisibilitySummary(chunk, world.getChunkRevision(key));
+    world.applyChunkVisibilitySummary(key, previousSummary);
+    vi.spyOn(world, 'recalculateColumnSkyLight').mockImplementation(() => {});
+    vi.spyOn(world, 'notifyNeighborsOfStateChange').mockImplementation(() => {});
+    vi.spyOn(world, 'updateChunkMeshAsync').mockImplementation(() => {});
+
+    world.setBlock(0, 16, 0, nextType);
+
+    expect(world.getChunkRevision(key)).toBe(1);
+    expect(world.getChunkVisibilitySummary(key)).toBeUndefined();
+    expect(world.getChunkVisibilityState(key).fallbackSummary).toBe(previousSummary);
+    expect(world.getChunkVisibilityState(key).fallbackSummary?.chunkRevision).toBe(0);
+
+    world.setBlock(1, 16, 0, nextType);
+
+    expect(world.getChunkRevision(key)).toBe(2);
+    expect(world.getChunkVisibilityState(key).fallbackSummary).toBe(previousSummary);
+  });
+
   test('increments revision once for a changed batch and not again for identical data', () => {
     const world = new World('test-modification-revision');
     const key = '0,0,0';

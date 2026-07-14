@@ -38,6 +38,13 @@ function state(summary: ChunkVisibilitySummary, revision = summary.chunkRevision
   return { summary, revision };
 }
 
+function fallbackState(
+  fallbackSummary: ChunkVisibilitySummary,
+  revision: number,
+): ChunkVisibilityState {
+  return { summary: undefined, fallbackSummary, revision };
+}
+
 function createResolverInput(
   states: ReadonlyMap<string, ChunkVisibilityState>,
   options: {
@@ -129,25 +136,46 @@ describe('Chunk visibility topology propagation', () => {
     expect(result.active.has(chunkKey(4, 1, 0))).toBe(false);
   });
 
-  test('a stale summary stops propagation at the visible frontier while retaining one buffer', () => {
+  test('a stale compatible summary preserves its previous topology during remeshing', () => {
     const states = new Map<string, ChunkVisibilityState>([
       [chunkKey(0, 1, 0), state(transparentSummary)],
-      [chunkKey(1, 1, 0), state(opaqueSummary, TEST_REVISION + 1)],
+      [chunkKey(1, 1, 0), fallbackState(transparentSummary, TEST_REVISION + 1)],
       [chunkKey(2, 1, 0), state(opaqueSummary)],
     ]);
 
     const result = new ChunkVisibilityResolver().resolve(createResolverInput(states));
 
     expect(result.directVisible.has(chunkKey(1, 1, 0))).toBe(true);
+    expect(result.directVisible.has(chunkKey(2, 1, 0))).toBe(true);
+    expect(result.active.has(chunkKey(3, 1, 0))).toBe(true);
+  });
+
+  test('an incompatible summary stops at the unknown frontier with one safety buffer', () => {
+    const incompatibleSummary = {
+      ...transparentSummary,
+      schemaVersion: transparentSummary.schemaVersion + 1,
+    };
+    const states = new Map<string, ChunkVisibilityState>([
+      [chunkKey(0, 1, 0), state(transparentSummary)],
+      [chunkKey(1, 1, 0), fallbackState(incompatibleSummary, TEST_REVISION + 1)],
+      [chunkKey(2, 1, 0), state(opaqueSummary)],
+    ]);
+
+    const result = new ChunkVisibilityResolver().resolve(createResolverInput(states));
+
     expect(result.directVisible.has(chunkKey(2, 1, 0))).toBe(false);
     expect(result.active.has(chunkKey(2, 1, 0))).toBe(true);
     expect(result.active.has(chunkKey(3, 1, 0))).toBe(false);
   });
 
-  test('the synchronous fallback may traverse an unknown summary conservatively', () => {
+  test('the synchronous fallback may traverse an incompatible summary conservatively', () => {
+    const incompatibleSummary = {
+      ...transparentSummary,
+      schemaVersion: transparentSummary.schemaVersion + 1,
+    };
     const states = new Map<string, ChunkVisibilityState>([
       [chunkKey(0, 1, 0), state(transparentSummary)],
-      [chunkKey(1, 1, 0), state(opaqueSummary, TEST_REVISION + 1)],
+      [chunkKey(1, 1, 0), fallbackState(incompatibleSummary, TEST_REVISION + 1)],
       [chunkKey(2, 1, 0), state(opaqueSummary)],
     ]);
 

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Worker test doubles require generic task payloads */
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { BLOCK_TYPES } from './BlockConfig';
 import { CHUNK_STREAMING_CONFIG } from './streaming/ChunkStreamingConfig';
 import { buildChunkVisibilitySummary } from './streaming/ChunkVisibilitySummary';
 import {
@@ -184,6 +185,58 @@ describe('WorldChunkManager visibility cache', () => {
     expect(portalExpandedActive.has('3,1,0')).toBe(true);
     expect(portalExpandedActive.has('4,1,0')).toBe(false);
     expect(world.chunkManager.getStreamingEpoch()).toBe(epoch);
+  });
+
+  test('keeps loaded chunks active while a block edit waits for its new visibility summary', async () => {
+    const world = createStreamingWorld('test-block-edit-stable-active-set');
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    assumeLiveWorkerPool(WorkerManager.getInstance());
+    const transparentChunk = new Uint8Array(TEST_CHUNK_BYTE_LENGTH);
+    const opaqueChunk = new Uint8Array(TEST_CHUNK_BYTE_LENGTH);
+    for (let index = 0; index < opaqueChunk.length; index += 2) {
+      opaqueChunk[index] = BLOCK_TYPES.STONE;
+    }
+    for (const [key, chunk] of [
+      ['0,1,0', transparentChunk],
+      ['1,1,0', transparentChunk.slice()],
+      ['2,1,0', opaqueChunk],
+    ] as const) {
+      world.chunks.set(key, chunk);
+      world.applyChunkVisibilitySummary(
+        key,
+        buildChunkVisibilitySummary(chunk, world.getChunkRevision(key)),
+      );
+    }
+    world.loadArea(0, 16, 0, 4);
+    const activeBeforeEdit = new Set<string>((world.chunkManager as any).desiredActiveKeys);
+    const epochBeforeEdit = world.chunkManager.getStreamingEpoch();
+    const distantKey = '3,1,0';
+    const renderer = world.getRenderer();
+    const removeChunkMesh = vi.spyOn(renderer, 'removeChunkMesh').mockImplementation(() => {});
+    renderer.getChunkMeshes().set(distantKey, {} as any);
+    vi.spyOn(world, 'recalculateColumnSkyLight').mockImplementation(() => {});
+    vi.spyOn(world, 'notifyNeighborsOfStateChange').mockImplementation(() => {});
+    vi.spyOn(world, 'updateChunkMeshAsync').mockImplementation(() => {});
+
+    world.setBlock(0, 16, 0, BLOCK_TYPES.STONE);
+    world.loadArea(0, 16, 0, 4);
+
+    expect(new Set<string>((world.chunkManager as any).desiredActiveKeys)).toEqual(activeBeforeEdit);
+    expect(world.chunkManager.getStreamingEpoch()).toBe(epochBeforeEdit);
+    expect(removeChunkMesh).not.toHaveBeenCalledWith(distantKey);
+    expect(world.getChunkVisibilitySummary('0,1,0')).toBeUndefined();
+    expect(world.getChunkVisibilityState('0,1,0').fallbackSummary?.chunkRevision).toBe(0);
+
+    const currentChunk = world.chunks.get('0,1,0')!;
+    world.applyChunkVisibilitySummary(
+      '0,1,0',
+      buildChunkVisibilitySummary(currentChunk, world.getChunkRevision('0,1,0')),
+    );
+    world.loadArea(0, 16, 0, 4);
+
+    expect(new Set<string>((world.chunkManager as any).desiredActiveKeys)).toEqual(activeBeforeEdit);
+    expect(world.getChunkVisibilitySummary('0,1,0')?.chunkRevision).toBe(1);
+    expect(world.getChunkVisibilityState('0,1,0').fallbackSummary).toBeUndefined();
   });
 });
 describe('WorldChunkManager worker capability fallback', () => {

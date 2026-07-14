@@ -5,6 +5,7 @@ import {
   ChunkFace,
   hasOpenFace,
   hasPortalConnection,
+  isCompatibleChunkVisibilitySummary,
   isCurrentChunkVisibilitySummary,
   type ChunkVisibilitySummary,
 } from './ChunkVisibilitySummary';
@@ -24,6 +25,7 @@ export interface ChunkStreamingView {
 
 export interface ChunkVisibilityState {
   readonly summary: ChunkVisibilitySummary | undefined;
+  readonly fallbackSummary?: ChunkVisibilitySummary;
   readonly revision: number;
 }
 
@@ -186,11 +188,16 @@ function canExitChunk(
   state: ChunkVisibilityState | undefined,
   allowUnknownTraversal: boolean,
 ): boolean {
-  if (!state || !isCurrentChunkVisibilitySummary(state.summary, state.revision)) {
+  const summary = state && isCurrentChunkVisibilitySummary(state.summary, state.revision)
+    ? state.summary
+    : state && isCompatibleChunkVisibilitySummary(state.fallbackSummary)
+      ? state.fallbackSummary
+      : undefined;
+  if (!summary) {
     return allowUnknownTraversal;
   }
-  if (node.entryFace === null) return hasOpenFace(state.summary, exitFace);
-  return hasPortalConnection(state.summary, node.entryFace, exitFace);
+  if (node.entryFace === null) return hasOpenFace(summary, exitFace);
+  return hasPortalConnection(summary, node.entryFace, exitFace);
 }
 
 export class ChunkVisibilityResolver {
