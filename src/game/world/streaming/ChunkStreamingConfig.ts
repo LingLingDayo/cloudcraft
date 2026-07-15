@@ -19,6 +19,10 @@ export const CHUNK_STREAMING_CONFIG = {
   viewPositionBucketSizeBlocks: VIEW_POSITION_BUCKET_SIZE_BLOCKS,
   viewPositionBucketUncertaintyRadius: Math.sqrt(3) * VIEW_POSITION_BUCKET_SIZE_BLOCKS,
   viewBasisFallbackThreshold: 0.000_001,
+  // Used when camera aspect/FOV are 0, NaN, or otherwise unusable (e.g. 0x0 canvas).
+  // Must NOT fall back to "admit entire sphere" or streaming degenerates to develop-style loads.
+  defaultVerticalFovRadians: (75 * Math.PI) / 180,
+  defaultAspect: 16 / 9,
   chunkBoundingSphereRadius: Math.sqrt(3 * 8 * 8),
   worldLoadingBudgetMs: 50,
   gameplayBudgetMs: 8,

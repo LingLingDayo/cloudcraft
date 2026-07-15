@@ -76,8 +76,8 @@ export class GameManager {
   }
 
   private initThree() {
-    const width = this.canvas.clientWidth;
-    const height = this.canvas.clientHeight;
+    const width = Math.max(1, this.canvas.clientWidth || 1);
+    const height = Math.max(1, this.canvas.clientHeight || 1);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
@@ -93,6 +93,7 @@ export class GameManager {
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.FogExp2(0x7ec0ee, 0.015);
 
+    // Guard against 0x0 canvas (aspect NaN/Infinity) which used to disable frustum culling.
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
   }
 
@@ -184,8 +185,18 @@ export class GameManager {
     this.chunkStreamingView.forward.x = this.chunkStreamingDirection.x;
     this.chunkStreamingView.forward.y = this.chunkStreamingDirection.y;
     this.chunkStreamingView.forward.z = this.chunkStreamingDirection.z;
-    this.chunkStreamingView.verticalFovRadians = THREE.MathUtils.degToRad(this.camera.fov);
-    this.chunkStreamingView.aspect = this.camera.aspect;
+    const fovRadians = THREE.MathUtils.degToRad(this.camera.fov);
+    this.chunkStreamingView.verticalFovRadians = (
+      Number.isFinite(fovRadians) && fovRadians > 0 && fovRadians < Math.PI
+    )
+      ? fovRadians
+      : THREE.MathUtils.degToRad(75);
+    const aspect = this.camera.aspect;
+    this.chunkStreamingView.aspect = (
+      Number.isFinite(aspect) && aspect > 0
+    )
+      ? aspect
+      : 16 / 9;
     return this.chunkStreamingView;
   }
 
@@ -208,8 +219,8 @@ export class GameManager {
   }
 
   private onResize = () => {
-    const width = this.canvas.clientWidth;
-    const height = this.canvas.clientHeight;
+    const width = Math.max(1, this.canvas.clientWidth || 1);
+    const height = Math.max(1, this.canvas.clientHeight || 1);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);

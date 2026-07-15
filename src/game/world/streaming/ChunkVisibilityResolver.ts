@@ -96,18 +96,30 @@ function isInConservativeView(
   positionUncertaintyRadius: number,
   directionUncertaintyRadians: number,
 ): boolean {
+  // Invalid camera pose cannot define a frustum; only the near-sphere path below
+  // (and always-available neighbors in the resolver) may still include a chunk.
+  // Never "admit all" here — that reloads the entire render-distance sphere.
   if (
-    !Number.isFinite(view.verticalFovRadians)
-    || view.verticalFovRadians <= 0
-    || view.verticalFovRadians >= Math.PI
-    || !Number.isFinite(view.aspect)
-    || view.aspect <= 0
-    || !Number.isFinite(view.position.x)
+    !Number.isFinite(view.position.x)
     || !Number.isFinite(view.position.y)
     || !Number.isFinite(view.position.z)
   ) {
-    return true;
+    return false;
   }
+
+  const verticalFovRadians = (
+    Number.isFinite(view.verticalFovRadians)
+    && view.verticalFovRadians > 0
+    && view.verticalFovRadians < Math.PI
+  )
+    ? view.verticalFovRadians
+    : CHUNK_STREAMING_CONFIG.defaultVerticalFovRadians;
+  const aspect = (
+    Number.isFinite(view.aspect)
+    && view.aspect > 0
+  )
+    ? view.aspect
+    : CHUNK_STREAMING_CONFIG.defaultAspect;
 
   const { x: sizeX, y: sizeY, z: sizeZ } = CHUNK_STREAMING_CONFIG.chunkSize;
   const centerX = (coordinate.x + 0.5) * sizeX;
@@ -134,7 +146,8 @@ function isInConservativeView(
     !Number.isFinite(forwardLength)
     || forwardLength <= CHUNK_STREAMING_CONFIG.viewBasisFallbackThreshold
   ) {
-    return true;
+    // Without a forward vector only the near sphere is safe to include.
+    return false;
   }
 
   const forwardX = view.forward.x / forwardLength;
@@ -143,15 +156,15 @@ function isInConservativeView(
   const forwardDot = dx * forwardX + dy * forwardY + dz * forwardZ;
   if (forwardDot + conservativeSphereRadius <= 0) return false;
 
-  const verticalSlope = Math.tan(view.verticalFovRadians / 2);
-  const horizontalSlope = verticalSlope * view.aspect;
+  const verticalSlope = Math.tan(verticalFovRadians / 2);
+  const horizontalSlope = verticalSlope * aspect;
   if (
     !Number.isFinite(verticalSlope)
     || verticalSlope <= 0
     || !Number.isFinite(horizontalSlope)
     || horizontalSlope <= 0
   ) {
-    return true;
+    return false;
   }
 
   // forward x world-up gives a stable horizontal basis except near vertical views.
@@ -165,7 +178,7 @@ function isInConservativeView(
     rightZ = 0;
     rightLength = Math.hypot(rightX, rightY);
   }
-  if (rightLength <= CHUNK_STREAMING_CONFIG.viewBasisFallbackThreshold) return true;
+  if (rightLength <= CHUNK_STREAMING_CONFIG.viewBasisFallbackThreshold) return false;
 
   rightX /= rightLength;
   rightY /= rightLength;

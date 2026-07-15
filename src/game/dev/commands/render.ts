@@ -9,11 +9,7 @@ export function createRenderCommands(game: GameManager) {
         return;
       }
       const distance = Math.max(2, Math.min(16, n));
-      game.renderDistance = distance;
-      const px = Math.floor(game.player.position.x);
-      const py = Math.floor(game.player.position.y);
-      const pz = Math.floor(game.player.position.z);
-      game.world.loadArea(px, py, pz, distance);
+      game.setRenderDistance(distance);
       console.log(`Set render distance to: ${distance}`);
     },
     setFov(n: number) {

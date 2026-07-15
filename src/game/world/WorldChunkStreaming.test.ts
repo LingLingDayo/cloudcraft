@@ -238,6 +238,110 @@ describe('WorldChunkManager visibility cache', () => {
     expect(world.getChunkVisibilitySummary('0,1,0')?.chunkRevision).toBe(1);
     expect(world.getChunkVisibilityState('0,1,0').fallbackSummary).toBeUndefined();
   });
+
+  test('keeps radius-resident meshes when the camera turns in place', async () => {
+    const world = createStreamingWorld('test-turn-retains-radius-meshes');
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    assumeLiveWorkerPool(WorkerManager.getInstance());
+    const transparentChunk = new Uint8Array(TEST_CHUNK_BYTE_LENGTH);
+    const lookForward: ChunkStreamingView = {
+      position: { x: 8, y: 24, z: 8 },
+      forward: { x: 0, y: 0, z: 1 },
+      verticalFovRadians: Math.PI / 3,
+      aspect: 1,
+    };
+    const lookBackward: ChunkStreamingView = {
+      position: { x: 8, y: 24, z: 8 },
+      forward: { x: 0, y: 0, z: -1 },
+      verticalFovRadians: Math.PI / 3,
+      aspect: 1,
+    };
+
+    // Distance 3 is outside always-available + safety buffer when facing the opposite way.
+    const retainedKey = '0,1,3';
+    for (const key of ['0,1,0', '0,1,1', '0,1,2', retainedKey]) {
+      world.chunks.set(key, transparentChunk.slice());
+      world.applyChunkVisibilitySummary(
+        key,
+        buildChunkVisibilitySummary(transparentChunk, world.getChunkRevision(key)),
+      );
+    }
+
+    world.loadArea(8, 24, 8, 4, false, lookForward);
+    const epochBeforeTurn = world.chunkManager.getStreamingEpoch();
+    expect((world.chunkManager as any).desiredActiveKeys.has(retainedKey)).toBe(true);
+
+    const renderer = world.getRenderer();
+    const removeChunkMesh = vi.spyOn(renderer, 'removeChunkMesh').mockImplementation(() => {
+      renderer.getChunkMeshes().delete(retainedKey);
+    });
+    renderer.getChunkMeshes().set(retainedKey, {} as any);
+    renderer.getChunkMeshes().set('0,1,0', {} as any);
+
+    world.loadArea(8, 24, 8, 4, false, lookBackward);
+
+    expect((world.chunkManager as any).desiredActiveKeys.has(retainedKey)).toBe(false);
+    expect(world.chunkManager.isKeyActive(retainedKey)).toBe(true);
+    expect(world.chunkManager.getStreamingEpoch()).toBe(epochBeforeTurn);
+    expect(removeChunkMesh).not.toHaveBeenCalledWith(retainedKey);
+    expect(renderer.hasChunkMesh(retainedKey)).toBe(true);
+  });
+
+  test('accepts safety-buffer streaming keys just outside the strict render radius', async () => {
+    const world = createStreamingWorld('test-safety-buffer-within-retain-radius');
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    assumeLiveWorkerPool(WorkerManager.getInstance());
+    const view: ChunkStreamingView = {
+      position: { x: 8, y: 24, z: 8 },
+      forward: { x: 0, y: 0, z: 1 },
+      verticalFovRadians: Math.PI / 3,
+      aspect: 1,
+    };
+
+    world.loadArea(8, 24, 8, 2, false, view);
+    // Chebyshev/sphere distance 3 is outside strict radius 2 but inside retain radius 3.
+    const bufferKey = '0,1,3';
+    (world.chunkManager as any).desiredActiveKeys.add(bufferKey);
+
+    expect(world.chunkManager.isKeyActive(bufferKey)).toBe(true);
+    expect((world.chunkManager as any).isWithinRetainRadius(bufferKey)).toBe(true);
+    expect((world.chunkManager as any).isTaskCurrent(
+      bufferKey,
+      world.chunkManager.getStreamingEpoch(),
+      world.getChunkRevision(bufferKey),
+      world.getSeed(),
+    )).toBe(true);
+  });
+
+  test('unloads meshes that leave the load-radius sphere after the player moves', async () => {
+    const world = createStreamingWorld('test-move-unloads-outside-radius');
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    assumeLiveWorkerPool(WorkerManager.getInstance());
+    const view: ChunkStreamingView = {
+      position: { x: 8, y: 24, z: 8 },
+      forward: { x: 0, y: 0, z: 1 },
+      verticalFovRadians: Math.PI / 3,
+      aspect: 1,
+    };
+
+    world.loadArea(8, 24, 8, 2, false, view);
+    const farKey = '0,1,8';
+    const renderer = world.getRenderer();
+    const removeChunkMesh = vi.spyOn(renderer, 'removeChunkMesh').mockImplementation((key: string) => {
+      renderer.getChunkMeshes().delete(key);
+    });
+    renderer.getChunkMeshes().set(farKey, {} as any);
+    renderer.getChunkMeshes().set('0,1,0', {} as any);
+
+    world.chunkManager.invalidateVisibility();
+    world.loadArea(8 + 16 * 6, 24, 8, 2, false, {
+      ...view,
+      position: { x: 8 + 16 * 6, y: 24, z: 8 },
+    });
+
+    expect(removeChunkMesh).toHaveBeenCalledWith(farKey);
+    expect(renderer.hasChunkMesh(farKey)).toBe(false);
+  });
 });
 describe('WorldChunkManager worker capability fallback', () => {
   afterEach(() => {

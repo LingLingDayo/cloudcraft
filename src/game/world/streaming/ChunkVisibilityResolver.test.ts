@@ -230,7 +230,7 @@ describe('Chunk visibility topology propagation', () => {
   test.each([
     { aspect: 0, verticalFovRadians: Math.PI / 3 },
     { aspect: 1, verticalFovRadians: Number.NaN },
-  ])('falls back conservatively for invalid view parameters %#', (viewParameters) => {
+  ])('uses default frustum parameters for invalid FOV/aspect %#', (viewParameters) => {
     const result = new ChunkVisibilityResolver().resolve(createResolverInput(
       new Map(),
       {
@@ -243,7 +243,30 @@ describe('Chunk visibility topology propagation', () => {
       },
     ));
 
-    expect(result.directVisible.has(chunkKey(-3, 1, 0))).toBe(true);
+    // Defaults keep a real frustum: forward stays, behind the camera does not.
+    expect(result.directVisible.has(chunkKey(3, 1, 0))).toBe(true);
+    expect(result.directVisible.has(chunkKey(-3, 1, 0))).toBe(false);
+  });
+
+  test('does not admit the full radius when the forward vector is degenerate', () => {
+    const result = new ChunkVisibilityResolver().resolve(createResolverInput(
+      new Map(),
+      {
+        view: {
+          position: { x: 8, y: 24, z: 8 },
+          forward: { x: 0, y: 0, z: 0 },
+          verticalFovRadians: Math.PI / 3,
+          aspect: 1,
+        },
+        fallback: state(transparentSummary),
+      },
+    ));
+
+    expect(result.directVisible.has(chunkKey(3, 1, 0))).toBe(false);
+    expect(result.directVisible.has(chunkKey(-3, 1, 0))).toBe(false);
+    // Near-sphere / always-available still covers the player neighborhood.
+    expect(result.directVisible.has(chunkKey(0, 1, 0))).toBe(true);
+    expect(result.directVisible.has(chunkKey(1, 1, 0))).toBe(true);
   });
 
   test('direct and buffered visibility never escape the configured world Y bounds', () => {

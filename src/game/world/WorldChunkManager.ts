@@ -51,7 +51,16 @@ export class WorldChunkManager {
   );
   private readonly viewCache = new ChunkStreamingViewCache();
   private streamingEpoch = 0;
+  /**
+   * Visibility-driven targets for new generation/mesh work.
+   * Turning the camera updates this set, but already-built meshes stay until
+   * the player leaves the retain sphere (render radius + safety buffer).
+   */
   private desiredActiveKeys = new Set<string>();
+  private loadCenterCcx = 0;
+  private loadCenterCcy = 0;
+  private loadCenterCcz = 0;
+  private loadRadius = -1;
   private readonly workerTaskOwner = `world-chunk-manager:${nextWorkerTaskOwnerId++}`;
 
   public getStreamingEpoch(): number {
@@ -59,7 +68,13 @@ export class WorldChunkManager {
   }
 
   public isKeyActive(key: string): boolean {
-    return this.desiredActiveKeys.has(key);
+    // Streaming targets are always active, including the safety-buffer shell that
+    // sits one chunk past the strict render radius.
+    if (this.desiredActiveKeys.has(key)) return true;
+    if (!this.isWithinRetainRadius(key)) return false;
+    return this.world.getRenderer().hasChunkMesh(key)
+      || this.generatingChunks.has(key)
+      || this.generatingMeshes.has(key);
   }
 
   public invalidateVisibility(): void {
@@ -78,9 +93,28 @@ export class WorldChunkManager {
     return count;
   }
 
+  /** Render radius plus safety buffer — matches ChunkVisibilityResolver active extent. */
+  private getRetainRadius(): number {
+    if (this.loadRadius < 0) return -1;
+    return this.loadRadius + CHUNK_STREAMING_CONFIG.safetyBufferRadius;
+  }
+
+  private isWithinRetainRadius(key: string): boolean {
+    const retainRadius = this.getRetainRadius();
+    if (retainRadius < 0) return false;
+    const [cx, cy, cz] = key.split(',').map(Number);
+    if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) return false;
+    const worldChunkHeight = WORLD_HEIGHT / CHUNK_SIZE_Y;
+    if (cy < 0 || cy >= worldChunkHeight) return false;
+    const dx = cx - this.loadCenterCcx;
+    const dy = cy - this.loadCenterCcy;
+    const dz = cz - this.loadCenterCcz;
+    return dx * dx + dy * dy + dz * dz <= retainRadius * retainRadius;
+  }
+
   private isTaskCurrent(key: string, epoch: number, revision: number, seed: string): boolean {
     return epoch === this.streamingEpoch
-      && this.desiredActiveKeys.has(key)
+      && (this.desiredActiveKeys.has(key) || this.isWithinRetainRadius(key))
       && revision === this.world.getChunkRevision(key)
       && seed === this.world.getSeed();
   }
@@ -90,6 +124,7 @@ export class WorldChunkManager {
     this.streamingEpoch++;
     this.workerManager.cancelQueuedTasks(this.workerTaskOwner);
     this.desiredActiveKeys = new Set();
+    this.loadRadius = -1;
     this.pendingGenerationQueue = [];
     this.pendingMeshQueue = [];
     this.generatingChunks.clear();
@@ -150,33 +185,47 @@ export class WorldChunkManager {
       allowUnknownTraversal: shouldSync,
       getChunkState: key => this.world.getChunkVisibilityState(key),
     });
-    const nextActiveKeys = new Set(visibility.active);
-    let activeChanged = nextActiveKeys.size !== this.desiredActiveKeys.size;
-    if (!activeChanged) {
-      for (const key of nextActiveKeys) {
-        if (!this.desiredActiveKeys.has(key)) {
-          activeChanged = true;
+    const nextStreamingKeys = new Set(visibility.active);
+    this.loadCenterCcx = ccx;
+    this.loadCenterCcy = ccy;
+    this.loadCenterCcz = ccz;
+    this.loadRadius = resolvedRadius;
+
+    // Unload / epoch only when content leaves the retain sphere (render radius +
+    // safety buffer). Turning updates streaming targets without dropping meshes.
+    const chunkMeshes = this.world.getRenderer().getChunkMeshes();
+    let leftLoadRadius = false;
+    for (const key of chunkMeshes.keys()) {
+      if (!this.isWithinRetainRadius(key)) {
+        leftLoadRadius = true;
+        break;
+      }
+    }
+    if (!leftLoadRadius) {
+      for (const key of this.generatingChunks.keys()) {
+        if (!this.isWithinRetainRadius(key)) {
+          leftLoadRadius = true;
           break;
         }
       }
     }
-    let removedActiveKey = false;
-    if (activeChanged) {
-      for (const key of this.desiredActiveKeys) {
-        if (!nextActiveKeys.has(key)) {
-          removedActiveKey = true;
+    if (!leftLoadRadius) {
+      for (const key of this.generatingMeshes.keys()) {
+        if (!this.isWithinRetainRadius(key)) {
+          leftLoadRadius = true;
           break;
         }
       }
-      this.desiredActiveKeys = nextActiveKeys;
     }
-    if (removedActiveKey) {
+
+    this.desiredActiveKeys = nextStreamingKeys;
+    if (leftLoadRadius) {
       this.streamingEpoch++;
       this.workerManager.cancelQueuedTasks(
         this.workerTaskOwner,
         metadata => (
           metadata.epoch !== this.streamingEpoch
-          || !this.desiredActiveKeys.has(metadata.key)
+          || !this.isWithinRetainRadius(metadata.key)
         ),
       );
       this.generationRetries.clearAll();
@@ -255,9 +304,8 @@ export class WorldChunkManager {
       this.pendingMeshQueue = neededMesh;
     }
 
-    const chunkMeshes = this.world.getRenderer().getChunkMeshes();
     for (const key of chunkMeshes.keys()) {
-      if (!this.desiredActiveKeys.has(key)) {
+      if (!this.isWithinRetainRadius(key)) {
         this.world.getRenderer().removeChunkMesh(key);
       }
     }
@@ -294,7 +342,7 @@ export class WorldChunkManager {
         const { key, updateNeighbors, epoch, revision } = item;
         if (
           epoch !== this.streamingEpoch
-          || !this.desiredActiveKeys.has(key)
+          || !this.isWithinRetainRadius(key)
           || revision !== this.world.getChunkRevision(key)
           || this.generatingMeshes.get(key) === epoch
         ) {
@@ -339,7 +387,7 @@ export class WorldChunkManager {
           }
           if (
             epoch !== this.streamingEpoch
-            || !this.desiredActiveKeys.has(key)
+            || !this.isWithinRetainRadius(key)
             || this.world.getSeed() !== currentSeed
             || revision !== this.world.getChunkRevision(key)
           ) {
@@ -364,7 +412,7 @@ export class WorldChunkManager {
           for (const [dx, dy, dz] of CHUNK_NEIGHBOR_OFFSETS) {
             const nkey = `${cx + dx},${cy + dy},${cz + dz}`;
             if (
-              !this.desiredActiveKeys.has(nkey)
+              !this.isWithinRetainRadius(nkey)
               || !this.world.getRenderer().hasChunkMesh(nkey)
               || this.pendingMeshQueue.some(queued => queued.key === nkey)
               || this.generatingMeshes.get(nkey) === epoch
@@ -423,6 +471,7 @@ export class WorldChunkManager {
         if (
           epoch !== this.streamingEpoch
           || !this.desiredActiveKeys.has(key)
+          || !this.isWithinRetainRadius(key)
           || this.world.chunks.has(key)
           || revision !== this.world.getChunkRevision(key)
           || this.generatingChunks.get(key) === epoch
@@ -455,7 +504,7 @@ export class WorldChunkManager {
           }
           if (
             epoch !== this.streamingEpoch
-            || !this.desiredActiveKeys.has(key)
+            || !this.isWithinRetainRadius(key)
             || this.world.getSeed() !== currentSeed
             || revision !== this.world.getChunkRevision(key)
           ) {
