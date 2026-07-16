@@ -193,7 +193,7 @@ describe('GameSaveData', () => {
         life: 8,
         maxLife: 10,
         isPersistent: true,
-        customData: { behaviorStateId: 'wandering' },
+        customData: { aiState: 'panicked' },
       }],
     } as unknown as SaveData;
 
@@ -213,7 +213,60 @@ describe('GameSaveData', () => {
         life: 8,
         maxLife: 10,
         isPersistent: true,
-        customData: { behaviorStateId: 'wandering' },
+        customData: { behaviorStateId: 'panicked' },
+      }],
+    });
+  });
+
+  test('migrates legacy aiState inside schema-1 entity snapshots', () => {
+    const runtime = createRuntime();
+    const save = {
+      world: 'legacy-ai-state-world',
+      player: { x: 1, y: 2, z: 3 },
+      hotbar: [],
+      inventory: [],
+      activeSlot: 0,
+      gameMode: GameMode.ADVENTURE,
+      version: '0.2.1',
+      entities: {
+        schemaVersion: 1,
+        entities: [{
+          id: 'legacy-pig-2',
+          type: 'cloudcraft:pig',
+          x: 2,
+          y: 3,
+          z: 4,
+          vx: 0,
+          vy: 0,
+          vz: 0,
+          life: 9,
+          maxLife: 10,
+          isPersistent: true,
+          customData: { aiState: 'panicked', movementModeIds: ['cloudcraft:ground'] },
+        }],
+      },
+    } as unknown as SaveData;
+
+    restoreGameSaveData(runtime, save);
+
+    expect(runtime.entities?.restoreSnapshot).toHaveBeenCalledWith({
+      schemaVersion: 1,
+      entities: [{
+        id: 'legacy-pig-2',
+        type: 'cloudcraft:pig',
+        x: 2,
+        y: 3,
+        z: 4,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        life: 9,
+        maxLife: 10,
+        isPersistent: true,
+        customData: {
+          behaviorStateId: 'panicked',
+          movementModeIds: ['cloudcraft:ground'],
+        },
       }],
     });
   });

@@ -132,4 +132,51 @@ describe('Pig Entity', () => {
     expect(otherPig.isPersistent).toBe(true);
     expect(otherPig.getBehaviorStateId()).toBe('panicked');
   });
+
+  test('keeps restored panic state across the first post-load updates', () => {
+    const pig = createPig('pig-panic', new THREE.Vector3(1, 1, 1));
+    pig.takeDamage(1);
+    expect(pig.getBehaviorStateId()).toBe('panicked');
+
+    const restored = createPig('pig-other', new THREE.Vector3(0, 0, 0));
+    restored.deserialize(pig.serialize());
+    expect(restored.getBehaviorStateId()).toBe('panicked');
+    expect(restored.serialize().customData?.aiTimer).toBe(5);
+
+    restored.update(0.2);
+    expect(restored.getBehaviorStateId()).toBe('panicked');
+
+    // 缺省 aiTimer 的旧快照也应在恢复 panicked 时补满时长
+    restored.deserialize({
+      ...pig.serialize(),
+      customData: {
+        behaviorStateId: 'panicked',
+        movementModeIds: ['cloudcraft:swim', 'cloudcraft:ground'],
+      },
+    });
+    restored.update(0.1);
+    expect(restored.getBehaviorStateId()).toBe('panicked');
+  });
+
+  test('accepts legacy customData.aiState during deserialize', () => {
+    const pig = createPig('pig-legacy', new THREE.Vector3(0, 1, 0));
+    pig.deserialize({
+      id: 'pig-legacy',
+      type: 'cloudcraft:pig',
+      x: 1,
+      y: 2,
+      z: 3,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      life: 8,
+      maxLife: 10,
+      isPersistent: true,
+      customData: { aiState: 'panicked' },
+    });
+
+    expect(pig.getBehaviorStateId()).toBe('panicked');
+    pig.update(0.1);
+    expect(pig.getBehaviorStateId()).toBe('panicked');
+  });
 });

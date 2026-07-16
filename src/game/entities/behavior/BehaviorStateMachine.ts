@@ -79,22 +79,23 @@ export class BehaviorStateMachine<TContext> {
 
   public update(context: TContext, deltaSeconds: number): void {
     if (!this.activeStateId) return;
-    const lineage = this.getLineage(this.activeStateId);
-    for (const state of lineage) {
-      state.onUpdate?.(context, deltaSeconds);
-    }
 
-    const activeLineage = this.activeStateId
-      ? this.getLineage(this.activeStateId)
-      : lineage;
+    // 先评估转移，使本帧 onUpdate 作用于转移后的状态（捕猎首帧即可出手）
+    const preUpdateLineage = this.getLineage(this.activeStateId);
     for (const transition of this.transitions) {
       if (
-        this.lineageContains(activeLineage, transition.from)
+        this.lineageContains(preUpdateLineage, transition.from)
         && transition.when(context)
       ) {
         this.transitionTo(transition.to, context);
         break;
       }
+    }
+
+    if (!this.activeStateId) return;
+    const lineage = this.getLineage(this.activeStateId);
+    for (const state of lineage) {
+      state.onUpdate?.(context, deltaSeconds);
     }
   }
 

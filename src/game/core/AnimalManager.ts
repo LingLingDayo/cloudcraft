@@ -10,6 +10,10 @@ import {
   createEntitySnapshot,
   type EntitySnapshot,
 } from '../entities/EntitySnapshot';
+import {
+  blendVegetationDensity,
+  sampleLocalVegetationDensity,
+} from '../entities/sensing/HabitatSampling';
 
 export class AnimalManager {
   private game: GameManager;
@@ -145,9 +149,16 @@ export class AnimalManager {
             const spawnPos = new THREE.Vector3(x + 0.5, y + 1, z + 0.5);
             
             const biome = this.game.world.generator.getPrimaryBiome(x, z);
+            const localVegetation = sampleLocalVegetationDensity(
+              this.game.world,
+              x,
+              y,
+              z,
+            );
+            const biomeVegetation = biome?.getTreeProbability(0.5) ?? 0;
             const species = this.speciesRegistry.selectForHabitat({
               biomeId: biome?.id ?? 'unknown',
-              vegetationDensity: biome?.getTreeProbability(0.5) ?? 0,
+              vegetationDensity: blendVegetationDensity(localVegetation, biomeVegetation),
               surfaceBlockId: props.id,
             }, Math.random());
             if (species) {
@@ -248,11 +259,20 @@ export class AnimalManager {
 
   private disposeAnimalResources(animal: Animal): void {
     animal.dispose();
+    // 共享 geometry/material 按引用去重，避免花豹耳/腿等共享资源被多次 dispose
+    const disposedGeometries = new Set<THREE.BufferGeometry>();
+    const disposedMaterials = new Set<THREE.Material>();
     animal.mesh.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
+      if (!(child instanceof THREE.Mesh)) return;
+      if (!disposedGeometries.has(child.geometry)) {
+        disposedGeometries.add(child.geometry);
         child.geometry.dispose();
-        const materials = Array.isArray(child.material) ? child.material : [child.material];
-        materials.forEach(material => material.dispose());
+      }
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      for (const material of materials) {
+        if (disposedMaterials.has(material)) continue;
+        disposedMaterials.add(material);
+        material.dispose();
       }
     });
   }

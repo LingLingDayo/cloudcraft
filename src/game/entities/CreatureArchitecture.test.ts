@@ -2,6 +2,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import * as THREE from 'three';
 import { BLOCK_TYPES } from '@type';
+// 确保方块属性 resolver 已初始化，供视线/碰撞判定使用
+import '@game/world/block/BlockRegistry';
 import { BehaviorStateMachine } from './behavior/BehaviorStateMachine';
 import {
   MovementModeController,
@@ -9,12 +11,23 @@ import {
   type MovementMode,
 } from './movement/MovementMode';
 import { createCoreSpeciesRegistry } from './species/CoreSpecies';
+import { SpeciesRegistry } from './species/SpeciesRegistry';
 import {
   assertEntitySnapshot,
   createEntitySnapshot,
 } from './EntitySnapshot';
 import type { World } from '@game/world/World';
 import { Animal } from './Animal';
+import {
+  blendVegetationDensity,
+  sampleLocalVegetationDensity,
+} from './sensing/HabitatSampling';
+import { hasBlockLineOfSight } from './sensing/LineOfSight';
+import {
+  createExtendedMovementModeRegistry,
+  CoreMovementModeId,
+} from './movement/CoreMovementModes';
+import { sound } from '@game/systems/Sound';
 
 HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
   fillStyle: '',
@@ -34,6 +47,10 @@ vi.mock('@game/systems/Sound', () => ({
     play: vi.fn(),
     playDamage: vi.fn(),
     playBreak: vi.fn(),
+    playLeopardHurt: vi.fn(),
+    playLeopardDeath: vi.fn(),
+    playPigHurt: vi.fn(),
+    playPigDeath: vi.fn(),
   },
 }));
 
@@ -184,10 +201,80 @@ describe('core species definitions', () => {
 
     expect(leopard.spawnWeight).toBeLessThan(pig.spawnWeight);
     expect(forestScore).toBeGreaterThan(plainsScore * 5);
+    expect(leopard.hostileToHumans).toBe(true);
+    expect(leopard.combat?.requireLineOfSight).toBe(true);
     expect(leopard.movementModeIds).toEqual([
       'cloudcraft:swim',
       'cloudcraft:ground',
     ]);
+  });
+
+  test('rejects hostile species without a combat profile', () => {
+    const registry = new SpeciesRegistry();
+    expect(() => registry.register({
+      id: 'test:broken-hostile',
+      spawnWeight: 1,
+      movementModeIds: [CoreMovementModeId.GROUND],
+      hostileToHumans: true,
+      scoreHabitat: () => 1,
+      create: () => {
+        throw new Error('unused');
+      },
+    })).toThrowError(/missing combat profile/i);
+  });
+});
+
+describe('habitat sampling', () => {
+  test('scores local vegetation columns and blends biome probability', () => {
+    const world = {
+      getBlock: vi.fn((x: number, _y: number, z: number) => {
+        if (x === 0 && z === 0) return BLOCK_TYPES.LEAF;
+        if (x === 1 && z === 0) return BLOCK_TYPES.WOOD;
+        return BLOCK_TYPES.AIR;
+      }),
+    } as unknown as World;
+
+    const density = sampleLocalVegetationDensity(world, 0, 10, 0, 1);
+    // radius 1 => 3x3 = 9 columns, 2 hits
+    expect(density).toBeCloseTo(2 / 9, 5);
+    expect(blendVegetationDensity(1, 0, 0.75)).toBeCloseTo(0.75);
+    expect(blendVegetationDensity(0, 1, 0.75)).toBeCloseTo(0.25);
+  });
+});
+
+describe('line of sight', () => {
+  test('blocks awareness through opaque solid cubes but not through air', () => {
+    const openWorld = {
+      getBlock: vi.fn(() => BLOCK_TYPES.AIR),
+    } as unknown as World;
+    const walledWorld = {
+      getBlock: vi.fn((x: number) => (x === 1 ? BLOCK_TYPES.STONE : BLOCK_TYPES.AIR)),
+    } as unknown as World;
+    const from = new THREE.Vector3(0, 1, 0);
+    const to = new THREE.Vector3(2, 1, 0);
+
+    expect(hasBlockLineOfSight(openWorld, from, to)).toBe(true);
+    expect(hasBlockLineOfSight(walledWorld, from, to)).toBe(false);
+  });
+});
+
+describe('movement mode extension', () => {
+  test('allows injecting extended movement mode registries into animals', () => {
+    const registry = createExtendedMovementModeRegistry([
+      {
+        id: 'test:climb',
+        canActivate: context => !context.state.inWater && !context.flightRequested,
+        update: () => {},
+      },
+    ], { freeze: true });
+
+    expect(registry.get('test:climb').id).toBe('test:climb');
+    expect(registry.get(CoreMovementModeId.GROUND).id).toBe(CoreMovementModeId.GROUND);
+    expect(() => registry.register({
+      id: 'test:another',
+      canActivate: () => true,
+      update: () => {},
+    })).toThrowError(/frozen/i);
   });
 });
 
@@ -207,6 +294,7 @@ describe('Leopard', () => {
         physics: {},
       },
     } as unknown as World;
+    vi.mocked(sound.play).mockClear();
   });
 
   test('enters attack behavior and damages a nearby human', () => {
@@ -218,6 +306,91 @@ describe('Leopard', () => {
 
     expect(leopard.getBehaviorStateId()).toBe('attacking');
     expect(takeDamage).toHaveBeenCalledWith(2, world, (world as any).game.physics);
+  });
+
+  test('enters stalking when human is in awareness range but outside attack range', () => {
+    (world.game as any).player.position.set(8, 1, 0);
+    const leopard = createCoreSpeciesRegistry()
+      .get('cloudcraft:leopard')
+      .create('leopard-stalk', new THREE.Vector3(0, 1, 0), world);
+
+    leopard.update(0.1);
+
+    expect(leopard.getBehaviorStateId()).toBe('stalking');
+    expect(takeDamage).not.toHaveBeenCalled();
+  });
+
+  test('does not attack through opaque walls when line of sight is required', () => {
+    world.getBlock = vi.fn((x: number, y: number) => {
+      if (y <= 0) return BLOCK_TYPES.STONE;
+      if (x === 1) return BLOCK_TYPES.STONE;
+      return BLOCK_TYPES.AIR;
+    }) as World['getBlock'];
+    (world.game as any).player.position.set(2, 1, 0);
+
+    const leopard = createCoreSpeciesRegistry()
+      .get('cloudcraft:leopard')
+      .create('leopard-los', new THREE.Vector3(0, 1, 0), world);
+
+    leopard.update(0.1);
+
+    expect(leopard.getBehaviorStateId()).toBe('wandering');
+    expect(takeDamage).not.toHaveBeenCalled();
+  });
+
+  test('preserves panic timer and attack cooldown across snapshot restore', () => {
+    const leopard = createCoreSpeciesRegistry()
+      .get('cloudcraft:leopard')
+      .create('leopard-save', new THREE.Vector3(0, 1, 0), world);
+
+    leopard.update(0.1);
+    expect(leopard.getBehaviorStateId()).toBe('attacking');
+    expect(takeDamage).toHaveBeenCalledOnce();
+
+    leopard.takeDamage(1);
+    expect(leopard.getBehaviorStateId()).toBe('panicked');
+    const serialized = leopard.serialize();
+    expect(serialized.customData?.aiTimer).toBe(5);
+    expect(typeof serialized.customData?.attackCooldownSeconds).toBe('number');
+    expect(serialized.customData?.attackCooldownSeconds).toBeGreaterThan(0);
+
+    const restored = createCoreSpeciesRegistry()
+      .get('cloudcraft:leopard')
+      .create('leopard-temp', new THREE.Vector3(9, 1, 9), world);
+    restored.deserialize(serialized);
+
+    expect(restored.getBehaviorStateId()).toBe('panicked');
+    expect(restored.getAttackCooldownSeconds()).toBeCloseTo(
+      Number(serialized.customData?.attackCooldownSeconds),
+    );
+
+    restored.update(0.05);
+    expect(restored.getBehaviorStateId()).toBe('panicked');
+
+    // 惊慌结束后可再进入战斗，但冷却未耗尽时不应立刻补刀
+    takeDamage.mockClear();
+    restored.deserialize({
+      ...serialized,
+      customData: {
+        ...serialized.customData!,
+        behaviorStateId: 'attacking',
+        aiTimer: 0,
+        attackCooldownSeconds: 0.8,
+      },
+    });
+    restored.update(0.05);
+    expect(restored.getBehaviorStateId()).toBe('attacking');
+    expect(takeDamage).not.toHaveBeenCalled();
+  });
+
+  test('plays leopard hurt sound through SoundManager method keys', () => {
+    const leopard = createCoreSpeciesRegistry()
+      .get('cloudcraft:leopard')
+      .create('leopard-sfx', new THREE.Vector3(0, 1, 0), world);
+
+    leopard.takeDamage(1);
+
+    expect(sound.play).toHaveBeenCalledWith('playLeopardHurt');
   });
 });
 

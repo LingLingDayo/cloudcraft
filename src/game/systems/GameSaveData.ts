@@ -144,23 +144,45 @@ function validateEntityEntries(
   }
 }
 
+function migrateEntityCustomData(
+  customData: SerializedEntityData['customData'],
+): SerializedEntityData['customData'] {
+  if (!customData || !isRecord(customData)) return customData;
+  const legacyAiState = customData.aiState;
+  const hasBehaviorState = typeof customData.behaviorStateId === 'string';
+  if (hasBehaviorState || typeof legacyAiState !== 'string') {
+    return customData;
+  }
+  const { aiState: _aiState, ...rest } = customData;
+  return {
+    ...rest,
+    behaviorStateId: legacyAiState,
+  };
+}
+
+function migrateEntityEntry(entity: SerializedEntityData): SerializedEntityData {
+  return {
+    ...entity,
+    type: LEGACY_ENTITY_TYPE_MIGRATIONS[entity.type] ?? entity.type,
+    customData: migrateEntityCustomData(entity.customData),
+  };
+}
+
 function normalizeEntitySnapshot(
   savedEntities: SaveData['entities'],
 ): EntitySnapshot | undefined {
   if (savedEntities === undefined) return undefined;
   if (Array.isArray(savedEntities)) {
     validateEntityEntries(savedEntities);
-    return createEntitySnapshot(savedEntities.map(entity => ({
-      ...entity,
-      type: LEGACY_ENTITY_TYPE_MIGRATIONS[entity.type] ?? entity.type,
-    })));
+    return createEntitySnapshot(savedEntities.map(migrateEntityEntry));
   }
   if (!isRecord(savedEntities)) {
     throw new Error('Entity snapshot must be an object');
   }
   assertEntitySnapshot(savedEntities);
   validateEntityEntries(savedEntities.entities);
-  return savedEntities;
+  // Schema 1 快照也可能夹带旧 customData.aiState，统一在持久化边界迁移
+  return createEntitySnapshot(savedEntities.entities.map(migrateEntityEntry));
 }
 
 function validateFixtureSnapshot(snapshot: FixtureSnapshot): void {

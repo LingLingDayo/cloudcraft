@@ -455,6 +455,59 @@ class SoundManager {
     }
   }
 
+  public playLeopardHurt() {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      // 偏低频咆哮感，区别于猪的尖叫声
+      osc.type = 'sawtooth';
+      const duration = 0.2;
+      osc.frequency.setValueAtTime(280, now);
+      osc.frequency.linearRampToValueAtTime(420, now + 0.04);
+      osc.frequency.exponentialRampToValueAtTime(160, now + duration);
+
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {
+      console.warn('Audio play failed', e);
+    }
+  }
+
+  public playLeopardDeath() {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.type = 'sawtooth';
+      const duration = 0.4;
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.linearRampToValueAtTime(260, now + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(55, now + duration);
+
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {
+      console.warn('Audio play failed', e);
+    }
+  }
+
   public playPickup() {
     try {
       this.initCtx();

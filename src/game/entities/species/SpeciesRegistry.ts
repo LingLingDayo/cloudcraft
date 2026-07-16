@@ -1,5 +1,31 @@
 import { DefinitionRegistry } from '@game/foundation/registry/DefinitionRegistry';
-import type { SpeciesDefinition, SpeciesHabitatSample } from './SpeciesDefinition';
+import type {
+  SpeciesCombatProfile,
+  SpeciesDefinition,
+  SpeciesHabitatSample,
+} from './SpeciesDefinition';
+
+function assertCombatProfile(speciesId: string, combat: SpeciesCombatProfile): void {
+  const positiveFields: Array<keyof SpeciesCombatProfile> = [
+    'awarenessDistance',
+    'attackDistance',
+    'attackDamage',
+    'attackIntervalSeconds',
+    'stalkingSpeed',
+    'attackSpeed',
+  ];
+  for (const field of positiveFields) {
+    const value = combat[field];
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+      throw new Error(`Species ${speciesId} combat.${field} must be a positive finite number`);
+    }
+  }
+  if (combat.attackDistance > combat.awarenessDistance) {
+    throw new Error(
+      `Species ${speciesId} combat.attackDistance cannot exceed awarenessDistance`,
+    );
+  }
+}
 
 export class SpeciesRegistry {
   private readonly definitions = new DefinitionRegistry<SpeciesDefinition>('species');
@@ -7,6 +33,19 @@ export class SpeciesRegistry {
   public register(definition: SpeciesDefinition): void {
     if (definition.spawnWeight <= 0) {
       throw new Error(`Species ${definition.id} requires a positive spawn weight`);
+    }
+    if (definition.hostileToHumans && !definition.combat) {
+      throw new Error(
+        `Species ${definition.id} is hostileToHumans but missing combat profile`,
+      );
+    }
+    if (!definition.hostileToHumans && definition.combat) {
+      throw new Error(
+        `Species ${definition.id} provides combat profile but hostileToHumans is false`,
+      );
+    }
+    if (definition.combat) {
+      assertCombatProfile(definition.id, definition.combat);
     }
     this.definitions.register(definition);
   }

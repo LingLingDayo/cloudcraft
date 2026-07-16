@@ -1,25 +1,18 @@
 import * as THREE from 'three';
 import type { World } from '@game/world/World';
-import { Animal } from './Animal';
+import { Animal, type AnimalOptions } from './Animal';
 
 const LEOPARD_CONFIG = {
   maxLife: 16,
   walkSpeed: 2.4,
-  stalkingSpeed: 3.6,
-  attackSpeed: 5.2,
   panicSpeed: 6,
   jumpSpeed: 6.8,
-  awarenessDistance: 14,
-  attackDistance: 1.6,
-  attackDamage: 2,
-  attackIntervalSeconds: 1.1,
 } as const;
 
-interface HumanTarget {
-  readonly position: THREE.Vector3;
-  takeDamage(amount: number, world: World, physics: unknown): void;
-}
-
+/**
+ * 花豹：表现层 + 物种特有动画。
+ * 捕猎/运动模式由 Animal 底座 + SpeciesCombatProfile 驱动，避免物种内硬编码 AI 分支。
+ */
 export class Leopard extends Animal {
   public width = 0.9;
   public height = 1;
@@ -29,17 +22,17 @@ export class Leopard extends Animal {
   protected panicSpeed = LEOPARD_CONFIG.panicSpeed;
   protected jumpSpeed = LEOPARD_CONFIG.jumpSpeed;
 
-  public hurtSound = 'cloudcraft:leopard_hurt';
-  public deathSound = 'cloudcraft:leopard_death';
+  public hurtSound = 'playLeopardHurt';
+  public deathSound = 'playLeopardDeath';
 
   private readonly legs: THREE.Mesh[] = [];
-  private attackCooldownSeconds = 0;
 
   public constructor(
     id: string,
     spawnPosition: THREE.Vector3,
     world: World,
     movementModeIds: readonly string[],
+    options: AnimalOptions = {},
   ) {
     super(
       id,
@@ -48,17 +41,8 @@ export class Leopard extends Animal {
       world,
       LEOPARD_CONFIG.maxLife,
       movementModeIds,
+      options,
     );
-    this.registerBehaviorState({
-      id: 'stalking',
-      parentId: 'active',
-      onUpdate: (_animal, deltaSeconds) => this.updateStalkingBehavior(deltaSeconds),
-    });
-    this.registerBehaviorState({
-      id: 'attacking',
-      parentId: 'active',
-      onUpdate: (_animal, deltaSeconds) => this.updateAttackingBehavior(deltaSeconds),
-    });
     this.initMesh();
   }
 
@@ -91,6 +75,7 @@ export class Leopard extends Animal {
     muzzle.position.set(0, 0.74, -1.02);
     this.mesh.add(muzzle);
 
+    // 共享 geometry：AnimalManager 释放时会按引用去重 dispose
     const earGeometry = new THREE.BoxGeometry(0.16, 0.2, 0.1);
     for (const x of [-0.2, 0.2]) {
       const ear = new THREE.Mesh(earGeometry, darkMaterial);
@@ -135,76 +120,5 @@ export class Leopard extends Animal {
       this.legs[index].rotation.x += (target - this.legs[index].rotation.x)
         * Math.min(1, deltaSeconds * 10);
     }
-  }
-
-  protected override updateAI(deltaSeconds: number): void {
-    this.attackCooldownSeconds = Math.max(0, this.attackCooldownSeconds - deltaSeconds);
-    if (this.behaviorStateMachine.isInState('panicked')) {
-      super.updateAI(deltaSeconds);
-      return;
-    }
-
-    const target = this.getHumanTarget();
-    if (!target) {
-      if (this.behaviorStateMachine.isInState('stalking')
-        || this.behaviorStateMachine.isInState('attacking')) {
-        this.setBehaviorState('wandering');
-      }
-      super.updateAI(deltaSeconds);
-      return;
-    }
-
-    const distance = this.position.distanceTo(target.position);
-    if (distance <= LEOPARD_CONFIG.attackDistance) {
-      this.setBehaviorState('attacking');
-    } else if (distance <= LEOPARD_CONFIG.awarenessDistance) {
-      this.setBehaviorState('stalking');
-    } else if (this.behaviorStateMachine.isInState('stalking')
-      || this.behaviorStateMachine.isInState('attacking')) {
-      this.setBehaviorState('wandering');
-    }
-    super.updateAI(deltaSeconds);
-  }
-
-  protected override getDesiredMovementSpeed(): number {
-    if (this.behaviorStateMachine.isInState('attacking')) return LEOPARD_CONFIG.attackSpeed;
-    if (this.behaviorStateMachine.isInState('stalking')) return LEOPARD_CONFIG.stalkingSpeed;
-    return super.getDesiredMovementSpeed();
-  }
-
-  private updateStalkingBehavior(_deltaSeconds: number): void {
-    this.faceHumanTarget();
-  }
-
-  private updateAttackingBehavior(_deltaSeconds: number): void {
-    const target = this.getHumanTarget();
-    if (!target) return;
-    this.faceHumanTarget();
-    if (
-      this.position.distanceTo(target.position) <= LEOPARD_CONFIG.attackDistance
-      && this.attackCooldownSeconds <= 0
-    ) {
-      target.takeDamage(
-        LEOPARD_CONFIG.attackDamage,
-        this.world,
-        this.world.game?.physics,
-      );
-      this.attackCooldownSeconds = LEOPARD_CONFIG.attackIntervalSeconds;
-    }
-  }
-
-  private faceHumanTarget(): void {
-    const target = this.getHumanTarget();
-    if (!target) return;
-    this.targetDir.subVectors(target.position, this.position);
-    this.targetDir.y = 0;
-    if (this.targetDir.lengthSq() > 0) this.targetDir.normalize();
-  }
-
-  private getHumanTarget(): HumanTarget | null {
-    const player = this.world.game?.player as Partial<HumanTarget> | undefined;
-    return player?.position instanceof THREE.Vector3 && typeof player.takeDamage === 'function'
-      ? player as HumanTarget
-      : null;
   }
 }

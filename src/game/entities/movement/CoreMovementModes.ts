@@ -115,12 +115,48 @@ const flyingMovementMode: MovementMode<CreatureMovementContext> = {
   },
 };
 
-export function createCoreMovementModeRegistry(): MovementModeRegistry<CreatureMovementContext> {
+const CORE_MOVEMENT_MODES: readonly MovementMode<CreatureMovementContext>[] = [
+  flyingMovementMode,
+  swimmingMovementMode,
+  groundMovementMode,
+];
+
+/** 将核心地面/游泳/飞行模式写入目标注册表（可在 freeze 前继续挂扩展模式）。 */
+export function registerCoreMovementModes(
+  registry: MovementModeRegistry<CreatureMovementContext>,
+): void {
+  for (const mode of CORE_MOVEMENT_MODES) {
+    registry.register(mode);
+  }
+}
+
+export function createCoreMovementModeRegistry(
+  options: { freeze?: boolean } = {},
+): MovementModeRegistry<CreatureMovementContext> {
   const registry = new MovementModeRegistry<CreatureMovementContext>();
-  registry.register(flyingMovementMode);
-  registry.register(swimmingMovementMode);
-  registry.register(groundMovementMode);
-  registry.freeze();
+  registerCoreMovementModes(registry);
+  if (options.freeze !== false) {
+    registry.freeze();
+  }
+  return registry;
+}
+
+/**
+ * 在核心模式之上注册扩展运动模式。
+ * 生产物种默认使用冻结的 `coreMovementModeRegistry`；
+ * 插件/测试可通过本工厂注入未冻结或扩展后的注册表到 Animal。
+ */
+export function createExtendedMovementModeRegistry(
+  extraModes: readonly MovementMode<CreatureMovementContext>[],
+  options: { freeze?: boolean } = {},
+): MovementModeRegistry<CreatureMovementContext> {
+  const registry = createCoreMovementModeRegistry({ freeze: false });
+  for (const mode of extraModes) {
+    registry.register(mode);
+  }
+  if (options.freeze !== false) {
+    registry.freeze();
+  }
   return registry;
 }
 
