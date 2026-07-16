@@ -11,6 +11,24 @@ import { GameMode } from '@type';
 import { LootTableHelper } from '../loot/LootTableHelper';
 import { FixtureInteractionCoordinator } from './FixtureInteractionCoordinator';
 import { MiningCrackOverlay } from './MiningCrackOverlay';
+import type { PlacedFixture } from '@game/fixtures/FixtureTypes';
+
+const FIXTURE_CENTER_OFFSET = 0.5;
+
+function hasStoredFixtureItems(fixture: PlacedFixture): boolean {
+  return fixture.components.some(component =>
+    (component.type === 'container' || component.type === 'fuel')
+    && component.slots.some(slot => slot !== null),
+  );
+}
+
+function getFixtureCenter(fixture: PlacedFixture): THREE.Vector3 {
+  return new THREE.Vector3(
+    fixture.anchor.x + FIXTURE_CENTER_OFFSET,
+    fixture.anchor.y + FIXTURE_CENTER_OFFSET,
+    fixture.anchor.z + FIXTURE_CENTER_OFFSET,
+  );
+}
 
 export class InteractionManager {
   private game: GameManager;
@@ -198,6 +216,34 @@ export class InteractionManager {
     }
   }
 
+  private handleTargetedFixtureRemoval(): boolean {
+    const fixtureId = this.targetedFixtureId;
+    if (!fixtureId) return false;
+
+    const gameMode = useGameStore.getState().gameMode;
+    if (gameMode === GameMode.CREATIVE) {
+      if (this.fixtureInteraction.removeTargetedFixture()) {
+        this.completeFixtureRemoval();
+      }
+      return true;
+    }
+
+    const fixture = this.game.fixtures.get(fixtureId);
+    if (!fixture || hasStoredFixtureItems(fixture)) return true;
+
+    const itemType = ItemRegistry.getItemTypeFromFixtureDefinitionId(fixture.definitionId);
+    if (!itemType || !this.fixtureInteraction.removeTargetedFixture()) return true;
+
+    this.game.droppedItems.spawnItem(itemType, getFixtureCenter(fixture));
+    this.completeFixtureRemoval();
+    return true;
+  }
+
+  private completeFixtureRemoval(): void {
+    sound.playBreak('wood');
+    this.updateTargetedBlock();
+  }
+
   // ─── 鼠标事件处理 ─────────────────────────────────────────
 
   public onMouseDown = (e: MouseEvent) => {
@@ -223,14 +269,7 @@ export class InteractionManager {
 
     this.updateTargetedBlock();
 
-    if (e.button === 0 && this.targetedFixtureId) {
-      const isCreative = useGameStore.getState().gameMode === 'creative';
-      if (isCreative && this.fixtureInteraction.removeTargetedFixture()) {
-        sound.playBreak('wood');
-        this.updateTargetedBlock();
-      }
-      return;
-    }
+    if (e.button === 0 && this.handleTargetedFixtureRemoval()) return;
 
     if (!this.targetedBlockInfo) return;
 

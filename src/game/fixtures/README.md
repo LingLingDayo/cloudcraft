@@ -39,7 +39,9 @@
 
 设施射线检测会临时收紧调用方 `Raycaster.far`，并保证正常或异常路径都恢复原值。`ThreeFixtureView` 维护随 attach/detach 原地更新的稳定射线对象列表，高频目标检测不得通过 `Array.from()` 逐帧创建数组。体素与设施同时命中时，由 `resolveWorldInteractionTarget` 选择距离更近的目标。
 
-`core/GameFixtureRuntime` 负责把核心设施注册表、世界占位查询和 Three 视图装配为 GameManager 可用的运行时；`core/FixtureInteractionCoordinator` 负责最近目标、选择框、打开设施、创造模式拆除和放置朝向。设施模块本身不得依赖 React 组件或 GameManager。
+`core/GameFixtureRuntime` 负责把核心设施注册表、世界占位查询和 Three 视图装配为 GameManager 可用的运行时；`core/FixtureInteractionCoordinator` 负责最近目标、选择框、打开设施、拆除和放置朝向。设施模块本身不得依赖 React 组件或 GameManager。
+
+创造模式拆除设施时不产生掉落。生存模式只允许回收已注册为设施物品且 `container`、`fuel` 槽位全部为空的设施；成功移除后掉落一个对应设施物品。非空存储、未知物品映射或移除失败都必须保留原设施，避免内容丢失或重复掉落。
 
 ## 4. 存档 Carrier 契约
 
