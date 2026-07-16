@@ -62,6 +62,18 @@ Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍�
 
 网格还使用 renderer version 防止同一 revision 内较晚提交的任务被旧结果覆盖。运行时单块编辑推进 revision 时保留旧摘要用于临时拓扑传播，但结果应用仍严格要求当前 revision；`applyChunkModifications` 处理存档批量修改时比较实际体素字节，整批存在变化只递增一次 revision 并丢弃旧摘要，重复应用相同数据不递增。生成结果应用存档修改后必须废弃基于原始体素的 Worker 摘要，并使用更新后的 revision 排队网格任务。`clearCache()` 会推进 epoch、清空队列和任务索引并卸载网格，尚未返回的 Worker 结果因此只能被丢弃。
 
+### 接缝网格收敛（Seam Remesh）
+
+体素天空光与 AO 在 `GENERATE_MESH` 时按邻居缓冲烘焙；邻居缺失时 `ChunkMeshBuilder` 会回退为满天空光，因此**允许**无邻居先出网以保持流送前沿，但必须在邻居缓冲补齐后收敛。
+
+`WorldChunkManager` 在提交 mesh 时记录六面邻居缓冲的 presence bitmask；任务成功挂载后：
+
+1. 若当前邻居缓冲比提交时更齐全，则将自身记入 `pendingSeamRemesh`（`updateNeighbors: false` 的 seam-only 重建）；
+2. 若任务带 `updateNeighbors: true`，对已挂载的六面邻居同样标记 seam remesh；若邻居仍在 `generatingMeshes`，标记保留到其完成后由 `flushSeamRemeshQueue` 入队，**禁止**“跳过即丢弃”；
+3. `pendingSeamRemesh` 独立于 `pendingMeshQueue`，在 `loadArea` 替换队列后仍由 `processIncrementalLoading` 开头 flush，避免转向/重解析冲掉接缝修复。
+
+二次 remesh 仅在上述条件命中时发生，并受既有 `maxConcurrentMeshing` 与帧预算约束，不得对每个区块无条件 double mesh。
+
 ## 调度与资源约束
 
 生成和网格使用独立并发池，容量来自 `CHUNK_STREAMING_CONFIG.maxConcurrentGeneration` 与 `maxConcurrentMeshing`。一个池达到上限时，调度器仍尝试另一个池；两边都无可调度工作时立即退出，不能依赖时间预算推进来结束循环。Manager 提交前还必须读取 WorkerManager 的真实 idle slot，只允许任务直接进入空闲 worker，不把大量 epoch 任务堆入全局 FIFO。

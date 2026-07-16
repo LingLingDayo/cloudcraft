@@ -23,6 +23,7 @@ export interface PendingMeshQueueItem {
   readonly revision: number;
 }
 
+/** Face-neighbor offsets; order must stay aligned with NEIGHBOR_PRESENCE_BITS. */
 const CHUNK_NEIGHBOR_OFFSETS = [
   [1, 0, 0],
   [-1, 0, 0],
@@ -31,6 +32,9 @@ const CHUNK_NEIGHBOR_OFFSETS = [
   [0, 0, 1],
   [0, 0, -1],
 ] as const;
+
+/** Bitmask flags for the six face neighbors (px,nx,py,ny,pz,nz). */
+const NEIGHBOR_PRESENCE_BITS = [1, 2, 4, 8, 16, 32] as const;
 
 let nextWorkerTaskOwnerId = 0;
 
@@ -43,6 +47,12 @@ export class WorldChunkManager {
   private generatingMeshes = new Map<string, number>();
   private pendingGenerationQueue: PendingGenerationQueueItem[] = [];
   public pendingMeshQueue: PendingMeshQueueItem[] = [];
+  /**
+   * Keys whose boundary lighting/culling may be stale (meshed with incomplete
+   * neighbors, or a neighbor finished while this key was still generating).
+   * Survives loadArea queue replacement; flushed into pendingMeshQueue cheaply.
+   */
+  private pendingSeamRemesh = new Set<string>();
   private generationRetries = new ChunkWorkerRetryTracker(
     CHUNK_STREAMING_CONFIG.maxWorkerTaskAttempts,
   );
@@ -127,6 +137,7 @@ export class WorldChunkManager {
     this.loadRadius = -1;
     this.pendingGenerationQueue = [];
     this.pendingMeshQueue = [];
+    this.pendingSeamRemesh.clear();
     this.generatingChunks.clear();
     this.generatingMeshes.clear();
     this.generationRetries.clearAll();
@@ -136,6 +147,113 @@ export class WorldChunkManager {
     for (const key of chunkMeshes.keys()) {
       this.world.getRenderer().removeChunkMesh(key);
     }
+  }
+
+  /** Which face-neighbor chunk buffers exist (not whether their meshes exist). */
+  private getNeighborPresenceMask(cx: number, cy: number, cz: number): number {
+    let mask = 0;
+    for (let i = 0; i < CHUNK_NEIGHBOR_OFFSETS.length; i++) {
+      const [dx, dy, dz] = CHUNK_NEIGHBOR_OFFSETS[i];
+      if (this.world.chunks.has(`${cx + dx},${cy + dy},${cz + dz}`)) {
+        mask |= NEIGHBOR_PRESENCE_BITS[i];
+      }
+    }
+    return mask;
+  }
+
+  private isMeshQueued(key: string): boolean {
+    return this.pendingMeshQueue.some(queued => queued.key === key);
+  }
+
+  /**
+   * Mark a mounted chunk for a seam-only remesh (no neighbor cascade).
+   * If it is currently generating, keep the mark until that job finishes.
+   */
+  private markSeamRemesh(key: string): void {
+    if (!this.isWithinRetainRadius(key)) return;
+    this.pendingSeamRemesh.add(key);
+  }
+
+  /** Drain pendingSeamRemesh into the mesh queue without cascading neighbors. */
+  private flushSeamRemeshQueue(epoch: number, ccx: number, ccy: number, ccz: number): void {
+    if (this.pendingSeamRemesh.size === 0) return;
+
+    let added = false;
+    for (const key of [...this.pendingSeamRemesh]) {
+      if (!this.isWithinRetainRadius(key)) {
+        this.pendingSeamRemesh.delete(key);
+        continue;
+      }
+      if (this.generatingMeshes.get(key) === epoch) {
+        // Still in flight; keep the mark so completion can re-flush.
+        continue;
+      }
+      if (!this.world.getRenderer().hasChunkMesh(key)) {
+        this.pendingSeamRemesh.delete(key);
+        continue;
+      }
+      if (this.isMeshQueued(key)) {
+        this.pendingSeamRemesh.delete(key);
+        continue;
+      }
+
+      this.pendingMeshQueue.push({
+        key,
+        updateNeighbors: false,
+        epoch,
+        revision: this.world.getChunkRevision(key),
+      });
+      this.pendingSeamRemesh.delete(key);
+      added = true;
+    }
+
+    if (added) {
+      this.pendingMeshQueue.sort((first, second) => (
+        this.getChunkPriority(first.key, ccx, ccy, ccz)
+        - this.getChunkPriority(second.key, ccx, ccy, ccz)
+      ));
+    }
+  }
+
+  /**
+   * After a mesh mounts: if neighbor chunk data appeared since submit, remesh
+   * self so edge light/AO/culling converge. Optionally nudge mounted neighbors.
+   */
+  private scheduleSeamRepairsAfterMesh(
+    key: string,
+    cx: number,
+    cy: number,
+    cz: number,
+    epoch: number,
+    buildNeighborMask: number,
+    updateNeighbors: boolean,
+    ccx: number,
+    ccy: number,
+    ccz: number,
+  ): void {
+    const nowMask = this.getNeighborPresenceMask(cx, cy, cz);
+    // Bits present now but missing at submit → baked edge light used the 15 fallback.
+    if ((nowMask & ~buildNeighborMask) !== 0) {
+      this.markSeamRemesh(key);
+    }
+
+    if (updateNeighbors) {
+      for (const [dx, dy, dz] of CHUNK_NEIGHBOR_OFFSETS) {
+        const nkey = `${cx + dx},${cy + dy},${cz + dz}`;
+        if (!this.isWithinRetainRadius(nkey)) continue;
+        if (!this.world.getRenderer().hasChunkMesh(nkey)) continue;
+
+        if (this.generatingMeshes.get(nkey) === epoch) {
+          // Neighbor will remesh once after its in-flight job (deferred).
+          this.markSeamRemesh(nkey);
+          continue;
+        }
+        this.markSeamRemesh(nkey);
+      }
+    }
+
+    // Always flush deferred marks for this completion (including self).
+    this.flushSeamRemeshQueue(epoch, ccx, ccy, ccz);
   }
 
   constructor(world: World) {
@@ -327,6 +445,9 @@ export class WorldChunkManager {
     const ccy = Math.floor(playerY / CHUNK_SIZE_Y);
     const ccz = Math.floor(playerZ / CHUNK_SIZE_Z);
 
+    // Re-queue seam repairs that survived loadArea queue replacement.
+    this.flushSeamRemeshQueue(this.streamingEpoch, ccx, ccy, ccz);
+
     while (performance.now() - startTime < budgetMs) {
       if (this.workerManager.getIdleWorkerCount() <= 0) break;
       const canScheduleMesh = this.pendingMeshQueue.length > 0
@@ -356,6 +477,8 @@ export class WorldChunkManager {
         const attempt = this.meshRetries.recordAttempt(key, epoch, revision, currentSeed);
         if (attempt === null) continue;
         this.generatingMeshes.set(key, epoch);
+        // Snapshot which neighbor buffers were available for edge light baking.
+        const buildNeighborMask = this.getNeighborPresenceMask(cx, cy, cz);
 
         const neighbors: ChunkNeighbors = {
           px: this.world.chunks.get(`${cx + 1},${cy},${cz}`),
@@ -392,6 +515,7 @@ export class WorldChunkManager {
             || revision !== this.world.getChunkRevision(key)
           ) {
             this.meshRetries.clear(key, epoch, revision, currentSeed);
+            this.pendingSeamRemesh.delete(key);
             return;
           }
 
@@ -407,46 +531,34 @@ export class WorldChunkManager {
             currentStore.setChunkLoadingState(key, true);
           }
 
-          if (!updateNeighbors) return;
-          let addedNeighbor = false;
-          for (const [dx, dy, dz] of CHUNK_NEIGHBOR_OFFSETS) {
-            const nkey = `${cx + dx},${cy + dy},${cz + dz}`;
-            if (
-              !this.isWithinRetainRadius(nkey)
-              || !this.world.getRenderer().hasChunkMesh(nkey)
-              || this.pendingMeshQueue.some(queued => queued.key === nkey)
-              || this.generatingMeshes.get(nkey) === epoch
-            ) {
-              continue;
-            }
-            this.pendingMeshQueue.push({
-              key: nkey,
-              updateNeighbors: false,
-              epoch,
-              revision: this.world.getChunkRevision(nkey),
-            });
-            addedNeighbor = true;
-          }
-          if (addedNeighbor) {
-            const playerPosition = this.world.game.player.position;
-            const currentCcx = Math.floor(playerPosition.x / CHUNK_SIZE_X);
-            const currentCcy = Math.floor(playerPosition.y / CHUNK_SIZE_Y);
-            const currentCcz = Math.floor(playerPosition.z / CHUNK_SIZE_Z);
-            this.pendingMeshQueue.sort((first, second) => (
-              this.getChunkPriority(first.key, currentCcx, currentCcy, currentCcz)
-              - this.getChunkPriority(second.key, currentCcx, currentCcy, currentCcz)
-            ));
-          }
+          const playerPosition = this.world.game.player.position;
+          const currentCcx = Math.floor(playerPosition.x / CHUNK_SIZE_X);
+          const currentCcy = Math.floor(playerPosition.y / CHUNK_SIZE_Y);
+          const currentCcz = Math.floor(playerPosition.z / CHUNK_SIZE_Z);
+          this.scheduleSeamRepairsAfterMesh(
+            key,
+            cx,
+            cy,
+            cz,
+            epoch,
+            buildNeighborMask,
+            updateNeighbors,
+            currentCcx,
+            currentCcy,
+            currentCcz,
+          );
         }).catch((err: unknown) => {
           if (this.generatingMeshes.get(key) === epoch) {
             this.generatingMeshes.delete(key);
           }
           if (!this.isTaskCurrent(key, epoch, revision, currentSeed)) {
             this.meshRetries.clear(key, epoch, revision, currentSeed);
+            this.pendingSeamRemesh.delete(key);
             return;
           }
           if (isWorkerTaskCancelledError(err)) {
             this.meshRetries.clear(key, epoch, revision, currentSeed);
+            this.pendingSeamRemesh.delete(key);
             return;
           }
           if (attempt < CHUNK_STREAMING_CONFIG.maxWorkerTaskAttempts) {
@@ -459,6 +571,7 @@ export class WorldChunkManager {
             }
             return;
           }
+          this.pendingSeamRemesh.delete(key);
           console.error(
             `Worker mesh failed after ${attempt} attempts for chunk ${key}`,
             err,

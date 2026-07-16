@@ -103,6 +103,103 @@ describe('WorldChunkManager Neighbor Mesh Re-indexing', () => {
     expect(queuedB!.updateNeighbors).toBe(false);
   });
 
+  test('remeshes self when a face neighbor arrives while the first mesh was still generating', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+
+    const world = new World('test-seam-remesh-race');
+    world.game = {
+      player: {
+        position: { x: 0, y: 0, z: 0 },
+      },
+    };
+
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    const { ChunkMeshBuilder } = await import('./ChunkMeshBuilder');
+    const workerManager = WorkerManager.getInstance();
+    assumeLiveWorkerPool(workerManager);
+
+    type MeshResolver = (result: GenerateMeshResult) => void;
+    const meshResolvers = new Map<string, MeshResolver>();
+    const meshPayloads = new Map<string, { neighbors: Record<string, unknown> }>();
+
+    vi.spyOn(workerManager, 'execute').mockImplementation((type, payload) => {
+      if (type !== 'GENERATE_MESH') {
+        return Promise.reject(new Error(`Unexpected worker task ${type}`));
+      }
+      const { cx, cy, cz, chunk, neighbors, chunkRevision } = payload as any;
+      const key = `${cx},${cy},${cz}`;
+      meshPayloads.set(key, { neighbors });
+      return new Promise<GenerateMeshResult>((resolve) => {
+        meshResolvers.set(key, resolve);
+        // Keep a handle so tests can finish jobs out of order.
+        void chunk;
+        void chunkRevision;
+        void ChunkMeshBuilder;
+      });
+    });
+
+    // Only A exists when A is submitted — simulates streaming frontier.
+    const chunkA = world.generator.generateChunkData(0, 0, 0);
+    world.chunks.set('0,0,0', chunkA);
+
+    world.loadArea(0, 0, 0, 1);
+    world.chunkManager.pendingMeshQueue = [];
+    const epoch = world.chunkManager.getStreamingEpoch();
+    world.chunkManager.pendingMeshQueue.push({
+      key: '0,0,0',
+      updateNeighbors: true,
+      epoch,
+      revision: world.getChunkRevision('0,0,0'),
+    });
+
+    world.chunkManager.processIncrementalLoading();
+    expect(meshResolvers.has('0,0,0')).toBe(true);
+    expect(meshPayloads.get('0,0,0')?.neighbors.px).toBeUndefined();
+
+    // Neighbor B arrives and finishes while A is still in-flight.
+    const chunkB = world.generator.generateChunkData(1, 0, 0);
+    world.chunks.set('1,0,0', chunkB);
+    world.chunkManager.pendingMeshQueue.push({
+      key: '1,0,0',
+      updateNeighbors: true,
+      epoch,
+      revision: world.getChunkRevision('1,0,0'),
+    });
+    world.chunkManager.processIncrementalLoading();
+    expect(meshResolvers.has('1,0,0')).toBe(true);
+
+    const finishMesh = (key: string) => {
+      const [cx, cy, cz] = key.split(',').map(Number);
+      const chunk = world.chunks.get(key)!;
+      const neighbors = meshPayloads.get(key)?.neighbors ?? {};
+      meshResolvers.get(key)!({
+        mesh: ChunkMeshBuilder.buildMesh(cx, cy, cz, chunk, neighbors as any),
+        summary: buildChunkVisibilitySummary(chunk, world.getChunkRevision(key)),
+      });
+    };
+
+    // B completes first and cannot immediately remesh A (still generating).
+    finishMesh('1,0,0');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(world.getRenderer().hasChunkMesh('1,0,0')).toBe(true);
+
+    // A completes with a mesh baked without B, then must self-queue seam remesh.
+    finishMesh('0,0,0');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(world.getRenderer().hasChunkMesh('0,0,0')).toBe(true);
+
+    const seamRepairA = world.chunkManager.pendingMeshQueue.find(item => item.key === '0,0,0');
+    expect(seamRepairA).toBeDefined();
+    expect(seamRepairA!.updateNeighbors).toBe(false);
+
+    // Drain the repair so A is resubmitted with B present.
+    meshResolvers.delete('0,0,0');
+    meshPayloads.delete('0,0,0');
+    world.chunkManager.processIncrementalLoading();
+    expect(meshResolvers.has('0,0,0')).toBe(true);
+    expect(meshPayloads.get('0,0,0')?.neighbors.px).toBeDefined();
+  });
+
   test('does not cache a chunk generation result from an obsolete streaming epoch', async () => {
     vi.spyOn(performance, 'now').mockReturnValue(0);
     const world = new World('test-streaming-generation-epoch');
