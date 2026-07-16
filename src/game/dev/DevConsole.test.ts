@@ -106,6 +106,7 @@ describe('DevConsole', () => {
       fpsCounter: {
         getFPS: vi.fn().mockReturnValue(60)
       },
+      setRenderDistance: vi.fn(),
       renderDistance: 4
     } as unknown as GameManager;
   });
@@ -281,11 +282,10 @@ describe('DevConsole', () => {
   });
 
   describe('render namespace', () => {
-    test('setRenderDistance() should cap and load area', () => {
+    test('setRenderDistance() should clamp and delegate to the game manager', () => {
       const devConsole = createDevConsole(mockGame);
-      devConsole.render.setRenderDistance(10);
-      expect(mockGame.renderDistance).toBe(10);
-      expect(mockGame.world.loadArea).toHaveBeenCalled();
+      devConsole.render.setRenderDistance(20);
+      expect(mockGame.setRenderDistance).toHaveBeenCalledWith(16);
     });
 
     test('setFov() should change camera fov', () => {
