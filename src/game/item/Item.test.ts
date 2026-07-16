@@ -333,6 +333,11 @@ describe('Item System', () => {
       expect(ItemRegistry.getItemTypeFromBlockType(BLOCK_TYPES.CHEST)).toBe(ItemType.CHEST);
       expect(ItemRegistry.getBlockTypeFromItemType(ItemType.FURNACE)).toBe(BLOCK_TYPES.AIR);
       expect(ItemRegistry.getBlockTypeFromItemType(ItemType.CHEST)).toBe(BLOCK_TYPES.AIR);
+      expect(ItemRegistry.getItemTypeFromFixtureDefinitionId('cloudcraft:chest')).toBe(ItemType.CHEST);
+      expect(ItemRegistry.getItemTypeFromFixtureDefinitionId('cloudcraft:furnace')).toBe(ItemType.FURNACE);
+      expect(ItemRegistry.getItemTypeFromFixtureDefinitionId('cloudcraft:fabricator_bench'))
+        .toBe(ItemType.FABRICATOR_BENCH);
+      expect(ItemRegistry.getItemTypeFromFixtureDefinitionId('cloudcraft:unknown')).toBeNull();
       expect(ItemRegistry.hasTag(ItemType.WOOD, 'cloudcraft:wood')).toBe(true);
       expect(ItemRegistry.hasTag(ItemType.STONE, 'cloudcraft:wood')).toBe(false);
     });

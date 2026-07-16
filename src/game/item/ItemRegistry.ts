@@ -25,6 +25,7 @@ export class ItemRegistry {
   private static items = new Map<ItemType, Item>();
   private static blockToItemMap = new Map<BlockType, ItemType>();
   private static itemToBlockMap = new Map<ItemType, BlockType>();
+  private static fixtureToItemMap = new Map<string, ItemType>();
   private static defaultItem: Item;
   private static initialized = false;
 
@@ -41,11 +42,17 @@ export class ItemRegistry {
       this.blockToItemMap.delete(previousBlock.blockId);
       this.itemToBlockMap.delete(previousBlock.id);
     }
+    if (previous instanceof PlaceableFixtureItem) {
+      this.fixtureToItemMap.delete(previous.fixtureDefinitionId);
+    }
     this.items.set(item.id, item);
     if (item.isBlockItem) {
       const blockItem = item as BlockItem;
       this.blockToItemMap.set(blockItem.blockId, blockItem.id);
       this.itemToBlockMap.set(blockItem.id, blockItem.blockId);
+    }
+    if (item instanceof PlaceableFixtureItem) {
+      this.fixtureToItemMap.set(item.fixtureDefinitionId, item.id);
     }
   }
 
@@ -192,6 +199,11 @@ export class ItemRegistry {
   public static getBlockTypeFromItemType(itemType: ItemType): BlockType {
     this.ensureInitialized();
     return this.itemToBlockMap.get(itemType) ?? BLOCK_TYPES.AIR;
+  }
+
+  public static getItemTypeFromFixtureDefinitionId(definitionId: string): ItemType | null {
+    this.ensureInitialized();
+    return this.fixtureToItemMap.get(definitionId) ?? null;
   }
 
   public static getAllItems(): Item[] {

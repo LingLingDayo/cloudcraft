@@ -66,6 +66,7 @@
 2. 在 `ItemRegistry` 注册对应的 `PlaceableFixtureItem`，物品 ID 与设施定义 ID 可以不同，但映射必须显式声明。
 3. 设施物品的 `isPlaceable` 为 `true`、`isBlockItem` 为 `false`；放置不得调用 `World.setBlock`，也不得加入物品到体素的反向映射。
 4. 旧世界中的体素箱子保留 `BLOCK_TYPES.CHEST -> ItemType.CHEST` 单向掉落映射，用于存档迁移；`ItemType.CHEST -> BLOCK_TYPES.CHEST` 必须继续返回 `AIR`，避免重新放置体素箱子。
+5. 设施回收等反向查询统一使用 `ItemRegistry.getItemTypeFromFixtureDefinitionId`；未知定义返回 `null`，调用方不得猜测或硬编码物品 ID。
 
 设施的占用、组件状态、存档 carrier 与资源生命周期规范参见 [设施系统 README](../fixtures/README.md)。
 
