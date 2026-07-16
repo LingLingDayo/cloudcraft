@@ -64,7 +64,7 @@ Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍�
 
 ### 接缝网格收敛（Seam Remesh）
 
-体素天空光与 AO 在 `GENERATE_MESH` 时按邻居缓冲烘焙；邻居缺失时 `ChunkMeshBuilder` 会回退为满天空光，因此**允许**无邻居先出网以保持流送前沿，但必须在邻居缓冲补齐后收敛。
+体素天空光与 AO 在 `GENERATE_MESH` 时按邻居缓冲烘焙；邻居缺失时 `ChunkMeshBuilder` 回退为打包满天空光 `PACKED_MAX_SKY_LIGHT`（`(15<<4)|0 = 240`），**禁止**回退为裸值 `15`（会解包成 sky=0/block=15，表现为接缝“火把条”）。因此**允许**无邻居先出网以保持流送前沿，但必须在邻居缓冲补齐后收敛。新区块 `GENERATE_CHUNK` 被接受后，立即对已挂载的六面邻居标记 seam remesh，无需等待本块 mesh 完成。
 
 `WorldChunkManager` 在提交 mesh 时记录六面邻居缓冲的 presence bitmask；任务成功挂载后：
 

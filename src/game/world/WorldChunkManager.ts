@@ -637,6 +637,17 @@ export class WorldChunkManager {
             epoch,
             revision: acceptedRevision,
           });
+          // Neighbor chunk data just became available: immediately schedule seam
+          // remesh for already-mounted face neighbors so edge light stops using
+          // the provisional packed-sky fallback before this chunk finishes meshing.
+          const [genCx, genCy, genCz] = key.split(',').map(Number);
+          for (const [dx, dy, dz] of CHUNK_NEIGHBOR_OFFSETS) {
+            const nkey = `${genCx + dx},${genCy + dy},${genCz + dz}`;
+            if (this.world.getRenderer().hasChunkMesh(nkey)) {
+              this.markSeamRemesh(nkey);
+            }
+          }
+          this.flushSeamRemeshQueue(epoch, ccx, ccy, ccz);
           this.pendingMeshQueue.sort((first, second) => (
             this.getChunkPriority(first.key, ccx, ccy, ccz)
             - this.getChunkPriority(second.key, ccx, ccy, ccz)

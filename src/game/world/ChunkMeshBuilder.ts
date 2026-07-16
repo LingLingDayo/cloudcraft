@@ -6,6 +6,13 @@ export const CHUNK_SIZE_Y = 16;
 export const CHUNK_SIZE_Z = 16;
 export const WORLD_HEIGHT = 512;
 
+/**
+ * Packed light byte: high nibble = sky (0-15), low nibble = block (0-15).
+ * Full outdoor sky with no block light is (15 << 4) | 0 = 240, NOT raw 15
+ * (raw 15 unpacks as sky=0, block=15 — a bright torch strip with no sky).
+ */
+export const PACKED_MAX_SKY_LIGHT = (15 << 4) | 0;
+
 export interface ChunkNeighbors {
   px?: Uint8Array; // +X (cx + 1)
   nx?: Uint8Array; // -X (cx - 1)
@@ -101,10 +108,11 @@ export class ChunkMeshBuilder {
       return neighborChunk[(nlx + nlz * CHUNK_SIZE_X + nly * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2];
     };
 
-    // Fast neighbor light retriever
+    // Fast neighbor light retriever (returns packed sky/block light byte)
     const getLightAt = (lx: number, ly: number, lz: number): number => {
       const globalY = worldStartY + ly;
-      if (globalY < 0 || globalY >= WORLD_HEIGHT) return 15; // default to maximum light
+      // Open sky above/below world — full sky nibble, zero block nibble.
+      if (globalY < 0 || globalY >= WORLD_HEIGHT) return PACKED_MAX_SKY_LIGHT;
 
       if (
         lx >= 0 && lx < CHUNK_SIZE_X &&
@@ -137,7 +145,9 @@ export class ChunkMeshBuilder {
         nlz = 0;
       }
 
-      if (!neighborChunk) return 15;
+      // Missing neighbor buffer: provisional full sky (correct packed form).
+      // Seam remesh converges once the neighbor chunk is loaded.
+      if (!neighborChunk) return PACKED_MAX_SKY_LIGHT;
       return neighborChunk[(nlx + nlz * CHUNK_SIZE_X + nly * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2 + 1];
     };
 
