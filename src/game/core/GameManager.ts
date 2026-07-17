@@ -23,6 +23,11 @@ import { GameSaveCoordinator } from './GameSaveCoordinator';
 import { createGameFixtureRuntime } from './GameFixtureRuntime';
 import { GameStoreBridge } from './GameStoreBridge';
 
+// 玩家状态（血条/饥饿条）同步间隔，需保持较高频率以保证 HUD 响应
+const UI_UPDATE_INTERVAL_MS = 100;
+// F3 调试面板采样间隔：1Hz 足够诊断用途，避免高频噪波计算与 React 重绘拖垮主线程
+const DEBUG_METRICS_INTERVAL_MS = 1000;
+
 export class GameManager {
   public renderer!: THREE.WebGLRenderer;
   public scene!: THREE.Scene;
@@ -54,6 +59,7 @@ export class GameManager {
 
   // UI update throttling
   private lastUiUpdateTime = 0;
+  private lastDebugMetricsTime = 0;
   private saveCoordinator!: GameSaveCoordinator;
   private storeBridge!: GameStoreBridge;
 
@@ -63,6 +69,9 @@ export class GameManager {
   // Debug metrics
   public debugOverlayVisible = false;
   public fpsCounter = new FPSCounter();
+  private lastDebugMetrics: DebugMetrics | null = null;
+  private cachedGpuName: string | null = null;
+  private readonly debugDirection = new THREE.Vector3();
 
   constructor(canvas: HTMLCanvasElement, seed: string = 'cloudcraft') {
     this.canvas = canvas;
@@ -288,7 +297,7 @@ export class GameManager {
       this.world.update(dt);
 
       const currentMs = performance.now();
-      if (currentMs - this.lastUiUpdateTime > 100) {
+      if (currentMs - this.lastUiUpdateTime > UI_UPDATE_INTERVAL_MS) {
         this.lastUiUpdateTime = currentMs;
         useGameStore.getState().setPlayerState(
           {
@@ -301,9 +310,12 @@ export class GameManager {
           this.player.life,
           this.player.hunger
         );
-        if (this.debugOverlayVisible) {
-          useGameStore.getState().setDebugMetrics(this.getDebugMetrics());
-        }
+      }
+
+      if (this.debugOverlayVisible && currentMs - this.lastDebugMetricsTime > DEBUG_METRICS_INTERVAL_MS) {
+        this.lastDebugMetricsTime = currentMs;
+        this.lastDebugMetrics = this.getDebugMetrics();
+        useGameStore.getState().setDebugMetrics(this.lastDebugMetrics);
       }
     } else {
       // Background continues when game is paused/menus open
@@ -379,6 +391,34 @@ export class GameManager {
     return getBlockProperties(id).name;
   }
 
+  // GPU 名称在进程生命周期内不变，惰性查询一次后缓存，避免每次采样重复访问 WebGL 扩展
+  private resolveGpuName(): string {
+    if (this.cachedGpuName !== null) {
+      return this.cachedGpuName;
+    }
+
+    let gpuName = 'Unknown';
+    if (this.renderer) {
+      const gl = this.renderer.getContext();
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        gpuName = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Unknown';
+      } else {
+        gpuName = 'Standard WebGL';
+      }
+    }
+    this.cachedGpuName = cleanGpuName(gpuName);
+    return this.cachedGpuName;
+  }
+
+  /**
+   * 返回调试面板当前展示的数据快照（1Hz 节流采样）。
+   * 面板尚未采样过时回退到实时计算，保证控制台调试始终有数据可取。
+   */
+  public getDebugMetricsSnapshot(): DebugMetrics {
+    return this.lastDebugMetrics ?? this.getDebugMetrics();
+  }
+
   public getDebugMetrics(): DebugMetrics {
     // 1. Target block info
     const targeted = this.interaction?.targetedBlockInfo;
@@ -405,8 +445,8 @@ export class GameManager {
       z: this.player.position.z,
     };
 
-    // Calculate Yaw & Pitch and Direction
-    const direction = new THREE.Vector3();
+    // Calculate Yaw & Pitch and Direction（复用向量避免每次采样分配新对象）
+    const direction = this.debugDirection;
     this.camera.getWorldDirection(direction);
     const yaw = Math.atan2(direction.x, direction.z) * 180 / Math.PI;
     const pitch = Math.asin(direction.y) * 180 / Math.PI;
@@ -481,23 +521,12 @@ export class GameManager {
     const animalsCount = this.animals ? this.animals.getCount() : 0;
 
     // 7. Renderer Info
-    let gpuName = 'Unknown';
-    if (this.renderer) {
-      const gl = this.renderer.getContext();
-      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-      if (debugInfo) {
-        gpuName = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'Unknown';
-      } else {
-        gpuName = 'Standard WebGL';
-      }
-    }
-
     const rendererInfo = {
       drawCalls: this.renderer ? this.renderer.info.render.calls : 0,
       triangles: this.renderer ? this.renderer.info.render.triangles : 0,
       geometries: this.renderer ? this.renderer.info.memory.geometries : 0,
       textures: this.renderer ? this.renderer.info.memory.textures : 0,
-      gpu: cleanGpuName(gpuName),
+      gpu: this.resolveGpuName(),
     };
 
     return {
