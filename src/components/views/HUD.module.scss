@@ -12,6 +12,11 @@
   font-family: monospace;
   text-align: left;
   pointer-events: none;
+  // 调试面板为纯信息展示：降低模糊半径并提高底色不透明度，
+  // 大面积 backdrop-filter 叠加 WebGL 画布是 F3 掉帧的主要渲染侧成因
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: rgba(15, 20, 35, 0.82);
   display: flex;
   flex-direction: column;
   gap: 8px;
