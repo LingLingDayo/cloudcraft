@@ -106,6 +106,11 @@ describe('DevConsole', () => {
       fpsCounter: {
         getFPS: vi.fn().mockReturnValue(60)
       },
+      getDebugMetricsSnapshot: vi.fn().mockReturnValue({
+        fps: 60,
+        chunksLoaded: 10,
+        playerPosition: { x: 10, y: 64, z: 20 }
+      }),
       setRenderDistance: vi.fn(),
       renderDistance: 4
     } as unknown as GameManager;
@@ -126,6 +131,7 @@ describe('DevConsole', () => {
     expect(devConsole.time).toBeDefined();
     expect(devConsole.render).toBeDefined();
     expect(devConsole.store).toBeDefined();
+    expect(devConsole.debug).toBeDefined();
   });
 
   describe('meta namespace', () => {
@@ -333,6 +339,17 @@ describe('DevConsole', () => {
       // Give invalid item
       const successFail = devConsole.store.giveItem('invalid_item_type_abc', 1);
       expect(successFail).toBe(false);
+    });
+  });
+
+  describe('debug namespace', () => {
+    test('getMetrics() should return the debug panel metrics snapshot', () => {
+      const devConsole = createDevConsole(mockGame);
+      const metrics = devConsole.debug.getMetrics();
+
+      expect(mockGame.getDebugMetricsSnapshot).toHaveBeenCalled();
+      expect(metrics.fps).toBe(60);
+      expect(metrics.playerPosition).toEqual({ x: 10, y: 64, z: 20 });
     });
   });
 });

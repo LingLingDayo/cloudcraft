@@ -21,7 +21,7 @@ window.__cloudcraft__.meta.help();
 
 ## 2. API 命名空间详解
 
-调试接口分为六大域（Namespace）：`meta`、`player`、`world`、`time`、`render`、`store`。
+调试接口分为七大域（Namespace）：`meta`、`player`、`world`、`time`、`render`、`store`、`debug`。
 
 ### 2.1 Meta (元数据接口)
 - **`window.__cloudcraft__.meta.help()`**
@@ -131,6 +131,11 @@ window.__cloudcraft__.meta.help();
   - **参数**：`itemType` (字符串，必须是合法的 ItemType 类型，如 `"stone"`, `"grass"` 等)，`count` (数字，可选，默认 `1`)。
   - **返回值**：布尔值（表示是否添加成功）。
 
+### 2.7 Debug (调试面板接口)
+- **`window.__cloudcraft__.debug.getMetrics()`**
+  - **功能**：获取 F3 调试面板当前展示的全部数据快照（与面板所见一致，面板数据以 1Hz 频率节流采样）。
+  - **返回值**：`DebugMetrics` 对象（包含 FPS、区块统计、玩家坐标/朝向、群系/地形、游戏时间、实体计数、渲染统计等）。若面板尚未采样过，则回退为实时计算一份最新数据。
+
 ---
 
 ## 3. 内部实现与目录结构
@@ -145,5 +150,6 @@ window.__cloudcraft__.meta.help();
   - [time.ts](/src/game/dev/commands/time.ts)：游戏时间控制、维度/天气切换。
   - [render.ts](/src/game/dev/commands/render.ts)：视场角（FOV）、渲染距离、阴影品质和渲染统计。
   - [store.ts](/src/game/dev/commands/store.ts)：Zustand 状态获取、游戏模式切换及物品发放。
+  - [debug.ts](/src/game/dev/commands/debug.ts)：F3 调试面板数据快照查询。
 - [DevConsole.test.ts](/src/game/dev/DevConsole.test.ts)：覆盖调试控制台全命名空间的自动化单元测试。
 

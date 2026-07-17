@@ -1,4 +1,5 @@
 import type { GameStoreState } from '@store/useGameStore';
+import type { DebugMetrics } from '@type';
 import type { GameManager } from '../core/GameManager';
 import { createMetaCommands } from './commands/meta';
 import { createPlayerCommands } from './commands/player';
@@ -6,6 +7,7 @@ import { createWorldCommands } from './commands/world';
 import { createTimeCommands } from './commands/time';
 import { createRenderCommands } from './commands/render';
 import { createStoreCommands } from './commands/store';
+import { createDebugCommands } from './commands/debug';
 
 export interface CloudcraftDevConsole {
   meta: {
@@ -63,6 +65,9 @@ export interface CloudcraftDevConsole {
     setGameMode(mode: 'adventure' | 'creative'): void;
     giveItem(itemType: string, count?: number): boolean;
   };
+  debug: {
+    getMetrics(): DebugMetrics;
+  };
 }
 
 export function createDevConsole(game: GameManager): CloudcraftDevConsole {
@@ -72,6 +77,7 @@ export function createDevConsole(game: GameManager): CloudcraftDevConsole {
     world: createWorldCommands(game),
     time: createTimeCommands(game),
     render: createRenderCommands(game),
-    store: createStoreCommands(game)
+    store: createStoreCommands(game),
+    debug: createDebugCommands(game)
   };
 }

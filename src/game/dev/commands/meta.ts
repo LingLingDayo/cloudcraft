@@ -38,6 +38,8 @@ export function createMetaCommands(game: GameManager) {
         { Namespace: 'store', Command: 'get()', Description: 'Get Zustand store state snapshot' },
         { Namespace: 'store', Command: 'setGameMode(mode)', Description: 'Set game mode ("adventure" | "creative")' },
         { Namespace: 'store', Command: 'giveItem(itemType, count)', Description: 'Add item to hotbar' },
+
+        { Namespace: 'debug', Command: 'getMetrics()', Description: 'Get current F3 debug panel metrics snapshot' },
       ];
       
       console.table(commands);
