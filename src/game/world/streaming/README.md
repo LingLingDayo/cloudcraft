@@ -84,6 +84,8 @@ Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍�
 
 Worker 输出通过 `collectWorkerTransferables` 递归收集嵌套 TypedArray 的底层 `ArrayBuffer`，并按 buffer 去重，实现结果零拷贝传回。输入区块仍归 `World` 所有，网格任务不得转移并使其 detach。
 
+纯空气区块仍需保留区块数据与 Portal 摘要，才能让透明拓扑继续传播到视距边缘，但 `ChunkMeshBuilder` 必须在常量时间扫描后快速返回空网格，`ChunkRenderer` 只记录“已完成网格处理”的空条目，不得为缺失的 solid/transparent/cutout 通道创建空 `BufferGeometry` 或 `THREE.Mesh`。空条目不参与邻居到达后的接缝重建；非空区块仍只为实际存在的材质通道创建场景对象，并保持原有接缝收敛流程。
+
 无 `world.game`、显式 `sync`，或 WorkerManager 实际没有存活 worker 时保留同步回退，用于初始化、构造全部失败和测试。不能只用 `typeof Worker` 判断能力。零 live pool 的直接 `execute` 必须立即取消；`dispose()` 必须取消所有 active/queued callback 并清理 identity。worker 崩溃时必须先从池与 active 索引移除，再尝试重建；重建失败且池为空时拒绝全部无法调度的 queued Promise，仍有存活 worker则继续 FIFO，禁止向 terminated worker dispatch。direct mesh 的 supersede/cancel 属于正常控制流，不得记录成运行时错误。
 
 ## 扩展点

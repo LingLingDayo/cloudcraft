@@ -98,6 +98,8 @@ graph TD
 
 相机参数由 `GameManager` 通过复用的强类型 `ChunkStreamingView` 提供，方向、投影和 block position bucket 量化后才触发重新解析；bucket 位移不确定半径保证稳定帧不分配对象且不会漏载。区块可见性状态以 current/fallback 双槽区分当前 revision 真值与最近稳定拓扑：运行时方块编辑后旧 Portal 摘要转入 fallback，避免 Worker 重建期间已加载集合收缩和全局网格重挂载；旧 revision 结果仍不能覆盖新网格。存档批量修改通过统一入口比较真实体素变化，整批最多推进一次 revision 并废弃不可信摘要。Worker 调度依据真实存活/idle 能力同步降级，以 owner、epoch、revision、seed 取消和去重 queued 任务，并对瞬时失败执行无 timer 的有限跨帧重试。完整契约、失效规则与扩展点见 [区块可见性流送说明](./streaming/README.md)。
 
+纯空气区块为了 Portal 穿透仍保留数据与摘要，但网格构建会直接返回空结果；渲染器只保留已处理标记，不为空材质通道创建 `BufferGeometry` 或 `THREE.Mesh`。非空区块也只创建实际存在的 solid、transparent、cutout 场景对象，避免透明视锥中的空气体积膨胀场景图。
+
 ## 动态材质边界
 
 `World` 只持有注入的 `DynamicMaterialRegistry`，不判断沙子或其他具体材料。核心定义和扩展定义在世界创建前统一装配并冻结。`WorldSerializer` 将静态方块修改与 Schema 1 动态活动体快照分别保存；恢复采用预检/提交两阶段，必须先完整解析顶层载体、Seed、修改坐标与方块类型、方块实体和动态活动体，再清空任何运行态。`BlockEntityManager` 在临时实体集合中完成 JSON 解析和状态恢复，仅在全部成功后替换活动集合；每个方块实体注册定义必须同时提供 create 与强类型 `validateSnapshot`，禁止管理器按具体 type 分支 payload。载入错误必须向统一存档边界抛出，以阻止设施、生物、天气和玩家继续发生部分恢复。旧存档缺少动态字段时重置活动体；切换 Seed 必须通过 `DynamicMaterialSystem.reset()` 清除旧世界活动体，防止其随后写入新世界。序列化与恢复测试独立位于 `WorldSerializer.test.ts`，不得重新堆入综合世界测试文件。

@@ -4,11 +4,17 @@ import type { World } from './World';
 import { ChunkMeshBuilder } from './ChunkMeshBuilder';
 import type { ChunkMeshResult, ChunkNeighbors, ChunkGeometryData } from './ChunkMeshBuilder';
 
+export interface ChunkRenderMeshes {
+  readonly solid: THREE.Mesh | null;
+  readonly transparent: THREE.Mesh | null;
+  readonly cutout: THREE.Mesh | null;
+}
+
 export class ChunkRenderer {
   private world: World;
   private textureAtlas: THREE.Texture;
   public materials: { solid: THREE.Material; transparent: THREE.Material; cutout: THREE.Material };
-  private chunkMeshes: Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }>;
+  private chunkMeshes: Map<string, ChunkRenderMeshes>;
   private loadedTimestamps: number[] = [];
   private meshVersions = new Map<string, number>();
 
@@ -200,40 +206,44 @@ export class ChunkRenderer {
 
     this.removeChunkMesh(key);
 
-    const solidGeom = new THREE.BufferGeometry();
-    const transGeom = new THREE.BufferGeometry();
-    const cutoutGeom = new THREE.BufferGeometry();
+    const createMesh = (
+      data: ChunkGeometryData | null,
+      material: THREE.Material,
+    ): THREE.Mesh | null => {
+      if (!data || data.positions.length === 0) return null;
 
-    const buildGeometry = (data: ChunkGeometryData | null, geom: THREE.BufferGeometry) => {
-      if (data && data.positions && data.positions.length > 0) {
-        geom.setAttribute('position', new THREE.Float32BufferAttribute(data.positions, 3));
-        geom.setAttribute('normal', new THREE.Float32BufferAttribute(data.normals, 3));
-        geom.setAttribute('uv', new THREE.Float32BufferAttribute(data.uvs, 2));
-        geom.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(data.atlasOffsets, 2));
-        geom.setAttribute('aValLight', new THREE.Float32BufferAttribute(data.valLights, 2));
-        geom.setAttribute('aAo', new THREE.Float32BufferAttribute(data.aos, 1));
-        geom.setAttribute('aRoughnessMetalness', new THREE.Float32BufferAttribute(data.roughnessMetalness, 2));
-        geom.computeBoundingSphere();
-      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(data.positions, 3));
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(data.normals, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(data.uvs, 2));
+      geometry.setAttribute('aAtlasOffset', new THREE.Float32BufferAttribute(data.atlasOffsets, 2));
+      geometry.setAttribute('aValLight', new THREE.Float32BufferAttribute(data.valLights, 2));
+      geometry.setAttribute('aAo', new THREE.Float32BufferAttribute(data.aos, 1));
+      geometry.setAttribute(
+        'aRoughnessMetalness',
+        new THREE.Float32BufferAttribute(data.roughnessMetalness, 2),
+      );
+      geometry.computeBoundingSphere();
+      return new THREE.Mesh(geometry, material);
     };
 
-    buildGeometry(meshResult.solid, solidGeom);
-    buildGeometry(meshResult.transparent, transGeom);
-    buildGeometry(meshResult.cutout, cutoutGeom);
-
-    const solidMesh = new THREE.Mesh(solidGeom, this.materials.solid);
-    const transMesh = new THREE.Mesh(transGeom, this.materials.transparent);
-    const cutoutMesh = new THREE.Mesh(cutoutGeom, this.materials.cutout);
+    const solidMesh = createMesh(meshResult.solid, this.materials.solid);
+    const transMesh = createMesh(meshResult.transparent, this.materials.transparent);
+    const cutoutMesh = createMesh(meshResult.cutout, this.materials.cutout);
 
     // Turn off real-time shadows for chunk meshes to eliminate shadow mapping moire patterns!
-    solidMesh.castShadow = false;
-    solidMesh.receiveShadow = false;
-    cutoutMesh.castShadow = false;
-    cutoutMesh.receiveShadow = false;
+    if (solidMesh) {
+      solidMesh.castShadow = false;
+      solidMesh.receiveShadow = false;
+    }
+    if (cutoutMesh) {
+      cutoutMesh.castShadow = false;
+      cutoutMesh.receiveShadow = false;
+    }
 
-    this.world.group.add(solidMesh);
-    this.world.group.add(transMesh);
-    this.world.group.add(cutoutMesh);
+    if (solidMesh) this.world.group.add(solidMesh);
+    if (transMesh) this.world.group.add(transMesh);
+    if (cutoutMesh) this.world.group.add(cutoutMesh);
 
     this.chunkMeshes.set(key, { solid: solidMesh, transparent: transMesh, cutout: cutoutMesh });
   }
@@ -259,24 +269,34 @@ export class ChunkRenderer {
   public removeChunkMesh(key: string): void {
     const oldMeshes = this.chunkMeshes.get(key);
     if (oldMeshes) {
-      this.world.group.remove(oldMeshes.solid);
-      this.world.group.remove(oldMeshes.transparent);
+      if (oldMeshes.solid) {
+        this.world.group.remove(oldMeshes.solid);
+        oldMeshes.solid.geometry.dispose();
+      }
+      if (oldMeshes.transparent) {
+        this.world.group.remove(oldMeshes.transparent);
+        oldMeshes.transparent.geometry.dispose();
+      }
       if (oldMeshes.cutout) {
         this.world.group.remove(oldMeshes.cutout);
         oldMeshes.cutout.geometry.dispose();
       }
-      oldMeshes.solid.geometry.dispose();
-      oldMeshes.transparent.geometry.dispose();
       this.chunkMeshes.delete(key);
     }
   }
 
-  public getChunkMeshes(): Map<string, { solid: THREE.Mesh; transparent: THREE.Mesh; cutout: THREE.Mesh }> {
+  public getChunkMeshes(): Map<string, ChunkRenderMeshes> {
     return this.chunkMeshes;
   }
 
   public hasChunkMesh(key: string): boolean {
     return this.chunkMeshes.has(key);
+  }
+
+  public hasRenderableChunkMesh(key: string): boolean {
+    const meshes = this.chunkMeshes.get(key);
+    return meshes !== undefined
+      && (meshes.solid !== null || meshes.transparent !== null || meshes.cutout !== null);
   }
 
   public getChunkLoadSpeed(): number {
@@ -290,8 +310,8 @@ export class ChunkRenderer {
 
   public dispose(): void {
     for (const meshes of this.chunkMeshes.values()) {
-      meshes.solid.geometry.dispose();
-      meshes.transparent.geometry.dispose();
+      if (meshes.solid) meshes.solid.geometry.dispose();
+      if (meshes.transparent) meshes.transparent.geometry.dispose();
       if (meshes.cutout) {
         meshes.cutout.geometry.dispose();
       }

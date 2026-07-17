@@ -5,6 +5,7 @@ export const CHUNK_SIZE_X = 16;
 export const CHUNK_SIZE_Y = 16;
 export const CHUNK_SIZE_Z = 16;
 export const WORLD_HEIGHT = 512;
+const BLOCK_TYPE_MASK = 0x3F;
 
 /**
  * Packed light byte: high nibble = sky (0-15), low nibble = block (0-15).
@@ -33,10 +34,16 @@ export interface ChunkGeometryData {
 }
 
 export interface ChunkMeshResult {
-  solid: ChunkGeometryData | null;
-  transparent: ChunkGeometryData | null;
-  cutout: ChunkGeometryData | null;
+  readonly solid: ChunkGeometryData | null;
+  readonly transparent: ChunkGeometryData | null;
+  readonly cutout: ChunkGeometryData | null;
 }
+
+const EMPTY_CHUNK_MESH_RESULT: ChunkMeshResult = {
+  solid: null,
+  transparent: null,
+  cutout: null,
+};
 
 export class ChunkMeshBuilder {
   private static isTransparent(blockType: number): boolean {
@@ -50,6 +57,15 @@ export class ChunkMeshBuilder {
     chunk: Uint8Array,
     neighbors: ChunkNeighbors
   ): ChunkMeshResult {
+    let containsBlocks = false;
+    for (let index = 0; index < chunk.length; index += 2) {
+      if ((chunk[index] & BLOCK_TYPE_MASK) !== BLOCK_TYPES.AIR) {
+        containsBlocks = true;
+        break;
+      }
+    }
+    if (!containsBlocks) return EMPTY_CHUNK_MESH_RESULT;
+
     const createData = () => ({
       positions: [] as number[],
       normals: [] as number[],
@@ -272,7 +288,7 @@ export class ChunkMeshBuilder {
         for (x[d2] = 0; x[d2] < dims[d2]; x[d2]++) {
           for (x[d1] = 0; x[d1] < dims[d1]; x[d1]++) {
             const blockTypeRaw = chunk[(x[0] + x[2] * CHUNK_SIZE_X + x[1] * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2];
-            const blockType = blockTypeRaw & 0x3F;
+            const blockType = blockTypeRaw & BLOCK_TYPE_MASK;
             const orientation = blockTypeRaw >> 6;
             let hash = 0;
 
@@ -399,7 +415,7 @@ export class ChunkMeshBuilder {
                 targetData.atlasOffsets.push(uMin, vMin);
               }
 
-              const blockType = (c >>> 27) & 0x3F;
+              const blockType = (c >>> 27) & BLOCK_TYPE_MASK;
               const props = getBlockProperties(blockType);
               const roughness = props.roughness;
               const metalness = props.metalness;
@@ -512,7 +528,7 @@ export class ChunkMeshBuilder {
         for (let y = 0; y < CHUNK_SIZE_Y; y++) {
           const index = x + z * CHUNK_SIZE_X + y * CHUNK_SIZE_X * CHUNK_SIZE_Z;
           const rBase = chunk[index * 2];
-          const blockType = rBase & 0x3F;
+          const blockType = rBase & BLOCK_TYPE_MASK;
           if (blockType === BLOCK_TYPES.AIR) continue;
           const props = getBlockProperties(blockType);
           const model = props.model;

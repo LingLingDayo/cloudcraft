@@ -170,6 +170,7 @@ export class WorldChunkManager {
    */
   private markSeamRemesh(key: string): void {
     if (!this.isWithinRetainRadius(key)) return;
+    if (!this.world.getRenderer().hasRenderableChunkMesh(key)) return;
     this.pendingSeamRemesh.add(key);
   }
 
