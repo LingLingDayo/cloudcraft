@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { BLOCK_TYPES } from '../BlockConfig';
 import { CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z } from '../World';
+import { CHUNK_STREAMING_CONFIG } from './ChunkStreamingConfig';
 import {
   buildChunkVisibilitySummary,
   ChunkFace,
@@ -136,6 +137,24 @@ describe('Chunk visibility topology propagation', () => {
     expect(result.active.has(chunkKey(4, 1, 0))).toBe(false);
   });
 
+  test('propagates through full-water chunks to the render-radius edge', () => {
+    const waterSummary = buildChunkVisibilitySummary(
+      createChunk(BLOCK_TYPES.WATER),
+      TEST_REVISION,
+    );
+    const states = new Map<string, ChunkVisibilityState>();
+    for (let x = 0; x <= 4; x++) {
+      states.set(chunkKey(x, 1, 0), state(waterSummary));
+    }
+
+    const result = new ChunkVisibilityResolver().resolve(createResolverInput(states, {
+      radius: 4,
+    }));
+
+    expect(result.directVisible.has(chunkKey(4, 1, 0))).toBe(true);
+    expect(result.active.has(chunkKey(5, 1, 0))).toBe(false);
+  });
+
   test('keeps the safety buffer inside the configured render radius', () => {
     const states = new Map<string, ChunkVisibilityState>([
       [chunkKey(0, 1, 0), state(transparentSummary)],
@@ -255,6 +274,67 @@ describe('Chunk visibility topology propagation', () => {
     expect(result.directVisible.has(horizontallyVisible)).toBe(true);
     expect(result.directVisible.has(verticallyOutside)).toBe(false);
     expect(result.active.has(verticallyOutside)).toBe(false);
+  });
+
+  test('keeps the cached radius-eight candidate set below half of the full sphere', () => {
+    const radius = 8;
+    const center = { x: 0, y: 8, z: 0 };
+    const result = new ChunkVisibilityResolver().resolve(createResolverInput(
+      new Map(),
+      {
+        center,
+        radius,
+        view: {
+          position: { x: 10, y: 138, z: 10 },
+          forward: { x: 0, y: 0, z: 1 },
+          verticalFovRadians: CHUNK_STREAMING_CONFIG.defaultVerticalFovRadians,
+          aspect: CHUNK_STREAMING_CONFIG.defaultAspect,
+        },
+        fallback: state(transparentSummary),
+        maxChunkYExclusive: 32,
+      },
+    ));
+    const conservativeResult = new ChunkVisibilityResolver().resolve({
+      ...createResolverInput(new Map(), {
+        center,
+        radius,
+        view: {
+          position: { x: 10, y: 138, z: 10 },
+          forward: { x: 0, y: 0, z: 1 },
+          verticalFovRadians: CHUNK_STREAMING_CONFIG.defaultVerticalFovRadians,
+          aspect: CHUNK_STREAMING_CONFIG.defaultAspect,
+        },
+        fallback: state(transparentSummary),
+        maxChunkYExclusive: 32,
+      }),
+      positionUncertaintyRadius:
+        CHUNK_STREAMING_CONFIG.viewPositionBucketUncertaintyRadius,
+      directionUncertaintyRadians:
+        CHUNK_STREAMING_CONFIG.directionBucketUncertaintyRadians,
+    });
+    let fullSphereSize = 0;
+    for (let x = -radius; x <= radius; x++) {
+      for (let y = center.y - radius; y <= center.y + radius; y++) {
+        for (let z = -radius; z <= radius; z++) {
+          const dx = x - center.x;
+          const dy = y - center.y;
+          const dz = z - center.z;
+          if (dx * dx + dy * dy + dz * dz <= radius * radius) {
+            fullSphereSize++;
+          }
+        }
+      }
+    }
+
+    expect(conservativeResult.active.size).toBeGreaterThanOrEqual(result.active.size);
+    expect(conservativeResult.active.size).toBeLessThan(fullSphereSize / 2);
+    for (const key of conservativeResult.active) {
+      const [x, y, z] = key.split(',').map(Number);
+      const dx = x - center.x;
+      const dy = y - center.y;
+      const dz = z - center.z;
+      expect(dx * dx + dy * dy + dz * dz).toBeLessThanOrEqual(radius * radius);
+    }
   });
 
   test.each([
