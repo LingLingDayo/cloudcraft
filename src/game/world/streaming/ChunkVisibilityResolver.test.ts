@@ -136,6 +136,36 @@ describe('Chunk visibility topology propagation', () => {
     expect(result.active.has(chunkKey(4, 1, 0))).toBe(false);
   });
 
+  test('keeps the safety buffer inside the configured render radius', () => {
+    const states = new Map<string, ChunkVisibilityState>([
+      [chunkKey(0, 1, 0), state(transparentSummary)],
+      [chunkKey(1, 1, 0), state(opaqueSummary)],
+    ]);
+    const result = new ChunkVisibilityResolver().resolve(createResolverInput(states, {
+      radius: 1,
+    }));
+
+    expect(result.directVisible.has(chunkKey(1, 1, 0))).toBe(true);
+    expect(result.active.has(chunkKey(2, 1, 0))).toBe(false);
+  });
+
+  test('loads only one safety layer below an opaque surface', () => {
+    const states = new Map<string, ChunkVisibilityState>([
+      [chunkKey(0, 3, 0), state(transparentSummary)],
+      [chunkKey(0, 2, 0), state(opaqueSummary)],
+    ]);
+    const result = new ChunkVisibilityResolver().resolve(createResolverInput(states, {
+      center: { x: 0, y: 3, z: 0 },
+      radius: 4,
+      maxChunkYExclusive: 8,
+    }));
+
+    expect(result.directVisible.has(chunkKey(0, 2, 0))).toBe(true);
+    expect(result.directVisible.has(chunkKey(0, 1, 0))).toBe(false);
+    expect(result.active.has(chunkKey(0, 1, 0))).toBe(true);
+    expect(result.active.has(chunkKey(0, 0, 0))).toBe(false);
+  });
+
   test('a stale compatible summary preserves its previous topology during remeshing', () => {
     const states = new Map<string, ChunkVisibilityState>([
       [chunkKey(0, 1, 0), state(transparentSummary)],

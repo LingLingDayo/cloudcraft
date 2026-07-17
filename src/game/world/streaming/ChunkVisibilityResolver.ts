@@ -272,7 +272,7 @@ export class ChunkVisibilityResolver {
     }
 
     for (const key of directVisible) active.add(key);
-    const maxBufferedRadius = input.radius + CHUNK_STREAMING_CONFIG.safetyBufferRadius;
+    const maxBufferedRadius = input.radius;
     for (const key of directVisible) {
       const [x, y, z] = key.split(',').map(Number);
       for (const direction of CHUNK_DIRECTIONS) {

@@ -1,14 +1,14 @@
 # 区块可见性流送
 
-本模块负责把“玩家可能看见的区块”转换为受限、可取消的生成与网格任务。新任务只针对拓扑可见区块及其一层安全缓冲排队，避免把完整渲染距离球体一次性提交给 Worker。
+本模块负责把“玩家可能看见的区块”转换为受限、可取消的生成与网格任务。新任务只针对拓扑可见区块及其一层安全缓冲排队，安全缓冲仍受用户设置的渲染半径裁剪，避免把完整渲染距离球体一次性提交给 Worker。
 
-**加载与卸载分离**：入队仍由视锥 + Portal 驱动；已挂载的网格仅在离开保留球（渲染半径 + `safetyBufferRadius`）时卸载。保留球必须覆盖安全外圈，否则外圈任务会被半径校验丢弃，世界加载进度会永久卡在“球内块已完成、外圈永远 false”的状态。原地转向会更新流送前沿，但不会丢弃保留球内已经加载完成的区块网格。
+**加载与卸载分离**：入队仍由视锥 + Portal 驱动；已挂载的网格仅在离开用户设置的渲染半径球时卸载。安全外圈只扩展拓扑可见集合，不得把实际加载半径扩大为“渲染半径 + 1”。原地转向会更新流送前沿，但不会丢弃保留球内已经加载完成的区块网格。
 
 ## 数据流
 
 1. `world.worker.ts` 在生成区块或构建网格时调用 `buildChunkVisibilitySummary`。
 2. `ChunkVisibilityResolver` 从相机所在区块开始，结合矩形视锥候选与 portal 拓扑执行广度传播。
-3. `directVisible` 保存通过视锥和拓扑传播直接可见的区块；`active` 在其外侧增加一层 `safetyBufferRadius`，用于遮挡方块被破坏后的无缝显示。
+3. `directVisible` 保存通过视锥和拓扑传播直接可见的区块；`active` 在其外侧增加一层 `safetyBufferRadius`，用于遮挡方块被破坏后的无缝显示，但该层不得越过原始渲染半径。
 4. `WorldChunkManager` 只为 `active` 集合排队新的生成/网格任务，并按玩家距离调度；卸载网格时以加载半径球为准，而不是当前朝向。
 
 ## Portal 摘要
@@ -41,7 +41,7 @@
 - 以 4 个方块为边长量化的相机 X/Y/Z position bucket；
 - 显式拓扑失效标记。
 
-`ChunkStreamingViewCache` 是上述量化签名的唯一所有者：`WorldChunkManager` 只通过纯标量参数调用 `shouldResolve()` 判断是否重算，通过 `invalidate()` 响应摘要变化，并在 `clearCache()` 时对称调用 `clear()`。缓存模块不得依赖 World、Worker 或 Zustand，高频比较必须原地更新标量字段，禁止创建输入或签名对象。
+`ChunkStreamingViewCache` 是上述量化签名的唯一所有者：`WorldChunkManager` 只通过纯标量参数调用 `shouldResolve()` 判断是否重算，通过 `invalidate()` 响应摘要变化，并在 `clearCache()` 时对称调用 `clear()`。实际解析使用缓存提供的桶中心代表视点，位置与方向不确定性只需覆盖半个桶，避免从首次精确视点覆盖整桶而把远处视锥额外膨胀数个区块。缓存模块不得依赖 World、Worker 或 Zustand，高频比较必须原地更新标量字段，禁止创建输入或签名对象。
 
 Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍位于相同 position bucket 且其他量化参数未变化时，不重复执行拓扑解析；同一 chunk 内跨 position bucket 或 direction bucket 仍必须解析。稳定帧继续复用调用方的视图对象，缓存只原地更新标量签名字段，不创建签名对象。
 

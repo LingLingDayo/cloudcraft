@@ -10,14 +10,15 @@ export const CHUNK_STREAMING_CONFIG = {
   alwaysAvailableNeighborRadius: 1,
   safetyBufferRadius: 1,
   directionQuantizationSteps: DIRECTION_QUANTIZATION_STEPS,
-  // A cache entry may span one full yaw step and one full pitch step; their
-  // orthogonal rotation composition is tighter than adding both angles.
+  // Resolution uses the bucket-center direction, so any cached view differs by
+  // at most half a yaw step and half a pitch step.
   directionBucketUncertaintyRadians: 2 * Math.acos(
-    Math.cos(DIRECTION_QUANTIZATION_STEP_RADIANS / 2) ** 2,
+    Math.cos(DIRECTION_QUANTIZATION_STEP_RADIANS / 4) ** 2,
   ),
   viewParameterPrecision: 1_000,
   viewPositionBucketSizeBlocks: VIEW_POSITION_BUCKET_SIZE_BLOCKS,
-  viewPositionBucketUncertaintyRadius: Math.sqrt(3) * VIEW_POSITION_BUCKET_SIZE_BLOCKS,
+  viewPositionBucketUncertaintyRadius:
+    Math.sqrt(3) * VIEW_POSITION_BUCKET_SIZE_BLOCKS / 2,
   viewBasisFallbackThreshold: 0.000_001,
   // Used when camera aspect/FOV are 0, NaN, or otherwise unusable (e.g. 0x0 canvas).
   // Must NOT fall back to "admit entire sphere" or streaming degenerates to develop-style loads.

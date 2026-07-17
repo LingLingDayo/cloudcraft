@@ -287,8 +287,8 @@ describe('WorldChunkManager visibility cache', () => {
     expect(renderer.hasChunkMesh(retainedKey)).toBe(true);
   });
 
-  test('accepts safety-buffer streaming keys just outside the strict render radius', async () => {
-    const world = createStreamingWorld('test-safety-buffer-within-retain-radius');
+  test('rejects safety-buffer streaming keys outside the configured render radius', async () => {
+    const world = createStreamingWorld('test-safety-buffer-clamped-to-render-radius');
     const { WorkerManager } = await import('./worker/WorkerManager');
     assumeLiveWorkerPool(WorkerManager.getInstance());
     const view: ChunkStreamingView = {
@@ -299,18 +299,19 @@ describe('WorldChunkManager visibility cache', () => {
     };
 
     world.loadArea(8, 24, 8, 2, false, view);
-    // Chebyshev/sphere distance 3 is outside strict radius 2 but inside retain radius 3.
+    // Sphere distance 3 must stay outside the configured radius 2.
     const bufferKey = '0,1,3';
     (world.chunkManager as any).desiredActiveKeys.add(bufferKey);
 
     expect(world.chunkManager.isKeyActive(bufferKey)).toBe(true);
-    expect((world.chunkManager as any).isWithinRetainRadius(bufferKey)).toBe(true);
+    (world.chunkManager as any).desiredActiveKeys.delete(bufferKey);
+    expect((world.chunkManager as any).isWithinRetainRadius(bufferKey)).toBe(false);
     expect((world.chunkManager as any).isTaskCurrent(
       bufferKey,
       world.chunkManager.getStreamingEpoch(),
       world.getChunkRevision(bufferKey),
       world.getSeed(),
-    )).toBe(true);
+    )).toBe(false);
   });
 
   test('unloads meshes that leave the load-radius sphere after the player moves', async () => {

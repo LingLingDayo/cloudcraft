@@ -64,7 +64,7 @@ export class WorldChunkManager {
   /**
    * Visibility-driven targets for new generation/mesh work.
    * Turning the camera updates this set, but already-built meshes stay until
-   * the player leaves the retain sphere (render radius + safety buffer).
+   * the player leaves the configured render-radius sphere.
    */
   private desiredActiveKeys = new Set<string>();
   private loadCenterCcx = 0;
@@ -103,10 +103,9 @@ export class WorldChunkManager {
     return count;
   }
 
-  /** Render radius plus safety buffer — matches ChunkVisibilityResolver active extent. */
+  /** Retention never exceeds the render distance selected by the player. */
   private getRetainRadius(): number {
-    if (this.loadRadius < 0) return -1;
-    return this.loadRadius + CHUNK_STREAMING_CONFIG.safetyBufferRadius;
+    return this.loadRadius;
   }
 
   private isWithinRetainRadius(key: string): boolean {
@@ -288,16 +287,17 @@ export class WorldChunkManager {
       return;
     }
 
+    const representativeView = this.viewCache.getRepresentativeView(view);
     const visibility = this.visibilityResolver.resolve({
       center: { x: ccx, y: ccy, z: ccz },
       radius: resolvedRadius,
       minChunkY: 0,
       maxChunkYExclusive: worldChunkHeight,
-      view,
-      positionUncertaintyRadius: view
+      view: representativeView,
+      positionUncertaintyRadius: representativeView
         ? CHUNK_STREAMING_CONFIG.viewPositionBucketUncertaintyRadius
         : 0,
-      directionUncertaintyRadians: view
+      directionUncertaintyRadians: representativeView
         ? CHUNK_STREAMING_CONFIG.directionBucketUncertaintyRadians
         : 0,
       allowUnknownTraversal: shouldSync,
@@ -309,8 +309,8 @@ export class WorldChunkManager {
     this.loadCenterCcz = ccz;
     this.loadRadius = resolvedRadius;
 
-    // Unload / epoch only when content leaves the retain sphere (render radius +
-    // safety buffer). Turning updates streaming targets without dropping meshes.
+    // Unload / epoch only when content leaves the configured render sphere.
+    // Turning updates streaming targets without dropping radius-resident meshes.
     const chunkMeshes = this.world.getRenderer().getChunkMeshes();
     let leftLoadRadius = false;
     for (const key of chunkMeshes.keys()) {

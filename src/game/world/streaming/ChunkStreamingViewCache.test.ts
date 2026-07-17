@@ -47,4 +47,17 @@ describe('ChunkStreamingViewCache', () => {
       expect(cache.shouldResolve(0, 1, 0, 10, view)).toBe(false);
     }
   });
+
+  test('resolves from the bucket center so uncertainty only covers half a bucket', () => {
+    const cache = new ChunkStreamingViewCache();
+    const view = createView(1, 0);
+
+    expect(cache.shouldResolve(0, 1, 0, 10, view)).toBe(true);
+    const representative = cache.getRepresentativeView(view);
+
+    expect(representative?.position).toEqual({ x: 2, y: 18, z: 2 });
+    expect(representative?.forward.x).toBeCloseTo(0);
+    expect(representative?.forward.y).toBeCloseTo(0);
+    expect(representative?.forward.z).toBeCloseTo(-1);
+  });
 });
