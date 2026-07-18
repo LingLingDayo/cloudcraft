@@ -224,7 +224,9 @@ export class GameManager {
     window.addEventListener('resize', this.onResize);
     this.canvas.addEventListener('mousedown', this.onMouseDown);
     window.addEventListener('mouseup', this.onMouseUp);
-    this.canvas.addEventListener('contextmenu', this.onContextMenu);
+    // 使用 document 捕获阶段拦截：右键开箱会 exitPointerLock，
+    // 浏览器常在解锁后对 canvas 以外目标弹出原生右键菜单。
+    document.addEventListener('contextmenu', this.onContextMenu, true);
   }
 
   private onResize = () => {
@@ -242,6 +244,10 @@ export class GameManager {
   };
 
   private onMouseDown = (e: MouseEvent) => {
+    // 右键交互（开箱/放置）时先吞掉默认行为，避免随后弹出浏览器菜单
+    if (e.button === 2) {
+      e.preventDefault();
+    }
     if (this.interaction) {
       this.interaction.onMouseDown(e);
     }
@@ -563,8 +569,8 @@ export class GameManager {
     window.removeEventListener('resize', this.onResize);
     if (this.canvas) {
       this.canvas.removeEventListener('mousedown', this.onMouseDown);
-      this.canvas.removeEventListener('contextmenu', this.onContextMenu);
     }
+    document.removeEventListener('contextmenu', this.onContextMenu, true);
     window.removeEventListener('mouseup', this.onMouseUp);
 
     this.storeBridge?.dispose();
