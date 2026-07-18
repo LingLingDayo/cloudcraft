@@ -12,7 +12,15 @@ function assertCombatProfile(speciesId: string, combat: SpeciesCombatProfile): v
     'attackDamage',
     'attackIntervalSeconds',
     'stalkingSpeed',
-    'attackSpeed',
+    'circlingDistance',
+    'pounceDistance',
+    'circlingSpeed',
+    'pounceSpeed',
+    'recoverySpeed',
+    'circlingDurationSeconds',
+    'pounceWindupSeconds',
+    'pounceDurationSeconds',
+    'recoveryDurationSeconds',
   ];
   for (const field of positiveFields) {
     const value = combat[field];
@@ -23,6 +31,15 @@ function assertCombatProfile(speciesId: string, combat: SpeciesCombatProfile): v
   if (combat.attackDistance > combat.awarenessDistance) {
     throw new Error(
       `Species ${speciesId} combat.attackDistance cannot exceed awarenessDistance`,
+    );
+  }
+  if (
+    combat.attackDistance > combat.pounceDistance
+    || combat.pounceDistance > combat.circlingDistance
+    || combat.circlingDistance > combat.awarenessDistance
+  ) {
+    throw new Error(
+      `Species ${speciesId} combat distances must satisfy attack <= pounce <= circling <= awareness`,
     );
   }
 }

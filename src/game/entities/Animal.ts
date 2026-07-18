@@ -11,6 +11,10 @@ import {
   type BehaviorTransition,
 } from './behavior/BehaviorStateMachine';
 import {
+  HostileCombatBehavior,
+  HostileCombatStateId,
+} from './behavior/HostileCombatBehavior';
+import {
   MovementModeController,
   type MovementModeRegistry,
 } from './movement/MovementMode';
@@ -51,7 +55,7 @@ export abstract class Animal extends Entity {
   protected targetDir = new THREE.Vector3();
   protected shouldJump = false;
   protected flightRequested = false;
-  protected attackCooldownSeconds = 0;
+  private readonly hostileCombatBehavior: HostileCombatBehavior | null;
   private readonly movementDimensions = { width: 0, height: 0, depth: 0 };
   private readonly movementContext: CreatureMovementContext;
 
@@ -82,6 +86,20 @@ export abstract class Animal extends Entity {
     this.mesh = new THREE.Group();
     this.mesh.position.copy(this.position);
     this.combatProfile = options.combat ?? null;
+    this.hostileCombatBehavior = this.combatProfile
+      ? new HostileCombatBehavior(this.combatProfile, {
+          position: this.position,
+          targetDirection: this.targetDir,
+          getTarget: () => this.getHumanTarget(),
+          hasAwarenessOf: target => this.hasAwarenessOf(target),
+          damageTarget: (target, amount) => target.takeDamage(
+            amount,
+            this.world,
+            this.world.game?.physics,
+          ),
+          playAttackSound: soundKey => this.playCreatureSound(soundKey),
+        })
+      : null;
     this.movementController = new MovementModeController(
       options.movementModeRegistry ?? coreMovementModeRegistry,
       movementModeIds,
@@ -141,7 +159,7 @@ export abstract class Animal extends Entity {
   }
 
   public getAttackCooldownSeconds(): number {
-    return this.attackCooldownSeconds;
+    return this.hostileCombatBehavior?.getAttackCooldownSeconds() ?? 0;
   }
 
   protected registerBehaviorState(state: BehaviorStateDefinition<Animal>): void {
@@ -203,9 +221,7 @@ export abstract class Animal extends Entity {
   }
 
   protected updateAI(dt: number) {
-    if (this.combatProfile) {
-      this.attackCooldownSeconds = Math.max(0, this.attackCooldownSeconds - dt);
-    }
+    this.hostileCombatBehavior?.updateCooldown(dt);
     this.behaviorStateMachine.update(this, dt);
   }
 
@@ -249,13 +265,11 @@ export abstract class Animal extends Entity {
   }
 
   protected getDesiredMovementSpeed(): number {
-    if (this.combatProfile) {
-      if (this.behaviorStateMachine.isInState('attacking')) {
-        return this.combatProfile.attackSpeed;
-      }
-      if (this.behaviorStateMachine.isInState('stalking')) {
-        return this.combatProfile.stalkingSpeed;
-      }
+    const combatSpeed = this.hostileCombatBehavior?.getDesiredSpeed(
+      this.getBehaviorStateId(),
+    );
+    if (combatSpeed !== null && combatSpeed !== undefined) {
+      return combatSpeed;
     }
     return this.behaviorStateMachine.isInState('panicked') ? this.panicSpeed : this.walkSpeed;
   }
@@ -347,8 +361,8 @@ export abstract class Animal extends Entity {
       targetDirY: this.targetDir.y,
       targetDirZ: this.targetDir.z,
     };
-    if (this.combatProfile) {
-      data.attackCooldownSeconds = this.attackCooldownSeconds;
+    if (this.hostileCombatBehavior) {
+      Object.assign(data, this.hostileCombatBehavior.createSnapshot());
     }
     return data;
   }
@@ -378,16 +392,8 @@ export abstract class Animal extends Entity {
       this.targetDir.set(customData.targetDirX, customData.targetDirY, customData.targetDirZ);
     }
 
-    if (
-      this.combatProfile
-      && typeof customData.attackCooldownSeconds === 'number'
-      && Number.isFinite(customData.attackCooldownSeconds)
-    ) {
-      this.attackCooldownSeconds = Math.max(0, customData.attackCooldownSeconds);
-    }
-
     // 兼容 0.2.x 旧字段 aiState；正式字段为 behaviorStateId
-    const behaviorStateId = resolveBehaviorStateId(customData);
+    const behaviorStateId = normalizeBehaviorStateId(resolveBehaviorStateId(customData));
     if (behaviorStateId && this.behaviorStateMachine.hasState(behaviorStateId)) {
       this.transitionBehavior(behaviorStateId);
       // 若旧档/缺省计时器恢复到 panicked，补满惊慌时长，避免下一帧立刻退出
@@ -395,75 +401,110 @@ export abstract class Animal extends Entity {
         this.aiTimer = PANIC_DURATION_SECONDS;
       }
     }
+
+    // 状态 onEnter 可能初始化动作计时，快照字段必须最后覆盖以恢复到精确帧。
+    this.hostileCombatBehavior?.restoreSnapshot(customData);
   }
 
   private installHostileHumanBehaviors(): void {
     this.registerBehaviorState({
-      id: 'stalking',
+      id: HostileCombatStateId.HUNTING,
       parentId: 'active',
-      onUpdate: animal => animal.updateStalkingBehavior(),
     });
     this.registerBehaviorState({
-      id: 'attacking',
+      id: HostileCombatStateId.STALKING,
+      parentId: HostileCombatStateId.HUNTING,
+      onUpdate: animal => animal.hostileCombatBehavior?.updateStalking(),
+    });
+    this.registerBehaviorState({
+      id: HostileCombatStateId.CIRCLING,
+      parentId: HostileCombatStateId.HUNTING,
+      onEnter: animal => animal.hostileCombatBehavior?.beginCircling(),
+      onUpdate: (animal, deltaSeconds) => {
+        animal.hostileCombatBehavior?.updateCircling(deltaSeconds);
+      },
+    });
+    this.registerBehaviorState({
+      id: HostileCombatStateId.POUNCING,
+      parentId: HostileCombatStateId.HUNTING,
+      onEnter: animal => animal.hostileCombatBehavior?.beginPounce(),
+      onUpdate: (animal, deltaSeconds) => {
+        animal.hostileCombatBehavior?.updatePouncing(deltaSeconds);
+      },
+    });
+    this.registerBehaviorState({
+      id: HostileCombatStateId.RECOVERING,
       parentId: 'active',
-      onUpdate: animal => animal.updateAttackingBehavior(),
+      onEnter: animal => animal.hostileCombatBehavior?.beginRecovery(),
+      onUpdate: (animal, deltaSeconds) => {
+        animal.hostileCombatBehavior?.updateRecovering(deltaSeconds);
+      },
     });
 
-    // 声明式转移：优先级 attack > stalk > 回落 wandering；惊慌态由 takeDamage 强制切入并在 when 中排除
     this.registerBehaviorTransition({
-      from: 'active',
-      to: 'attacking',
-      priority: 30,
-      when: animal => animal.canEngageHostileCombat() && animal.isHumanInAttackRange(),
-    });
-    this.registerBehaviorTransition({
-      from: 'active',
-      to: 'stalking',
+      from: 'wandering',
+      to: HostileCombatStateId.STALKING,
       priority: 20,
       when: animal => animal.canEngageHostileCombat()
-        && animal.isHumanInAwarenessRange()
-        && !animal.isHumanInAttackRange(),
+        && animal.hostileCombatBehavior?.canSenseTarget() === true,
     });
     this.registerBehaviorTransition({
-      from: 'stalking',
-      to: 'wandering',
-      priority: 10,
-      when: animal => !animal.canEngageHostileCombat() || !animal.isHumanInAwarenessRange(),
-    });
-    this.registerBehaviorTransition({
-      from: 'attacking',
-      to: 'wandering',
-      priority: 10,
-      when: animal => !animal.canEngageHostileCombat() || !animal.isHumanInAwarenessRange(),
-    });
-    this.registerBehaviorTransition({
-      from: 'attacking',
-      to: 'stalking',
-      priority: 15,
+      from: HostileCombatStateId.STALKING,
+      to: HostileCombatStateId.CIRCLING,
+      priority: 30,
       when: animal => animal.canEngageHostileCombat()
-        && animal.isHumanInAwarenessRange()
-        && !animal.isHumanInAttackRange(),
+        && animal.hostileCombatBehavior?.shouldBeginCircling() === true,
+    });
+    this.registerBehaviorTransition({
+      from: HostileCombatStateId.CIRCLING,
+      to: HostileCombatStateId.STALKING,
+      priority: 40,
+      when: animal => animal.hostileCombatBehavior?.shouldResumeStalking() === true,
+    });
+    this.registerBehaviorTransition({
+      from: HostileCombatStateId.CIRCLING,
+      to: HostileCombatStateId.POUNCING,
+      priority: 30,
+      when: animal => animal.canEngageHostileCombat()
+        && animal.hostileCombatBehavior?.canPounce() === true,
+    });
+    this.registerBehaviorTransition({
+      from: HostileCombatStateId.POUNCING,
+      to: HostileCombatStateId.RECOVERING,
+      priority: 30,
+      when: animal => animal.hostileCombatBehavior?.isActionComplete() === true,
+    });
+    this.registerBehaviorTransition({
+      from: HostileCombatStateId.RECOVERING,
+      to: HostileCombatStateId.STALKING,
+      priority: 20,
+      when: animal => animal.hostileCombatBehavior?.isActionComplete() === true
+        && animal.hostileCombatBehavior.canSenseTarget(),
+    });
+    this.registerBehaviorTransition({
+      from: HostileCombatStateId.RECOVERING,
+      to: 'wandering',
+      priority: 10,
+      when: animal => animal.hostileCombatBehavior?.isActionComplete() === true,
+    });
+    this.registerBehaviorTransition({
+      from: HostileCombatStateId.STALKING,
+      to: 'wandering',
+      priority: 100,
+      when: animal => !animal.canEngageHostileCombat()
+        || animal.hostileCombatBehavior?.canSenseTarget() !== true,
+    });
+    this.registerBehaviorTransition({
+      from: HostileCombatStateId.CIRCLING,
+      to: 'wandering',
+      priority: 100,
+      when: animal => !animal.canEngageHostileCombat()
+        || animal.hostileCombatBehavior?.canSenseTarget() !== true,
     });
   }
 
   protected canEngageHostileCombat(): boolean {
     return !!this.combatProfile && !this.behaviorStateMachine.isInState('panicked');
-  }
-
-  protected isHumanInAttackRange(): boolean {
-    const combat = this.combatProfile;
-    const target = this.getHumanTarget();
-    if (!combat || !target) return false;
-    if (this.position.distanceTo(target.position) > combat.attackDistance) return false;
-    return this.hasAwarenessOf(target);
-  }
-
-  protected isHumanInAwarenessRange(): boolean {
-    const combat = this.combatProfile;
-    const target = this.getHumanTarget();
-    if (!combat || !target) return false;
-    if (this.position.distanceTo(target.position) > combat.awarenessDistance) return false;
-    return this.hasAwarenessOf(target);
   }
 
   protected hasAwarenessOf(target: HumanTarget): boolean {
@@ -473,37 +514,6 @@ export abstract class Animal extends Entity {
     return hasBlockLineOfSight(this.world, this.position, target.position, {
       eyeHeight: this.height * 0.75,
     });
-  }
-
-  protected updateStalkingBehavior(): void {
-    this.faceHumanTarget();
-  }
-
-  protected updateAttackingBehavior(): void {
-    const combat = this.combatProfile;
-    const target = this.getHumanTarget();
-    if (!combat || !target) return;
-    this.faceHumanTarget();
-    if (
-      this.position.distanceTo(target.position) <= combat.attackDistance
-      && this.attackCooldownSeconds <= 0
-      && this.hasAwarenessOf(target)
-    ) {
-      target.takeDamage(
-        combat.attackDamage,
-        this.world,
-        this.world.game?.physics,
-      );
-      this.attackCooldownSeconds = combat.attackIntervalSeconds;
-    }
-  }
-
-  protected faceHumanTarget(): void {
-    const target = this.getHumanTarget();
-    if (!target) return;
-    this.targetDir.subVectors(target.position, this.position);
-    this.targetDir.y = 0;
-    if (this.targetDir.lengthSq() > 0) this.targetDir.normalize();
   }
 
   protected getHumanTarget(): HumanTarget | null {
@@ -519,4 +529,9 @@ function resolveBehaviorStateId(customData: EntityExtensionData): string | null 
     return customData.aiState;
   }
   return null;
+}
+
+function normalizeBehaviorStateId(stateId: string | null): string | null {
+  // 0.3.x 的 attacking 是即时伤害状态，恢复为后撤阶段可避免读档首帧补刀。
+  return stateId === 'attacking' ? HostileCombatStateId.RECOVERING : stateId;
 }

@@ -11,12 +11,23 @@ export interface SpeciesHabitatSample {
 /** 对人类敌对时的捕猎/近战参数；由 Animal 底座统一消费，禁止物种硬编码分支。 */
 export interface SpeciesCombatProfile {
   readonly awarenessDistance: number;
+  /** 开始侧绕观察的距离。 */
+  readonly circlingDistance: number;
+  /** 允许从侧绕切入扑击的最远距离。 */
+  readonly pounceDistance: number;
   readonly attackDistance: number;
   readonly attackDamage: number;
   readonly attackIntervalSeconds: number;
   readonly stalkingSpeed: number;
-  readonly attackSpeed: number;
+  readonly circlingSpeed: number;
+  readonly pounceSpeed: number;
+  readonly recoverySpeed: number;
+  readonly circlingDurationSeconds: number;
+  readonly pounceWindupSeconds: number;
+  readonly pounceDurationSeconds: number;
+  readonly recoveryDurationSeconds: number;
   readonly requireLineOfSight: boolean;
+  readonly attackSound?: string;
 }
 
 export interface SpeciesDefinition {

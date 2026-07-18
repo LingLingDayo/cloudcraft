@@ -6,7 +6,7 @@
 
 - `Entity` 定义实体身份、位置、速度、生命值和持久化入口。
 - `Animal` 组合 `BehaviorStateMachine` 与 `MovementModeController`，统一执行行为决策、运动求解和表现同步；可选挂载 `SpeciesCombatProfile` 驱动对人类的捕猎 HFSM。
-- `behavior` 提供支持父状态的 HFSM。状态进入、更新、退出和**声明式转移**必须由状态机调度；物种应优先 `registerTransition`，禁止在全局管理器分支。
+- `behavior` 提供支持父状态的 HFSM，以及可配置的 `HostileCombatBehavior` 近战捕猎动作控制器。状态进入、更新、退出和**声明式转移**必须由状态机调度；物种应优先 `registerTransition`，禁止在全局管理器分支。
 - `movement` 提供运动模式注册表与优先级选择器。地面、游泳、飞行等能力通过模式组合，而非物种继承层级实现。
 - `sensing` 提供视线（`hasBlockLineOfSight`）、局部植被采样与人类目标解析，供生成与战斗共用。
 - `species` 保存物种工厂、生成权重、栖息地偏好、运动模式列表与可选战斗档案；运行期只依赖 `SpeciesDefinition`。
@@ -25,7 +25,7 @@
 5. 将需要恢复的行为状态、计时器与运动模式写入实体 `customData`，并保持对旧字段缺失的兼容。
 6. 为生成选择、状态转换、运动模式优先级、视线/栖息与快照恢复增加目录级测试。
 
-`Pig` 与 `Leopard` 均遵循该契约：构造函数接收运动模式集合；`Leopard` 通过 `combat` 启用 stalking/attacking 声明式转移。未来物种不得要求底座识别其类名。
+`Pig` 与 `Leopard` 均遵循该契约：构造函数接收运动模式集合；`Leopard` 通过 `combat` 启用 stalking/circling/pouncing/recovering 声明式转移。未来物种不得要求底座识别其类名。
 
 ## 运动模式扩展
 
@@ -45,6 +45,8 @@
 ## 敌对与视线
 
 - `hostileToHumans` + `combat` 由注册表在 `register` 时校验一致性。
+- 通用近战捕猎流程为“潜行接近 -> 侧绕内切 -> 蓄力扑击 -> 后撤恢复”。`SpeciesCombatProfile` 分别配置各阶段距离、速度和时长，物种不得在 `Animal` 中增加类型判断。
+- 扑击在蓄力结束时锁定方向，只能在扑击接触窗口命中一次；扑空同样进入恢复与攻击冷却，避免贴身按固定间隔直接扣血。
 - 捕猎距离判定可叠加 `requireLineOfSight`：不透明可碰撞方块阻断感知；树叶/植株不阻断。
 - 惊慌（`panicked`）由伤害强制切入，声明式转移的 `when` 必须排除惊慌态，避免被攻击后立刻重回追击。
 
@@ -59,4 +61,4 @@
 - 创建快照时必须深拷贝扩展数据；恢复前必须一次性校验 Schema、实体数组、唯一 ID、数值范围、扩展数据结构以及全部物种注册。未知物种必须报告物种 ID 与实体 ID，并在创建任何新动物、修改当前动物集合或挂载场景对象前使整次恢复失败。
 - 通过预检后，恢复先在场景外暂存全部动物并完成反序列化，再统一挂载和替换旧集合。构造、反序列化或挂载失败时必须移除已挂载对象并对全部已暂存动物调用统一资源释放入口；统一存档边界会把该错误作为原始 `cause` 触发世界、设施、实体、天气与玩家状态补偿回滚。
 - 统一存档边界兼容 `0.2.x` 的裸 `SerializedEntityData[]`：恢复前先迁移为 Schema 1 `EntitySnapshot`，将旧 `pig` 类型映射为 `cloudcraft:pig`，并将 `customData.aiState` 迁移为 `behaviorStateId`。该迁移只存在于持久化边界，不得在 `Pig` 或物种注册表中保留双 ID API。
-- 行为恢复必须持久化 `aiTimer`（及敌对物种的 `attackCooldownSeconds`）；缺省惊慌计时器时补满惊慌时长，避免读档后首帧状态失真。
+- 行为恢复必须持久化 `aiTimer`；敌对物种还需保存攻击冷却、动作计时、侧绕方向与单次命中标记。缺省惊慌计时器时补满惊慌时长；旧档 `attacking` 映射为 `recovering`，避免读档首帧补刀。

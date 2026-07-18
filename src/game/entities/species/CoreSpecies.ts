@@ -12,13 +12,22 @@ const TERRESTRIAL_MOVEMENT_MODE_IDS = [
 ] as const;
 
 export const LEOPARD_COMBAT_PROFILE: SpeciesCombatProfile = {
-  awarenessDistance: 14,
-  attackDistance: 1.6,
-  attackDamage: 2,
-  attackIntervalSeconds: 1.1,
-  stalkingSpeed: 3.6,
-  attackSpeed: 5.2,
+  awarenessDistance: 16,
+  circlingDistance: 4.8,
+  pounceDistance: 4.2,
+  attackDistance: 1.35,
+  attackDamage: 3,
+  attackIntervalSeconds: 1.8,
+  stalkingSpeed: 2.8,
+  circlingSpeed: 3.4,
+  pounceSpeed: 8.4,
+  recoverySpeed: 2.6,
+  circlingDurationSeconds: 0.9,
+  pounceWindupSeconds: 0.28,
+  pounceDurationSeconds: 0.48,
+  recoveryDurationSeconds: 0.55,
   requireLineOfSight: true,
+  attackSound: 'playLeopardAttack',
 };
 
 const CORE_SPECIES: readonly SpeciesDefinition[] = [

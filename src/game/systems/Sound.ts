@@ -482,6 +482,38 @@ class SoundManager {
     }
   }
 
+  public playLeopardAttack() {
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const growl = this.ctx.createOscillator();
+      const rasp = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      growl.connect(gain);
+      rasp.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      const duration = 0.24;
+      growl.type = 'sawtooth';
+      growl.frequency.setValueAtTime(150, now);
+      growl.frequency.exponentialRampToValueAtTime(85, now + duration);
+      rasp.type = 'square';
+      rasp.frequency.setValueAtTime(360, now);
+      rasp.frequency.exponentialRampToValueAtTime(190, now + duration * 0.7);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.13, now + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      growl.start(now);
+      rasp.start(now);
+      growl.stop(now + duration);
+      rasp.stop(now + duration * 0.72);
+    } catch (e) {
+      console.warn('Audio play failed', e);
+    }
+  }
+
   public playLeopardDeath() {
     try {
       this.initCtx();

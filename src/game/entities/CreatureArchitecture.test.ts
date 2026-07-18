@@ -10,7 +10,10 @@ import {
   MovementModeRegistry,
   type MovementMode,
 } from './movement/MovementMode';
-import { createCoreSpeciesRegistry } from './species/CoreSpecies';
+import {
+  createCoreSpeciesRegistry,
+  LEOPARD_COMBAT_PROFILE,
+} from './species/CoreSpecies';
 import { SpeciesRegistry } from './species/SpeciesRegistry';
 import {
   assertEntitySnapshot,
@@ -48,6 +51,7 @@ vi.mock('@game/systems/Sound', () => ({
     playDamage: vi.fn(),
     playBreak: vi.fn(),
     playLeopardHurt: vi.fn(),
+    playLeopardAttack: vi.fn(),
     playLeopardDeath: vi.fn(),
     playPigHurt: vi.fn(),
     playPigDeath: vi.fn(),
@@ -222,6 +226,24 @@ describe('core species definitions', () => {
       },
     })).toThrowError(/missing combat profile/i);
   });
+
+  test('rejects combat profiles with inverted hunting distances', () => {
+    const registry = new SpeciesRegistry();
+    expect(() => registry.register({
+      id: 'test:broken-distances',
+      spawnWeight: 1,
+      movementModeIds: [CoreMovementModeId.GROUND],
+      hostileToHumans: true,
+      combat: {
+        ...LEOPARD_COMBAT_PROFILE,
+        pounceDistance: LEOPARD_COMBAT_PROFILE.circlingDistance + 1,
+      },
+      scoreHabitat: () => 1,
+      create: () => {
+        throw new Error('unused');
+      },
+    })).toThrowError(/attack <= pounce <= circling <= awareness/i);
+  });
 });
 
 describe('habitat sampling', () => {
@@ -297,15 +319,34 @@ describe('Leopard', () => {
     vi.mocked(sound.play).mockClear();
   });
 
-  test('enters attack behavior and damages a nearby human', () => {
+  test('stalks, circles, then damages a nearby human during one pounce window', () => {
     const leopard = createCoreSpeciesRegistry()
       .get('cloudcraft:leopard')
       .create('leopard-1', new THREE.Vector3(0, 1, 0), world);
 
     leopard.update(0.1);
+    expect(leopard.getBehaviorStateId()).toBe('stalking');
+    expect(takeDamage).not.toHaveBeenCalled();
 
-    expect(leopard.getBehaviorStateId()).toBe('attacking');
-    expect(takeDamage).toHaveBeenCalledWith(2, world, (world as any).game.physics);
+    leopard.update(0.1);
+    expect(leopard.getBehaviorStateId()).toBe('circling');
+    expect(takeDamage).not.toHaveBeenCalled();
+
+    const visitedStates = new Set<string>();
+    for (let frame = 0; frame < 40 && takeDamage.mock.calls.length === 0; frame++) {
+      leopard.update(0.1);
+      visitedStates.add(leopard.getBehaviorStateId());
+    }
+
+    expect(visitedStates).toContain('pouncing');
+    expect(takeDamage).toHaveBeenCalledOnce();
+    expect(takeDamage).toHaveBeenCalledWith(3, world, (world as any).game.physics);
+    expect(sound.play).toHaveBeenCalledWith('playLeopardAttack');
+
+    for (let frame = 0; frame < 8 && leopard.getBehaviorStateId() === 'pouncing'; frame++) {
+      leopard.update(0.1);
+    }
+    expect(takeDamage).toHaveBeenCalledOnce();
   });
 
   test('enters stalking when human is in awareness range but outside attack range', () => {
@@ -318,6 +359,15 @@ describe('Leopard', () => {
 
     expect(leopard.getBehaviorStateId()).toBe('stalking');
     expect(takeDamage).not.toHaveBeenCalled();
+
+    const visitedStates = new Set<string>();
+    for (let frame = 0; frame < 80 && takeDamage.mock.calls.length === 0; frame++) {
+      leopard.update(0.1);
+      visitedStates.add(leopard.getBehaviorStateId());
+    }
+    expect(visitedStates).toContain('circling');
+    expect(visitedStates).toContain('pouncing');
+    expect(takeDamage).toHaveBeenCalledOnce();
   });
 
   test('does not attack through opaque walls when line of sight is required', () => {
@@ -343,8 +393,10 @@ describe('Leopard', () => {
       .get('cloudcraft:leopard')
       .create('leopard-save', new THREE.Vector3(0, 1, 0), world);
 
-    leopard.update(0.1);
-    expect(leopard.getBehaviorStateId()).toBe('attacking');
+    for (let frame = 0; frame < 50 && leopard.getBehaviorStateId() !== 'recovering'; frame++) {
+      leopard.update(0.1);
+    }
+    expect(leopard.getBehaviorStateId()).toBe('recovering');
     expect(takeDamage).toHaveBeenCalledOnce();
 
     leopard.takeDamage(1);
@@ -353,6 +405,7 @@ describe('Leopard', () => {
     expect(serialized.customData?.aiTimer).toBe(5);
     expect(typeof serialized.customData?.attackCooldownSeconds).toBe('number');
     expect(serialized.customData?.attackCooldownSeconds).toBeGreaterThan(0);
+    expect(typeof serialized.customData?.combatActionTimerSeconds).toBe('number');
 
     const restored = createCoreSpeciesRegistry()
       .get('cloudcraft:leopard')
@@ -367,7 +420,7 @@ describe('Leopard', () => {
     restored.update(0.05);
     expect(restored.getBehaviorStateId()).toBe('panicked');
 
-    // 惊慌结束后可再进入战斗，但冷却未耗尽时不应立刻补刀
+    // 旧 attacking 状态恢复为后撤阶段，避免旧档在首帧触发即时伤害。
     takeDamage.mockClear();
     restored.deserialize({
       ...serialized,
@@ -376,10 +429,11 @@ describe('Leopard', () => {
         behaviorStateId: 'attacking',
         aiTimer: 0,
         attackCooldownSeconds: 0.8,
+        combatActionTimerSeconds: 0.4,
       },
     });
     restored.update(0.05);
-    expect(restored.getBehaviorStateId()).toBe('attacking');
+    expect(restored.getBehaviorStateId()).toBe('recovering');
     expect(takeDamage).not.toHaveBeenCalled();
   });
 
