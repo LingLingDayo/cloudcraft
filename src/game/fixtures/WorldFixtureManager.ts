@@ -261,6 +261,10 @@ export class WorldFixtureManager {
     return this.fixtures.get(id);
   }
 
+  public getDefinition(definitionId: string): FixtureDefinition | undefined {
+    return this.registry.find(definitionId);
+  }
+
   public getAt(coordinate: FixtureCoordinate): PlacedFixture | undefined {
     const fixtureId = this.occupancy.get(coordinateKey(coordinate));
     return fixtureId ? this.fixtures.get(fixtureId) : undefined;

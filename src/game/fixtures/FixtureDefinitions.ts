@@ -8,6 +8,8 @@ const CORE_FIXTURES: readonly FixtureDefinition[] = [
     displayName: '箱子',
     footprint: [{ x: 0, y: 0, z: 0 }],
     components: [{ type: 'container', slots: 27 }],
+    hardness: 2.5,
+    soundType: 'wood',
     view: { color: 0x8b5a2b, width: 0.9, height: 0.86, depth: 0.9, model: 'chest' },
   },
   {
@@ -19,6 +21,8 @@ const CORE_FIXTURES: readonly FixtureDefinition[] = [
       { type: 'fuel', slots: 1 },
       { type: 'processor', capabilities: [CraftingCapability.HEAT] },
     ],
+    hardness: 3.5,
+    soundType: 'stone',
     view: { color: 0x606060, width: 0.92, height: 0.92, depth: 0.92 },
   },
   {
@@ -37,6 +41,8 @@ const CORE_FIXTURES: readonly FixtureDefinition[] = [
         ],
       },
     ],
+    hardness: 2.5,
+    soundType: 'wood',
     view: { color: 0x96633a, width: 0.96, height: 0.8, depth: 0.96 },
   },
 ];

@@ -11,9 +11,13 @@ import { GameMode } from '@type';
 import { LootTableHelper } from '../loot/LootTableHelper';
 import { FixtureInteractionCoordinator } from './FixtureInteractionCoordinator';
 import { MiningCrackOverlay } from './MiningCrackOverlay';
-import type { PlacedFixture } from '@game/fixtures/FixtureTypes';
+import type { FixtureDefinition, PlacedFixture } from '@game/fixtures/FixtureTypes';
+import type { SoundType } from '@type';
 
 const FIXTURE_CENTER_OFFSET = 0.5;
+/** 与木箱同级：未声明 hardness 的设施默认挖掘耗时（秒） */
+const DEFAULT_FIXTURE_HARDNESS = 2.5;
+const DEFAULT_FIXTURE_SOUND_TYPE: SoundType = 'wood';
 
 function hasStoredFixtureItems(fixture: PlacedFixture): boolean {
   return fixture.components.some(component =>
@@ -28,6 +32,16 @@ function getFixtureCenter(fixture: PlacedFixture): THREE.Vector3 {
     fixture.anchor.y + FIXTURE_CENTER_OFFSET,
     fixture.anchor.z + FIXTURE_CENTER_OFFSET,
   );
+}
+
+function getFixtureMiningProps(definition: FixtureDefinition | undefined): {
+  hardness: number;
+  soundType: SoundType;
+} {
+  return {
+    hardness: definition?.hardness ?? DEFAULT_FIXTURE_HARDNESS,
+    soundType: definition?.soundType ?? DEFAULT_FIXTURE_SOUND_TYPE,
+  };
 }
 
 export class InteractionManager {
@@ -46,6 +60,7 @@ export class InteractionManager {
   public isLeftMouseDown = false;
   private mouseDownTime = 0;
   private miningBlockPos = new THREE.Vector3();
+  private miningFixtureId: string | null = null;
   private miningTime = 0;
   private miningBreakTime = 0;
   private lastDigSoundTime = 0;
@@ -216,31 +231,41 @@ export class InteractionManager {
     }
   }
 
-  private handleTargetedFixtureRemoval(): boolean {
-    const fixtureId = this.targetedFixtureId;
-    if (!fixtureId) return false;
+  /** 创造模式瞬间拆除；生存模式由 updateMining 进度挖掘，不在 mousedown 拆除。 */
+  private handleCreativeFixtureRemoval(): boolean {
+    if (useGameStore.getState().gameMode !== GameMode.CREATIVE) return false;
+    if (!this.targetedFixtureId) return false;
 
-    const gameMode = useGameStore.getState().gameMode;
-    if (gameMode === GameMode.CREATIVE) {
-      if (this.fixtureInteraction.removeTargetedFixture()) {
-        this.completeFixtureRemoval();
-      }
-      return true;
+    const fixture = this.game.fixtures.get(this.targetedFixtureId);
+    const definition = fixture && typeof this.game.fixtures.getDefinition === 'function'
+      ? this.game.fixtures.getDefinition(fixture.definitionId)
+      : undefined;
+    const { soundType } = getFixtureMiningProps(definition);
+
+    if (this.fixtureInteraction.removeTargetedFixture()) {
+      this.completeFixtureRemoval(soundType);
     }
-
-    const fixture = this.game.fixtures.get(fixtureId);
-    if (!fixture || hasStoredFixtureItems(fixture)) return true;
-
-    const itemType = ItemRegistry.getItemTypeFromFixtureDefinitionId(fixture.definitionId);
-    if (!itemType || !this.fixtureInteraction.removeTargetedFixture()) return true;
-
-    this.game.droppedItems.spawnItem(itemType, getFixtureCenter(fixture));
-    this.completeFixtureRemoval();
     return true;
   }
 
-  private completeFixtureRemoval(): void {
-    sound.playBreak('wood');
+  /**
+   * 生存模式完成设施拆除：仅空容器且已注册为设施物品时可回收。
+   * 非空槽位 / 未知映射 / 移除失败均保留设施，避免内容丢失或重复掉落。
+   */
+  private tryCompleteSurvivalFixtureRemoval(fixtureId: string, soundType: SoundType): boolean {
+    const fixture = this.game.fixtures.get(fixtureId);
+    if (!fixture || hasStoredFixtureItems(fixture)) return false;
+
+    const itemType = ItemRegistry.getItemTypeFromFixtureDefinitionId(fixture.definitionId);
+    if (!itemType || !this.game.fixtures.remove(fixtureId)) return false;
+
+    this.game.droppedItems.spawnItem(itemType, getFixtureCenter(fixture));
+    this.completeFixtureRemoval(soundType);
+    return true;
+  }
+
+  private completeFixtureRemoval(soundType: SoundType = DEFAULT_FIXTURE_SOUND_TYPE): void {
+    sound.playBreak(soundType);
     // 拆除设施后射线会立刻命中后方体素；若玩家仍按住左键，
     // 创造模式连续破坏会在同一次按住中误拆后方方块，因此复用破坏冷却。
     this.lastCreativeBreakTime = performance.now();
@@ -272,7 +297,8 @@ export class InteractionManager {
 
     this.updateTargetedBlock();
 
-    if (e.button === 0 && this.handleTargetedFixtureRemoval()) return;
+    // 创造模式瞬间拆除设施；生存模式需按住挖掘，避免箱子等瞬间消失
+    if (e.button === 0 && this.handleCreativeFixtureRemoval()) return;
 
     if (!this.targetedBlockInfo) return;
 
@@ -312,6 +338,7 @@ export class InteractionManager {
 
   public cancelMining() {
     this.isMining = false;
+    this.miningFixtureId = null;
     this.crackOverlay.hide();
     useGameStore.getState().setMiningProgress(null);
   }
@@ -447,6 +474,12 @@ export class InteractionManager {
       return;
     }
 
+    // 设施优先：生存模式需按住挖掘，不可瞬间拆除
+    if (this.targetedFixtureId || this.miningFixtureId) {
+      this.updateFixtureMining(dt);
+      return;
+    }
+
     if (!this.isMining) {
       if (this.targetedBlockInfo) {
         const { target } = this.targetedBlockInfo;
@@ -454,6 +487,7 @@ export class InteractionManager {
         const props = getBlockProperties(blockId);
         if (blockId !== BLOCK_TYPES.AIR && !props.isLiquid && props.hardness >= 0) {
           this.isMining = true;
+          this.miningFixtureId = null;
           this.miningBlockPos.copy(target);
           this.miningTime = 0;
           this.miningBreakTime = props.hardness * 1.0;
@@ -481,7 +515,9 @@ export class InteractionManager {
     }
 
     this.miningTime += dt;
-    const progress = Math.min(1.0, this.miningTime / this.miningBreakTime);
+    const progress = this.miningBreakTime <= 0
+      ? 1
+      : Math.min(1.0, this.miningTime / this.miningBreakTime);
     const currentTime = performance.now();
 
     if (currentTime - this.lastDigSoundTime > 250) {
@@ -544,6 +580,66 @@ export class InteractionManager {
           }
         }
       }
+      this.cancelMining();
+    }
+  }
+
+  /** 生存模式：按 hardness 进度拆除设施（箱子、火炉、构装台等） */
+  private updateFixtureMining(dt: number): void {
+    const fixtureId = this.targetedFixtureId;
+    if (!fixtureId) {
+      this.cancelMining();
+      return;
+    }
+
+    const fixture = this.game.fixtures.get(fixtureId);
+    if (!fixture || hasStoredFixtureItems(fixture)) {
+      this.cancelMining();
+      return;
+    }
+
+    const itemType = ItemRegistry.getItemTypeFromFixtureDefinitionId(fixture.definitionId);
+    if (!itemType) {
+      this.cancelMining();
+      return;
+    }
+
+    const definition = typeof this.game.fixtures.getDefinition === 'function'
+      ? this.game.fixtures.getDefinition(fixture.definitionId)
+      : undefined;
+    const miningProps = getFixtureMiningProps(definition);
+
+    if (miningProps.hardness < 0) {
+      this.cancelMining();
+      return;
+    }
+
+    if (!this.isMining || this.miningFixtureId !== fixtureId) {
+      this.isMining = true;
+      this.miningFixtureId = fixtureId;
+      this.miningBlockPos.set(fixture.anchor.x, fixture.anchor.y, fixture.anchor.z);
+      this.miningTime = 0;
+      this.miningBreakTime = miningProps.hardness;
+      this.lastDigSoundTime = 0;
+      this.lastDigParticleTime = 0;
+    }
+
+    this.miningTime += dt;
+    const progress = this.miningBreakTime <= 0
+      ? 1
+      : Math.min(1.0, this.miningTime / this.miningBreakTime);
+    const currentTime = performance.now();
+
+    if (currentTime - this.lastDigSoundTime > 250) {
+      this.lastDigSoundTime = currentTime;
+      sound.playDig(miningProps.soundType);
+    }
+
+    this.crackOverlay.show(this.miningBlockPos, progress);
+    useGameStore.getState().setMiningProgress(progress);
+
+    if (this.miningTime >= this.miningBreakTime) {
+      this.tryCompleteSurvivalFixtureRemoval(fixtureId, miningProps.soundType);
       this.cancelMining();
     }
   }

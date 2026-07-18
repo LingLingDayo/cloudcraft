@@ -10,6 +10,7 @@ import { InteractionManager } from './InteractionManager';
 vi.mock('@game/systems/Sound', () => ({
   sound: {
     playBreak: vi.fn(),
+    playDig: vi.fn(),
   },
 }));
 
@@ -26,6 +27,7 @@ interface InteractionTestRuntime {
   readonly removeFixture: ReturnType<typeof vi.fn>;
   readonly spawnItem: ReturnType<typeof vi.fn>;
   readonly setBlock: ReturnType<typeof vi.fn>;
+  readonly getDefinition: ReturnType<typeof vi.fn>;
 }
 
 function createFixture(
@@ -46,6 +48,8 @@ function createInteractionRuntime(
   removeResult = true,
   options?: {
     readonly voxelBehindFixture?: boolean;
+    readonly hardness?: number;
+    readonly soundType?: 'wood' | 'stone';
   },
 ): InteractionTestRuntime {
   const scene = new THREE.Scene();
@@ -62,6 +66,14 @@ function createInteractionRuntime(
   const spawnItem = vi.fn();
   const setBlock = vi.fn();
   const getBlock = vi.fn(() => 1); // non-air solid block
+  const getDefinition = vi.fn(() => ({
+    id: fixture.definitionId,
+    displayName: fixture.definitionId,
+    footprint: [{ x: 0, y: 0, z: 0 }],
+    components: [],
+    hardness: options?.hardness ?? 2.5,
+    soundType: options?.soundType ?? 'wood',
+  }));
   let fixtureRemoved = false;
 
   removeFixture.mockImplementation(() => {
@@ -102,6 +114,7 @@ function createInteractionRuntime(
       get: vi.fn(() => (fixtureRemoved ? undefined : fixture)),
       remove: removeFixture,
       place: vi.fn(),
+      getDefinition,
     },
     droppedItems: { spawnItem },
     world: { getBlock, setBlock },
@@ -113,11 +126,35 @@ function createInteractionRuntime(
     removeFixture,
     spawnItem,
     setBlock,
+    getDefinition,
   };
 }
 
 function leftClick(interaction: InteractionManager): void {
   interaction.onMouseDown({ button: 0 } as MouseEvent);
+}
+
+/** 模拟按住左键超过 200ms 攻击阈值后持续挖掘 */
+function holdMine(
+  interaction: InteractionManager,
+  totalSeconds: number,
+  stepSeconds = 0.1,
+): void {
+  let now = 0;
+  const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => now);
+
+  leftClick(interaction);
+  // 越过 200ms 短按攻击阈值
+  now = 250;
+  let remaining = totalSeconds;
+  while (remaining > 0) {
+    const dt = Math.min(stepSeconds, remaining);
+    interaction.update(dt);
+    remaining -= dt;
+    now += dt * 1000;
+  }
+
+  nowSpy.mockRestore();
 }
 
 describe('InteractionManager fixture removal', () => {
@@ -155,10 +192,25 @@ describe('InteractionManager fixture removal', () => {
     runtime.interaction.dispose();
   });
 
-  test('recovers an empty fixture as its registered item in survival mode', () => {
-    const runtime = createInteractionRuntime(createFixture('cloudcraft:fabricator_bench'));
+  test('does not instantly remove fixtures on click in survival mode', () => {
+    const runtime = createInteractionRuntime(createFixture('cloudcraft:chest'));
 
     leftClick(runtime.interaction);
+
+    expect(runtime.removeFixture).not.toHaveBeenCalled();
+    expect(runtime.spawnItem).not.toHaveBeenCalled();
+    expect(sound.playBreak).not.toHaveBeenCalled();
+    runtime.interaction.dispose();
+  });
+
+  test('recovers an empty fixture after mining progress in survival mode', () => {
+    const runtime = createInteractionRuntime(
+      createFixture('cloudcraft:fabricator_bench'),
+      true,
+      { hardness: 0.5 },
+    );
+
+    holdMine(runtime.interaction, 0.6);
 
     expect(runtime.removeFixture).toHaveBeenCalledWith('fixture-test');
     expect(runtime.spawnItem).toHaveBeenCalledWith(
@@ -169,13 +221,51 @@ describe('InteractionManager fixture removal', () => {
     runtime.interaction.dispose();
   });
 
+  test('mines chest over hardness duration instead of instantly', () => {
+    const runtime = createInteractionRuntime(
+      createFixture('cloudcraft:chest'),
+      true,
+      { hardness: 2.5, soundType: 'wood' },
+    );
+
+    let now = 0;
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    leftClick(runtime.interaction);
+    now = 250;
+
+    // 挖掘约 1 秒：进度不足，箱子仍在
+    for (let i = 0; i < 10; i++) {
+      runtime.interaction.update(0.1);
+      now += 100;
+    }
+    expect(runtime.removeFixture).not.toHaveBeenCalled();
+
+    // 再挖约 1.6 秒，累计超过 hardness 2.5
+    for (let i = 0; i < 16; i++) {
+      runtime.interaction.update(0.1);
+      now += 100;
+    }
+    expect(runtime.removeFixture).toHaveBeenCalledWith('fixture-test');
+    expect(runtime.spawnItem).toHaveBeenCalledWith(
+      ItemType.CHEST,
+      new THREE.Vector3(1.5, 2.5, 3.5),
+    );
+
+    nowSpy.mockRestore();
+    runtime.interaction.dispose();
+  });
+
   test.each([
     ['container', { type: 'container' as const, slots: [{ type: ItemType.APPLE, count: 1 }] }],
     ['fuel', { type: 'fuel' as const, slots: [{ type: ItemType.COAL, count: 1 }] }],
   ])('preserves fixtures with non-empty %s slots', (_componentType, component) => {
-    const runtime = createInteractionRuntime(createFixture('cloudcraft:chest', [component]));
+    const runtime = createInteractionRuntime(
+      createFixture('cloudcraft:chest', [component]),
+      true,
+      { hardness: 0.1 },
+    );
 
-    leftClick(runtime.interaction);
+    holdMine(runtime.interaction, 0.5);
 
     expect(runtime.removeFixture).not.toHaveBeenCalled();
     expect(runtime.spawnItem).not.toHaveBeenCalled();
@@ -184,9 +274,13 @@ describe('InteractionManager fixture removal', () => {
   });
 
   test('preserves fixtures without a registered item mapping', () => {
-    const runtime = createInteractionRuntime(createFixture('cloudcraft:unknown'));
+    const runtime = createInteractionRuntime(
+      createFixture('cloudcraft:unknown'),
+      true,
+      { hardness: 0.1 },
+    );
 
-    leftClick(runtime.interaction);
+    holdMine(runtime.interaction, 0.5);
 
     expect(runtime.removeFixture).not.toHaveBeenCalled();
     expect(runtime.spawnItem).not.toHaveBeenCalled();
@@ -197,9 +291,10 @@ describe('InteractionManager fixture removal', () => {
     const runtime = createInteractionRuntime(
       createFixture('cloudcraft:fabricator_bench'),
       false,
+      { hardness: 0.1 },
     );
 
-    leftClick(runtime.interaction);
+    holdMine(runtime.interaction, 0.5);
 
     expect(runtime.removeFixture).toHaveBeenCalledWith('fixture-test');
     expect(runtime.spawnItem).not.toHaveBeenCalled();

@@ -59,6 +59,17 @@ describe('core fixture definitions', () => {
       .toEqual(['container', 'crafting']);
   });
 
+  test('declares survival mining hardness and sound types for core fixtures', () => {
+    const registry = createCoreFixtureRegistry();
+
+    expect(registry.get('cloudcraft:chest')).toMatchObject({ hardness: 2.5, soundType: 'wood' });
+    expect(registry.get('cloudcraft:furnace')).toMatchObject({ hardness: 3.5, soundType: 'stone' });
+    expect(registry.get('cloudcraft:fabricator_bench')).toMatchObject({
+      hardness: 2.5,
+      soundType: 'wood',
+    });
+  });
+
   test('describes container and workbench interactions from fixture components', () => {
     const registry = createCoreFixtureRegistry();
     const createFixture = (definitionId: string) => ({

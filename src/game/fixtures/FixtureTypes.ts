@@ -1,4 +1,4 @@
-import type { ItemStack } from '@type';
+import type { ItemStack, SoundType } from '@type';
 
 export interface FixtureCoordinate {
   readonly x: number;
@@ -19,6 +19,14 @@ export interface FixtureDefinition {
   readonly displayName: string;
   readonly footprint: readonly FixtureCoordinate[];
   readonly components: readonly FixtureComponentDefinition[];
+  /**
+   * 挖掘硬度（秒）。
+   * 与体素 hardness 语义一致：-1 不可破坏，0 即时破坏，正数需按住挖掘。
+   * 未声明时默认 2.5（与木箱同级）。
+   */
+  readonly hardness?: number;
+  /** 破坏/挖掘音效类型，未声明时默认 wood */
+  readonly soundType?: SoundType;
   readonly view?: {
     readonly color: number;
     readonly width?: number;
