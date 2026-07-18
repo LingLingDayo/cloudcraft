@@ -143,6 +143,10 @@ export const en = {
   fabrication: {
     title: 'Process Crafting',
     craft: 'Craft',
+    hoverHint: 'Hover for materials',
+    ingredients: 'Materials',
+    ready: 'Ready · Click to craft',
+    missingIngredients: 'Missing materials',
   },
   itemTags: {
     'cloudcraft:wood': 'Wood',

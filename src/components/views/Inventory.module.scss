@@ -100,6 +100,22 @@
   width: 100%;
 }
 
+.inventoryWorkspace {
+  display: grid;
+  grid-template-columns: minmax(0, auto) 158px;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.inventoryColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 .labelRow {
   font-family: var(--font-family-active);
   font-size: 10px;
@@ -318,5 +334,11 @@
     right: 2px;
     bottom: 1px;
     font-size: 7px;
+  }
+}
+
+@media (max-width: 700px) {
+  .inventoryWorkspace {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

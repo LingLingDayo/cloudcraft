@@ -143,6 +143,10 @@ export const zh = {
   fabrication: {
     title: '工序合成',
     craft: '制作',
+    hoverHint: '悬浮查看材料',
+    ingredients: '所需材料',
+    ready: '材料齐备 · 点击制作',
+    missingIngredients: '材料不足',
   },
   itemTags: {
     'cloudcraft:wood': '木材',

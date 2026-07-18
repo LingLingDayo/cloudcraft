@@ -359,6 +359,36 @@ export const Inventory: React.FC = () => {
     syncStore(nextHotbar, nextInventory);
   };
 
+  const renderHotbar = () => (
+    <div className={styles.hotbarSection}>
+      <div className={styles.labelRow}>{t('inventory.labelHotbar')}</div>
+      <div className={styles.hotbarGrid}>
+        {hotbar.map((item, idx) => (
+          <div
+            key={`hot-${idx}`}
+            className={`${styles.itemSlot} ${idx === selectedHotbarSlot ? styles.activeSlotBorder : ''}`}
+            onClick={() => handleSlotClickWithTooltip('hotbar', idx)}
+            onContextMenu={(e) => handleRightClickWithTooltip('hotbar', idx, e)}
+            onMouseEnter={(e) => item && handleMouseEnterSlot(item.type, e)}
+            onMouseMove={(e) => item && handleMouseMoveSlot(item.type, e)}
+            onMouseLeave={item ? handleMouseLeaveSlot : undefined}
+          >
+            {item ? (
+              <>
+                <BlockIcon blockId={item.type} size={26} className={styles.itemPreview} />
+                {item.count > 0 && gameMode !== 'creative' && (
+                  <span className={styles.itemCount}>{item.count}</span>
+                )}
+              </>
+            ) : (
+              <div className={styles.emptyItem} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   if (!isInventoryOpen) return null;
 
   return (
@@ -366,7 +396,7 @@ export const Inventory: React.FC = () => {
       <Dialog 
         title={gameMode === 'creative' ? t('inventory.titleCreative') : t('inventory.titleSurvival')} 
         onClose={handleClose}
-        width={480}
+        width={660}
       >
         <div className={styles.container}>
           {/* Creative Mode Tabs */}
@@ -415,68 +445,47 @@ export const Inventory: React.FC = () => {
           {/* Tab 2: Survival Style Inventory (Default for Survival, Tab 2 for Creative) */}
           {activeTab === 'survival' && (
             <div className={styles.survivalSection}>
-              <div className={styles.labelRow}>{t('inventory.labelInventory')}</div>
-              <div className={styles.inventoryGrid}>
-                {inventory.map((item, idx) => (
-                  <div
-                    key={`inv-${idx}`}
-                    className={styles.itemSlot}
-                    onClick={() => handleSlotClickWithTooltip('inventory', idx)}
-                    onContextMenu={(e) => handleRightClickWithTooltip('inventory', idx, e)}
-                    onMouseEnter={(e) => item && handleMouseEnterSlot(item.type, e)}
-                    onMouseMove={(e) => item && handleMouseMoveSlot(item.type, e)}
-                    onMouseLeave={item ? handleMouseLeaveSlot : undefined}
-                  >
-                    {item ? (
-                      <>
-                        <BlockIcon blockId={item.type} size={26} className={styles.itemPreview} />
-                        {item.count > 0 && gameMode !== 'creative' && (
-                          <span className={styles.itemCount}>{item.count}</span>
+              <div className={styles.inventoryWorkspace}>
+                <div className={styles.inventoryColumn}>
+                  <div className={styles.labelRow}>{t('inventory.labelInventory')}</div>
+                  <div className={styles.inventoryGrid}>
+                    {inventory.map((item, idx) => (
+                      <div
+                        key={`inv-${idx}`}
+                        className={styles.itemSlot}
+                        onClick={() => handleSlotClickWithTooltip('inventory', idx)}
+                        onContextMenu={(e) => handleRightClickWithTooltip('inventory', idx, e)}
+                        onMouseEnter={(e) => item && handleMouseEnterSlot(item.type, e)}
+                        onMouseMove={(e) => item && handleMouseMoveSlot(item.type, e)}
+                        onMouseLeave={item ? handleMouseLeaveSlot : undefined}
+                      >
+                        {item ? (
+                          <>
+                            <BlockIcon blockId={item.type} size={26} className={styles.itemPreview} />
+                            {item.count > 0 && gameMode !== 'creative' && (
+                              <span className={styles.itemCount}>{item.count}</span>
+                            )}
+                          </>
+                        ) : (
+                          <div className={styles.emptyItem} />
                         )}
-                      </>
-                    ) : (
-                      <div className={styles.emptyItem} />
-                    )}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                  {renderHotbar()}
+                </div>
+                <CraftingPanel
+                  hotbar={hotbar}
+                  inventory={inventory}
+                  capabilities={craftingCapabilities}
+                  onCraft={recipeId => craftRecipe(recipeId)}
+                />
               </div>
-              <CraftingPanel
-                hotbar={hotbar}
-                inventory={inventory}
-                capabilities={craftingCapabilities}
-                onCraft={recipeId => craftRecipe(recipeId)}
-              />
             </div>
           )}
 
-          {/* Bottom Common Area: Hotbar (1x9) */}
-          <div className={styles.hotbarSection}>
-            <div className={styles.labelRow}>{t('inventory.labelHotbar')}</div>
-            <div className={styles.hotbarGrid}>
-              {hotbar.map((item, idx) => (
-                <div
-                  key={`hot-${idx}`}
-                  className={`${styles.itemSlot} ${idx === selectedHotbarSlot ? styles.activeSlotBorder : ''}`}
-                  onClick={() => handleSlotClickWithTooltip('hotbar', idx)}
-                  onContextMenu={(e) => handleRightClickWithTooltip('hotbar', idx, e)}
-                  onMouseEnter={(e) => item && handleMouseEnterSlot(item.type, e)}
-                  onMouseMove={(e) => item && handleMouseMoveSlot(item.type, e)}
-                  onMouseLeave={item ? handleMouseLeaveSlot : undefined}
-                >
-                  {item ? (
-                    <>
-                      <BlockIcon blockId={item.type} size={26} className={styles.itemPreview} />
-                      {item.count > 0 && gameMode !== 'creative' && (
-                        <span className={styles.itemCount}>{item.count}</span>
-                      )}
-                    </>
-                  ) : (
-                    <div className={styles.emptyItem} />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Bottom Common Area for Creative Tab */}
+          {activeTab === 'creative' && renderHotbar()}
           
           <div className={styles.footerHint}>
             {t('inventory.hintRightClick')}
