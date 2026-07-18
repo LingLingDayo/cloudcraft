@@ -8,7 +8,8 @@
 - `FixtureRegistry.ts`：注册和查询定义，验证 footprint 与组件契约。
 - `WorldFixtureManager.ts`：管理放置、旋转占用、组件实例、移除、存档恢复和视图生命周期。
 - `FixtureInteraction.ts`：把组件组合解析为容器或工作台交互描述。
-- `ThreeFixtureView.ts`：创建可射线命中的 Three.js 对象，共享并释放几何体与材质。
+- `ThreeFixtureView.ts`：创建可射线命中的 Three.js 对象，按定义缓存原型并 clone 实例。
+- `FixtureModels.ts`：设施可视化原型构建（box / chest 等），统一局部原点与资源释放。
 - `FixtureTypes.ts`：定义注册态、运行态、存档 carrier 与端口类型。
 
 ## 2. 定义与能力组件
@@ -33,7 +34,13 @@
 
 `WorldFixtureManager.place` 先验证锚点为整数网格坐标、朝向为 `0..3`，非法输入返回 `invalid_placement`，且不能调用世界端口或 ID 工厂。随后旋转 footprint，再依次检查设施占用层和 `FixtureWorldPort.canOccupy`。放置成功后才创建组件状态、登记实例并挂载视图。ID 工厂必须生成非空唯一 ID；冲突属于生命周期不变量错误，不得覆盖旧实例。
 
-视图挂载失败时，管理器必须回滚实例和 footprint，并调用 `detach` 补偿可能发生的部分挂载。`remove` 必须对称释放 footprint 占用并调用 `FixtureViewPort.detach`。`dispose` 会移除所有实例，然后调用视图的 `dispose`。`ThreeFixtureView` 按定义共享 geometry/material；单个实例移除时只脱离场景，视图销毁时统一释放 GPU 资源。
+视图挂载失败时，管理器必须回滚实例和 footprint，并调用 `detach` 补偿可能发生的部分挂载。`remove` 必须对称释放 footprint 占用并调用 `FixtureViewPort.detach`。`dispose` 会移除所有实例，然后调用视图的 `dispose`。
+
+`ThreeFixtureView` 按 `definitionId` 缓存模型原型，实例通过 `clone(true)` 挂载，共享 geometry/material。单个实例移除时只脱离场景，视图销毁时对原型树统一释放 GPU 资源。模型局部原点在底面中心，世界坐标为 `(anchor.x + 0.5, anchor.y, anchor.z + 0.5)`。
+
+`view.model` 可选：
+- `box`（默认）：单色方块，尺寸取 `width/height/depth`。
+- `chest`：复合木箱（箱体、箱盖、金属箍、锁扣、四角木脚），面向 +Z。
 
 `setContainerSlots` 只接受与注册容量完全一致的槽位数组。非空槽位必须使用已知 `ItemType`，且数量必须为正整数；校验失败返回 `false` 并保留原状态。
 

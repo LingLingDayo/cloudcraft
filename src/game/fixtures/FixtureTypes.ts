@@ -24,6 +24,8 @@ export interface FixtureDefinition {
     readonly width?: number;
     readonly height?: number;
     readonly depth?: number;
+    /** 渲染模型类型，默认 box；chest 为木箱复合体 */
+    readonly model?: 'box' | 'chest';
   };
 }
 

@@ -15,6 +15,11 @@ interface ItemIconProps {
   className?: string;
 }
 
+interface FaceVisualProps {
+  readonly color?: string;
+  readonly border?: string;
+}
+
 export const ItemIcon: React.FC<ItemIconProps> = ({ blockId, itemId, size, className }) => {
   const id = itemId ?? blockId;
   if (!id) {
@@ -28,9 +33,10 @@ export const ItemIcon: React.FC<ItemIconProps> = ({ blockId, itemId, size, class
   const blockProps = item.isBlockItem ? getBlockProperties((item as BlockItem).blockId) : null;
   const textureFaces = blockProps?.textureFaces ?? item.textureFaces;
 
-  // Render as a 2D flat icon if it is not a placeable block item,
-  // or if it uses a custom cross model (like saplings).
-  if (!item.isBlockItem || item.droppedModelType === 'cross') {
+  // 方块 / 设施等立体掉落物使用等距 3D 方块；cross 模型（树苗/食物）保持平面贴图
+  const useIsometricCube = item.droppedModelType === 'block' && !!textureFaces;
+
+  if (!useIsometricCube) {
     const atlasIndex = textureFaces?.side ?? textureFaces?.top ?? 32;
     let style: React.CSSProperties;
     try {
@@ -70,8 +76,11 @@ export const ItemIcon: React.FC<ItemIconProps> = ({ blockId, itemId, size, class
     );
   }
 
-  // Render as a 3D isometric block for standard BlockItems
-  const activeBlockProps = blockProps!;
+  // 3D 等距方块：方块走 BlockProperties，设施等非方块物品回落到 item 自身视觉属性
+  const faceVisual: FaceVisualProps = {
+    color: blockProps?.color || item.color || '#a1a1aa',
+    border: blockProps?.border || 'none',
+  };
 
   const getFaceStyle = (face: 'top' | 'left' | 'right'): React.CSSProperties => {
     let atlasIndex: number | undefined;
@@ -96,7 +105,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({ blockId, itemId, size, class
           backgroundSize: '800% 800%',
           backgroundPosition: `${px}% ${py}%`,
           backgroundColor: 'transparent',
-          border: activeBlockProps.border || 'none',
+          border: faceVisual.border || 'none',
         };
       } catch (_e) {
         // Fallback to solid color
@@ -104,8 +113,8 @@ export const ItemIcon: React.FC<ItemIconProps> = ({ blockId, itemId, size, class
     }
 
     return {
-      backgroundColor: activeBlockProps.color || '#a1a1aa',
-      border: activeBlockProps.border || 'none',
+      backgroundColor: faceVisual.color || '#a1a1aa',
+      border: faceVisual.border || 'none',
     };
   };
 

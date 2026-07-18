@@ -58,7 +58,7 @@ describe('ThreeFixtureView', () => {
       anchor: { x: 1, y: 2, z: 3 },
       orientation: 0,
       components: [],
-    }, { ...chestDefinition, view: { color: 0x885522 } });
+    }, { ...chestDefinition, view: { color: 0x885522, height: 0.9 } });
     scene.updateMatrixWorld(true);
     const raycaster = new THREE.Raycaster(
       new THREE.Vector3(1.5, 2.45, 0),
@@ -93,17 +93,63 @@ describe('ThreeFixtureView', () => {
       orientation: 0,
       components: [],
     }, { ...chestDefinition, view: { color: 0x885522 } });
-    const mesh = view.getRaycastObjects()[0] as THREE.Mesh<
-      THREE.BoxGeometry,
-      THREE.MeshStandardMaterial
-    >;
-    const disposeGeometry = vi.spyOn(mesh.geometry, 'dispose');
-    const disposeMaterial = vi.spyOn(mesh.material, 'dispose');
+
+    const root = view.getRaycastObjects()[0];
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      geometries.add(object.geometry);
+      const meshMaterial = object.material;
+      if (Array.isArray(meshMaterial)) {
+        meshMaterial.forEach((material) => materials.add(material));
+      } else {
+        materials.add(meshMaterial);
+      }
+    });
+    expect(geometries.size).toBeGreaterThan(0);
+    expect(materials.size).toBeGreaterThan(0);
+
+    const disposeGeometrySpies = Array.from(geometries).map((geometry) =>
+      vi.spyOn(geometry, 'dispose'),
+    );
+    const disposeMaterialSpies = Array.from(materials).map((material) =>
+      vi.spyOn(material, 'dispose'),
+    );
 
     view.dispose();
 
-    expect(scene.children).not.toContain(mesh);
-    expect(disposeGeometry).toHaveBeenCalledOnce();
-    expect(disposeMaterial).toHaveBeenCalledOnce();
+    expect(scene.children).not.toContain(root);
+    for (const spy of disposeGeometrySpies) {
+      expect(spy).toHaveBeenCalledOnce();
+    }
+    for (const spy of disposeMaterialSpies) {
+      expect(spy).toHaveBeenCalledOnce();
+    }
+  });
+
+  test('builds a multi-mesh chest model when model is chest', () => {
+    const scene = new THREE.Scene();
+    const view = new ThreeFixtureView(scene);
+    view.attach({
+      id: 'fixture-chest-model',
+      definitionId: chestDefinition.id,
+      anchor: { x: 0, y: 0, z: 0 },
+      orientation: 0,
+      components: [],
+    }, {
+      ...chestDefinition,
+      view: { color: 0x8b5a2b, model: 'chest' },
+    });
+
+    const root = view.getRaycastObjects()[0];
+    let meshCount = 0;
+    root.traverse((object) => {
+      if (object instanceof THREE.Mesh) meshCount += 1;
+    });
+
+    expect(meshCount).toBeGreaterThan(1);
+    expect(root.position.y).toBe(0);
+    view.dispose();
   });
 });

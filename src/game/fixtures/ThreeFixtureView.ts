@@ -5,17 +5,17 @@ import type {
   FixtureViewPort,
   PlacedFixture,
 } from './FixtureTypes';
-
-interface FixtureViewResources {
-  readonly geometry: THREE.BoxGeometry;
-  readonly material: THREE.MeshStandardMaterial;
-}
+import {
+  createFixtureModelPrototype,
+  disposeFixtureModelTree,
+} from './FixtureModels';
 
 export class ThreeFixtureView implements FixtureViewPort {
   private readonly scene: THREE.Scene;
   private readonly objects = new Map<string, THREE.Object3D>();
   private readonly raycastObjects: THREE.Object3D[] = [];
-  private readonly resources = new Map<string, FixtureViewResources>();
+  /** 按 definitionId 缓存原型，实例通过 clone 共享 geometry/material */
+  private readonly prototypes = new Map<string, THREE.Object3D>();
 
   public constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -23,38 +23,30 @@ export class ThreeFixtureView implements FixtureViewPort {
 
   public attach(fixture: PlacedFixture, definition: FixtureDefinition): void {
     this.detach(fixture.id);
-    const view = definition.view ?? { color: 0x777777 };
-    const width = view.width ?? 0.9;
-    const height = view.height ?? 0.9;
-    const depth = view.depth ?? 0.9;
 
-    let resources = this.resources.get(definition.id);
-    if (!resources) {
-      resources = {
-        geometry: new THREE.BoxGeometry(width, height, depth),
-        material: new THREE.MeshStandardMaterial({
-          color: view.color,
-          roughness: 0.82,
-          metalness: definition.id === 'cloudcraft:furnace' ? 0.22 : 0.05,
-        }),
-      };
-      this.resources.set(definition.id, resources);
+    let prototype = this.prototypes.get(definition.id);
+    if (!prototype) {
+      prototype = createFixtureModelPrototype(definition);
+      this.prototypes.set(definition.id, prototype);
     }
 
-    const mesh = new THREE.Mesh(resources.geometry, resources.material);
-    mesh.name = `fixture:${fixture.definitionId}`;
-    mesh.position.set(
+    const object = prototype.clone(true);
+    object.name = `fixture:${fixture.definitionId}`;
+    // 模型局部原点在底面中心
+    object.position.set(
       fixture.anchor.x + 0.5,
-      fixture.anchor.y + height / 2,
+      fixture.anchor.y,
       fixture.anchor.z + 0.5,
     );
-    mesh.rotation.y = fixture.orientation * Math.PI * 0.5;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.userData.fixtureId = fixture.id;
-    this.scene.add(mesh);
-    this.objects.set(fixture.id, mesh);
-    this.raycastObjects.push(mesh);
+    object.rotation.y = fixture.orientation * Math.PI * 0.5;
+    object.userData.fixtureId = fixture.id;
+    object.traverse((child) => {
+      child.userData.fixtureId = fixture.id;
+    });
+
+    this.scene.add(object);
+    this.objects.set(fixture.id, object);
+    this.raycastObjects.push(object);
   }
 
   public detach(fixtureId: string): void {
@@ -106,10 +98,9 @@ export class ThreeFixtureView implements FixtureViewPort {
     for (const fixtureId of Array.from(this.objects.keys())) {
       this.detach(fixtureId);
     }
-    for (const resource of this.resources.values()) {
-      resource.geometry.dispose();
-      resource.material.dispose();
+    for (const prototype of this.prototypes.values()) {
+      disposeFixtureModelTree(prototype);
     }
-    this.resources.clear();
+    this.prototypes.clear();
   }
 }

@@ -8,7 +8,7 @@ const CORE_FIXTURES: readonly FixtureDefinition[] = [
     displayName: '箱子',
     footprint: [{ x: 0, y: 0, z: 0 }],
     components: [{ type: 'container', slots: 27 }],
-    view: { color: 0x8b5a2b, width: 0.9, height: 0.85, depth: 0.9 },
+    view: { color: 0x8b5a2b, width: 0.9, height: 0.86, depth: 0.9, model: 'chest' },
   },
   {
     id: 'cloudcraft:furnace',

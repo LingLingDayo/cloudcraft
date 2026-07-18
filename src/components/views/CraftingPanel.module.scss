@@ -165,10 +165,24 @@
 
 .ingredient {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   color: var(--ui-control-dark-text-color);
   font-size: 8px;
+}
+
+.ingredientInfo {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+}
+
+.ingredientIcon {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
 }
 
 .craftState {

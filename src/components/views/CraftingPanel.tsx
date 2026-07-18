@@ -99,9 +99,18 @@ export const CraftingPanel: FC<CraftingPanelProps> = ({
           <ul className={styles.ingredients}>
             {activeRecipeView.recipe.inputs.map((input, index) => (
               <li className={styles.ingredient} key={`${activeRecipeView.recipe.id}-${index}`}>
-                <span>{input.selector.itemType
-                  ? t(`items.${input.selector.itemType}`)
-                  : t(`itemTags.${input.selector.tag}`)}</span>
+                <div className={styles.ingredientInfo}>
+                  {input.selector.itemType && (
+                    <BlockIcon
+                      itemId={input.selector.itemType}
+                      size={18}
+                      className={styles.ingredientIcon}
+                    />
+                  )}
+                  <span>{input.selector.itemType
+                    ? t(`items.${input.selector.itemType}`)
+                    : t(`itemTags.${input.selector.tag}`)}</span>
+                </div>
                 <span>×{input.count}</span>
               </li>
             ))}
