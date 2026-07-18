@@ -25,6 +25,7 @@ interface InteractionTestRuntime {
   readonly interaction: InteractionManager;
   readonly removeFixture: ReturnType<typeof vi.fn>;
   readonly spawnItem: ReturnType<typeof vi.fn>;
+  readonly setBlock: ReturnType<typeof vi.fn>;
 }
 
 function createFixture(
@@ -43,40 +44,75 @@ function createFixture(
 function createInteractionRuntime(
   fixture: PlacedFixture,
   removeResult = true,
+  options?: {
+    readonly voxelBehindFixture?: boolean;
+  },
 ): InteractionTestRuntime {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100);
+  camera.position.set(0, 0, 0);
+  camera.lookAt(0, 0, -1);
+  camera.updateMatrixWorld();
+
   const fixtureObject = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1));
   fixtureObject.position.set(0, 0, -2);
   fixtureObject.updateMatrixWorld();
 
   const removeFixture = vi.fn(() => removeResult);
   const spawnItem = vi.fn();
+  const setBlock = vi.fn();
+  const getBlock = vi.fn(() => 1); // non-air solid block
+  let fixtureRemoved = false;
+
+  removeFixture.mockImplementation(() => {
+    if (!removeResult) return false;
+    fixtureRemoved = true;
+    return true;
+  });
+
+  // 体素在设施后方更远，拆除设施后才会被瞄准
+  const voxelHit = options?.voxelBehindFixture
+    ? {
+        target: new THREE.Vector3(0, 0, -4),
+        place: new THREE.Vector3(0, 0, -3),
+        face: new THREE.Vector3(0, 0, 1),
+        blockId: 1,
+      }
+    : null;
+
   const game = {
     scene,
     camera,
     controls: { isLocked: false, isMobile: true },
-    physics: { raycast: vi.fn(() => null) },
+    physics: {
+      raycast: vi.fn(() => (options?.voxelBehindFixture ? voxelHit : null)),
+    },
     fixtureView: {
-      raycast: vi.fn(() => ({
-        fixtureId: fixture.id,
-        distance: 2,
-        point: fixtureObject.position.clone(),
-        object: fixtureObject,
-      })),
+      raycast: vi.fn(() => {
+        if (fixtureRemoved) return null;
+        return {
+          fixtureId: fixture.id,
+          distance: 2,
+          point: fixtureObject.position.clone(),
+          object: fixtureObject,
+        };
+      }),
     },
     fixtures: {
-      get: vi.fn(() => fixture),
+      get: vi.fn(() => (fixtureRemoved ? undefined : fixture)),
       remove: removeFixture,
       place: vi.fn(),
     },
     droppedItems: { spawnItem },
+    world: { getBlock, setBlock },
+    particles: { spawnBlockParticles: vi.fn() },
   } as unknown as GameManager;
 
   return {
     interaction: new InteractionManager(game),
     removeFixture,
     spawnItem,
+    setBlock,
   };
 }
 
@@ -99,6 +135,23 @@ describe('InteractionManager fixture removal', () => {
     expect(runtime.removeFixture).toHaveBeenCalledWith('fixture-test');
     expect(runtime.spawnItem).not.toHaveBeenCalled();
     expect(sound.playBreak).toHaveBeenCalledWith('wood');
+    runtime.interaction.dispose();
+  });
+
+  test('does not instantly break the block behind a creative fixture removal', () => {
+    useGameStore.setState({ gameMode: GameMode.CREATIVE });
+    const runtime = createInteractionRuntime(
+      createFixture('cloudcraft:chest'),
+      true,
+      { voxelBehindFixture: true },
+    );
+
+    leftClick(runtime.interaction);
+    // 同一次按住左键进入下一帧的创造连续破坏
+    runtime.interaction.update(1 / 60);
+
+    expect(runtime.removeFixture).toHaveBeenCalledWith('fixture-test');
+    expect(runtime.setBlock).not.toHaveBeenCalled();
     runtime.interaction.dispose();
   });
 

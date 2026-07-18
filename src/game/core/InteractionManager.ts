@@ -241,6 +241,9 @@ export class InteractionManager {
 
   private completeFixtureRemoval(): void {
     sound.playBreak('wood');
+    // 拆除设施后射线会立刻命中后方体素；若玩家仍按住左键，
+    // 创造模式连续破坏会在同一次按住中误拆后方方块，因此复用破坏冷却。
+    this.lastCreativeBreakTime = performance.now();
     this.updateTargetedBlock();
   }
 
@@ -410,7 +413,8 @@ export class InteractionManager {
     const isCreative = useGameStore.getState().gameMode === 'creative';
 
     if (isCreative) {
-      if (this.isLeftMouseDown && this.targetedBlockInfo) {
+      // 准星对准设施时只处理设施拆除（mousedown），不穿透破坏后方体素
+      if (this.isLeftMouseDown && this.targetedBlockInfo && !this.targetedFixtureId) {
         const now = performance.now();
         if (now - this.lastCreativeBreakTime >= 200) {
           const { target } = this.targetedBlockInfo;
