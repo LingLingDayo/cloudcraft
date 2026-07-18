@@ -25,7 +25,7 @@
 3. **表现与渲染应用（表现层）**
    * 负责插值计算，将多个天气预设的混合结果合成最终的渲染参数，并单向应用至 Three.js 的场景（背景清理色、雾色、雾浓度）和灯光中。
    * 负责天体的轨迹运行和阴影投射管理。
-   * `PrecipitationRenderer` 使用相机局部的固定容量 `Float32Array` 线段缓冲区表现雨和暴雨，不按帧创建粒子对象。
+   * `PrecipitationRenderer` 使用相机局部的固定容量 `Float32Array` 线段缓冲区表现雨和暴雨，不按帧创建粒子对象。雨滴线段倾斜（`windOffset`）与下落轨迹一致：每下落 `streakLength` 单位，水平方向同步漂移 `windOffset`。
    * 关联文件位置：`src/game/environment/WeatherBlender.ts`、`src/game/environment/EnvironmentRenderer.ts`、`src/game/environment/PrecipitationRenderer.ts` 及 `src/game/environment/CelestialBodies.ts`
 
 ---

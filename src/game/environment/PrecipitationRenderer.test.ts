@@ -66,4 +66,51 @@ describe('PrecipitationRenderer', () => {
       expect(Array.from(positions).every(Number.isFinite)).toBe(true);
     },
   );
+
+  test.each(['rain', 'storm'] as const)(
+    'drifts %s drops along the streak wind direction instead of pure vertical fall',
+    weatherId => {
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera();
+      const precipitation = new PrecipitationRenderer(
+        scene,
+        camera,
+        'test-wind-drift-seed',
+      );
+      const lines = scene.children[0] as THREE.LineSegments<THREE.BufferGeometry>;
+      const positions = lines.geometry.getAttribute('position').array as Float32Array;
+      const mode = PRECIPITATION_CONFIG[weatherId];
+      const sampleIndex = 0;
+      const offset = sampleIndex * 6;
+
+      // Force a mid-air sample so the next frame cannot hit the respawn path.
+      const startX = 0;
+      const startY = 4;
+      const startZ = 0;
+      positions[offset] = startX;
+      positions[offset + 1] = startY;
+      positions[offset + 2] = startZ;
+      positions[offset + 3] = startX + mode.windOffset;
+      positions[offset + 4] = startY - mode.streakLength;
+      positions[offset + 5] = startZ;
+
+      const deltaSeconds = 0.05;
+      precipitation.update(deltaSeconds, weatherId);
+
+      const nextX = positions[offset];
+      const nextY = positions[offset + 1];
+      const fallDistance = startY - nextY;
+
+      expect(fallDistance).toBeGreaterThan(0);
+      expect(nextX).toBeGreaterThan(startX);
+      expect(nextX - startX).toBeCloseTo(
+        fallDistance * (mode.windOffset / mode.streakLength),
+        5,
+      );
+      expect(positions[offset + 3]).toBeCloseTo(nextX + mode.windOffset, 5);
+      expect(positions[offset + 4]).toBeCloseTo(nextY - mode.streakLength, 5);
+      expect(positions[offset + 2]).toBe(startZ);
+      expect(positions[offset + 5]).toBe(startZ);
+    },
+  );
 });

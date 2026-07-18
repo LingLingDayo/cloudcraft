@@ -124,20 +124,24 @@ export class PrecipitationRenderer {
     const clampedDelta = Number.isFinite(dt)
       ? Math.max(0, Math.min(dt, PRECIPITATION_CONFIG.maximumDeltaSeconds))
       : 0;
+    // 水平漂移与线段倾斜一致：每下落 streakLength 单位，X 偏移 windOffset
+    const windDriftPerUnitFall = mode.windOffset / mode.streakLength;
     for (let index = 0; index < mode.dropCount; index++) {
       const offset = index * POSITION_VALUES_PER_DROP;
-      let y = this.positions[offset + 1]
-        - mode.fallSpeed * this.speedFactors[index] * clampedDelta;
+      const fallDistance = mode.fallSpeed * this.speedFactors[index] * clampedDelta;
+      let x = this.positions[offset] + fallDistance * windDriftPerUnitFall;
+      let y = this.positions[offset + 1] - fallDistance;
 
       if (y < PRECIPITATION_CONFIG.lowerBound) {
-        this.positions[offset] = this.randomHorizontalPosition(index);
+        x = this.randomHorizontalPosition(index);
         y = PRECIPITATION_CONFIG.upperBound
           + this.nextRandom(index) * PRECIPITATION_CONFIG.respawnBandHeight;
         this.positions[offset + 2] = this.randomHorizontalPosition(index);
       }
 
+      this.positions[offset] = x;
       this.positions[offset + 1] = y;
-      this.positions[offset + 3] = this.positions[offset] + mode.windOffset;
+      this.positions[offset + 3] = x + mode.windOffset;
       this.positions[offset + 4] = y - mode.streakLength;
       this.positions[offset + 5] = this.positions[offset + 2];
     }
