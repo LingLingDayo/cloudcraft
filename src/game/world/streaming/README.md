@@ -64,13 +64,13 @@ Yaw bucket 采用环形归一化，`+pi` 与 `-pi` 是同一方向。相机仍�
 
 ### 接缝网格收敛（Seam Remesh）
 
-体素天空光与 AO 在 `GENERATE_MESH` 时按邻居缓冲烘焙；邻居缺失时 `ChunkMeshBuilder` 回退为打包满天空光 `PACKED_MAX_SKY_LIGHT`（`(15<<4)|0 = 240`），**禁止**回退为裸值 `15`（会解包成 sky=0/block=15，表现为接缝“火把条”）。因此**允许**无邻居先出网以保持流送前沿，但必须在邻居缓冲补齐后收敛。新区块 `GENERATE_CHUNK` 被接受后，立即对已挂载的六面邻居标记 seam remesh，无需等待本块 mesh 完成。
+体素天空光与 AO 在 `GENERATE_MESH` 时按邻居缓冲烘焙；邻居缺失时 `ChunkMeshBuilder` 回退为打包满天空光 `PACKED_MAX_SKY_LIGHT`（`(15<<4)|0 = 240`），**禁止**回退为裸值 `15`（会解包成 sky=0/block=15，表现为接缝“火把条”）。顶点 AO/光照采样若同时越出两个轴（角点），不得用单面邻居缓冲做越界索引（会读到 `undefined` → sky=0 黑缝）；无对角邻居缓冲时同样回退为满天空光/空气。因此**允许**无邻居先出网以保持流送前沿，但必须在邻居缓冲补齐后收敛。新区块 `GENERATE_CHUNK` 被接受后，立即对已挂载的六面邻居标记 seam remesh，无需等待本块 mesh 完成。
 
 `WorldChunkManager` 在提交 mesh 时记录六面邻居缓冲的 presence bitmask；任务成功挂载后：
 
 1. 若当前邻居缓冲比提交时更齐全，则将自身记入 `pendingSeamRemesh`（`updateNeighbors: false` 的 seam-only 重建）；
-2. 若任务带 `updateNeighbors: true`，对已挂载的六面邻居同样标记 seam remesh；若邻居仍在 `generatingMeshes`，标记保留到其完成后由 `flushSeamRemeshQueue` 入队，**禁止**“跳过即丢弃”；
-3. `pendingSeamRemesh` 独立于 `pendingMeshQueue`，在 `loadArea` 替换队列后仍由 `processIncrementalLoading` 开头 flush，避免转向/重解析冲掉接缝修复。
+2. 若任务带 `updateNeighbors: true`，对已挂载或仍在 `generatingMeshes` 的六面邻居同样标记 seam remesh；飞行中的任务保留标记到完成后由 `flushSeamRemeshQueue` 入队，**禁止**“跳过即丢弃”；
+3. `pendingSeamRemesh` 是**耐用标记集**：flush 入 `pendingMeshQueue` 后**不得**立刻清除标记，仅在 mesh 任务真正 `submit`（写入 `generatingMeshes`）时删除。`loadArea` 会整表替换 `pendingMeshQueue`，若提前清除标记，已挂载但邻居补齐后的接缝修复会永久丢失，直到玩家放置/破坏方块触发 `updateChunkMeshAsync` 才恢复。`loadArea` 替换队列后必须立刻 `flushSeamRemeshQueue`，`processIncrementalLoading` 开头也会再 flush 一次。
 
 二次 remesh 仅在上述条件命中时发生，并受既有 `maxConcurrentMeshing` 与帧预算约束，不得对每个区块无条件 double mesh。
 

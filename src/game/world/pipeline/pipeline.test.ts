@@ -30,6 +30,7 @@ import { vi, describe, test, expect } from 'vitest';
 import '@game/world/block/BlockRegistry';
 import { ChunkPipeline } from './ChunkPipeline';
 import type { ChunkPipelineContext, ChunkPipelineStage, WorldTerrainProvider } from './ChunkPipelineTypes';
+import { ColumnSkyLightStage } from './stages/ColumnSkyLightStage';
 import { ImprovedNoise } from '../Noise';
 import { TerrainHeightMapStage } from './stages/TerrainHeightMapStage';
 import { BaseTerrainFillerStage } from './stages/BaseTerrainFillerStage';
@@ -235,6 +236,50 @@ describe('ChunkPipeline Extensions', () => {
 
     // Stone filled block at y = 28 (aligns with layerSpacing 28) should be carved to AIR (ly = 28 - 16 = 12)
     expect(chunk[12 * 256 * 2]).toBe(BLOCK_TYPES.AIR);
+  });
+
+  test('ColumnSkyLightStage recomputes packed sky light from actual voxels', () => {
+    // Seed a broken column: solid floor + open air, every cell packed sky=0.
+    const chunk = new Uint8Array(8192);
+    for (let i = 0; i < chunk.length; i += 2) {
+      const index = i / 2;
+      const ly = Math.floor(index / 256);
+      chunk[i] = ly === 0 ? BLOCK_TYPES.STONE : BLOCK_TYPES.AIR;
+      chunk[i + 1] = 0;
+    }
+
+    const terrainMap = Array.from({ length: 16 }, () =>
+      Array.from({ length: 16 }, () => ({
+        interpolatedHeight: 0,
+        adjustedHeight: 0,
+        finalHeight: 0,
+        localWaterLevel: 64,
+        isDryLand: true,
+        isPond: false,
+        maxHeightOffset: 0,
+        slope: 0,
+      })),
+    );
+
+    const stage = new ColumnSkyLightStage();
+    stage.execute({
+      cx: 0,
+      cy: 0,
+      cz: 0,
+      worldStartX: 0,
+      worldStartY: 0,
+      worldStartZ: 0,
+      chunk,
+      noise: {} as unknown as ImprovedNoise,
+      terrainMap,
+      biomeMap: [],
+      generator: {} as unknown as WorldTerrainProvider,
+    });
+
+    const airIdx = 1 * 256 * 2;
+    expect((chunk[airIdx + 1] >> 4) & 0x0f).toBe(15);
+    // Opaque floor stores light after -3 attenuation (matches World.recalculateColumnSkyLight).
+    expect((chunk[1] >> 4) & 0x0f).toBe(12);
   });
 
   test('SurfaceDecorationStage should not generate floating vegetation on carved surface', () => {

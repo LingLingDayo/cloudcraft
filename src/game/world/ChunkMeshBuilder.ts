@@ -84,21 +84,27 @@ export class ChunkMeshBuilder {
     const worldStartY = cy * CHUNK_SIZE_Y;
     const worldStartZ = cz * CHUNK_SIZE_Z;
 
-    // Fast neighbor block retriever using cached direct references (eliminates Map hash lookups)
-    const getNeighbor = (lx: number, ly: number, lz: number): number => {
-      const globalY = worldStartY + ly;
-      if (globalY < 0 || globalY >= WORLD_HEIGHT) return BLOCK_TYPES.AIR;
-
-      if (
-        lx >= 0 && lx < CHUNK_SIZE_X &&
-        ly >= 0 && ly < CHUNK_SIZE_Y &&
-        lz >= 0 && lz < CHUNK_SIZE_Z
-      ) {
-        return chunk[(lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2];
-      }
+    /**
+     * Resolve a sample that lies on a single face-neighbor (exactly one axis OOB).
+     * Multi-axis OOB needs a diagonal chunk we do not pass; callers must not index
+     * a face buffer with a still-OOB secondary axis (reads undefined → sky=0 black seams).
+     */
+    const resolveFaceNeighbor = (
+      lx: number,
+      ly: number,
+      lz: number,
+    ): { chunk: Uint8Array; nlx: number; nly: number; nlz: number } | null => {
+      const outX = lx < 0 || lx >= CHUNK_SIZE_X;
+      const outY = ly < 0 || ly >= CHUNK_SIZE_Y;
+      const outZ = lz < 0 || lz >= CHUNK_SIZE_Z;
+      const outCount = (outX ? 1 : 0) + (outY ? 1 : 0) + (outZ ? 1 : 0);
+      // Corner / edge samples without diagonal buffers — treat as open air / full sky.
+      if (outCount !== 1) return null;
 
       let neighborChunk: Uint8Array | undefined;
-      let nlx = lx, nly = ly, nlz = lz;
+      let nlx = lx;
+      let nly = ly;
+      let nlz = lz;
 
       if (lx < 0) {
         neighborChunk = neighbors.nx;
@@ -120,7 +126,26 @@ export class ChunkMeshBuilder {
         nlz = 0;
       }
 
-      if (!neighborChunk) return BLOCK_TYPES.AIR;
+      if (!neighborChunk) return null;
+      return { chunk: neighborChunk, nlx, nly, nlz };
+    };
+
+    // Fast neighbor block retriever using cached direct references (eliminates Map hash lookups)
+    const getNeighbor = (lx: number, ly: number, lz: number): number => {
+      const globalY = worldStartY + ly;
+      if (globalY < 0 || globalY >= WORLD_HEIGHT) return BLOCK_TYPES.AIR;
+
+      if (
+        lx >= 0 && lx < CHUNK_SIZE_X &&
+        ly >= 0 && ly < CHUNK_SIZE_Y &&
+        lz >= 0 && lz < CHUNK_SIZE_Z
+      ) {
+        return chunk[(lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2];
+      }
+
+      const resolved = resolveFaceNeighbor(lx, ly, lz);
+      if (!resolved) return BLOCK_TYPES.AIR;
+      const { chunk: neighborChunk, nlx, nly, nlz } = resolved;
       return neighborChunk[(nlx + nlz * CHUNK_SIZE_X + nly * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2];
     };
 
@@ -138,32 +163,11 @@ export class ChunkMeshBuilder {
         return chunk[(lx + lz * CHUNK_SIZE_X + ly * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2 + 1];
       }
 
-      let neighborChunk: Uint8Array | undefined;
-      let nlx = lx, nly = ly, nlz = lz;
-
-      if (lx < 0) {
-        neighborChunk = neighbors.nx;
-        nlx = CHUNK_SIZE_X - 1;
-      } else if (lx >= CHUNK_SIZE_X) {
-        neighborChunk = neighbors.px;
-        nlx = 0;
-      } else if (ly < 0) {
-        neighborChunk = neighbors.ny;
-        nly = CHUNK_SIZE_Y - 1;
-      } else if (ly >= CHUNK_SIZE_Y) {
-        neighborChunk = neighbors.py;
-        nly = 0;
-      } else if (lz < 0) {
-        neighborChunk = neighbors.nz;
-        nlz = CHUNK_SIZE_Z - 1;
-      } else if (lz >= CHUNK_SIZE_Z) {
-        neighborChunk = neighbors.pz;
-        nlz = 0;
-      }
-
-      // Missing neighbor buffer: provisional full sky (correct packed form).
-      // Seam remesh converges once the neighbor chunk is loaded.
-      if (!neighborChunk) return PACKED_MAX_SKY_LIGHT;
+      const resolved = resolveFaceNeighbor(lx, ly, lz);
+      // Missing face neighbor, or multi-axis OOB (no diagonal buffer): provisional full sky.
+      // Seam remesh converges face-adjacent samples once the face neighbor is loaded.
+      if (!resolved) return PACKED_MAX_SKY_LIGHT;
+      const { chunk: neighborChunk, nlx, nly, nlz } = resolved;
       return neighborChunk[(nlx + nlz * CHUNK_SIZE_X + nly * CHUNK_SIZE_X * CHUNK_SIZE_Z) * 2 + 1];
     };
 

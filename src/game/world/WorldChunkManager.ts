@@ -165,16 +165,26 @@ export class WorldChunkManager {
   }
 
   /**
-   * Mark a mounted chunk for a seam-only remesh (no neighbor cascade).
-   * If it is currently generating, keep the mark until that job finishes.
+   * Mark a chunk for a seam-only remesh (no neighbor cascade).
+   * Accepts mounted renderable meshes and in-flight first meshes so a neighbor
+   * arrival during GENERATE_MESH is not dropped before mount.
    */
   private markSeamRemesh(key: string): void {
     if (!this.isWithinRetainRadius(key)) return;
-    if (!this.world.getRenderer().hasRenderableChunkMesh(key)) return;
+    const hasRenderable = this.world.getRenderer().hasRenderableChunkMesh(key);
+    const isGenerating = this.generatingMeshes.has(key);
+    // Pure-air mounts (entry exists, no geometry) never need seam light repair.
+    if (!hasRenderable && !isGenerating) return;
     this.pendingSeamRemesh.add(key);
   }
 
-  /** Drain pendingSeamRemesh into the mesh queue without cascading neighbors. */
+  /**
+   * Drain pendingSeamRemesh into the mesh queue without cascading neighbors.
+   *
+   * Marks stay in pendingSeamRemesh until the mesh job is actually submitted
+   * (see processIncrementalLoading). loadArea replaces pendingMeshQueue wholesale;
+   * durable marks are the only way seam repairs survive a mid-queue view refresh.
+   */
   private flushSeamRemeshQueue(epoch: number, ccx: number, ccy: number, ccz: number): void {
     if (this.pendingSeamRemesh.size === 0) return;
 
@@ -184,16 +194,18 @@ export class WorldChunkManager {
         this.pendingSeamRemesh.delete(key);
         continue;
       }
-      if (this.generatingMeshes.get(key) === epoch) {
-        // Still in flight; keep the mark so completion can re-flush.
+      if (this.generatingMeshes.has(key)) {
+        // Still in flight; keep the mark so completion / next flush can re-queue.
         continue;
       }
-      if (!this.world.getRenderer().hasChunkMesh(key)) {
+      if (!this.world.getRenderer().hasRenderableChunkMesh(key)) {
+        // No visual mesh (missing or pure-air entry) — drop the mark.
         this.pendingSeamRemesh.delete(key);
         continue;
       }
+      // Already queued: keep the mark. If loadArea wipes the queue before submit,
+      // the next flush must be able to re-enqueue this key.
       if (this.isMeshQueued(key)) {
-        this.pendingSeamRemesh.delete(key);
         continue;
       }
 
@@ -203,7 +215,7 @@ export class WorldChunkManager {
         epoch,
         revision: this.world.getChunkRevision(key),
       });
-      this.pendingSeamRemesh.delete(key);
+      // Do NOT delete the mark here — clear only when the worker job is submitted.
       added = true;
     }
 
@@ -421,6 +433,9 @@ export class WorldChunkManager {
       ));
       this.pendingGenerationQueue = neededGeneration;
       this.pendingMeshQueue = neededMesh;
+      // loadArea replaces pendingMeshQueue; re-seed durable seam marks immediately
+      // so a turn/refresh cannot strand edge light until the player edits a block.
+      this.flushSeamRemeshQueue(epoch, ccx, ccy, ccz);
     }
 
     for (const key of chunkMeshes.keys()) {
@@ -478,6 +493,8 @@ export class WorldChunkManager {
         const attempt = this.meshRetries.recordAttempt(key, epoch, revision, currentSeed);
         if (attempt === null) continue;
         this.generatingMeshes.set(key, epoch);
+        // Seam mark is durable across loadArea queue wipes; clear only on submit.
+        this.pendingSeamRemesh.delete(key);
         // Snapshot which neighbor buffers were available for edge light baking.
         const buildNeighborMask = this.getNeighborPresenceMask(cx, cy, cz);
 

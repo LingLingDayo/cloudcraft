@@ -16,6 +16,7 @@ import { OreGeneratorStage } from './pipeline/stages/OreGeneratorStage';
 import { CaveCarverStage } from './pipeline/stages/CaveCarverStage';
 import { SurfaceDecorationStage } from './pipeline/stages/SurfaceDecorationStage';
 import { TreeDecorationStage } from './pipeline/stages/TreeDecorationStage';
+import { ColumnSkyLightStage } from './pipeline/stages/ColumnSkyLightStage';
 
 export class WorldGenerator implements WorldTerrainProvider {
   private noise: ImprovedNoise;
@@ -424,6 +425,8 @@ export class WorldGenerator implements WorldTerrainProvider {
     pipeline.addStage(new CaveCarverStage());
     pipeline.addStage(new SurfaceDecorationStage());
     pipeline.addStage(new TreeDecorationStage());
+    // Must run last: caves/trees rewrite voxels after the filler's seed light.
+    pipeline.addStage(new ColumnSkyLightStage());
 
     const context: ChunkPipelineContext = {
       cx,

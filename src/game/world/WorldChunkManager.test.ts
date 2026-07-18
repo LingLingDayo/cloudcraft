@@ -103,6 +103,99 @@ describe('WorldChunkManager Neighbor Mesh Re-indexing', () => {
     expect(queuedB!.updateNeighbors).toBe(false);
   });
 
+  test('seam remesh mark survives loadArea pendingMeshQueue replacement', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+
+    const world = new World('test-seam-remesh-loadarea-wipe');
+    world.game = {
+      player: {
+        position: { x: 0, y: 0, z: 0 },
+      },
+    };
+
+    const { WorkerManager } = await import('./worker/WorkerManager');
+    const { ChunkMeshBuilder } = await import('./ChunkMeshBuilder');
+    const workerManager = WorkerManager.getInstance();
+    assumeLiveWorkerPool(workerManager);
+
+    type MeshResolver = (result: GenerateMeshResult) => void;
+    const meshResolvers = new Map<string, MeshResolver>();
+    const meshPayloads = new Map<string, { neighbors: Record<string, unknown> }>();
+
+    vi.spyOn(workerManager, 'execute').mockImplementation((type, payload) => {
+      if (type !== 'GENERATE_MESH') {
+        return Promise.reject(new Error(`Unexpected worker task ${type}`));
+      }
+      const { cx, cy, cz, chunk, neighbors, chunkRevision } = payload as any;
+      const key = `${cx},${cy},${cz}`;
+      meshPayloads.set(key, { neighbors });
+      return new Promise<GenerateMeshResult>((resolve) => {
+        meshResolvers.set(key, resolve);
+        void chunk;
+        void chunkRevision;
+        void ChunkMeshBuilder;
+      });
+    });
+
+    const chunkA = world.generator.generateChunkData(0, 0, 0);
+    world.chunks.set('0,0,0', chunkA);
+
+    world.loadArea(0, 0, 0, 1);
+    world.chunkManager.pendingMeshQueue = [];
+    const epoch = world.chunkManager.getStreamingEpoch();
+    world.chunkManager.pendingMeshQueue.push({
+      key: '0,0,0',
+      updateNeighbors: true,
+      epoch,
+      revision: world.getChunkRevision('0,0,0'),
+    });
+
+    world.chunkManager.processIncrementalLoading();
+    expect(meshResolvers.has('0,0,0')).toBe(true);
+    expect(meshPayloads.get('0,0,0')?.neighbors.px).toBeUndefined();
+
+    // Mount A with incomplete neighbors (edge light used full-sky fallback).
+    const finishMesh = (key: string) => {
+      const [cx, cy, cz] = key.split(',').map(Number);
+      const chunk = world.chunks.get(key)!;
+      const neighbors = meshPayloads.get(key)?.neighbors ?? {};
+      meshResolvers.get(key)!({
+        mesh: ChunkMeshBuilder.buildMesh(cx, cy, cz, chunk, neighbors as any),
+        summary: buildChunkVisibilitySummary(chunk, world.getChunkRevision(key)),
+      });
+    };
+
+    // Neighbor B data arrives while we still only have A's stale mesh.
+    const chunkB = world.generator.generateChunkData(1, 0, 0);
+    world.chunks.set('1,0,0', chunkB);
+
+    finishMesh('0,0,0');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(world.getRenderer().hasChunkMesh('0,0,0')).toBe(true);
+
+    // Completion should have durable-marked A for seam remesh and enqueued it.
+    expect(world.chunkManager.pendingMeshQueue.some(item => item.key === '0,0,0')).toBe(true);
+
+    // Simulate loadArea replacing pendingMeshQueue while A already has a mesh +
+    // valid summary (neededMesh omits A). Without durable marks the seam repair
+    // would be lost forever until a block edit.
+    world.chunkManager.pendingMeshQueue = [];
+    world.chunkManager.invalidateVisibility();
+    world.loadArea(0, 0, 0, 1);
+
+    const seamAfterLoadArea = world.chunkManager.pendingMeshQueue.find(
+      item => item.key === '0,0,0' && item.updateNeighbors === false,
+    );
+    expect(seamAfterLoadArea).toBeDefined();
+
+    // Drain the repair and confirm the resubmitted job sees neighbor B.
+    meshResolvers.delete('0,0,0');
+    meshPayloads.delete('0,0,0');
+    world.chunkManager.processIncrementalLoading();
+    expect(meshResolvers.has('0,0,0')).toBe(true);
+    expect(meshPayloads.get('0,0,0')?.neighbors.px).toBeDefined();
+  });
+
   test('remeshes self when a face neighbor arrives while the first mesh was still generating', async () => {
     vi.spyOn(performance, 'now').mockReturnValue(0);
 

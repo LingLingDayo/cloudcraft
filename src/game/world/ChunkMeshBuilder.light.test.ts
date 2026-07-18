@@ -64,4 +64,28 @@ describe('ChunkMeshBuilder packed light', () => {
     expect(bad).toBe(0);
     expect(skySamples).toBeGreaterThan(0);
   });
+
+  test('face neighbors present must not darken corner samples via multi-axis OOB reads', () => {
+    const chunk = makeSolidSurfaceChunk();
+    // Face neighbors exist but diagonal corner samples still need two axes.
+    // Old if/else resolution indexed the face buffer with a still-OOB secondary
+    // axis (undefined → sky=0), darkening chunk-corner vertices after seam remesh.
+    const neighbor = makeSolidSurfaceChunk();
+    const mesh = ChunkMeshBuilder.buildMesh(0, 0, 0, chunk, {
+      px: neighbor,
+      nx: neighbor,
+      pz: neighbor,
+      nz: neighbor,
+      py: neighbor,
+      ny: neighbor,
+    });
+    expect(mesh.solid).not.toBeNull();
+    const lights = mesh.solid!.valLights;
+    let zeroSky = 0;
+    for (let i = 0; i < lights.length; i += 2) {
+      if (lights[i] === 0) zeroSky++;
+    }
+    // Outdoor solid floor with full sky in all face neighbors — no vertex should be black.
+    expect(zeroSky).toBe(0);
+  });
 });
