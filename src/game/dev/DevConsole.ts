@@ -8,6 +8,11 @@ import { createTimeCommands } from './commands/time';
 import { createRenderCommands } from './commands/render';
 import { createStoreCommands } from './commands/store';
 import { createDebugCommands } from './commands/debug';
+import {
+  createEntityCommands,
+  type EntityListEntry,
+  type EntitySpawnResult,
+} from './commands/entity';
 
 export interface CloudcraftDevConsole {
   meta: {
@@ -68,6 +73,14 @@ export interface CloudcraftDevConsole {
   debug: {
     getMetrics(): DebugMetrics;
   };
+  entity: {
+    listSpecies(): string[];
+    spawn(speciesId: string, x?: number, y?: number, z?: number): EntitySpawnResult | null;
+    spawnMany(speciesId: string, count?: number, radius?: number): EntitySpawnResult[];
+    list(): EntityListEntry[];
+    count(): number;
+    clear(): number;
+  };
 }
 
 export function createDevConsole(game: GameManager): CloudcraftDevConsole {
@@ -78,6 +91,7 @@ export function createDevConsole(game: GameManager): CloudcraftDevConsole {
     time: createTimeCommands(game),
     render: createRenderCommands(game),
     store: createStoreCommands(game),
-    debug: createDebugCommands(game)
+    debug: createDebugCommands(game),
+    entity: createEntityCommands(game),
   };
 }

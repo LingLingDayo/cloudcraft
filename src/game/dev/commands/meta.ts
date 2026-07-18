@@ -40,6 +40,13 @@ export function createMetaCommands(game: GameManager) {
         { Namespace: 'store', Command: 'giveItem(itemType, count)', Description: 'Add item to hotbar' },
 
         { Namespace: 'debug', Command: 'getMetrics()', Description: 'Get current F3 debug panel metrics snapshot' },
+
+        { Namespace: 'entity', Command: 'listSpecies()', Description: 'List registered species IDs (e.g. cloudcraft:pig)' },
+        { Namespace: 'entity', Command: 'spawn(speciesId, x?, y?, z?)', Description: 'Spawn one animal (short name ok; default in front of player)' },
+        { Namespace: 'entity', Command: 'spawnMany(speciesId, count?, radius?)', Description: 'Spawn multiple animals near player (max 16)' },
+        { Namespace: 'entity', Command: 'list()', Description: 'List active animals as a table' },
+        { Namespace: 'entity', Command: 'count()', Description: 'Get active animal count' },
+        { Namespace: 'entity', Command: 'clear()', Description: 'Remove all animals from the world' },
       ];
       
       console.table(commands);

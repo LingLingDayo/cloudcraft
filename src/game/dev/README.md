@@ -21,7 +21,7 @@ window.__cloudcraft__.meta.help();
 
 ## 2. API 命名空间详解
 
-调试接口分为七大域（Namespace）：`meta`、`player`、`world`、`time`、`render`、`store`、`debug`。
+调试接口分为八大域（Namespace）：`meta`、`player`、`world`、`time`、`render`、`store`、`debug`、`entity`。
 
 ### 2.1 Meta (元数据接口)
 - **`window.__cloudcraft__.meta.help()`**
@@ -136,6 +136,53 @@ window.__cloudcraft__.meta.help();
   - **功能**：获取 F3 调试面板当前展示的全部数据快照（与面板所见一致，面板数据以 1Hz 频率节流采样）。
   - **返回值**：`DebugMetrics` 对象（包含 FPS、区块统计、玩家坐标/朝向、群系/地形、游戏时间、实体计数、渲染统计等）。若面板尚未采样过，则回退为实时计算一份最新数据。
 
+### 2.8 Entity (生物 / 实体调试接口)
+用于在联调 AI、战斗与渲染时按需生成、列举或清空生物。通过 `AnimalManager.spawnSpecies` 落盘到运行时集合；调试生成默认 `isPersistent = true`，不会因远离玩家被自动 despawn。
+
+当前核心物种（短名与完整 ID 均可）：
+- `"pig"` / `"cloudcraft:pig"`
+- `"leopard"` / `"cloudcraft:leopard"`
+
+- **`window.__cloudcraft__.entity.listSpecies()`**
+  - **功能**：列出已注册物种的完整 ID。
+  - **返回值**：`string[]`。
+- **`window.__cloudcraft__.entity.spawn(speciesId, x?, y?, z?)`**
+  - **功能**：生成一只指定物种的生物。
+  - **参数**：
+    - `speciesId`（字符串，必填）：完整 ID 或短名（如 `"pig"`、`"leopard"`）。
+    - `x, y, z`（数字，可选）：全部省略时在玩家视线水平前方约 3 格、与脚底同高处生成；若提供则必须三者齐全。
+  - **返回值**：成功时返回 `{ id, type, position, life, isPersistent }`；物种未知时返回 `null` 并在控制台报错。
+- **`window.__cloudcraft__.entity.spawnMany(speciesId, count?, radius?)`**
+  - **功能**：在玩家附近批量生成同一种生物（水平散布）。
+  - **参数**：`speciesId`（必填）；`count` 默认 `1`，上限 `16`；`radius` 默认 `4`（水平半径，格）。
+  - **返回值**：`EntitySpawnResult[]`。
+- **`window.__cloudcraft__.entity.list()`**
+  - **功能**：以表格打印并返回当前场景中全部生物快照（id / type / 坐标 / 生命 / persistent / isDead）。
+- **`window.__cloudcraft__.entity.count()`**
+  - **功能**：返回当前存活生物数量。
+- **`window.__cloudcraft__.entity.clear()`**
+  - **功能**：移除全部生物并释放资源，返回被移除数量。
+
+**常用示例**：
+
+```javascript
+// 列出物种
+window.__cloudcraft__.entity.listSpecies();
+
+// 在玩家前方生成一头猪
+window.__cloudcraft__.entity.spawn('pig');
+
+// 在指定坐标生成一只花豹
+window.__cloudcraft__.entity.spawn('leopard', 10, 72, -5);
+
+// 在玩家周围生成 5 头猪
+window.__cloudcraft__.entity.spawnMany('pig', 5);
+
+// 查看 / 清空
+window.__cloudcraft__.entity.list();
+window.__cloudcraft__.entity.clear();
+```
+
 ---
 
 ## 3. 内部实现与目录结构
@@ -151,5 +198,6 @@ window.__cloudcraft__.meta.help();
   - [render.ts](/src/game/dev/commands/render.ts)：视场角（FOV）、渲染距离、阴影品质和渲染统计。
   - [store.ts](/src/game/dev/commands/store.ts)：Zustand 状态获取、游戏模式切换及物品发放。
   - [debug.ts](/src/game/dev/commands/debug.ts)：F3 调试面板数据快照查询。
+  - [entity.ts](/src/game/dev/commands/entity.ts)：按物种生成 / 列举 / 清空生物（调试 AI 与战斗）。
 - [DevConsole.test.ts](/src/game/dev/DevConsole.test.ts)：覆盖调试控制台全命名空间的自动化单元测试。
 

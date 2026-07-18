@@ -49,6 +49,28 @@ describe('AnimalManager Serialization', () => {
     };
   });
 
+  test('spawnSpecies should create persistent animal by short or full id', () => {
+    const manager = new AnimalManager(mockGame);
+    const pos = new THREE.Vector3(3, 12, 7);
+
+    const byShort = manager.spawnSpecies('pig', pos);
+    expect(byShort).not.toBeNull();
+    expect(byShort!.type).toBe('cloudcraft:pig');
+    expect(byShort!.isPersistent).toBe(true);
+    expect(mockGame.scene.add).toHaveBeenCalledWith(byShort!.mesh);
+    expect(manager.getCount()).toBe(1);
+
+    const byFull = manager.spawnSpecies('cloudcraft:leopard', new THREE.Vector3(1, 2, 3));
+    expect(byFull).not.toBeNull();
+    expect(byFull!.type).toBe('cloudcraft:leopard');
+    expect(manager.getCount()).toBe(2);
+    expect(manager.listSpeciesIds()).toEqual(['cloudcraft:pig', 'cloudcraft:leopard']);
+
+    expect(manager.spawnSpecies('dragon', pos)).toBeNull();
+    expect(manager.clearAnimals()).toBe(2);
+    expect(manager.getCount()).toBe(0);
+  });
+
   test('should serialize and deserialize active animals correctly', () => {
     const manager = new AnimalManager(mockGame);
     

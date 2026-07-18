@@ -232,6 +232,72 @@ export class AnimalManager {
     return this.animals.length;
   }
 
+  /** 已注册物种 ID 列表（按注册顺序） */
+  public listSpeciesIds(): string[] {
+    return this.speciesRegistry.getAll().map(definition => definition.id);
+  }
+
+  /** 当前存活生物的只读快照（调试 / 查询用） */
+  public getAnimals(): readonly Animal[] {
+    return this.animals;
+  }
+
+  /**
+   * 按物种 ID 在指定位置生成一只生物。
+   * 支持完整 ID（`cloudcraft:pig`）或短名（`pig`）。
+   * 调试生成默认 `isPersistent=true`，避免远离玩家后被自动回收。
+   */
+  public spawnSpecies(
+    speciesId: string,
+    position: THREE.Vector3,
+    options: { persistent?: boolean } = {},
+  ): Animal | null {
+    const definition = this.resolveSpeciesDefinition(speciesId);
+    if (!definition) {
+      return null;
+    }
+
+    const shortName = definition.id.includes(':')
+      ? definition.id.split(':').at(-1)!
+      : definition.id;
+    const animalId = `${shortName}-dev-${Math.random().toString(36).slice(2, 9)}`;
+    const animal = definition.create(animalId, position.clone(), this.game.world);
+    animal.isPersistent = options.persistent ?? true;
+
+    this.game.scene.add(animal.mesh);
+    this.animals.push(animal);
+    return animal;
+  }
+
+  /** 移除全部生物，返回被移除数量 */
+  public clearAnimals(): number {
+    const count = this.animals.length;
+    this.dispose();
+    return count;
+  }
+
+  private resolveSpeciesDefinition(speciesId: string) {
+    const trimmed = speciesId.trim();
+    if (!trimmed) return undefined;
+
+    const exact = this.speciesRegistry.find(trimmed);
+    if (exact) return exact;
+
+    const lower = trimmed.toLowerCase();
+    const exactLower = this.speciesRegistry.find(lower);
+    if (exactLower) return exactLower;
+
+    if (!lower.includes(':')) {
+      const namespaced = this.speciesRegistry.find(`cloudcraft:${lower}`);
+      if (namespaced) return namespaced;
+    }
+
+    return this.speciesRegistry.getAll().find(definition => {
+      const id = definition.id.toLowerCase();
+      return id === lower || id.endsWith(`:${lower}`);
+    });
+  }
+
   public markMaterialsDirty() {
     this.animals.forEach(a => {
       a.mesh.traverse((child) => {

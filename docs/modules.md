@@ -11,7 +11,7 @@
 - [状态管理模块](../src/store/README.md) (`store`) —— Zustand 状态管理切片（Slices）架构及 3D 引擎高频渲染与 UI 低频刷新的同步规范。
 - [游戏引擎核心模块](../src/game/)
   - [基础契约模块](../src/game/foundation/README.md) (`game/foundation`) —— 类型化定义注册表、生命周期内核、缓冲领域事件与版本快照契约。
-  - [调试控制台与暴露接口](../src/game/dev/README.md) (`game/dev`) —— `window.__cloudcraft__` 挂载的调试控制台域（Meta, Player, World, Time, Render, Store）API 说明。
+  - [调试控制台与暴露接口](../src/game/dev/README.md) (`game/dev`) —— `window.__cloudcraft__` 挂载的调试控制台域（Meta, Player, World, Time, Render, Store, Debug, Entity）API 说明。
   - [生物与实体架构](../src/game/entities/README.md) (`game/entities`) —— HFSM 行为、组合运动模式、物种注册、生成偏好与实体快照规范。
   - [环境与天气系统](../src/game/environment/README.md) (`game/environment`) —— 维度静态配置、时间驱动逻辑、天气混合器与零 GC 渲染平滑过渡契约。
   - [动态材质与掉落体](../src/game/dynamics/README.md) (`game/dynamics`) —— 连续掉落模拟、动态材质注册和实例化渲染生命周期规范。

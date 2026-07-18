@@ -82,7 +82,11 @@ describe('DevConsole', () => {
       },
       camera: {
         fov: 75,
-        updateProjectionMatrix: vi.fn()
+        updateProjectionMatrix: vi.fn(),
+        getWorldDirection: vi.fn().mockImplementation((target: THREE.Vector3) => {
+          target.set(0, 0, -1);
+          return target;
+        })
       },
       renderer: {
         shadowMap: {
@@ -101,7 +105,9 @@ describe('DevConsole', () => {
         }
       },
       scene: {
-        traverse: vi.fn()
+        traverse: vi.fn(),
+        add: vi.fn(),
+        remove: vi.fn()
       },
       fpsCounter: {
         getFPS: vi.fn().mockReturnValue(60)
@@ -112,7 +118,30 @@ describe('DevConsole', () => {
         playerPosition: { x: 10, y: 64, z: 20 }
       }),
       setRenderDistance: vi.fn(),
-      renderDistance: 4
+      renderDistance: 4,
+      animals: {
+        listSpeciesIds: vi.fn().mockReturnValue(['cloudcraft:pig', 'cloudcraft:leopard']),
+        getAnimals: vi.fn().mockReturnValue([]),
+        getCount: vi.fn().mockReturnValue(0),
+        clearAnimals: vi.fn().mockReturnValue(0),
+        spawnSpecies: vi.fn().mockImplementation((speciesId: string, position: THREE.Vector3) => {
+          const type = speciesId.includes(':')
+            ? speciesId
+            : `cloudcraft:${speciesId.toLowerCase()}`;
+          if (type !== 'cloudcraft:pig' && type !== 'cloudcraft:leopard') {
+            return null;
+          }
+          return {
+            id: `${type.split(':').at(-1)}-dev-test`,
+            type,
+            position: position.clone(),
+            life: 10,
+            maxLife: 10,
+            isPersistent: true,
+            isDead: false
+          };
+        })
+      }
     } as unknown as GameManager;
   });
 
@@ -132,6 +161,7 @@ describe('DevConsole', () => {
     expect(devConsole.render).toBeDefined();
     expect(devConsole.store).toBeDefined();
     expect(devConsole.debug).toBeDefined();
+    expect(devConsole.entity).toBeDefined();
   });
 
   describe('meta namespace', () => {
@@ -350,6 +380,102 @@ describe('DevConsole', () => {
       expect(mockGame.getDebugMetricsSnapshot).toHaveBeenCalled();
       expect(metrics.fps).toBe(60);
       expect(metrics.playerPosition).toEqual({ x: 10, y: 64, z: 20 });
+    });
+  });
+
+  describe('entity namespace', () => {
+    test('listSpecies() should return registered species ids', () => {
+      const devConsole = createDevConsole(mockGame);
+      expect(devConsole.entity.listSpecies()).toEqual([
+        'cloudcraft:pig',
+        'cloudcraft:leopard',
+      ]);
+      expect(mockGame.animals.listSpeciesIds).toHaveBeenCalled();
+    });
+
+    test('spawn() without coords should place animal in front of player', () => {
+      const devConsole = createDevConsole(mockGame);
+      const result = devConsole.entity.spawn('pig');
+
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('cloudcraft:pig');
+      expect(mockGame.animals.spawnSpecies).toHaveBeenCalled();
+      const [, position, options] = (mockGame.animals.spawnSpecies as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(position.x).toBeCloseTo(10);
+      expect(position.y).toBeCloseTo(64);
+      expect(position.z).toBeCloseTo(17); // player z=20, camera forward -Z * 3
+      expect(options).toEqual({ persistent: true });
+    });
+
+    test('spawn() with coords should use exact position', () => {
+      const devConsole = createDevConsole(mockGame);
+      const result = devConsole.entity.spawn('leopard', 1, 2, 3);
+
+      expect(result?.type).toBe('cloudcraft:leopard');
+      const [, position] = (mockGame.animals.spawnSpecies as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(position.x).toBe(1);
+      expect(position.y).toBe(2);
+      expect(position.z).toBe(3);
+    });
+
+    test('spawn() should reject unknown species', () => {
+      const devConsole = createDevConsole(mockGame);
+      const result = devConsole.entity.spawn('dragon');
+
+      expect(result).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    test('spawn() should reject partial coordinates', () => {
+      const devConsole = createDevConsole(mockGame);
+      const result = devConsole.entity.spawn('pig', 1, 2);
+
+      expect(result).toBeNull();
+      expect(mockGame.animals.spawnSpecies).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    test('spawnMany() should spawn multiple animals', () => {
+      const devConsole = createDevConsole(mockGame);
+      const results = devConsole.entity.spawnMany('pig', 3, 4);
+
+      expect(results).toHaveLength(3);
+      expect(mockGame.animals.spawnSpecies).toHaveBeenCalledTimes(3);
+    });
+
+    test('list() / count() / clear() should delegate to AnimalManager', () => {
+      const animal = {
+        id: 'pig-1',
+        type: 'cloudcraft:pig',
+        position: { x: 1, y: 2, z: 3 },
+        life: 8,
+        maxLife: 10,
+        isPersistent: true,
+        isDead: false,
+      };
+      (mockGame.animals.getAnimals as ReturnType<typeof vi.fn>).mockReturnValue([animal]);
+      (mockGame.animals.getCount as ReturnType<typeof vi.fn>).mockReturnValue(1);
+      (mockGame.animals.clearAnimals as ReturnType<typeof vi.fn>).mockReturnValue(1);
+
+      const tableSpy = vi.spyOn(console, 'table').mockImplementation(() => {});
+      const devConsole = createDevConsole(mockGame);
+
+      expect(devConsole.entity.list()).toEqual([
+        {
+          id: 'pig-1',
+          type: 'cloudcraft:pig',
+          position: { x: 1, y: 2, z: 3 },
+          life: 8,
+          maxLife: 10,
+          isPersistent: true,
+          isDead: false,
+        },
+      ]);
+      expect(devConsole.entity.count()).toBe(1);
+      expect(devConsole.entity.clear()).toBe(1);
+      expect(mockGame.animals.clearAnimals).toHaveBeenCalled();
+
+      tableSpy.mockRestore();
     });
   });
 });
